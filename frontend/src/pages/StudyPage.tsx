@@ -49,8 +49,8 @@ export default function StudyPage() {
 
   // Check if current problem supports decimals
   const supportsDecimals = () => {
-    return currentProblem?.type === 'decimals' ||
-           (currentLevel === 'F' && currentWorksheet <= 160)
+    // Level F worksheets 1-160 support decimal problems
+    return currentLevel === 'F' && currentWorksheet <= 160
   }
 
   // Redirect to login if not authenticated
