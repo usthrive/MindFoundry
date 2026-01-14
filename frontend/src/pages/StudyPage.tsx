@@ -56,6 +56,12 @@ export default function StudyPage() {
     return currentLevel === 'F' && currentWorksheet <= 160
   }
 
+  // Check if current problem supports fractions
+  const supportsFractions = () => {
+    // Levels D-F and higher have fraction problems
+    return ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].includes(currentLevel)
+  }
+
   // Check if current problem is a sequence type with inline input
   const isSequenceProblem = () => {
     return currentProblem?.displayFormat === 'sequenceBoxes' && currentProblem?.sequenceData
@@ -163,6 +169,11 @@ export default function StudyPage() {
         if (!inputValue.includes('.')) {
           setInputValue(prev => prev === '' ? '0.' : prev + '.')
         }
+      } else if (e.key === '/' && supportsFractions()) {
+        e.preventDefault()
+        if (!inputValue.includes('/')) {
+          setInputValue(prev => prev + '/')
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault()
         handleSubmit()
@@ -185,6 +196,10 @@ export default function StudyPage() {
     } else if (num === -2) { // Decimal point signal
       if (supportsDecimals() && !inputValue.includes('.')) {
         setInputValue(prev => prev === '' ? '0.' : prev + '.')
+      }
+    } else if (num === -3) { // Fraction slash signal
+      if (supportsFractions() && !inputValue.includes('/')) {
+        setInputValue(prev => prev + '/')
       }
     } else if (num >= 0) {
       setInputValue((prev) => prev + num.toString())
@@ -222,10 +237,38 @@ export default function StudyPage() {
       // Regular problem - must have input value
       if (!inputValue) return
 
-      // FIXED: Support both numeric and string answers per Kumon requirements
-      isCorrect = typeof currentProblem.correctAnswer === 'string'
-        ? inputValue.toLowerCase() === currentProblem.correctAnswer.toLowerCase()
-        : parseFloat(inputValue) === currentProblem.correctAnswer
+      // FIXED: Support numeric, string, and Fraction answers per Kumon requirements
+      const correctAnswer = currentProblem.correctAnswer
+
+      if (typeof correctAnswer === 'string') {
+        // String answer (exact match, case insensitive)
+        isCorrect = inputValue.toLowerCase() === correctAnswer.toLowerCase()
+      } else if (typeof correctAnswer === 'number') {
+        // Numeric answer
+        isCorrect = parseFloat(inputValue) === correctAnswer
+      } else if (typeof correctAnswer === 'object' && correctAnswer !== null && 'numerator' in correctAnswer && 'denominator' in correctAnswer) {
+        // Fraction answer { numerator, denominator }
+        const frac = correctAnswer as { numerator: number; denominator: number }
+        // Accept input like "5/8" or just "5" if denominator is 1
+        if (frac.denominator === 1) {
+          isCorrect = parseInt(inputValue, 10) === frac.numerator
+        } else {
+          // Parse student input as fraction "numerator/denominator"
+          const parts = inputValue.split('/')
+          if (parts.length === 2) {
+            const studentNum = parseInt(parts[0].trim(), 10)
+            const studentDen = parseInt(parts[1].trim(), 10)
+            // Compare simplified fractions
+            if (!isNaN(studentNum) && !isNaN(studentDen) && studentDen !== 0) {
+              // Cross-multiply to check equality: a/b = c/d => a*d = b*c
+              isCorrect = studentNum * frac.denominator === frac.numerator * studentDen
+            }
+          }
+        }
+      } else {
+        // Fallback: compare as strings
+        isCorrect = inputValue === String(correctAnswer)
+      }
     }
 
     const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
@@ -534,6 +577,7 @@ export default function StudyPage() {
                 onClear={handleClear}
                 onSubmit={handleSubmit}
                 allowDecimal={supportsDecimals()}
+                allowFraction={supportsFractions()}
               />
             </div>
           )}

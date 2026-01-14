@@ -7,6 +7,7 @@ export interface NumberPadProps {
   onSubmit: () => void
   allowNegative?: boolean
   allowDecimal?: boolean
+  allowFraction?: boolean
   disabled?: boolean
   className?: string
   /** Size variant: 'compact' for phones, 'medium' for tablets, 'large' for desktop */
@@ -30,6 +31,7 @@ const NumberPad = ({
   onSubmit,
   allowNegative = false,
   allowDecimal = false,
+  allowFraction = false,
   disabled = false,
   className,
   size = 'auto',
@@ -137,7 +139,7 @@ const NumberPad = ({
         ))}
 
         {/* Bottom row: special buttons */}
-        {/* Negative button (if allowed) or empty space */}
+        {/* Left slot: Negative, Fraction, or empty */}
         {allowNegative ? (
           <button
             onClick={() => onNumberClick(-1)} // Signal for negative
@@ -146,6 +148,16 @@ const NumberPad = ({
             type="button"
           >
             −
+          </button>
+        ) : allowFraction ? (
+          <button
+            onClick={() => onNumberClick(-3)} // Signal for fraction slash
+            disabled={disabled}
+            className={cn(specialButtonBase, buttonSizeClasses)}
+            type="button"
+            title="Fraction (press / on keyboard)"
+          >
+            /
           </button>
         ) : (
           <div className={cn(buttonSizeClasses, 'invisible')} />
@@ -161,7 +173,7 @@ const NumberPad = ({
           0
         </button>
 
-        {/* Decimal button (if allowed) or empty space */}
+        {/* Right slot: Decimal or empty */}
         {allowDecimal ? (
           <button
             onClick={() => onNumberClick(-2)} // Signal for decimal
