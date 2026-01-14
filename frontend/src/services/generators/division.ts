@@ -14,7 +14,7 @@ interface DivisionRange {
   allowRemainder?: boolean
 }
 
-const DIVISION_LEVELS: Record<KumonLevel, DivisionRange> = {
+const DIVISION_LEVELS: Partial<Record<KumonLevel, DivisionRange>> = {
   // Level C: Basic division facts (÷1 to ÷12, no remainders)
   'C': { minDividend: 0, maxDividend: 144, minDivisor: 1, maxDivisor: 12, allowRemainder: false },
 

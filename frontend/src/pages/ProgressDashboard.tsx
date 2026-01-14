@@ -95,6 +95,14 @@ export default function ProgressDashboard() {
   const [badges, setBadges] = useState<Badge[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Helper to format date as YYYY-MM-DD in local timezone
+  const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const loadChildProgress = async (child: Child) => {
     setLoading(true)
     const [progress, sessions, childBadges] = await Promise.all([
@@ -104,7 +112,8 @@ export default function ProgressDashboard() {
     ])
 
     const dailyData = sessions.reduce((acc: any[], session: any) => {
-      const date = new Date(session.created_at).toISOString().split('T')[0]
+      // Use local date format for consistency with chart component
+      const date = formatLocalDate(new Date(session.created_at))
       const existing = acc.find(d => d.date === date)
       if (existing) {
         existing.problems_completed += session.problems_completed || 0
@@ -118,6 +127,14 @@ export default function ProgressDashboard() {
       }
       return acc
     }, [])
+
+    // DEBUG: Log the data being passed to the chart
+    console.log('📊 Daily chart data:', dailyData)
+    console.log('📊 Sessions received:', sessions.length, sessions.map((s: any) => ({
+      created_at: s.created_at,
+      localDate: formatLocalDate(new Date(s.created_at)),
+      problems: s.problems_completed
+    })))
 
     setWorksheetProgress(progress)
     setRecentSessions(sessions.slice(0, 5))

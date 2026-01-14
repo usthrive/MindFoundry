@@ -28,19 +28,23 @@ function getWorksheetConfig(worksheet: number): {
   return { type: 'subtraction_summary', maxMinuend: 20 }
 }
 
-function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType): Problem {
+function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, worksheet: number = 1): Problem {
   const sum = randomInt(Math.min(3, maxSum), maxSum)
   const first = randomInt(1, sum - 1)
   const second = sum - first
-  
-  const variants = ['standard', 'commutative', 'missing'] as const
+
+  // KUMON COMPLIANCE FIX: Missing addend only allowed for late Level A (worksheet 150+)
+  // Reference: /Requirements/06-KUMON-OFFICIAL-PROGRESSION.md
+  const variants = worksheet >= 150
+    ? ['standard', 'commutative', 'missing'] as const
+    : ['standard', 'commutative'] as const
   const variant = variants[randomInt(0, variants.length - 1)]
-  
+
   if (variant === 'commutative') {
     return {
       id: generateId(),
       level: 'A',
-      worksheetNumber: 1,
+      worksheetNumber: worksheet,
       type: 'addition',
       subtype,
       difficulty: 1,
@@ -51,14 +55,15 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType): Pr
       hints: [`${second} + ${first} is the same as ${first} + ${second}`],
     }
   }
-  
+
   if (variant === 'missing') {
+    // This branch only executes for worksheet >= 150
     const missingFirst = Math.random() < 0.5
     if (missingFirst) {
       return {
         id: generateId(),
         level: 'A',
-        worksheetNumber: 1,
+        worksheetNumber: worksheet,
         type: 'addition',
         subtype,
         difficulty: 2,
@@ -66,13 +71,14 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType): Pr
         question: `___ + ${second} = ${sum}`,
         correctAnswer: first,
         operands: [first, second],
+        missingPosition: 0,
         hints: [`What number plus ${second} equals ${sum}?`],
       }
     }
     return {
       id: generateId(),
       level: 'A',
-      worksheetNumber: 1,
+      worksheetNumber: worksheet,
       type: 'addition',
       subtype,
       difficulty: 2,
@@ -80,14 +86,15 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType): Pr
       question: `${first} + ___ = ${sum}`,
       correctAnswer: second,
       operands: [first, second],
+      missingPosition: 1,
       hints: [`What do you add to ${first} to get ${sum}?`],
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'A',
-    worksheetNumber: 1,
+    worksheetNumber: worksheet,
     type: 'addition',
     subtype,
     difficulty: 1,
@@ -102,20 +109,27 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType): Pr
 function generateSubtractionProblem(
   subtrahend: number | undefined,
   maxMinuend: number,
-  subtype: LevelAProblemType
+  subtype: LevelAProblemType,
+  worksheet: number = 1
 ): Problem {
   const minuend = randomInt(subtrahend ? subtrahend + 1 : 2, maxMinuend)
   const actualSubtrahend = subtrahend || randomInt(1, Math.min(minuend - 1, subtype === 'subtract_up_to_3' ? 3 : 5))
   const difference = minuend - actualSubtrahend
-  
-  const variants = ['standard', 'missing_subtrahend', 'missing_minuend'] as const
+
+  // KUMON COMPLIANCE FIX: Missing operand variants only allowed for late Level A (worksheet 170+)
+  // Early subtraction (worksheets 81-169) should ONLY use standard format: a - b = ?
+  // Reference: /Requirements/06-KUMON-OFFICIAL-PROGRESSION.md
+  const variants = worksheet >= 170
+    ? ['standard', 'missing_subtrahend', 'missing_minuend'] as const
+    : ['standard'] as const
   const variant = variants[randomInt(0, variants.length - 1)]
-  
+
   if (variant === 'missing_subtrahend') {
+    // This branch only executes for worksheet >= 170
     return {
       id: generateId(),
       level: 'A',
-      worksheetNumber: 1,
+      worksheetNumber: worksheet,
       type: 'subtraction',
       subtype,
       difficulty: 2,
@@ -123,18 +137,20 @@ function generateSubtractionProblem(
       question: `${minuend} - ___ = ${difference}`,
       correctAnswer: actualSubtrahend,
       operands: [minuend, actualSubtrahend],
+      missingPosition: 1,
       hints: [
         `What do you subtract from ${minuend} to get ${difference}?`,
         `Count from ${difference} to ${minuend}`,
       ],
     }
   }
-  
+
   if (variant === 'missing_minuend') {
+    // This branch only executes for worksheet >= 170
     return {
       id: generateId(),
       level: 'A',
-      worksheetNumber: 1,
+      worksheetNumber: worksheet,
       type: 'subtraction',
       subtype,
       difficulty: 2,
@@ -142,17 +158,19 @@ function generateSubtractionProblem(
       question: `___ - ${actualSubtrahend} = ${difference}`,
       correctAnswer: minuend,
       operands: [minuend, actualSubtrahend],
+      missingPosition: 0,
       hints: [
         `What number minus ${actualSubtrahend} equals ${difference}?`,
         `${difference} + ${actualSubtrahend} = ?`,
       ],
     }
   }
-  
+
+  // Standard format: a - b = ? (used for worksheets 81-169)
   return {
     id: generateId(),
     level: 'A',
-    worksheetNumber: 1,
+    worksheetNumber: worksheet,
     type: 'subtraction',
     subtype,
     difficulty: 1,
@@ -162,7 +180,7 @@ function generateSubtractionProblem(
     operands: [minuend, actualSubtrahend],
     hints: [
       `Start at ${minuend} and count back ${actualSubtrahend}`,
-      actualSubtrahend <= 3 
+      actualSubtrahend <= 3
         ? `Count: ${Array.from({length: actualSubtrahend + 1}, (_, i) => minuend - i).join(', ')}`
         : 'You can use your fingers to count back',
     ],
@@ -195,7 +213,7 @@ function generateSubtractionFromFixedProblem(maxMinuend: number, subtype: LevelA
 export function generateAProblem(worksheet: number): Problem {
   const config = getWorksheetConfig(worksheet)
   let problem: Problem
-  
+
   switch (config.type) {
     case 'addition_sums_to_12':
     case 'addition_sums_to_15':
@@ -204,17 +222,19 @@ export function generateAProblem(worksheet: number): Problem {
     case 'addition_sums_to_24':
     case 'addition_sums_to_28':
     case 'addition_summary':
-      problem = generateAdditionProblem(config.maxSum || 20, config.type)
+      // Pass worksheet number for missing addend compliance check
+      problem = generateAdditionProblem(config.maxSum || 20, config.type, worksheet)
       break
     case 'subtract_1':
     case 'subtract_2':
     case 'subtract_3':
-      problem = generateSubtractionProblem(config.subtrahend, config.maxMinuend || 20, config.type)
+      // Pass worksheet number for missing operand compliance check
+      problem = generateSubtractionProblem(config.subtrahend, config.maxMinuend || 20, config.type, worksheet)
       break
     case 'subtract_up_to_3':
     case 'subtract_up_to_5':
     case 'subtraction_summary':
-      problem = generateSubtractionProblem(undefined, config.maxMinuend || 20, config.type)
+      problem = generateSubtractionProblem(undefined, config.maxMinuend || 20, config.type, worksheet)
       break
     case 'subtract_from_10':
     case 'subtract_from_11':
@@ -225,9 +245,9 @@ export function generateAProblem(worksheet: number): Problem {
       problem = generateSubtractionFromFixedProblem(config.maxMinuend || 10, config.type)
       break
     default:
-      problem = generateAdditionProblem(20, 'addition_summary')
+      problem = generateAdditionProblem(20, 'addition_summary', worksheet)
   }
-  
+
   problem.worksheetNumber = worksheet
   return problem
 }

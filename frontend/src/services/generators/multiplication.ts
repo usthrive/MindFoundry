@@ -13,7 +13,7 @@ interface MultiplicationRange {
   max2: number
 }
 
-const MULTIPLICATION_LEVELS: Record<KumonLevel, MultiplicationRange> = {
+const MULTIPLICATION_LEVELS: Partial<Record<KumonLevel, MultiplicationRange>> = {
   // Level C: Basic multiplication tables (1-12)
   'C': { min1: 0, max1: 12, min2: 0, max2: 12 },
 

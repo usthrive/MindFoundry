@@ -14,7 +14,7 @@ interface SubtractionRange {
   allowBorrow?: boolean
 }
 
-const SUBTRACTION_LEVELS: Record<KumonLevel, SubtractionRange> = {
+const SUBTRACTION_LEVELS: Partial<Record<KumonLevel, SubtractionRange>> = {
   // Level 7A: Basic counting subtraction (very simple)
   '7A': { min1: 1, max1: 5, min2: 0, max2: 2, allowBorrow: false },
 

@@ -7,36 +7,49 @@ function getWorksheetConfig(worksheet: number): {
   maxFirst?: number
   minFirst?: number
 } {
-  if (worksheet <= 60) {
-    const section = Math.ceil(worksheet / 10)
-    if (section <= 2) return { type: 'sequence_to_100', maxFirst: 100 }
-    if (section <= 4) return { type: 'sequence_to_100', maxFirst: 100 }
-    return { type: 'sequence_to_100', maxFirst: 100 }
-  }
+  // FIXED: Aligned with Kumon requirements for Level 3A
+
+  // Worksheets 1-70: NO ADDITION (mental math prep only)
   if (worksheet <= 70) {
+    if (worksheet <= 30) return { type: 'sequence_to_100', maxFirst: 100 }
+    if (worksheet <= 60) return { type: 'sequence_to_100', maxFirst: 100 }
     return { type: 'sequence_to_120', maxFirst: 120 }
   }
-  if (worksheet <= 100) {
-    const phase = Math.ceil((worksheet - 70) / 10)
-    if (phase === 1) return { type: 'add_1_small', addend: 1, maxFirst: 5 }
-    if (phase === 2) return { type: 'add_1_medium', addend: 1, maxFirst: 10 }
-    return { type: 'add_1_large', addend: 1, maxFirst: 20 }
-  }
+
+  // Worksheets 71-130: ONLY +1 addition
   if (worksheet <= 130) {
-    return { type: 'add_1_large', addend: 1, maxFirst: 100 }
+    if (worksheet <= 90) {
+      // Early +1: up to 12+1
+      return { type: 'add_1_small', addend: 1, maxFirst: 12 }
+    }
+    if (worksheet <= 120) {
+      // Medium +1: up to 100+1
+      return { type: 'add_1_medium', addend: 1, maxFirst: 100 }
+    }
+    // Late +1: up to 1000+1
+    return { type: 'add_1_large', addend: 1, maxFirst: 1000 }
   }
-  if (worksheet <= 160) {
-    const phase = Math.ceil((worksheet - 130) / 10)
-    if (phase === 1) return { type: 'add_2_small', addend: 2, maxFirst: 5 }
-    if (phase === 2) return { type: 'add_2_medium', addend: 2, maxFirst: 10 }
-    return { type: 'add_2_medium', addend: 2, maxFirst: 20 }
+
+  // Worksheets 131-150: +2 addition begins
+  if (worksheet <= 150) {
+    return { type: 'add_2_small', addend: 2, maxFirst: 12 }
   }
-  if (worksheet <= 180) {
-    const phase = Math.ceil((worksheet - 160) / 10)
-    if (phase === 1) return { type: 'add_3_small', addend: 3, maxFirst: 5 }
-    return { type: 'add_3_medium', addend: 3, maxFirst: 10 }
+
+  // Worksheets 151-170: +2 addition continues
+  if (worksheet <= 170) {
+    return { type: 'add_2_medium', addend: 2, maxFirst: 100 }
   }
-  return { type: 'add_mixed_1_2_3', maxFirst: 20 }
+
+  // Worksheets 171-190: +3 addition
+  if (worksheet <= 190) {
+    if (worksheet <= 180) {
+      return { type: 'add_3_small', addend: 3, maxFirst: 12 }
+    }
+    return { type: 'add_3_medium', addend: 3, maxFirst: 100 }
+  }
+
+  // Worksheets 191-200: Mixed +1, +2, +3
+  return { type: 'add_mixed_1_2_3', maxFirst: 100 }
 }
 
 function generateSequenceProblem(maxNumber: number): Problem {
@@ -78,29 +91,10 @@ function generateSequenceProblem(maxNumber: number): Problem {
 function generateAdditionProblem(addend: number, maxFirst: number, subtype: Level3AProblemType): Problem {
   const first = randomInt(1, maxFirst)
   const sum = first + addend
-  
-  const formats = ['horizontal', 'vertical', 'missing_addend'] as const
-  const format = formats[randomInt(0, formats.length - 1)]
-  
-  if (format === 'missing_addend') {
-    return {
-      id: generateId(),
-      level: '3A',
-      worksheetNumber: 1,
-      type: 'addition',
-      subtype,
-      difficulty: 2,
-      displayFormat: 'horizontal',
-      question: `${first} + ___ = ${sum}`,
-      correctAnswer: addend,
-      operands: [first, addend],
-      hints: [
-        `What plus ${first} equals ${sum}?`,
-        `Count up from ${first} to ${sum}`,
-      ],
-    }
-  }
-  
+
+  // FIXED: Kumon 3A is HORIZONTAL ONLY - removed 'vertical' and 'missing_addend'
+  // Only horizontal format allowed in Level 3A
+
   return {
     id: generateId(),
     level: '3A',
@@ -108,10 +102,8 @@ function generateAdditionProblem(addend: number, maxFirst: number, subtype: Leve
     type: 'addition',
     subtype,
     difficulty: 1,
-    displayFormat: format === 'vertical' ? 'vertical' : 'horizontal',
-    question: format === 'vertical' 
-      ? `  ${first}\n+ ${addend}\n-----`
-      : `${first} + ${addend} = ___`,
+    displayFormat: 'horizontal', // Always horizontal for Level 3A
+    question: `${first} + ${addend} = ___`,
     correctAnswer: sum,
     operands: [first, addend],
     hints: [

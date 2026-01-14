@@ -1,11 +1,35 @@
-import type { Problem, KumonLevel, MathOperation } from '@/types'
-import { generateAdditionProblem } from './generators/addition'
-import { generateSubtractionProblem } from './generators/subtraction'
-import { generateMultiplicationProblem } from './generators/multiplication'
-import { generateDivisionProblem } from './generators/division'
-import { generateDecimalProblem, generateOrderOfOperationsProblem } from './generators/decimals'
-import { generateSequenceProblem, generateCountingProblem } from './generators/sequences'
-import { generateVerticalProblem } from './generators/vertical'
+import type { KumonLevel, MathOperation } from '@/types'
+import type { Problem } from './generators/types'
+// Removed unused imports - now using proper Kumon generators
+
+// Import proper Kumon-aligned generators for all levels
+import {
+  generate7AProblem,
+  generate6AProblem,
+  generate5AProblem,
+  generate4AProblem,
+  generate3AProblem,
+  generate2AProblem,
+  generateAProblem,
+  generateBProblem,
+  generateCProblem,
+  generateDProblem,
+  generateEProblem,
+  generateFProblem,
+  generateGProblem,
+  generateHProblem,
+  generateIProblem,
+  generateJProblem,
+  generateKProblem,
+  generateLProblem,
+  generateMProblem,
+  generateNProblem,
+  generateOProblem,
+  generateXVProblem,
+  generateXMProblem,
+  generateXPProblem,
+  generateXSProblem
+} from './generators'
 
 /**
  * Session Manager - Kumon-Compliant Sequential Progression
@@ -102,69 +126,87 @@ export function generateProblem(level: KumonLevel, sublevel?: number): Problem {
   // Get allowed operations for this level and worksheet
   const operations = getOperationsForWorksheet(level, worksheetNumber)
 
-  // Pre-K levels need special handling (counting/sequences)
+  // Pre-K levels need special handling - use proper Kumon generators
   if (operations.length === 0) {
-    // Handle Pre-K and special levels
+    // Route to correct Kumon-aligned generators for Pre-K levels
     switch (level) {
       case '7A':
+        console.log(`Generating Level 7A problem for worksheet ${worksheetNumber}`)
+        return generate7AProblem(worksheetNumber)
       case '6A':
+        console.log(`Generating Level 6A problem for worksheet ${worksheetNumber}`)
+        return generate6AProblem(worksheetNumber)
       case '5A':
-        return generateCountingProblem(level, worksheetNumber)
+        console.log(`Generating Level 5A problem for worksheet ${worksheetNumber}`)
+        return generate5AProblem(worksheetNumber)
       case '4A':
-        return generateSequenceProblem(worksheetNumber)
+        console.log(`Generating Level 4A problem for worksheet ${worksheetNumber}`)
+        return generate4AProblem(worksheetNumber)
       default:
         throw new Error(`Level ${level} requires special problem generation`)
     }
   }
 
-  // Handle special levels that need custom generators
-  if (level === 'B') {
-    // Level B uses vertical format
-    return generateVerticalProblem(worksheetNumber)
-  }
+  // Use proper Kumon generators for all other levels
+  console.log(`Generating problem for level ${level}, worksheet ${worksheetNumber}`)
 
-  if (level === 'F') {
-    // Level F focuses on decimals and order of operations
-    if (worksheetNumber <= 160) {
-      return generateDecimalProblem(worksheetNumber)
-    } else {
-      return generateOrderOfOperationsProblem(worksheetNumber)
-    }
-  }
+  switch (level) {
+    // Elementary Basic levels
+    case '3A':
+      return generate3AProblem(worksheetNumber)
+    case '2A':
+      return generate2AProblem(worksheetNumber)
+    case 'A':
+      return generateAProblem(worksheetNumber)
+    case 'B':
+      return generateBProblem(worksheetNumber)
 
-  if (level === 'D' || level === 'E') {
-    // For now, use basic operations for D and E
-    // TODO: Implement fraction generators
-    const operation = operations[Math.floor(Math.random() * operations.length)]
-    switch (operation) {
-      case 'addition':
-        return generateAdditionProblem('C', sublevel) // Use Level C style for now
-      case 'subtraction':
-        return generateSubtractionProblem('C', sublevel)
-      case 'multiplication':
-        return generateMultiplicationProblem('C', sublevel)
-      case 'division':
-        return generateDivisionProblem('C', sublevel)
-      default:
-        return generateAdditionProblem('C', sublevel)
-    }
-  }
+    // Elementary Advanced levels
+    case 'C':
+      return generateCProblem(worksheetNumber)
+    case 'D':
+      return generateDProblem(worksheetNumber)
+    case 'E':
+      return generateEProblem(worksheetNumber)
+    case 'F':
+      return generateFProblem(worksheetNumber)
 
-  // Select operation (for levels with one operation, it's deterministic)
-  const operation = operations[Math.floor(Math.random() * operations.length)]
+    // Middle School levels
+    case 'G':
+      return generateGProblem(worksheetNumber)
+    case 'H':
+      return generateHProblem(worksheetNumber)
+    case 'I':
+      return generateIProblem(worksheetNumber)
 
-  // Generate problem based on operation
-  switch (operation) {
-    case 'addition':
-      return generateAdditionProblem(level, sublevel)
-    case 'subtraction':
-      return generateSubtractionProblem(level, sublevel)
-    case 'multiplication':
-      return generateMultiplicationProblem(level, sublevel)
-    case 'division':
-      return generateDivisionProblem(level, sublevel)
+    // High School levels
+    case 'J':
+      return generateJProblem(worksheetNumber)
+    case 'K':
+      return generateKProblem(worksheetNumber)
+
+    // Calculus levels
+    case 'L':
+      return generateLProblem(worksheetNumber)
+    case 'M':
+      return generateMProblem(worksheetNumber)
+    case 'N':
+      return generateNProblem(worksheetNumber)
+    case 'O':
+      return generateOProblem(worksheetNumber)
+
+    // Elective levels
+    case 'XV':
+      return generateXVProblem(worksheetNumber)
+    case 'XM':
+      return generateXMProblem(worksheetNumber)
+    case 'XP':
+      return generateXPProblem(worksheetNumber)
+    case 'XS':
+      return generateXSProblem(worksheetNumber)
+
     default:
-      throw new Error(`Unknown operation: ${operation}`)
+      throw new Error(`Unknown Kumon level: ${level}`)
   }
 }
 

@@ -15,10 +15,17 @@ function getWorksheetConfig(worksheet: number): {
   if (worksheet <= 150) {
     return { type: 'number_reading_to_10', maxCount: 10, part: Math.ceil((worksheet - 100) / 10) }
   }
-  if (worksheet <= 200) {
+  if (worksheet <= 170) {
     return { type: 'dot_recognition_to_10', maxCount: 10, part: Math.ceil((worksheet - 150) / 10) }
   }
-  return { type: 'count_to_10', maxCount: 10, part: 1 }
+  // ADD MISSING PHASES per Kumon requirements
+  if (worksheet <= 185) {
+    return { type: 'count_to_20', maxCount: 20, part: Math.ceil((worksheet - 170) / 5) }
+  }
+  if (worksheet <= 200) {
+    return { type: 'count_to_30', maxCount: 30, part: Math.ceil((worksheet - 185) / 5) }
+  }
+  return { type: 'count_to_30', maxCount: 30, part: 1 }
 }
 
 function generateCountProblem(maxCount: number): Problem {

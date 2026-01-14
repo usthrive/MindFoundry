@@ -1,8 +1,18 @@
 import { cn } from '@/lib/utils'
-import type { Problem, AgeGroup } from '@/types'
+import type { AgeGroup, ProblemFormat } from '@/types'
+
+// Accept a flexible Problem type that works with both type definitions
+interface DisplayProblem {
+  type: string
+  operands?: number[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  correctAnswer: any
+  displayFormat: ProblemFormat | string
+  missingPosition?: number
+}
 
 export interface ProblemDisplayProps {
-  problem: Problem
+  problem: DisplayProblem
   studentAnswer?: string
   ageGroup: AgeGroup
   showAnswer?: boolean
@@ -17,44 +27,47 @@ const ProblemDisplay = ({
   className,
 }: ProblemDisplayProps) => {
   // Font size based on age group with responsive breakpoints
-  const fontSizes = {
+  const fontSizes: Record<AgeGroup, string> = {
     preK: 'text-4xl sm:text-5xl md:text-6xl',
     grade1_2: 'text-3xl sm:text-4xl md:text-5xl',
     grade3_5: 'text-2xl sm:text-3xl md:text-4xl',
+    grade5_6: 'text-2xl sm:text-3xl md:text-4xl',
+    middle_school: 'text-xl sm:text-2xl md:text-3xl',
   }
 
   const fontSize = fontSizes[ageGroup]
 
   // Get operator symbol
-  const operatorSymbols = {
+  const operatorSymbols: Record<string, string> = {
     addition: '+',
     subtraction: '−', // Minus sign, not hyphen
     multiplication: '×',
     division: '÷',
   }
 
-  const operator = operatorSymbols[problem.type]
+  const operator = operatorSymbols[problem.type] || '?'
+  const operands = problem.operands || []
 
   // Horizontal format (for early levels)
   if (problem.displayFormat === 'horizontal') {
     // Handle three-number addition (e.g., 3 + 5 + 2 = ?)
-    if (problem.operands.length === 3) {
+    if (operands.length === 3) {
       return (
         <div className={cn('flex items-center justify-center gap-2 sm:gap-3 md:gap-4', className)}>
           <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-            {problem.operands[0]}
+            {operands[0]}
           </span>
           <span className={cn('font-bold text-primary', fontSize)}>
             {operator}
           </span>
           <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-            {problem.operands[1]}
+            {operands[1]}
           </span>
           <span className={cn('font-bold text-primary', fontSize)}>
             {operator}
           </span>
           <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-            {problem.operands[2]}
+            {operands[2]}
           </span>
           <span className={cn('font-bold text-primary', fontSize)}>
             =
@@ -87,7 +100,7 @@ const ProblemDisplay = ({
       return (
         <div className={cn('flex items-center justify-center gap-2 sm:gap-3 md:gap-4', className)}>
           <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-            {problem.operands[0]}
+            {operands[0]}
           </span>
           <span className={cn('font-bold text-primary', fontSize)}>
             {operator}
@@ -115,7 +128,7 @@ const ProblemDisplay = ({
             =
           </span>
           <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-            {problem.operands[1]}
+            {operands[1]}
           </span>
         </div>
       )
@@ -125,13 +138,13 @@ const ProblemDisplay = ({
     return (
       <div className={cn('flex items-center justify-center gap-2 sm:gap-3 md:gap-4', className)}>
         <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-          {problem.operands[0]}
+          {operands[0]}
         </span>
         <span className={cn('font-bold text-primary', fontSize)}>
           {operator}
         </span>
         <span className={cn('font-mono font-bold tabular-nums', fontSize)}>
-          {problem.operands[1]}
+          {operands[1]}
         </span>
         <span className={cn('font-bold text-primary', fontSize)}>
           =
@@ -164,13 +177,13 @@ const ProblemDisplay = ({
     <div className={cn('flex flex-col items-end', className)}>
       {/* First operand */}
       <div className={cn('font-mono font-bold tabular-nums text-right', fontSize)}>
-        {problem.operands[0]}
+        {operands[0]}
       </div>
 
       {/* Operator and second operand */}
       <div className={cn('flex items-center gap-3 font-mono font-bold tabular-nums', fontSize)}>
         <span className="text-primary">{operator}</span>
-        <span className="text-right">{problem.operands[1]}</span>
+        <span className="text-right">{operands[1]}</span>
       </div>
 
       {/* Dividing line */}

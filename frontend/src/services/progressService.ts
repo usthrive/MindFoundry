@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
-import type { KumonLevel, Problem } from '@/types'
+import type { KumonLevel } from '@/types'
 
 type Child = Database['public']['Tables']['children']['Row']
 type WorksheetProgress = Database['public']['Tables']['worksheet_progress']['Row']
@@ -348,7 +348,8 @@ export async function completePracticeSession(
 export async function saveProblemAttempt(
   sessionId: string,
   childId: string,
-  problem: Problem,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  problem: any,
   studentAnswer: string,
   isCorrect: boolean,
   timeSpent: number

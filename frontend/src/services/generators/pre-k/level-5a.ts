@@ -28,16 +28,18 @@ function getWorksheetConfig(worksheet: number): {
     }
   }
   if (worksheet <= 190) {
-    return { 
-      type: 'sequence_to_50', 
-      maxNumber: 50, 
-      part: Math.ceil((worksheet - 160) / 10) 
+    return {
+      type: 'sequence_to_50',
+      maxNumber: 50,
+      part: Math.ceil((worksheet - 160) / 10)
     }
   }
-  return { 
-    type: 'number_before_after', 
-    maxNumber: 100, 
-    part: 1 
+  // FIXED: Per Kumon requirements, 5A should NOT have backward counting
+  // Changed from 'number_before_after' to forward sequences only
+  return {
+    type: 'sequence_to_50',  // Continue with forward sequences
+    maxNumber: 50,
+    part: 4
   }
 }
 
@@ -135,10 +137,13 @@ function generateSequenceProblem(maxNumber: number): Problem {
   }
 }
 
+// REMOVED: This function violates Kumon 5A requirements (no backward counting)
+// Keeping for reference but not used
+/*
 function generateNumberBeforeAfterProblem(maxNumber: number): Problem {
   const number = randomInt(2, maxNumber - 1)
   const askBefore = Math.random() < 0.5
-  
+
   if (askBefore) {
     return {
       id: generateId(),
@@ -157,7 +162,7 @@ function generateNumberBeforeAfterProblem(maxNumber: number): Problem {
       ],
     }
   }
-  
+
   return {
     id: generateId(),
     level: '5A',
@@ -175,6 +180,7 @@ function generateNumberBeforeAfterProblem(maxNumber: number): Problem {
     ],
   }
 }
+*/
 
 function generateDistractorNumbers(target: number, min: number, max: number, count: number): number[] {
   const numbers = new Set<number>([target])
@@ -202,11 +208,9 @@ export function generate5AProblem(worksheet: number): Problem {
     case 'sequence_to_50':
       problem = generateSequenceProblem(config.maxNumber)
       break
-    case 'number_before_after':
-      problem = generateNumberBeforeAfterProblem(config.maxNumber)
-      break
+    // REMOVED: 'number_before_after' case - Kumon 5A should not have backward counting
     default:
-      problem = generateSequenceProblem(30)
+      problem = generateSequenceProblem(config.maxNumber || 30)
   }
   
   problem.worksheetNumber = worksheet

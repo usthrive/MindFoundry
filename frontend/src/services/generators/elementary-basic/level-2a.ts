@@ -43,10 +43,13 @@ function generateAdditionProblem(addends: number[], maxFirst: number, subtype: L
   const addend = addends[randomInt(0, addends.length - 1)]
   const first = randomInt(1, maxFirst)
   const sum = first + addend
-  
-  const problemVariants = ['standard', 'commutative', 'missing_first', 'missing_second'] as const
+
+  // KUMON COMPLIANCE FIX: Level 2A should NEVER have missing addend problems
+  // Missing addend is introduced in Level A, worksheet 150+
+  // Reference: /Requirements/06-KUMON-OFFICIAL-PROGRESSION.md
+  const problemVariants = ['standard', 'commutative'] as const
   const variant = problemVariants[randomInt(0, problemVariants.length - 1)]
-  
+
   if (variant === 'commutative') {
     return {
       id: generateId(),
@@ -65,45 +68,8 @@ function generateAdditionProblem(addends: number[], maxFirst: number, subtype: L
       ],
     }
   }
-  
-  if (variant === 'missing_first') {
-    return {
-      id: generateId(),
-      level: '2A',
-      worksheetNumber: 1,
-      type: 'addition',
-      subtype,
-      difficulty: 2,
-      displayFormat: 'horizontal',
-      question: `___ + ${addend} = ${sum}`,
-      correctAnswer: first,
-      operands: [first, addend],
-      hints: [
-        `What number plus ${addend} equals ${sum}?`,
-        `Count back ${addend} from ${sum}`,
-      ],
-    }
-  }
-  
-  if (variant === 'missing_second') {
-    return {
-      id: generateId(),
-      level: '2A',
-      worksheetNumber: 1,
-      type: 'addition',
-      subtype,
-      difficulty: 2,
-      displayFormat: 'horizontal',
-      question: `${first} + ___ = ${sum}`,
-      correctAnswer: addend,
-      operands: [first, addend],
-      hints: [
-        `What do you add to ${first} to get ${sum}?`,
-        `Count up from ${first} to ${sum}`,
-      ],
-    }
-  }
-  
+
+  // Standard format: a + b = ?
   return {
     id: generateId(),
     level: '2A',
@@ -117,7 +83,7 @@ function generateAdditionProblem(addends: number[], maxFirst: number, subtype: L
     operands: [first, addend],
     hints: [
       `Start at ${first} and count up ${addend}`,
-      addend <= 5 
+      addend <= 5
         ? `Count: ${Array.from({length: addend + 1}, (_, i) => first + i).join(', ')}`
         : 'You can use your fingers to help count',
     ],

@@ -66,7 +66,11 @@ export function getLevelDescription(level: KumonLevel): string {
     'L': 'Logarithms',
     'M': 'Trigonometry',
     'N': 'Advanced trigonometry',
-    'O': 'Calculus'
+    'O': 'Calculus',
+    'XV': 'Vectors',
+    'XM': 'Matrices & Transformations',
+    'XP': 'Permutations, Combinations & Probability',
+    'XS': 'Statistics'
   }
 
   return descriptions[level] || 'Math practice'

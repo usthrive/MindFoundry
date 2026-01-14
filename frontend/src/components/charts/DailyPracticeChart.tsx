@@ -1,5 +1,14 @@
 import { useMemo } from 'react'
 
+// Helper to format date as YYYY-MM-DD in local timezone (not UTC)
+// Defined outside component for stability
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 interface PracticeData {
   date: string
   problems_completed: number
@@ -11,19 +20,29 @@ interface DailyPracticeChartProps {
 }
 
 export default function DailyPracticeChart({ data }: DailyPracticeChartProps) {
+
   // Process data for last 30 days
   const chartData = useMemo(() => {
     const today = new Date()
     const days = []
 
+    // DEBUG: Log received data
+    console.log('📈 Chart received data:', data)
+
     // Create array of last 30 days
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split('T')[0]
+      // Use local date format to avoid timezone shift issues
+      const dateStr = formatLocalDate(date)
 
       // Find data for this date
       const dayData = data.find(d => d.date === dateStr)
+
+      // DEBUG: Log matches for today (i=0)
+      if (i === 0) {
+        console.log('📈 Today check:', { dateStr, dayData, dataKeys: data.map(d => d.date) })
+      }
 
       days.push({
         date: dateStr,
@@ -59,14 +78,14 @@ export default function DailyPracticeChart({ data }: DailyPracticeChartProps) {
 
         {/* Chart area */}
         <div className="pl-2">
-          <div className="flex items-end gap-1 h-48 border-b border-gray-300">
+          <div className="flex gap-1 h-48 border-b border-gray-300">
             {chartData.map((day) => {
               const totalHeight = (day.completed / maxValue) * 100
               const correctHeight = (day.correct / maxValue) * 100
               const incorrectHeight = (day.incorrect / maxValue) * 100
 
               return (
-                <div key={day.date} className="flex-1 flex flex-col items-center justify-end relative group">
+                <div key={day.date} className="flex-1 h-full flex flex-col items-center justify-end relative group">
                   {/* Tooltip */}
                   <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
                     <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">

@@ -41,6 +41,18 @@ export function getSessionConfig(ageGroup: AgeGroup): SessionConfig {
       problemsPerSession: 50,
       brainBreakAt: 50,
     },
+    grade5_6: {
+      ageGroup: 'grade5_6',
+      sessionDuration: 25,
+      problemsPerSession: 60,
+      brainBreakAt: 50,
+    },
+    middle_school: {
+      ageGroup: 'middle_school',
+      sessionDuration: 30,
+      problemsPerSession: 60,
+      brainBreakAt: 50,
+    },
   }
 
   return configs[ageGroup]

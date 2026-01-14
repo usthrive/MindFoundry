@@ -14,7 +14,7 @@ interface AdditionRange {
   allowCarry?: boolean
 }
 
-const ADDITION_LEVELS: Record<KumonLevel, AdditionRange> = {
+const ADDITION_LEVELS: Partial<Record<KumonLevel, AdditionRange>> = {
   // Level 7A: Counting and recognition (very basic)
   '7A': { min1: 1, max1: 5, min2: 0, max2: 1, allowCarry: false },
 

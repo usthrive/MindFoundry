@@ -1,12 +1,12 @@
 // Core types for MindFoundry
 
-export type KumonLevel = '7A' | '6A' | '5A' | '4A' | '3A' | '2A' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O';
+export type KumonLevel = '7A' | '6A' | '5A' | '4A' | '3A' | '2A' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'XV' | 'XM' | 'XP' | 'XS';
 
 export type MathOperation = 'addition' | 'subtraction' | 'multiplication' | 'division';
 
 export type ProblemFormat = 'horizontal' | 'vertical';
 
-export type AgeGroup = 'preK' | 'grade1_2' | 'grade3_5';
+export type AgeGroup = 'preK' | 'grade1_2' | 'grade3_5' | 'grade5_6' | 'middle_school';
 
 export type Tier = 'free' | 'basic' | 'plus' | 'premium';
 

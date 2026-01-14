@@ -7,6 +7,7 @@ import Feedback from '@/components/feedback/Feedback'
 import NumberPad from '@/components/input/NumberPad'
 import InputDisplay from '@/components/input/InputDisplay'
 import ProblemDisplay from '@/components/problem/ProblemDisplay'
+import SequenceDisplay from '@/components/ui/SequenceDisplay'
 import Timer from '@/components/session/Timer'
 import SessionProgress from '@/components/session/SessionProgress'
 import WorksheetInfo from '@/components/session/WorksheetInfo'
@@ -23,13 +24,15 @@ import {
   getChildProfile
 } from '@/services/progressService'
 import { checkAndAwardBadges } from '@/utils/badgeSystem'
-import type { Problem, KumonLevel } from '@/types'
+import type { KumonLevel } from '@/types'
+import type { Problem } from '@/services/generators/types'
 
 export default function StudyPage() {
   const { user, currentChild, logout } = useAuth()
   const navigate = useNavigate()
 
   const [inputValue, setInputValue] = useState('')
+  const [sequenceAnswers, setSequenceAnswers] = useState<Record<number, string>>({})
   const [feedback, setFeedback] = useState<{ type: 'success' | 'incorrect' | 'hint' | 'encouragement'; message: string; show: boolean }>({
     type: 'success',
     message: '',
@@ -51,6 +54,20 @@ export default function StudyPage() {
   const supportsDecimals = () => {
     // Level F worksheets 1-160 support decimal problems
     return currentLevel === 'F' && currentWorksheet <= 160
+  }
+
+  // Check if current problem is a sequence type with inline input
+  const isSequenceProblem = () => {
+    return currentProblem?.displayFormat === 'sequenceBoxes' && currentProblem?.sequenceData
+  }
+
+  // FIXED: Dynamic age group based on level (per Kumon requirements)
+  const getAgeGroup = () => {
+    if (['7A', '6A', '5A', '4A'].includes(currentLevel)) return 'preK'
+    if (['3A', '2A', 'A', 'B'].includes(currentLevel)) return 'grade1_2'
+    if (['C', 'D', 'E', 'F'].includes(currentLevel)) return 'grade3_5' // Fixed typo
+    if (['G', 'H', 'I'].includes(currentLevel)) return 'grade5_6'
+    return 'middle_school'
   }
 
   // Redirect to login if not authenticated
@@ -120,7 +137,10 @@ export default function StudyPage() {
           level: '3A',
           displayFormat: 'horizontal',
           difficulty: 1,
-          operands: [0, 0]
+          operands: [0, 0],
+          worksheetNumber: 1,
+          subtype: 'add_1_small',
+          question: 'Error loading problem'
         })
       } finally {
         setLoading(false)
@@ -180,9 +200,34 @@ export default function StudyPage() {
   }
 
   const handleSubmit = async () => {
-    if (!sessionActive || !currentProblem || !inputValue || !currentChild || !sessionId) return
+    if (!sessionActive || !currentProblem || !currentChild || !sessionId) return
 
-    const isCorrect = parseFloat(inputValue) === currentProblem.correctAnswer
+    // For sequence problems, check sequence answers; for regular problems, check inputValue
+    let isCorrect = false
+    let submittedAnswer = inputValue
+
+    if (isSequenceProblem() && currentProblem.sequenceData) {
+      // For sequence problems, check each missing position
+      const missingIndices = currentProblem.sequenceData
+        .map((item, idx) => (item.isMissing ? idx : -1))
+        .filter(idx => idx !== -1)
+
+      // Get the correct answer for the first missing position
+      const missingIdx = missingIndices[0]
+      const userAnswer = parseInt(sequenceAnswers[missingIdx] || '', 10)
+      submittedAnswer = sequenceAnswers[missingIdx] || ''
+
+      isCorrect = userAnswer === currentProblem.correctAnswer
+    } else {
+      // Regular problem - must have input value
+      if (!inputValue) return
+
+      // FIXED: Support both numeric and string answers per Kumon requirements
+      isCorrect = typeof currentProblem.correctAnswer === 'string'
+        ? inputValue.toLowerCase() === currentProblem.correctAnswer.toLowerCase()
+        : parseFloat(inputValue) === currentProblem.correctAnswer
+    }
+
     const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
 
     // Save problem attempt to database
@@ -190,7 +235,7 @@ export default function StudyPage() {
       sessionId,
       currentChild.id,
       currentProblem,
-      inputValue,
+      submittedAnswer,
       isCorrect,
       problemTimeSpent
     )
@@ -225,6 +270,7 @@ export default function StudyPage() {
       // Very quick transition for correct answers (300ms)
       setTimeout(() => {
         setInputValue('')
+        setSequenceAnswers({})
         setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
         setSessionStartTime(Date.now())
         setFeedback({ ...feedback, show: false })
@@ -254,6 +300,7 @@ export default function StudyPage() {
       // Longer pause for incorrect answers (1500ms)
       setTimeout(() => {
         setInputValue('')
+        setSequenceAnswers({})
         setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
         setFeedback({ ...feedback, show: false })
         setSessionStartTime(Date.now())
@@ -458,24 +505,52 @@ export default function StudyPage() {
 
           {currentProblem && (
             <div className="mb-6 flex justify-center">
-              <ProblemDisplay
-                problem={currentProblem}
-                studentAnswer={inputValue}
-                ageGroup="grade1_2"
+              {isSequenceProblem() && currentProblem.sequenceData ? (
+                // Sequence problems use SequenceDisplay with inline input
+                <SequenceDisplay
+                  sequenceData={currentProblem.sequenceData}
+                  onAnswerChange={setSequenceAnswers}
+                  disabled={!sessionActive}
+                  correctAnswers={[currentProblem.correctAnswer as number]}
+                />
+              ) : (
+                // Regular problems use ProblemDisplay
+                <ProblemDisplay
+                  problem={currentProblem}
+                  studentAnswer={inputValue}
+                  ageGroup={getAgeGroup()}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Only show NumberPad and InputDisplay for non-sequence problems */}
+          {!isSequenceProblem() && (
+            <div className="flex flex-col items-center gap-6">
+              <InputDisplay value={inputValue} size="xl" />
+              <NumberPad
+                onNumberClick={handleNumberClick}
+                onBackspace={handleBackspace}
+                onClear={handleClear}
+                onSubmit={handleSubmit}
+                allowDecimal={supportsDecimals()}
               />
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-6">
-            <InputDisplay value={inputValue} size="xl" />
-            <NumberPad
-              onNumberClick={handleNumberClick}
-              onBackspace={handleBackspace}
-              onClear={handleClear}
-              onSubmit={handleSubmit}
-              allowDecimal={supportsDecimals()}
-            />
-          </div>
+          {/* For sequence problems, show a submit button */}
+          {isSequenceProblem() && (
+            <div className="flex justify-center mt-4">
+              <Button
+                size="lg"
+                variant="primary"
+                onClick={handleSubmit}
+                disabled={!sessionActive || Object.keys(sequenceAnswers).length === 0}
+              >
+                Check Answer
+              </Button>
+            </div>
+          )}
 
           {/* Parent Mode Toggle */}
           <div className="mt-6 border-t border-gray-200 pt-4 text-center">
