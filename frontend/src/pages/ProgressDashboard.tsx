@@ -128,14 +128,6 @@ export default function ProgressDashboard() {
       return acc
     }, [])
 
-    // DEBUG: Log the data being passed to the chart
-    console.log('📊 Daily chart data:', dailyData)
-    console.log('📊 Sessions received:', sessions.length, sessions.map((s: any) => ({
-      created_at: s.created_at,
-      localDate: formatLocalDate(new Date(s.created_at)),
-      problems: s.problems_completed
-    })))
-
     setWorksheetProgress(progress)
     setRecentSessions(sessions.slice(0, 5))
     setDailyPracticeData(dailyData)

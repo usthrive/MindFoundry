@@ -26,9 +26,6 @@ export default function DailyPracticeChart({ data }: DailyPracticeChartProps) {
     const today = new Date()
     const days = []
 
-    // DEBUG: Log received data
-    console.log('📈 Chart received data:', data)
-
     // Create array of last 30 days
     for (let i = 29; i >= 0; i--) {
       const date = new Date(today)
@@ -38,11 +35,6 @@ export default function DailyPracticeChart({ data }: DailyPracticeChartProps) {
 
       // Find data for this date
       const dayData = data.find(d => d.date === dateStr)
-
-      // DEBUG: Log matches for today (i=0)
-      if (i === 0) {
-        console.log('📈 Today check:', { dateStr, dayData, dataKeys: data.map(d => d.date) })
-      }
 
       days.push({
         date: dateStr,
