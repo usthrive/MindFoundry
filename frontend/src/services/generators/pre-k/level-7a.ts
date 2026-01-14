@@ -27,7 +27,10 @@ function generateCountPicturesProblem(maxCount: number): Problem {
   const count = randomInt(1, maxCount)
   const object = randomChoice(COUNTING_OBJECTS)
   const plural = count === 1 ? object : `${object}s`
-  
+
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(count, 1, maxCount, 3)
+
   return {
     id: generateId(),
     level: '7A',
@@ -38,18 +41,23 @@ function generateCountPicturesProblem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: `Count the ${plural}`,
     correctAnswer: count,
+    operands: options, // Options for tap-to-select
     visualAssets: [`${object}_${count}`],
     hints: [
       'Point to each one as you count',
       `Count slowly: 1, 2, 3...`,
     ],
+    interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
 
 function generateCountDotsProblem(maxCount: number): Problem {
   const count = randomInt(1, maxCount)
   const pattern = getDotPattern(count)
-  
+
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(count, 1, maxCount, 3)
+
   return {
     id: generateId(),
     level: '7A',
@@ -60,10 +68,12 @@ function generateCountDotsProblem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: 'How many dots?',
     correctAnswer: count,
+    operands: options, // Options for tap-to-select
     visualAssets: [`dots_pattern_${pattern}`],
     hints: [
       'Touch each dot as you count',
     ],
+    interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
 
@@ -86,7 +96,7 @@ function getDotPattern(count: number): string {
 function generateMatchQuantityProblem(maxCount: number): Problem {
   const targetCount = randomInt(1, maxCount)
   const options = generateDistractorNumbers(targetCount, 1, maxCount, 3)
-  
+
   return {
     id: generateId(),
     level: '7A',
@@ -103,6 +113,7 @@ function generateMatchQuantityProblem(maxCount: number): Problem {
       'Count the objects first',
       'Find that number in the choices',
     ],
+    interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
 
@@ -118,7 +129,10 @@ function generateDistractorNumbers(target: number, min: number, max: number, cou
 function generateDotPatternRecognitionProblem(maxCount: number): Problem {
   const count = randomInt(1, maxCount)
   const pattern = getDotPattern(count)
-  
+
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(count, 1, maxCount, 3)
+
   return {
     id: generateId(),
     level: '7A',
@@ -129,11 +143,13 @@ function generateDotPatternRecognitionProblem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: 'How many dots? (Try to see it without counting one by one)',
     correctAnswer: count,
+    operands: options, // Options for tap-to-select
     visualAssets: [`dots_subitize_${pattern}_${count}`],
     hints: [
       'Look at the whole pattern',
       'Does it look like a familiar shape?',
     ],
+    interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
 

@@ -32,7 +32,9 @@ function generateCountProblem(maxCount: number): Problem {
   const count = randomInt(1, maxCount)
   const objects = ['apple', 'star', 'ball', 'flower', 'heart', 'butterfly', 'fish', 'bird']
   const object = randomChoice(objects)
-  
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(count, 1, maxCount, 3)
+
   return {
     id: generateId(),
     level: '6A',
@@ -43,8 +45,10 @@ function generateCountProblem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: `Count the ${object}s`,
     correctAnswer: count,
+    operands: options, // Options for tap-to-select
     visualAssets: [`${object}_${count}`],
     hints: ['Point to each one as you count'],
+    interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
 
@@ -54,10 +58,13 @@ function generateNumberReadingProblem(maxCount: number): Problem {
     1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five',
     6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten'
   }
-  
+
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(number, 1, maxCount, 3)
+
   const problemTypes = ['read_numeral', 'match_word', 'identify_number']
   const problemType = randomChoice(problemTypes)
-  
+
   if (problemType === 'read_numeral') {
     return {
       id: generateId(),
@@ -67,15 +74,17 @@ function generateNumberReadingProblem(maxCount: number): Problem {
       subtype: 'number_reading_to_10',
       difficulty: 1,
       displayFormat: 'horizontal',
-      question: `What number is this? ${number}`,
-      correctAnswer: numberWords[number],
+      question: `What number is this?`,
+      // FIXED: Use numeric answer - young children can't spell words
+      correctAnswer: number,
+      operands: options, // Options for tap-to-select
       hints: ['Say the number out loud'],
       visualAssets: [`numeral_${number}`],
+      interactionType: 'match' as const,
     }
   }
-  
+
   if (problemType === 'match_word') {
-    const options = generateDistractorNumbers(number, 1, maxCount, 3)
     return {
       id: generateId(),
       level: '6A',
@@ -88,9 +97,10 @@ function generateNumberReadingProblem(maxCount: number): Problem {
       correctAnswer: number,
       operands: options,
       hints: ['Look at each number and say it'],
+      interactionType: 'match' as const,
     }
   }
-  
+
   return {
     id: generateId(),
     level: '6A',
@@ -101,8 +111,10 @@ function generateNumberReadingProblem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: `Point to the number ${number}`,
     correctAnswer: number,
+    operands: options,
     hints: ['Find the number that looks like this'],
     visualAssets: [`numeral_${number}`],
+    interactionType: 'match' as const,
   }
 }
 
@@ -110,7 +122,9 @@ function generateDotRecognitionProblem(maxCount: number): Problem {
   const count = randomInt(1, maxCount)
   const patterns = ['dice', 'random', 'line', 'grid']
   const pattern = randomChoice(patterns)
-  
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(count, 1, maxCount, 3)
+
   return {
     id: generateId(),
     level: '6A',
@@ -121,18 +135,22 @@ function generateDotRecognitionProblem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: 'How many dots do you see?',
     correctAnswer: count,
+    operands: options, // Options for tap-to-select
     visualAssets: [`dots_${pattern}_${count}`],
     hints: [
       'Look at the pattern',
       'You can count if you need to',
     ],
+    interactionType: 'match' as const,
   }
 }
 
 function generateCount20_30Problem(maxCount: number): Problem {
   const count = randomInt(11, maxCount)
   const object = randomChoice(['block', 'bead', 'sticker', 'coin'])
-  
+  // Generate distractor options for tap-to-select UI
+  const options = generateDistractorNumbers(count, 11, maxCount, 3)
+
   return {
     id: generateId(),
     level: '6A',
@@ -143,11 +161,13 @@ function generateCount20_30Problem(maxCount: number): Problem {
     displayFormat: 'horizontal',
     question: `Count all the ${object}s`,
     correctAnswer: count,
+    operands: options, // Options for tap-to-select
     visualAssets: [`${object}_grid_${count}`],
     hints: [
       'Count in groups of 10',
       'Count 10, then count the rest',
     ],
+    interactionType: 'match' as const,
   }
 }
 

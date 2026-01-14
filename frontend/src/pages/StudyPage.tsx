@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card'
 import Feedback from '@/components/feedback/Feedback'
 import NumberPad from '@/components/input/NumberPad'
 import InputDisplay from '@/components/input/InputDisplay'
+import TapToSelect from '@/components/input/TapToSelect'
 import ProblemDisplay from '@/components/problem/ProblemDisplay'
 import SequenceDisplay from '@/components/ui/SequenceDisplay'
 import Timer from '@/components/session/Timer'
@@ -65,6 +66,16 @@ export default function StudyPage() {
   // Check if current problem is a sequence type with inline input
   const isSequenceProblem = () => {
     return currentProblem?.displayFormat === 'sequenceBoxes' && currentProblem?.sequenceData
+  }
+
+  // Check if current problem uses tap-to-select (Pre-K levels 7A, 6A)
+  const isTapToSelectProblem = () => {
+    return currentProblem?.interactionType === 'match' && Array.isArray(currentProblem?.operands)
+  }
+
+  // Check if negative numbers are supported (Level G+ introduces integers)
+  const supportsNegatives = () => {
+    return ['G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].includes(currentLevel)
   }
 
   // FIXED: Dynamic age group based on level (per Kumon requirements)
@@ -174,6 +185,15 @@ export default function StudyPage() {
         if (!inputValue.includes('/')) {
           setInputValue(prev => prev + '/')
         }
+      } else if (e.key === '-' && supportsNegatives()) {
+        e.preventDefault()
+        // Toggle negative sign at start of input
+        setInputValue(prev => {
+          if (prev.startsWith('-')) {
+            return prev.slice(1)
+          }
+          return '-' + prev
+        })
       } else if (e.key === 'Enter') {
         e.preventDefault()
         handleSubmit()
@@ -191,8 +211,16 @@ export default function StudyPage() {
   }, [inputValue, currentProblem, sessionActive])
 
   const handleNumberClick = (num: number) => {
-    if (num === -1) {
-      setInputValue('')
+    if (num === -1) { // Negative sign signal (Level G+)
+      if (supportsNegatives()) {
+        // Toggle negative sign at start of input
+        setInputValue(prev => {
+          if (prev.startsWith('-')) {
+            return prev.slice(1) // Remove negative sign
+          }
+          return '-' + prev // Add negative sign
+        })
+      }
     } else if (num === -2) { // Decimal point signal
       if (supportsDecimals() && !inputValue.includes('.')) {
         setInputValue(prev => prev === '' ? '0.' : prev + '.')
@@ -212,6 +240,82 @@ export default function StudyPage() {
 
   const handleClear = () => {
     setInputValue('')
+  }
+
+  // Handler for TapToSelect component (Pre-K levels)
+  const handleTapToSelect = async (value: number) => {
+    if (!sessionActive || !currentProblem || !currentChild || !sessionId) return
+
+    const isCorrect = value === currentProblem.correctAnswer
+    const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
+
+    // Save problem attempt to database
+    await saveProblemAttempt(
+      sessionId,
+      currentChild.id,
+      currentProblem,
+      String(value),
+      isCorrect,
+      problemTimeSpent
+    )
+
+    if (isCorrect) {
+      const newCompleted = problemsCompleted + 1
+      const newCorrect = problemsCorrect + 1
+
+      setProblemsCorrect(newCorrect)
+      setProblemsCompleted(newCompleted)
+
+      // Check if session is complete
+      if (newCompleted >= 10) {
+        setSessionActive(false)
+        setFeedback({
+          type: 'success',
+          message: `Great job! You got ${newCorrect} out of 10 correct!`,
+          show: true
+        })
+
+        setTimeout(() => {
+          handleSessionComplete(newCorrect, newCompleted)
+        }, 3000)
+        return
+      }
+
+      setFeedback({ type: 'success', message: 'Great job!', show: true })
+
+      // Brief pause before next problem
+      setTimeout(() => {
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+        setSessionStartTime(Date.now())
+        setFeedback({ ...feedback, show: false })
+      }, 1000)
+    } else {
+      const newCompleted = problemsCompleted + 1
+      setProblemsCompleted(newCompleted)
+
+      if (newCompleted >= 10) {
+        setSessionActive(false)
+        setFeedback({
+          type: 'success',
+          message: `Good try! You got ${problemsCorrect} out of 10 correct!`,
+          show: true
+        })
+
+        setTimeout(() => {
+          handleSessionComplete(problemsCorrect, newCompleted)
+        }, 3000)
+        return
+      }
+
+      setFeedback({ type: 'incorrect', message: `The answer is ${currentProblem.correctAnswer}`, show: true })
+
+      // Longer pause for incorrect to learn
+      setTimeout(() => {
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+        setFeedback({ ...feedback, show: false })
+        setSessionStartTime(Date.now())
+      }, 2000)
+    }
   }
 
   const handleSubmit = async () => {
@@ -567,18 +671,34 @@ export default function StudyPage() {
             </div>
           )}
 
-          {/* Only show NumberPad and InputDisplay for non-sequence problems */}
+          {/* Input controls: TapToSelect for Pre-K, NumberPad for others */}
           {!isSequenceProblem() && (
             <div className="flex flex-col items-center gap-6">
-              <InputDisplay value={inputValue} size="xl" />
-              <NumberPad
-                onNumberClick={handleNumberClick}
-                onBackspace={handleBackspace}
-                onClear={handleClear}
-                onSubmit={handleSubmit}
-                allowDecimal={supportsDecimals()}
-                allowFraction={supportsFractions()}
-              />
+              {isTapToSelectProblem() && currentProblem?.operands ? (
+                // Pre-K levels (7A, 6A): Tap-to-select UI for young children
+                <TapToSelect
+                  options={currentProblem.operands}
+                  onSelect={handleTapToSelect}
+                  correctAnswer={currentProblem.correctAnswer as number}
+                  disabled={!sessionActive}
+                  showFeedback={true}
+                  size="auto"
+                />
+              ) : (
+                // Regular levels: NumberPad with typed input
+                <>
+                  <InputDisplay value={inputValue} size="xl" />
+                  <NumberPad
+                    onNumberClick={handleNumberClick}
+                    onBackspace={handleBackspace}
+                    onClear={handleClear}
+                    onSubmit={handleSubmit}
+                    allowDecimal={supportsDecimals()}
+                    allowFraction={supportsFractions()}
+                    allowNegative={supportsNegatives()}
+                  />
+                </>
+              )}
             </div>
           )}
 
