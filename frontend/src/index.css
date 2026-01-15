@@ -67,6 +67,11 @@
 }
 
 @layer utilities {
+  /* Safe area inset for devices with notches/home bars */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
   /* Custom animations */
   @keyframes fadeIn {
     from {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import Button from '@/components/ui/Button'
@@ -13,6 +13,9 @@ import Timer from '@/components/session/Timer'
 import SessionProgress from '@/components/session/SessionProgress'
 import WorksheetInfo from '@/components/session/WorksheetInfo'
 import ParentModeChallenge from '@/components/auth/ParentModeChallenge'
+import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView'
+import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
+import { getProblemsPerPage, usesTapToSelect } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
 import {
   getCurrentPosition,
@@ -50,6 +53,9 @@ export default function StudyPage() {
   const [parentMode, setParentMode] = useState(false)
   const [showParentChallenge, setShowParentChallenge] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [worksheetMode, setWorksheetMode] = useState(true) // Multi-problem view mode
+  const [canSubmitWorksheet, setCanSubmitWorksheet] = useState(false) // All questions answered
+  const worksheetViewRef = useRef<WorksheetViewRef>(null)
 
   // Check if current problem supports decimals
   const supportsDecimals = () => {
@@ -71,6 +77,16 @@ export default function StudyPage() {
   // Check if current problem uses tap-to-select (Pre-K levels 7A, 6A)
   const isTapToSelectProblem = () => {
     return currentProblem?.interactionType === 'match' && Array.isArray(currentProblem?.operands)
+  }
+
+  // Check if level should use worksheet mode (multiple problems per page)
+  const shouldUseWorksheetMode = () => {
+    // Pre-K levels with TapToSelect don't use worksheet mode
+    if (usesTapToSelect(currentLevel)) return false
+    // Levels with 1 problem per page don't need worksheet mode
+    if (getProblemsPerPage(currentLevel) === 1) return false
+    // Otherwise use worksheet mode if enabled
+    return worksheetMode
   }
 
   // Check if negative numbers are supported (Level G+ introduces integers)
@@ -167,48 +183,69 @@ export default function StudyPage() {
     loadProgress()
   }, [currentChild])
 
-  // Keyboard input support
+  // Keyboard input support - handles both single-problem and worksheet modes
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!sessionActive) return
 
+      const worksheetModeActive = shouldUseWorksheetMode()
+
       if (e.key >= '0' && e.key <= '9') {
         e.preventDefault()
-        handleNumberClick(parseInt(e.key))
+        if (worksheetModeActive) {
+          handleWorksheetInput(parseInt(e.key))
+        } else {
+          handleNumberClick(parseInt(e.key))
+        }
       } else if (e.key === '.' && supportsDecimals()) {
         e.preventDefault()
-        if (!inputValue.includes('.')) {
+        if (worksheetModeActive) {
+          handleWorksheetInput('decimal')
+        } else if (!inputValue.includes('.')) {
           setInputValue(prev => prev === '' ? '0.' : prev + '.')
         }
       } else if (e.key === '/' && supportsFractions()) {
         e.preventDefault()
-        if (!inputValue.includes('/')) {
+        if (worksheetModeActive) {
+          handleWorksheetInput('fraction')
+        } else if (!inputValue.includes('/')) {
           setInputValue(prev => prev + '/')
         }
       } else if (e.key === '-' && supportsNegatives()) {
         e.preventDefault()
-        // Toggle negative sign at start of input
-        setInputValue(prev => {
-          if (prev.startsWith('-')) {
-            return prev.slice(1)
-          }
-          return '-' + prev
-        })
+        if (worksheetModeActive) {
+          handleWorksheetInput('negative')
+        } else {
+          // Toggle negative sign at start of input
+          setInputValue(prev => prev.startsWith('-') ? prev.slice(1) : '-' + prev)
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        handleSubmit()
+        if (worksheetModeActive) {
+          handleWorksheetInput('submit')
+        } else {
+          handleSubmit()
+        }
       } else if (e.key === 'Backspace') {
         e.preventDefault()
-        handleBackspace()
+        if (worksheetModeActive) {
+          handleWorksheetInput('backspace')
+        } else {
+          handleBackspace()
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault()
-        handleClear()
+        if (worksheetModeActive) {
+          handleWorksheetInput('clear')
+        } else {
+          handleClear()
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [inputValue, currentProblem, sessionActive])
+  }, [inputValue, currentProblem, sessionActive, worksheetMode, currentLevel])
 
   const handleNumberClick = (num: number) => {
     if (num === -1) { // Negative sign signal (Level G+)
@@ -460,12 +497,14 @@ export default function StudyPage() {
 
     const totalTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
 
-    // Save to database (pass childId to update daily practice and streak)
-    await completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id)
-    await updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems)
-    await updateChildStats(currentChild.id, totalProblems, score)
+    // Run independent database operations in parallel for faster completion
+    await Promise.all([
+      completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id),
+      updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems),
+      updateChildStats(currentChild.id, totalProblems, score),
+    ])
 
-    // Check and award any new badges
+    // Check and award any new badges (depends on stats being updated)
     const updatedChild = await getChildProfile(currentChild.id)
     if (updatedChild) {
       const newBadges = await checkAndAwardBadges(currentChild.id, {
@@ -475,7 +514,7 @@ export default function StudyPage() {
         streak: updatedChild.streak
       })
       if (newBadges.length > 0) {
-        console.log(`🏅 New badges earned: ${newBadges.map(b => b.display_name).join(', ')}`)
+        console.log(`New badges earned: ${newBadges.map(b => b.display_name).join(', ')}`)
       }
     }
 
@@ -483,7 +522,7 @@ export default function StudyPage() {
     const nextWorksheet = currentWorksheet + 1
     await updateCurrentPosition(currentChild.id, currentLevel, nextWorksheet)
 
-    // Reset local state
+    // Reset local state and create new session
     setProblemsCompleted(0)
     setProblemsCorrect(0)
     setCurrentWorksheet(nextWorksheet)
@@ -491,10 +530,35 @@ export default function StudyPage() {
     setCurrentProblem(generateProblem(currentLevel, nextWorksheet))
     setFeedback({ ...feedback, show: false })
 
-    // Create new session
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+  }
+
+  // Handler for worksheet page completion (multi-problem view)
+  const handleWorksheetPageComplete = (results: { correct: number; total: number }) => {
+    setProblemsCorrect(prev => prev + results.correct)
+    setProblemsCompleted(prev => prev + results.total)
+  }
+
+  // Handler for full worksheet completion (multi-problem view)
+  const handleWorksheetComplete = async (totalCorrect: number, totalProblems: number) => {
+    setSessionActive(false)
+    setFeedback({
+      type: 'success',
+      message: `🎉 Worksheet Complete! You got ${totalCorrect} out of ${totalProblems} correct!`,
+      show: true
+    })
+
+    // Wait briefly then handle session complete (reduced from 3000ms for faster transition)
+    setTimeout(() => {
+      handleSessionComplete(totalCorrect, totalProblems)
+    }, 1500)
+  }
+
+  // Handler for worksheet number pad input
+  const handleWorksheetInput = (value: number | string) => {
+    worksheetViewRef.current?.handleInput(value)
   }
 
   const handleLevelChange = async (level: KumonLevel) => {
@@ -587,8 +651,11 @@ export default function StudyPage() {
     )
   }
 
+  // Calculate if we need bottom padding for fixed numberpad
+  const needsFixedNumberpad = shouldUseWorksheetMode()
+
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-8 max-w-full overflow-x-hidden">
+    <div className={`min-h-screen bg-background p-4 sm:p-8 max-w-full overflow-x-hidden ${needsFixedNumberpad ? 'pb-[180px] sm:pb-[200px]' : ''}`}>
       {/* Parent Mode Challenge Modal */}
       <ParentModeChallenge
         isOpen={showParentChallenge}
@@ -646,74 +713,107 @@ export default function StudyPage() {
             <SessionProgress completed={problemsCompleted} total={10} correct={problemsCorrect} />
           </div>
 
-          <h2 className="mb-6 text-center text-xl sm:text-2xl font-semibold text-gray-700">
-            Solve the problem:
-          </h2>
+          {/* Worksheet Mode: Multi-problem view with fixed numberpad */}
+          {shouldUseWorksheetMode() ? (
+            <>
+              <h2 className="mb-6 text-center text-xl sm:text-2xl font-semibold text-gray-700">
+                Solve the problems:
+              </h2>
 
-          {currentProblem && (
-            <div className="mb-6 flex justify-center">
-              {isSequenceProblem() && currentProblem.sequenceData ? (
-                // Sequence problems use SequenceDisplay with inline input
-                <SequenceDisplay
-                  sequenceData={currentProblem.sequenceData}
-                  onAnswerChange={setSequenceAnswers}
-                  disabled={!sessionActive}
-                  correctAnswers={[currentProblem.correctAnswer as number]}
-                />
-              ) : (
-                // Regular problems use ProblemDisplay
-                <ProblemDisplay
-                  problem={currentProblem}
-                  studentAnswer={inputValue}
-                  ageGroup={getAgeGroup()}
-                />
+              <WorksheetView
+                ref={worksheetViewRef}
+                level={currentLevel}
+                worksheetNumber={currentWorksheet}
+                onPageComplete={handleWorksheetPageComplete}
+                onWorksheetComplete={handleWorksheetComplete}
+                onAllAnsweredChange={setCanSubmitWorksheet}
+                sessionActive={sessionActive}
+              />
+
+              {/* Fixed Worksheet NumberPad at bottom of viewport */}
+              <WorksheetNumberPad
+                onInput={handleWorksheetInput}
+                allowDecimal={supportsDecimals()}
+                allowFraction={supportsFractions()}
+                allowNegative={supportsNegatives()}
+                disabled={!sessionActive}
+                submitDisabled={!canSubmitWorksheet}
+                fixed={true}
+              />
+            </>
+          ) : (
+            <>
+              {/* Single Problem Mode: Original view */}
+              <h2 className="mb-6 text-center text-xl sm:text-2xl font-semibold text-gray-700">
+                Solve the problem:
+              </h2>
+
+              {currentProblem && (
+                <div className="mb-6 flex justify-center">
+                  {isSequenceProblem() && currentProblem.sequenceData ? (
+                    // Sequence problems use SequenceDisplay with inline input
+                    <SequenceDisplay
+                      sequenceData={currentProblem.sequenceData}
+                      onAnswerChange={setSequenceAnswers}
+                      disabled={!sessionActive}
+                      correctAnswers={[currentProblem.correctAnswer as number]}
+                    />
+                  ) : (
+                    // Regular problems use ProblemDisplay
+                    <ProblemDisplay
+                      problem={currentProblem}
+                      studentAnswer={inputValue}
+                      ageGroup={getAgeGroup()}
+                    />
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Input controls: TapToSelect for Pre-K, NumberPad for others */}
-          {!isSequenceProblem() && (
-            <div className="flex flex-col items-center gap-6">
-              {isTapToSelectProblem() && currentProblem?.operands ? (
-                // Pre-K levels (7A, 6A): Tap-to-select UI for young children
-                <TapToSelect
-                  options={currentProblem.operands}
-                  onSelect={handleTapToSelect}
-                  correctAnswer={currentProblem.correctAnswer as number}
-                  disabled={!sessionActive}
-                  showFeedback={true}
-                  size="auto"
-                />
-              ) : (
-                // Regular levels: NumberPad with typed input
-                <>
-                  <InputDisplay value={inputValue} size="xl" />
-                  <NumberPad
-                    onNumberClick={handleNumberClick}
-                    onBackspace={handleBackspace}
-                    onClear={handleClear}
-                    onSubmit={handleSubmit}
-                    allowDecimal={supportsDecimals()}
-                    allowFraction={supportsFractions()}
-                    allowNegative={supportsNegatives()}
-                  />
-                </>
+              {/* Input controls: TapToSelect for Pre-K, NumberPad for others */}
+              {!isSequenceProblem() && (
+                <div className="flex flex-col items-center gap-6">
+                  {isTapToSelectProblem() && currentProblem?.operands ? (
+                    // Pre-K levels (7A, 6A): Tap-to-select UI for young children
+                    <TapToSelect
+                      options={currentProblem.operands}
+                      onSelect={handleTapToSelect}
+                      correctAnswer={currentProblem.correctAnswer as number}
+                      disabled={!sessionActive}
+                      showFeedback={true}
+                      size="auto"
+                    />
+                  ) : (
+                    // Regular levels: NumberPad with typed input
+                    <>
+                      <InputDisplay value={inputValue} size="xl" />
+                      <NumberPad
+                        onNumberClick={handleNumberClick}
+                        onBackspace={handleBackspace}
+                        onClear={handleClear}
+                        onSubmit={handleSubmit}
+                        allowDecimal={supportsDecimals()}
+                        allowFraction={supportsFractions()}
+                        allowNegative={supportsNegatives()}
+                      />
+                    </>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* For sequence problems, show a submit button */}
-          {isSequenceProblem() && (
-            <div className="flex justify-center mt-4">
-              <Button
-                size="lg"
-                variant="primary"
-                onClick={handleSubmit}
-                disabled={!sessionActive || Object.keys(sequenceAnswers).length === 0}
-              >
-                Check Answer
-              </Button>
-            </div>
+              {/* For sequence problems, show a submit button */}
+              {isSequenceProblem() && (
+                <div className="flex justify-center mt-4">
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    onClick={handleSubmit}
+                    disabled={!sessionActive || Object.keys(sequenceAnswers).length === 0}
+                  >
+                    Check Answer
+                  </Button>
+                </div>
+              )}
+            </>
           )}
 
           {/* Parent Mode Toggle */}
@@ -726,6 +826,31 @@ export default function StudyPage() {
               {parentMode ? '🔓 Parent Mode ON' : '🔒 Parent Controls'}
             </Button>
           </div>
+
+          {/* View Mode Toggle - Only visible in Parent Mode */}
+          {parentMode && !usesTapToSelect(currentLevel) && (
+            <div className="mt-4 border-t border-gray-200 pt-4 text-center">
+              <p className="mb-2 text-xs sm:text-sm font-medium text-gray-600">
+                View Mode:
+              </p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant={worksheetMode ? 'primary' : 'ghost'}
+                  onClick={() => setWorksheetMode(true)}
+                >
+                  Multi-Problem
+                </Button>
+                <Button
+                  size="sm"
+                  variant={!worksheetMode ? 'primary' : 'ghost'}
+                  onClick={() => setWorksheetMode(false)}
+                >
+                  Single Problem
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Worksheet Jump Controls - Only visible in Parent Mode */}
           {parentMode && (
