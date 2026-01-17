@@ -1,5 +1,6 @@
 import type { Problem, LevelBProblemType } from '../types'
 import { randomInt, generateId, hasCarry, hasBorrow } from '../utils'
+import { generateAdditionHints, generateSubtractionHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelBProblemType
@@ -140,6 +141,7 @@ function generateAdditionProblem(config: ReturnType<typeof getWorksheetConfig>):
     correctAnswer: sum,
     operands: [a, b],
     hints,
+    graduatedHints: generateAdditionHints([a, b], 'B'),
   }
 }
 
@@ -178,6 +180,7 @@ function generateSubtractionProblem(config: ReturnType<typeof getWorksheetConfig
     correctAnswer: difference,
     operands: [a, b],
     hints,
+    graduatedHints: generateSubtractionHints([a, b], 'B'),
   }
 }
 

@@ -1,5 +1,6 @@
 import type { Problem, Level7AProblemType } from '../types'
 import { randomInt, randomChoice, generateId } from '../utils'
+import { generateCountingHints } from '../hintGenerator'
 
 const COUNTING_OBJECTS = ['apple', 'star', 'ball', 'flower', 'heart', 'cat', 'dog', 'fish', 'bird', 'tree']
 
@@ -47,6 +48,7 @@ function generateCountPicturesProblem(maxCount: number): Problem {
       'Point to each one as you count',
       `Count slowly: 1, 2, 3...`,
     ],
+    graduatedHints: generateCountingHints(count, '7A'),
     interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
@@ -73,6 +75,7 @@ function generateCountDotsProblem(maxCount: number): Problem {
     hints: [
       'Touch each dot as you count',
     ],
+    graduatedHints: generateCountingHints(count, '7A'),
     interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
@@ -113,6 +116,7 @@ function generateMatchQuantityProblem(maxCount: number): Problem {
       'Count the objects first',
       'Find that number in the choices',
     ],
+    graduatedHints: generateCountingHints(targetCount, '7A'),
     interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
@@ -149,6 +153,7 @@ function generateDotPatternRecognitionProblem(maxCount: number): Problem {
       'Look at the whole pattern',
       'Does it look like a familiar shape?',
     ],
+    graduatedHints: generateCountingHints(count, '7A'),
     interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }

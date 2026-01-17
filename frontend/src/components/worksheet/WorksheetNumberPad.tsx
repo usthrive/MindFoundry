@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 export interface WorksheetNumberPadProps {
@@ -12,6 +14,12 @@ export interface WorksheetNumberPadProps {
   size?: 'compact' | 'medium' | 'large' | 'auto'
   /** Fixed to bottom of viewport */
   fixed?: boolean
+  /** Allow collapsing the numberpad (only works when fixed=true) */
+  collapsible?: boolean
+  /** External control of collapsed state */
+  collapsed?: boolean
+  /** Callback when collapse state changes */
+  onCollapsedChange?: (collapsed: boolean) => void
 }
 
 /**
@@ -21,6 +29,7 @@ export interface WorksheetNumberPadProps {
  * - Sends string signals for special keys ('backspace', 'clear', 'negative', 'submit', etc.)
  * - Optional fixed positioning at bottom of viewport
  * - Dynamic button sizing based on viewport height
+ * - Collapsible mode to reveal BottomNav when needed
  * - Is designed to work with the WorksheetView component
  */
 export default function WorksheetNumberPad({
@@ -33,8 +42,24 @@ export default function WorksheetNumberPad({
   className,
   size = 'auto',
   fixed = false,
+  collapsible = false,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
 }: WorksheetNumberPadProps) {
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+  // Internal collapsed state (if not externally controlled)
+  const [internalCollapsed, setInternalCollapsed] = useState(false)
+  const isCollapsed = controlledCollapsed ?? internalCollapsed
+
+  const handleToggleCollapse = () => {
+    const newCollapsed = !isCollapsed
+    if (onCollapsedChange) {
+      onCollapsedChange(newCollapsed)
+    } else {
+      setInternalCollapsed(newCollapsed)
+    }
+  }
 
   // Dynamic sizing using viewport height for fixed mode
   // Button height: clamp(40px, 5.5vh, 48px) - compact scaling for fixed mode
@@ -145,7 +170,7 @@ export default function WorksheetNumberPad({
 
   const content = (
     <div className={cn(
-      'w-full mx-auto',
+      'w-full mx-auto relative',
       getMaxWidthClasses(),
       !fixed && className
     )}>
@@ -277,12 +302,66 @@ export default function WorksheetNumberPad({
     </div>
   )
 
-  // Wrap in fixed container if needed
+  // Fixed mode with collapsible support
   if (fixed) {
     return (
-      <div className={cn(fixedContainerClasses, className)}>
-        {content}
-      </div>
+      <AnimatePresence mode="wait">
+        {isCollapsed && collapsible ? (
+          // Collapsed state: floating expand button on the side
+          <motion.button
+            key="collapsed"
+            initial={{ scale: 0, x: 50 }}
+            animate={{ scale: 1, x: 0 }}
+            exit={{ scale: 0, x: 50 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            onClick={handleToggleCollapse}
+            className={cn(
+              'fixed bottom-20 right-4 z-50',
+              'w-14 h-14 rounded-full',
+              'bg-primary text-white shadow-lg',
+              'flex items-center justify-center',
+              'touch-manipulation select-none',
+              'hover:bg-primary/90',
+              className
+            )}
+            aria-label="Show number pad"
+            type="button"
+          >
+            <span className="text-2xl">123</span>
+          </motion.button>
+        ) : (
+          // Expanded state: full number pad with collapse button on right
+          <motion.div
+            key="expanded"
+            initial={{ y: 200, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 200, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className={cn(fixedContainerClasses, 'flex items-start justify-center', className)}
+          >
+            {content}
+            {/* Collapse toggle button - positioned to the right of the numberpad */}
+            {collapsible && (
+              <button
+                onClick={handleToggleCollapse}
+                className={cn(
+                  'ml-2 mt-1',
+                  'w-10 h-10 flex items-center justify-center',
+                  'bg-gray-200 hover:bg-gray-300 rounded-full',
+                  'text-gray-600 hover:text-gray-800',
+                  'shadow-md transition-colors touch-manipulation'
+                )}
+                aria-label="Minimize number pad"
+                type="button"
+              >
+                <span className="text-lg font-bold">▼</span>
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     )
   }
 

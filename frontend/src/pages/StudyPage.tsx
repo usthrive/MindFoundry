@@ -15,6 +15,7 @@ import WorksheetInfo from '@/components/session/WorksheetInfo'
 import ParentModeChallenge from '@/components/auth/ParentModeChallenge'
 import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
+import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { getProblemsPerPage, usesTapToSelect } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
 import {
@@ -28,8 +29,9 @@ import {
   getChildProfile
 } from '@/services/progressService'
 import { checkAndAwardBadges } from '@/utils/badgeSystem'
-import type { KumonLevel } from '@/types'
+import type { KumonLevel, HintLevel } from '@/types'
 import type { Problem } from '@/services/generators/types'
+import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
 
 export default function StudyPage() {
   const { user, currentChild, logout } = useAuth()
@@ -45,6 +47,10 @@ export default function StudyPage() {
   const [currentProblem, setCurrentProblem] = useState<Problem | null>(null)
   const [problemsCompleted, setProblemsCompleted] = useState(0)
   const [problemsCorrect, setProblemsCorrect] = useState(0)
+  // Detailed attempt tracking for scorecard
+  const [firstTryCorrect, setFirstTryCorrect] = useState(0)    // Correct on 1st attempt
+  const [withHintsCorrect, setWithHintsCorrect] = useState(0)  // Correct after hints
+  const [totalIncorrect, setTotalIncorrect] = useState(0)      // Never got correct
   const [currentLevel, setCurrentLevel] = useState<KumonLevel>('A')
   const [currentWorksheet, setCurrentWorksheet] = useState(1)
   const [sessionActive, setSessionActive] = useState(true)
@@ -56,6 +62,11 @@ export default function StudyPage() {
   const [worksheetMode, setWorksheetMode] = useState(true) // Multi-problem view mode
   const [canSubmitWorksheet, setCanSubmitWorksheet] = useState(false) // All questions answered
   const worksheetViewRef = useRef<WorksheetViewRef>(null)
+
+  // Hint system state for single-problem mode
+  const [attemptCount, setAttemptCount] = useState(0)  // Wrong attempts for current problem
+  const [currentHintLevel, setCurrentHintLevel] = useState<HintLevel | null>(null)
+  const [showTeaching, setShowTeaching] = useState(false)  // Full teaching modal visible
 
   // Check if current problem supports decimals
   const supportsDecimals = () => {
@@ -222,7 +233,7 @@ export default function StudyPage() {
       } else if (e.key === 'Enter') {
         e.preventDefault()
         if (worksheetModeActive) {
-          handleWorksheetInput('submit')
+          handleWorksheetInput('enter')  // Navigate to next question or submit if all answered
         } else {
           handleSubmit()
         }
@@ -286,14 +297,19 @@ export default function StudyPage() {
     const isCorrect = value === currentProblem.correctAnswer
     const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
 
-    // Save problem attempt to database
+    // Save problem attempt to database with hints tracking
     await saveProblemAttempt(
       sessionId,
       currentChild.id,
       currentProblem,
       String(value),
       isCorrect,
-      problemTimeSpent
+      problemTimeSpent,
+      {
+        attemptsCount: attemptCount + 1,
+        firstAttemptCorrect: attemptCount === 0,
+        hintLevelReached: currentHintLevel
+      }
     )
 
     if (isCorrect) {
@@ -414,14 +430,19 @@ export default function StudyPage() {
 
     const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
 
-    // Save problem attempt to database
+    // Save problem attempt to database with hints tracking
     await saveProblemAttempt(
       sessionId,
       currentChild.id,
       currentProblem,
       submittedAnswer,
       isCorrect,
-      problemTimeSpent
+      problemTimeSpent,
+      {
+        attemptsCount: attemptCount + 1,
+        firstAttemptCorrect: attemptCount === 0,
+        hintLevelReached: currentHintLevel
+      }
     )
 
     if (isCorrect) {
@@ -451,45 +472,85 @@ export default function StudyPage() {
       // Quick checkmark for correct answers
       setFeedback({ type: 'success', message: '✓', show: true })
 
-      // Very quick transition for correct answers (300ms)
+      // Reset hint state and move to next problem
       setTimeout(() => {
         setInputValue('')
         setSequenceAnswers({})
+        setAttemptCount(0)  // Reset attempt count for new problem
+        setCurrentHintLevel(null)
         setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
         setSessionStartTime(Date.now())
         setFeedback({ ...feedback, show: false })
       }, 300)
     } else {
-      const newCompleted = problemsCompleted + 1
-      setProblemsCompleted(newCompleted)
+      // Wrong answer - implement graduated hint system
+      const newAttemptCount = attemptCount + 1
+      setAttemptCount(newAttemptCount)
 
-      if (newCompleted >= 10) {
-        setSessionActive(false)
-        setFeedback({
-          type: 'success',
-          message: `🎉 Session Complete! You got ${problemsCorrect} out of 10 correct!`,
-          show: true
-        })
+      if (newAttemptCount === 1) {
+        // 1st wrong answer: Show micro-hint, allow retry
+        setCurrentHintLevel('micro')
+        setFeedback({ type: 'hint', message: 'Try again with a hint!', show: true })
+        setInputValue('')  // Clear input for retry
+      } else if (newAttemptCount === 2) {
+        // 2nd wrong answer: Show visual hint, allow retry
+        setCurrentHintLevel('visual')
+        setFeedback({ type: 'hint', message: 'Watch the hint carefully!', show: true })
+        setInputValue('')  // Clear input for retry
+      } else {
+        // 3rd wrong answer: Show full teaching, then move on
+        setCurrentHintLevel('teaching')
+        setShowTeaching(true)
+        setFeedback({ type: 'incorrect', message: 'Let me teach you!', show: true })
         setInputValue('')
 
-        setTimeout(() => {
-          handleSessionComplete(problemsCorrect, newCompleted)
-        }, 3000)
-        return
+        // Mark problem as completed (incorrect) and move on after teaching
+        const newCompleted = problemsCompleted + 1
+        setProblemsCompleted(newCompleted)
+
+        // Check if session is complete
+        if (newCompleted >= 10) {
+          // Will handle session complete after teaching modal closes
+        }
       }
-
-      // Longer hold for incorrect answers
-      setFeedback({ type: 'incorrect', message: 'Try again', show: true })
-
-      // Longer pause for incorrect answers (1500ms)
-      setTimeout(() => {
-        setInputValue('')
-        setSequenceAnswers({})
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
-        setFeedback({ ...feedback, show: false })
-        setSessionStartTime(Date.now())
-      }, 1500)
     }
+  }
+
+  // Handle completing full teaching (after 3rd wrong in single-problem mode)
+  const handleSingleProblemTeachingComplete = () => {
+    setShowTeaching(false)
+    setCurrentHintLevel(null)
+    setAttemptCount(0)
+    setFeedback({ ...feedback, show: false })
+
+    // Check if session is complete
+    if (problemsCompleted >= 10) {
+      setSessionActive(false)
+      setFeedback({
+        type: 'success',
+        message: `🎉 Session Complete! You got ${problemsCorrect} out of 10 correct!`,
+        show: true
+      })
+
+      setTimeout(() => {
+        handleSessionComplete(problemsCorrect, problemsCompleted)
+      }, 2000)
+      return
+    }
+
+    // Move to next problem
+    setTimeout(() => {
+      setInputValue('')
+      setSequenceAnswers({})
+      setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+      setSessionStartTime(Date.now())
+    }, 500)
+  }
+
+  // Dismiss hint (for micro/visual hints in single-problem mode)
+  const dismissHint = () => {
+    setCurrentHintLevel(null)
+    setFeedback({ ...feedback, show: false })
   }
 
   const handleSessionComplete = async (score: number, totalProblems: number) => {
@@ -525,6 +586,9 @@ export default function StudyPage() {
     // Reset local state and create new session
     setProblemsCompleted(0)
     setProblemsCorrect(0)
+    setFirstTryCorrect(0)
+    setWithHintsCorrect(0)
+    setTotalIncorrect(0)
     setCurrentWorksheet(nextWorksheet)
     setSessionActive(true)
     setCurrentProblem(generateProblem(currentLevel, nextWorksheet))
@@ -536,17 +600,72 @@ export default function StudyPage() {
   }
 
   // Handler for worksheet page completion (multi-problem view)
-  const handleWorksheetPageComplete = (results: { correct: number; total: number }) => {
+  const handleWorksheetPageComplete = async (results: {
+    correct: number
+    total: number
+    answers: Record<number, string>
+    problemAttempts: ProblemAttemptData[]
+  }) => {
     setProblemsCorrect(prev => prev + results.correct)
     setProblemsCompleted(prev => prev + results.total)
+
+    // Track detailed metrics for scorecard
+    let pageFirstTry = 0
+    let pageWithHints = 0
+    let pageIncorrect = 0
+
+    for (const attempt of results.problemAttempts) {
+      if (attempt.isCorrect) {
+        if (attempt.firstAttemptCorrect) {
+          pageFirstTry++
+        } else {
+          pageWithHints++
+        }
+      } else {
+        pageIncorrect++
+      }
+    }
+
+    setFirstTryCorrect(prev => prev + pageFirstTry)
+    setWithHintsCorrect(prev => prev + pageWithHints)
+    setTotalIncorrect(prev => prev + pageIncorrect)
+
+    // Save each problem attempt to database with hints/attempt tracking
+    if (sessionId && currentChild) {
+      for (const attempt of results.problemAttempts) {
+        await saveProblemAttempt(
+          sessionId,
+          currentChild.id,
+          attempt.problem,
+          attempt.answer,
+          attempt.isCorrect,
+          0,  // timeSpent per problem not tracked in worksheet mode
+          {
+            attemptsCount: attempt.attemptsCount,
+            firstAttemptCorrect: attempt.firstAttemptCorrect,
+            hintLevelReached: attempt.hintLevelReached
+          }
+        )
+      }
+    }
   }
 
   // Handler for full worksheet completion (multi-problem view)
   const handleWorksheetComplete = async (totalCorrect: number, totalProblems: number) => {
     setSessionActive(false)
+
+    // Build detailed scorecard message
+    const scorecardLines = [
+      `🎉 Worksheet Complete!`,
+      ``,
+      `✅ First Try: ${firstTryCorrect}/${totalProblems} (${Math.round((firstTryCorrect / totalProblems) * 100)}%)`,
+      withHintsCorrect > 0 ? `🔄 With Hints: ${withHintsCorrect}/${totalProblems} (${Math.round((withHintsCorrect / totalProblems) * 100)}%)` : null,
+      totalIncorrect > 0 ? `❌ Incorrect: ${totalIncorrect}/${totalProblems} (${Math.round((totalIncorrect / totalProblems) * 100)}%)` : null,
+    ].filter(Boolean).join('\n')
+
     setFeedback({
       type: 'success',
-      message: `🎉 Worksheet Complete! You got ${totalCorrect} out of ${totalProblems} correct!`,
+      message: scorecardLines,
       show: true
     })
 
@@ -576,6 +695,9 @@ export default function StudyPage() {
     setFeedback({ ...feedback, show: false })
     setProblemsCompleted(0)
     setProblemsCorrect(0)
+    setFirstTryCorrect(0)
+    setWithHintsCorrect(0)
+    setTotalIncorrect(0)
     setSessionActive(true)
 
     // Update database
@@ -601,6 +723,9 @@ export default function StudyPage() {
     setFeedback({ ...feedback, show: false })
     setProblemsCompleted(0)
     setProblemsCorrect(0)
+    setFirstTryCorrect(0)
+    setWithHintsCorrect(0)
+    setTotalIncorrect(0)
     setSessionActive(true)
 
     // Update database
@@ -739,6 +864,7 @@ export default function StudyPage() {
                 disabled={!sessionActive}
                 submitDisabled={!canSubmitWorksheet}
                 fixed={true}
+                collapsible={true}
               />
             </>
           ) : (
@@ -768,6 +894,63 @@ export default function StudyPage() {
                   )}
                 </div>
               )}
+
+              {/* Graduated Hints for Single-Problem Mode */}
+              {currentProblem && currentHintLevel === 'micro' && currentProblem.graduatedHints?.micro && (
+                <div className="mb-4">
+                  <MicroHint
+                    text={currentProblem.graduatedHints.micro.text}
+                    show={true}
+                    position="inline"
+                    onDismiss={dismissHint}
+                    autoDismiss={false}
+                  />
+                </div>
+              )}
+
+              {currentProblem && currentHintLevel === 'visual' && currentProblem.graduatedHints?.visual && (
+                <div className="mb-4">
+                  <VisualHint
+                    text={currentProblem.graduatedHints.visual.text}
+                    animationId={currentProblem.graduatedHints.visual.animationId}
+                    show={true}
+                    problemData={{
+                      operands: currentProblem.operands,
+                      operation: currentProblem.type,
+                    }}
+                    onDismiss={dismissHint}
+                  />
+                </div>
+              )}
+
+              {/* Full Teaching Modal for Single-Problem Mode */}
+              {currentProblem && showTeaching && (() => {
+                const questionStr = typeof currentProblem.question === 'string'
+                  ? currentProblem.question
+                  : currentProblem.question?.text || ''
+                const answerValue = typeof currentProblem.correctAnswer === 'object'
+                  ? 'numerator' in currentProblem.correctAnswer
+                    ? `${currentProblem.correctAnswer.numerator}/${currentProblem.correctAnswer.denominator}`
+                    : (currentProblem.correctAnswer as { text?: string }).text || ''
+                  : currentProblem.correctAnswer
+
+                return (
+                  <FullTeaching
+                    text={currentProblem.graduatedHints?.teaching?.text || "Let's work through this step by step."}
+                    animationId={currentProblem.graduatedHints?.teaching?.animationId}
+                    show={showTeaching}
+                    problemData={{
+                      question: questionStr,
+                      operands: currentProblem.operands,
+                      operation: currentProblem.type,
+                      correctAnswer: answerValue,
+                    }}
+                    onComplete={handleSingleProblemTeachingComplete}
+                    duration={30}
+                    minViewTime={10}
+                  />
+                )
+              })()}
 
               {/* Input controls: TapToSelect for Pre-K, NumberPad for others */}
               {!isSequenceProblem() && (

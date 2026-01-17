@@ -15,7 +15,9 @@ const SessionProgress = ({
   showDetails = false,
   className,
 }: SessionProgressProps) => {
-  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+  // Cap completed at total to prevent display bugs like "20 / 10"
+  const displayCompleted = Math.min(completed, total)
+  const percentage = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0
   const accuracy = completed > 0 && correct !== undefined
     ? Math.round((correct / completed) * 100)
     : null
@@ -34,7 +36,7 @@ const SessionProgress = ({
       {showDetails ? (
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium text-gray-700">
-            {completed} / {total} problems
+            {displayCompleted} / {total} problems
           </span>
           {accuracy !== null && (
             <span className={cn(
@@ -49,7 +51,7 @@ const SessionProgress = ({
         </div>
       ) : (
         <div className="text-center text-sm font-medium text-gray-700">
-          {completed} / {total}
+          {displayCompleted} / {total}
         </div>
       )}
     </div>

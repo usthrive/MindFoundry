@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } fro
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import WorksheetProblem from './WorksheetProblem'
+import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import {
   getProblemsPerPage,
   getTotalPages,
@@ -10,12 +11,29 @@ import {
 } from '@/utils/worksheetConfig'
 import { generateProblem } from '@/services/sessionManager'
 import type { Problem } from '@/services/generators/types'
-import type { KumonLevel } from '@/types'
+import type { KumonLevel, HintLevel } from '@/types'
+
+/**
+ * Per-problem attempt data for tracking and saving
+ */
+export interface ProblemAttemptData {
+  problem: Problem
+  answer: string
+  isCorrect: boolean
+  attemptsCount: number        // Total attempts (1 = first try)
+  firstAttemptCorrect: boolean
+  hintLevelReached: HintLevel | null
+}
 
 export interface WorksheetViewProps {
   level: KumonLevel
   worksheetNumber: number
-  onPageComplete: (results: { correct: number; total: number; answers: Record<number, string> }) => void
+  onPageComplete: (results: {
+    correct: number
+    total: number
+    answers: Record<number, string>
+    problemAttempts: ProblemAttemptData[]  // Added for DB saving
+  }) => void
   onWorksheetComplete: (totalCorrect: number, totalProblems: number) => void
   onAnswerChange?: (problemIndex: number, answer: string) => void
   onAllAnsweredChange?: (allAnswered: boolean) => void
@@ -31,6 +49,13 @@ interface PageState {
   answers: Record<number, string>
   submitted: boolean
   results: Record<number, boolean>
+  // Hint system state
+  attemptCounts: Record<number, number>  // Tracks wrong attempts per problem
+  hintLevels: Record<number, HintLevel | null>  // Current hint to show per problem
+  lockedProblems: Record<number, boolean>  // Problems that can't be retried (after teaching)
+  // First attempt tracking (for score display)
+  firstAttemptResults: Record<number, boolean | null>  // null=not attempted, true/false=first result
+  correctedProblems: Record<number, boolean>  // Problems fixed after hints
 }
 
 /**
@@ -89,6 +114,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           answers: {},
           submitted: false,
           results: {},
+          attemptCounts: {},
+          hintLevels: {},
+          lockedProblems: {},
+          firstAttemptResults: {},
+          correctedProblems: {},
         }
       }))
     }
@@ -100,91 +130,267 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     answers: {},
     submitted: false,
     results: {},
+    attemptCounts: {},
+    hintLevels: {},
+    lockedProblems: {},
+    firstAttemptResults: {},
+    correctedProblems: {},
   }
 
-  // Handle problem click - set active
+  // State for showing full teaching modal
+  const [showTeaching, setShowTeaching] = useState(false)
+  const [teachingProblemIndex, setTeachingProblemIndex] = useState<number | null>(null)
+
+  // Handle problem click - set active (allow clicking on non-locked problems even after first check)
   const handleProblemClick = (index: number) => {
-    if (!currentPageState.submitted && sessionActive) {
+    if (!sessionActive) return
+    // Can click if: not yet checked, OR if checked but not correct and not locked
+    const canEdit = !currentPageState.submitted ||
+      (!currentPageState.results[index] && !currentPageState.lockedProblems[index])
+    if (canEdit) {
       setActiveIndex(index)
     }
   }
 
-  // Submit current page - defined before handleInput since it's called from there
-  const handleSubmitPage = useCallback(() => {
-    if (currentPageState.submitted) return
-
-    const results: Record<number, boolean> = {}
-    let pageCorrect = 0
-
-    currentPageState.problems.forEach((problem, index) => {
-      const answer = currentPageState.answers[index] || ''
-      const correctAnswer = problem.correctAnswer
-
-      let isCorrect = false
-      if (typeof correctAnswer === 'number') {
-        isCorrect = parseFloat(answer) === correctAnswer
-      } else if (typeof correctAnswer === 'string') {
-        isCorrect = answer.toLowerCase() === correctAnswer.toLowerCase()
-      } else if (typeof correctAnswer === 'object' && 'numerator' in correctAnswer) {
-        const frac = correctAnswer as { numerator: number; denominator: number }
-        if (frac.denominator === 1) {
-          isCorrect = parseInt(answer, 10) === frac.numerator
-        } else {
-          const parts = answer.split('/')
-          if (parts.length === 2) {
-            const studentNum = parseInt(parts[0].trim(), 10)
-            const studentDen = parseInt(parts[1].trim(), 10)
-            if (!isNaN(studentNum) && !isNaN(studentDen) && studentDen !== 0) {
-              isCorrect = studentNum * frac.denominator === frac.numerator * studentDen
-            }
-          }
-        }
-      }
-
-      results[index] = isCorrect
-      if (isCorrect) pageCorrect++
-    })
-
-    // Update page state with results
+  // Dismiss hint for a problem
+  const dismissHint = useCallback((index: number) => {
     setPageStates(prev => ({
       ...prev,
       [currentPage]: {
         ...prev[currentPage],
-        submitted: true,
-        results,
-      }
+        hintLevels: {
+          ...prev[currentPage].hintLevels,
+          [index]: null,
+        },
+      },
     }))
+  }, [currentPage])
 
-    // Update totals
-    const newTotalCorrect = totalCorrect + pageCorrect
-    const newTotalAnswered = totalAnswered + currentPageState.problems.length
-    setTotalCorrect(newTotalCorrect)
-    setTotalAnswered(newTotalAnswered)
+  // Check if an answer is correct
+  const checkAnswer = useCallback((problem: Problem, answer: string): boolean => {
+    const correctAnswer = problem.correctAnswer
+    if (typeof correctAnswer === 'number') {
+      return parseFloat(answer) === correctAnswer
+    } else if (typeof correctAnswer === 'string') {
+      return answer.toLowerCase() === correctAnswer.toLowerCase()
+    } else if (typeof correctAnswer === 'object' && 'numerator' in correctAnswer) {
+      const frac = correctAnswer as { numerator: number; denominator: number }
+      if (frac.denominator === 1) {
+        return parseInt(answer, 10) === frac.numerator
+      } else {
+        const parts = answer.split('/')
+        if (parts.length === 2) {
+          const studentNum = parseInt(parts[0].trim(), 10)
+          const studentDen = parseInt(parts[1].trim(), 10)
+          if (!isNaN(studentNum) && !isNaN(studentDen) && studentDen !== 0) {
+            return studentNum * frac.denominator === frac.numerator * studentDen
+          }
+        }
+      }
+    }
+    return false
+  }, [])
 
-    // Notify parent
-    onPageComplete({
-      correct: pageCorrect,
-      total: currentPageState.problems.length,
-      answers: currentPageState.answers,
+  // Submit current page with graduated hint system
+  const handleSubmitPage = useCallback(() => {
+    const results: Record<number, boolean> = { ...currentPageState.results }
+    const attemptCounts: Record<number, number> = { ...currentPageState.attemptCounts }
+    const hintLevels: Record<number, HintLevel | null> = { ...currentPageState.hintLevels }
+    const lockedProblems: Record<number, boolean> = { ...currentPageState.lockedProblems }
+    const firstAttemptResults: Record<number, boolean | null> = { ...currentPageState.firstAttemptResults }
+    const correctedProblems: Record<number, boolean> = { ...currentPageState.correctedProblems }
+
+    let newlyCorrect = 0
+    let needsTeaching: number | null = null
+
+    currentPageState.problems.forEach((problem, index) => {
+      // Skip already correct or locked problems
+      if (results[index] === true || lockedProblems[index]) return
+
+      const answer = currentPageState.answers[index] || ''
+      const isCorrect = checkAnswer(problem, answer)
+
+      // Track first attempt result (lock it in once set)
+      if (firstAttemptResults[index] === undefined || firstAttemptResults[index] === null) {
+        firstAttemptResults[index] = isCorrect
+      }
+
+      if (isCorrect) {
+        results[index] = isCorrect
+        newlyCorrect++
+        hintLevels[index] = null  // Clear any hint
+
+        // Mark as corrected if first attempt was wrong
+        if (firstAttemptResults[index] === false) {
+          correctedProblems[index] = true
+        }
+      } else {
+        // Wrong answer - increment attempt count
+        const currentAttempts = (attemptCounts[index] || 0) + 1
+        attemptCounts[index] = currentAttempts
+        results[index] = false
+
+        // Determine hint level based on attempts
+        if (currentAttempts === 1) {
+          hintLevels[index] = 'micro'
+        } else if (currentAttempts === 2) {
+          hintLevels[index] = 'visual'
+        } else if (currentAttempts >= 3) {
+          // After 3rd wrong, show full teaching
+          hintLevels[index] = 'teaching'
+          if (needsTeaching === null) {
+            needsTeaching = index  // Show teaching for first problem that needs it
+          }
+        }
+      }
     })
 
-    // Auto-advance: If this is the last page, automatically complete the worksheet after brief delay
-    if (currentPage >= totalPages) {
-      setTimeout(() => {
-        onWorksheetComplete(newTotalCorrect, newTotalAnswered)
-      }, 1200) // Brief delay to see results before advancing
+    // Check if all problems are now resolved (correct or locked)
+    const allResolved = currentPageState.problems.every(
+      (_, index) => results[index] === true || lockedProblems[index]
+    )
+
+    // Update page state
+    setPageStates(prev => ({
+      ...prev,
+      [currentPage]: {
+        ...prev[currentPage],
+        submitted: true,  // Mark as submitted (checked)
+        results,
+        attemptCounts,
+        hintLevels,
+        lockedProblems,
+        firstAttemptResults,
+        correctedProblems,
+      },
+    }))
+
+    // Show teaching modal if needed
+    if (needsTeaching !== null) {
+      setTeachingProblemIndex(needsTeaching)
+      setShowTeaching(true)
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete])
+
+    // Only update totals and notify parent when page is fully resolved
+    if (allResolved) {
+      const pageCorrect = Object.values(results).filter(Boolean).length
+      const newTotalCorrect = totalCorrect + pageCorrect
+      const newTotalAnswered = totalAnswered + currentPageState.problems.length
+      setTotalCorrect(newTotalCorrect)
+      setTotalAnswered(newTotalAnswered)
+
+      // Build per-problem attempt data for DB saving
+      const problemAttempts: ProblemAttemptData[] = currentPageState.problems.map((problem, index) => ({
+        problem,
+        answer: currentPageState.answers[index] || '',
+        isCorrect: results[index] || false,
+        attemptsCount: (attemptCounts[index] || 0) + 1,  // +1 because first attempt starts at 0
+        firstAttemptCorrect: firstAttemptResults[index] === true,
+        hintLevelReached: hintLevels[index] || null,
+      }))
+
+      onPageComplete({
+        correct: pageCorrect,
+        total: currentPageState.problems.length,
+        answers: currentPageState.answers,
+        problemAttempts,
+      })
+
+      // Auto-advance if last page
+      if (currentPage >= totalPages) {
+        setTimeout(() => {
+          onWorksheetComplete(newTotalCorrect, newTotalAnswered)
+        }, 1200)
+      }
+    }
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer])
+
+  // Handle completing full teaching (locks the problem and shows answer)
+  const handleTeachingComplete = useCallback(() => {
+    if (teachingProblemIndex === null) return
+
+    // Clear hint level but DON'T lock - let user try 4th attempt
+    // Problem will show answer after attemptCounts >= 4
+    setPageStates(prev => ({
+      ...prev,
+      [currentPage]: {
+        ...prev[currentPage],
+        hintLevels: {
+          ...prev[currentPage].hintLevels,
+          [teachingProblemIndex]: null,
+        },
+      },
+    }))
+
+    setShowTeaching(false)
+    setTeachingProblemIndex(null)
+
+    // Check if there are more problems needing teaching
+    const nextTeachingIndex = currentPageState.problems.findIndex((_, index) =>
+      index !== teachingProblemIndex &&
+      currentPageState.hintLevels[index] === 'teaching' &&
+      !currentPageState.lockedProblems[index]
+    )
+
+    if (nextTeachingIndex !== -1) {
+      // Show teaching for next problem
+      setTimeout(() => {
+        setTeachingProblemIndex(nextTeachingIndex)
+        setShowTeaching(true)
+      }, 500)
+    }
+  }, [currentPage, teachingProblemIndex, currentPageState])
+
+  // Handle Enter key - navigate to next question or submit if all answered
+  const handleEnterKey = useCallback(() => {
+    // Check if ALL problems have answers
+    const allAnswered = Object.values(currentPageState.answers).every(a => a && a.trim() !== '') &&
+      Object.keys(currentPageState.answers).length >= currentPageState.problems.length
+
+    if (allAnswered) {
+      // All answered - submit the page
+      handleSubmitPage()
+    } else {
+      // Move to next unanswered question
+      const nextEmpty = currentPageState.problems.findIndex((_, i) =>
+        i > activeIndex && (!currentPageState.answers[i] || currentPageState.answers[i].trim() === '')
+      )
+      if (nextEmpty !== -1) {
+        setActiveIndex(nextEmpty)
+      } else {
+        // Wrap around to first unanswered
+        const firstEmpty = currentPageState.problems.findIndex((_, i) =>
+          !currentPageState.answers[i] || currentPageState.answers[i].trim() === ''
+        )
+        if (firstEmpty !== -1) {
+          setActiveIndex(firstEmpty)
+        }
+      }
+    }
+  }, [currentPageState, activeIndex, handleSubmitPage])
 
   // Handle number input (called from parent via ref)
   const handleInput = useCallback((num: number | string) => {
+    // Handle enter key - navigate or submit
+    if (num === 'enter') {
+      handleEnterKey()
+      return
+    }
+
     // Handle submit separately - it triggers page submission
     if (num === 'submit') {
       handleSubmitPage()
       return
     }
 
-    if (currentPageState.submitted || !sessionActive) return
+    if (!sessionActive) return
+
+    // Check if the active problem can be edited
+    // Can edit if: not yet submitted, OR if submitted but wrong and not locked
+    const canEditActive = !currentPageState.submitted ||
+      (!currentPageState.results[activeIndex] && !currentPageState.lockedProblems[activeIndex])
+
+    if (!canEditActive) return
 
     setPageStates(prev => {
       const currentState = prev[currentPage]
@@ -213,6 +419,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
       const newAnswers = { ...currentState.answers, [activeIndex]: newAnswer }
 
+      // Keep hints visible while typing - don't clear them
+
       // Notify parent of answer change
       if (onAnswerChange) {
         onAnswerChange(activeIndex + (currentPage - 1) * problemsPerPage, newAnswer)
@@ -226,7 +434,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }
       }
     })
-  }, [currentPage, activeIndex, currentPageState.submitted, sessionActive, onAnswerChange, problemsPerPage, handleSubmitPage])
+  }, [currentPage, activeIndex, currentPageState, sessionActive, onAnswerChange, problemsPerPage, handleSubmitPage, handleEnterKey])
 
   // Go to next page
   const handleNextPage = () => {
@@ -245,18 +453,36 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     10 - (currentPage - 1) * problemsPerPage
   )
 
-  // Check if all problems have answers
+  // Check if all problems have answers (or are locked/correct)
   const allAnswered = currentPageState.problems.length > 0 &&
     currentPageState.problems.every((_, index) =>
-      (currentPageState.answers[index] || '').length > 0
+      // Problem is "answered" if: has answer text, OR is correct, OR is locked
+      (currentPageState.answers[index] || '').length > 0 ||
+      currentPageState.results[index] === true ||
+      currentPageState.lockedProblems[index]
+    )
+
+  // Check if all problems are resolved (correct or locked) - page can advance
+  const allResolved = currentPageState.problems.length > 0 &&
+    currentPageState.problems.every((_, index) =>
+      currentPageState.results[index] === true || currentPageState.lockedProblems[index]
+    )
+
+  // Check if there are wrong answers that need retrying
+  const hasWrongAnswers = currentPageState.submitted &&
+    currentPageState.problems.some((_, index) =>
+      currentPageState.results[index] === false &&
+      !currentPageState.lockedProblems[index]
     )
 
   // Notify parent when allAnswered status changes
   useEffect(() => {
     if (onAllAnsweredChange) {
-      onAllAnsweredChange(allAnswered && !currentPageState.submitted)
+      // Can submit if all editable problems have answers
+      const canSubmit = allAnswered && !allResolved
+      onAllAnsweredChange(canSubmit)
     }
-  }, [allAnswered, currentPageState.submitted, onAllAnsweredChange])
+  }, [allAnswered, allResolved, onAllAnsweredChange])
 
   // Expose handleInput method to parent via ref
   useImperativeHandle(ref, () => ({
@@ -293,24 +519,70 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         getGridLayout(level),
         getProblemSpacing(level)
       )}>
-        {currentPageState.problems.map((problem, index) => (
-          <WorksheetProblem
-            key={`${currentPage}-${index}`}
-            problem={problem}
-            problemNumber={(currentPage - 1) * problemsPerPage + index + 1}
-            answer={currentPageState.answers[index] || ''}
-            isActive={activeIndex === index && !currentPageState.submitted}
-            isSubmitted={currentPageState.submitted}
-            isCorrect={currentPageState.results[index]}
-            onClick={() => handleProblemClick(index)}
-            compact={problemsPerPage > 3}
-          />
-        ))}
+        {currentPageState.problems.map((problem, index) => {
+          // Determine if this problem can be edited
+          const isLocked = currentPageState.lockedProblems[index]
+          const isCorrect = currentPageState.results[index] === true
+          const canEdit = !isLocked && !isCorrect
+          const isActive = activeIndex === index && canEdit
+
+          // Get hint data for this problem
+          const hintLevel = currentPageState.hintLevels[index]
+          const hintData = hintLevel && problem.graduatedHints?.[hintLevel]
+
+          return (
+            <div key={`${currentPage}-${index}`} className="space-y-2">
+              <WorksheetProblem
+                problem={problem}
+                problemNumber={(currentPage - 1) * problemsPerPage + index + 1}
+                answer={currentPageState.answers[index] || ''}
+                isActive={isActive}
+                isSubmitted={currentPageState.submitted}
+                isCorrect={currentPageState.results[index]}
+                onClick={() => handleProblemClick(index)}
+                compact={problemsPerPage > 3}
+              />
+
+              {/* Micro hint - shown as inline toast below problem */}
+              {hintLevel === 'micro' && hintData && (
+                <MicroHint
+                  text={hintData.text}
+                  show={true}
+                  position="inline"
+                  onDismiss={() => dismissHint(index)}
+                  autoDismiss={false}
+                />
+              )}
+
+              {/* Visual hint - shown inline with animation */}
+              {hintLevel === 'visual' && hintData && (
+                <VisualHint
+                  text={hintData.text}
+                  animationId={hintData.animationId}
+                  show={true}
+                  problemData={{
+                    operands: problem.operands,
+                    operation: problem.type,  // Use type as operation
+                  }}
+                  onDismiss={() => dismissHint(index)}
+                />
+              )}
+
+              {/* Show correct answer after 4th wrong attempt (after all 3 hints) */}
+              {(currentPageState.attemptCounts[index] || 0) >= 4 && !isCorrect && (
+                <div className="text-center text-sm text-gray-500">
+                  Answer: <span className="font-bold text-green-600">{String(problem.correctAnswer)}</span>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* Navigation / Submit buttons */}
       <div className="flex justify-center gap-4 pt-4">
         {!currentPageState.submitted ? (
+          // First submission - check all answers
           <Button
             variant="primary"
             size="lg"
@@ -319,7 +591,18 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           >
             Check Answers ({problemsOnThisPage})
           </Button>
-        ) : currentPage < totalPages ? (
+        ) : hasWrongAnswers ? (
+          // Has wrong answers - allow retry
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleSubmitPage}
+            disabled={!allAnswered || !sessionActive}
+          >
+            Try Again
+          </Button>
+        ) : allResolved && currentPage < totalPages ? (
+          // All resolved - go to next page
           <Button
             variant="primary"
             size="lg"
@@ -327,25 +610,79 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           >
             Next Page →
           </Button>
-        ) : (
-          // Last page: auto-advances, show status
+        ) : allResolved ? (
+          // Last page, all resolved: auto-advances
           <div className="text-lg font-medium text-primary animate-pulse">
             Loading next worksheet...
+          </div>
+        ) : (
+          // Waiting for teaching to complete
+          <div className="text-lg font-medium text-gray-500">
+            Complete the lesson to continue...
           </div>
         )}
       </div>
 
       {/* Score summary after submission */}
-      {currentPageState.submitted && (
-        <div className="text-center text-lg font-medium">
-          <span className="text-green-600">
-            {Object.values(currentPageState.results).filter(Boolean).length}
-          </span>
-          {' / '}
-          <span>{currentPageState.problems.length}</span>
-          {' correct on this page'}
-        </div>
-      )}
+      {currentPageState.submitted && (() => {
+        // Calculate first-attempt correct count
+        const firstAttemptCorrect = Object.values(currentPageState.firstAttemptResults)
+          .filter(result => result === true).length
+        // Calculate corrected count (problems fixed after hints)
+        const correctedCount = Object.values(currentPageState.correctedProblems)
+          .filter(Boolean).length
+
+        return (
+          <div className="text-center text-lg font-medium">
+            <span className="text-green-600 font-bold">
+              {firstAttemptCorrect}
+            </span>
+            <span className="text-gray-500">/{currentPageState.problems.length}</span>
+            {correctedCount > 0 && (
+              <span className="text-blue-500 ml-2" title="Problems corrected after hints">
+                +{correctedCount}✓
+              </span>
+            )}
+            {hasWrongAnswers && (
+              <span className="text-amber-600 ml-2">
+                (Try the highlighted problems again!)
+              </span>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Full Teaching Modal - shown after 3rd wrong attempt */}
+      {teachingProblemIndex !== null && currentPageState.problems[teachingProblemIndex] && (() => {
+        const teachingProblem = currentPageState.problems[teachingProblemIndex]
+        // Convert question to string
+        const questionStr = typeof teachingProblem.question === 'string'
+          ? teachingProblem.question
+          : teachingProblem.question?.text || ''
+        // Convert correctAnswer to string/number
+        const answerValue = typeof teachingProblem.correctAnswer === 'object'
+          ? 'numerator' in teachingProblem.correctAnswer
+            ? `${teachingProblem.correctAnswer.numerator}/${teachingProblem.correctAnswer.denominator}`
+            : (teachingProblem.correctAnswer as { text?: string }).text || ''
+          : teachingProblem.correctAnswer
+
+        return (
+          <FullTeaching
+            text={teachingProblem.graduatedHints?.teaching?.text || "Let's work through this step by step."}
+            animationId={teachingProblem.graduatedHints?.teaching?.animationId}
+            show={showTeaching}
+            problemData={{
+              question: questionStr,
+              operands: teachingProblem.operands,
+              operation: teachingProblem.type,
+              correctAnswer: answerValue,
+            }}
+            onComplete={handleTeachingComplete}
+            duration={30}
+            minViewTime={10}
+          />
+        )
+      })()}
     </div>
   )
 })

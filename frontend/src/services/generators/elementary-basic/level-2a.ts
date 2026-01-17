@@ -1,5 +1,6 @@
 import type { Problem, Level2AProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
+import { generateAdditionHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: Level2AProblemType
@@ -66,6 +67,7 @@ function generateAdditionProblem(addends: number[], maxFirst: number, subtype: L
         `Start at ${addend} and count up ${first}`,
         'Or switch the numbers - the answer is the same!',
       ],
+      graduatedHints: generateAdditionHints([addend, first], '2A'),
     }
   }
 
@@ -87,6 +89,7 @@ function generateAdditionProblem(addends: number[], maxFirst: number, subtype: L
         ? `Count: ${Array.from({length: addend + 1}, (_, i) => first + i).join(', ')}`
         : 'You can use your fingers to help count',
     ],
+    graduatedHints: generateAdditionHints([first, addend], '2A'),
   }
 }
 
@@ -113,6 +116,7 @@ function generateVerticalProblem(addends: number[], maxFirst: number, subtype: L
       `Add ${top} + ${bottom}`,
       `Start at ${top} and count up ${bottom}`,
     ],
+    graduatedHints: generateAdditionHints([top, bottom], '2A'),
   }
 }
 

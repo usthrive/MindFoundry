@@ -453,6 +453,28 @@ export interface Fraction {
   denominator: number
 }
 
+// Hint System Types (Phase 1.8.2)
+export type HintLevel = 'micro' | 'visual' | 'teaching'
+
+export interface HintData {
+  level: HintLevel
+  text: string
+  /** Animation ID for visual/teaching hints */
+  animationId?: string
+  /** Duration in seconds (default: micro=5, visual=15, teaching=60) */
+  duration?: number
+}
+
+/** Graduated 3-level hint system for a problem */
+export interface ProblemHints {
+  /** Quick text hint shown as toast (2-5 sec) */
+  micro: HintData
+  /** Inline animation hint (5-15 sec) */
+  visual: HintData
+  /** Full teaching modal with voiceover (30-60 sec) */
+  teaching: HintData
+}
+
 export interface MathExpression {
   latex: string
   text: string
@@ -487,7 +509,10 @@ export interface Problem {
   operands?: number[]
   correctAnswer: number | string | Fraction | MathExpression
   missingPosition?: number
+  /** Legacy string hints (deprecated - use graduatedHints) */
   hints?: string[]
+  /** 3-level graduated hint system */
+  graduatedHints?: ProblemHints
   solutionSteps?: string[]
   timeLimit?: number
   visualAssets?: string[]

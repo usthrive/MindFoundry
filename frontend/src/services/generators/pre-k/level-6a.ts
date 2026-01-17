@@ -1,5 +1,6 @@
 import type { Problem, Level6AProblemType } from '../types'
 import { randomInt, randomChoice, generateId } from '../utils'
+import { generateCountingHints, generateGenericHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: Level6AProblemType
@@ -48,6 +49,7 @@ function generateCountProblem(maxCount: number): Problem {
     operands: options, // Options for tap-to-select
     visualAssets: [`${object}_${count}`],
     hints: ['Point to each one as you count'],
+    graduatedHints: generateCountingHints(count, '6A'),
     interactionType: 'match' as const, // Use tap-to-select for Pre-K
   }
 }
@@ -79,6 +81,7 @@ function generateNumberReadingProblem(maxCount: number): Problem {
       correctAnswer: number,
       operands: options, // Options for tap-to-select
       hints: ['Say the number out loud'],
+      graduatedHints: generateGenericHints('number_reading', '6A'),
       visualAssets: [`numeral_${number}`],
       interactionType: 'match' as const,
     }
@@ -97,6 +100,7 @@ function generateNumberReadingProblem(maxCount: number): Problem {
       correctAnswer: number,
       operands: options,
       hints: ['Look at each number and say it'],
+      graduatedHints: generateGenericHints('number_reading', '6A'),
       interactionType: 'match' as const,
     }
   }
@@ -113,6 +117,7 @@ function generateNumberReadingProblem(maxCount: number): Problem {
     correctAnswer: number,
     operands: options,
     hints: ['Find the number that looks like this'],
+    graduatedHints: generateGenericHints('number_reading', '6A'),
     visualAssets: [`numeral_${number}`],
     interactionType: 'match' as const,
   }
@@ -141,6 +146,7 @@ function generateDotRecognitionProblem(maxCount: number): Problem {
       'Look at the pattern',
       'You can count if you need to',
     ],
+    graduatedHints: generateCountingHints(count, '6A'),
     interactionType: 'match' as const,
   }
 }
@@ -167,6 +173,7 @@ function generateCount20_30Problem(maxCount: number): Problem {
       'Count in groups of 10',
       'Count 10, then count the rest',
     ],
+    graduatedHints: generateCountingHints(count, '6A'),
     interactionType: 'match' as const,
   }
 }

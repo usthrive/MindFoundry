@@ -1,5 +1,6 @@
 import type { Problem, Level4AProblemType, MatchingItem, MatchingData } from '../types'
 import { randomInt, randomChoice, generateId } from '../utils'
+import { generateCountingHints, generateGenericHints } from '../hintGenerator'
 
 const MATCHING_OBJECTS = ['apple', 'star', 'flower', 'heart', 'butterfly', 'fish']
 
@@ -75,7 +76,7 @@ function getWorksheetConfig(worksheet: number): {
 
 function generateTracingProblem(maxNumber: number): Problem {
   const number = randomInt(1, maxNumber)
-  
+
   return {
     id: generateId(),
     level: '4A',
@@ -91,6 +92,7 @@ function generateTracingProblem(maxNumber: number): Problem {
       'Follow the dotted lines',
       'Start at the top',
     ],
+    graduatedHints: generateGenericHints('writing', '4A'),
   }
 }
 
@@ -132,6 +134,7 @@ function generateMatchingProblem(maxNumber: number): Problem {
       'Count the objects in each group',
       'Match each group to its number',
     ],
+    graduatedHints: generateCountingHints(items[0]?.count || 5, '4A'),
   }
 }
 
@@ -168,6 +171,7 @@ function generateWritingProblem(maxNumber: number): Problem {
         'Count all the objects first',
         'Then write the number',
       ],
+      graduatedHints: generateCountingHints(number, '4A'),
     }
   }
   
@@ -192,6 +196,7 @@ function generateWritingProblem(maxNumber: number): Problem {
     hints: [
       'Think about what number this word means',
     ],
+    graduatedHints: generateGenericHints('writing', '4A'),
   }
 }
 
@@ -235,6 +240,7 @@ function generateNumberTableProblem(maxNumber: number): Problem {
       'Count from the first number',
       'Each box is 1 more than the one before',
     ],
+    graduatedHints: generateCountingHints(answers[0] || startNum, '4A'),
   }
 }
 
@@ -263,6 +269,7 @@ function generateConsecutiveWritingProblem(maxNumber: number): Problem {
       `Start with ${startNum}`,
       'Add 1 each time until you reach the end',
     ],
+    graduatedHints: generateCountingHints(startNum, '4A'),
   }
 }
 

@@ -1,5 +1,6 @@
 import type { Problem, LevelAProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
+import { generateAdditionHints, generateSubtractionHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelAProblemType
@@ -53,6 +54,7 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, wor
       correctAnswer: sum,
       operands: [second, first],
       hints: [`${second} + ${first} is the same as ${first} + ${second}`],
+      graduatedHints: generateAdditionHints([second, first], 'A'),
     }
   }
 
@@ -73,6 +75,7 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, wor
         operands: [first, second],
         missingPosition: 0,
         hints: [`What number plus ${second} equals ${sum}?`],
+        graduatedHints: generateAdditionHints([first, second], 'A'),
       }
     }
     return {
@@ -88,6 +91,7 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, wor
       operands: [first, second],
       missingPosition: 1,
       hints: [`What do you add to ${first} to get ${sum}?`],
+      graduatedHints: generateAdditionHints([first, second], 'A'),
     }
   }
 
@@ -103,6 +107,7 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, wor
     correctAnswer: sum,
     operands: [first, second],
     hints: [`Start at ${first} and count up ${second}`],
+    graduatedHints: generateAdditionHints([first, second], 'A'),
   }
 }
 
@@ -142,6 +147,7 @@ function generateSubtractionProblem(
         `What do you subtract from ${minuend} to get ${difference}?`,
         `Count from ${difference} to ${minuend}`,
       ],
+      graduatedHints: generateSubtractionHints([minuend, actualSubtrahend], 'A'),
     }
   }
 
@@ -163,6 +169,7 @@ function generateSubtractionProblem(
         `What number minus ${actualSubtrahend} equals ${difference}?`,
         `${difference} + ${actualSubtrahend} = ?`,
       ],
+      graduatedHints: generateSubtractionHints([minuend, actualSubtrahend], 'A'),
     }
   }
 
@@ -184,6 +191,7 @@ function generateSubtractionProblem(
         ? `Count: ${Array.from({length: actualSubtrahend + 1}, (_, i) => minuend - i).join(', ')}`
         : 'You can use your fingers to count back',
     ],
+    graduatedHints: generateSubtractionHints([minuend, actualSubtrahend], 'A'),
   }
 }
 
@@ -191,7 +199,7 @@ function generateSubtractionFromFixedProblem(maxMinuend: number, subtype: LevelA
   const minuend = maxMinuend
   const subtrahend = randomInt(1, minuend - 1)
   const difference = minuend - subtrahend
-  
+
   return {
     id: generateId(),
     level: 'A',
@@ -207,6 +215,7 @@ function generateSubtractionFromFixedProblem(maxMinuend: number, subtype: LevelA
       `What is ${minuend} take away ${subtrahend}?`,
       `Start at ${minuend} and count back ${subtrahend}`,
     ],
+    graduatedHints: generateSubtractionHints([minuend, subtrahend], 'A'),
   }
 }
 

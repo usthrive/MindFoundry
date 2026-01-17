@@ -1,5 +1,6 @@
 import type { Problem, Level5AProblemType, SequenceItem } from '../types'
 import { randomInt, randomChoice, generateId } from '../utils'
+import { generateCountingHints, generateGenericHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: Level5AProblemType
@@ -61,6 +62,7 @@ function generateNumberReadingProblem(maxNumber: number): Problem {
       correctAnswer: number,
       visualAssets: [`numeral_large_${number}`],
       hints: ['Say the number out loud'],
+      graduatedHints: generateGenericHints('number_reading', '5A'),
     }
   }
   
@@ -78,6 +80,7 @@ function generateNumberReadingProblem(maxNumber: number): Problem {
       correctAnswer: number,
       operands: options,
       hints: ['Look at each number carefully'],
+      graduatedHints: generateGenericHints('number_reading', '5A'),
     }
   }
   
@@ -97,6 +100,7 @@ function generateNumberReadingProblem(maxNumber: number): Problem {
     correctAnswer: Math.max(number, num2),
     operands: [number, num2],
     hints: ['Think about counting - which number comes later?'],
+    graduatedHints: generateGenericHints('number_reading', '5A'),
   }
 }
 
@@ -134,6 +138,7 @@ function generateSequenceProblem(maxNumber: number): Problem {
       'Count forward from the first number',
       'Each number is 1 more than the one before',
     ],
+    graduatedHints: generateCountingHints(startNum + missingIndex, '5A'),
   }
 }
 

@@ -10,6 +10,22 @@ export type AgeGroup = 'preK' | 'grade1_2' | 'grade3_5' | 'grade5_6' | 'middle_s
 
 export type Tier = 'free' | 'basic' | 'plus' | 'premium';
 
+// Hint System Types (Phase 1.8.2)
+export type HintLevel = 'micro' | 'visual' | 'teaching';
+
+export interface HintData {
+  level: HintLevel;
+  text: string;
+  animationId?: string;
+  duration?: number;
+}
+
+export interface ProblemHints {
+  micro: HintData;
+  visual: HintData;
+  teaching: HintData;
+}
+
 // Problem structure
 export interface Problem {
   id: string;
@@ -20,6 +36,7 @@ export interface Problem {
   displayFormat: ProblemFormat;
   difficulty: number; // 1-10 scale
   missingPosition?: number; // For missing addend/subtrahend problems (0-based index)
+  graduatedHints?: ProblemHints; // 3-level graduated hint system
 }
 
 // Child profile

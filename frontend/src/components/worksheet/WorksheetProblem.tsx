@@ -39,18 +39,6 @@ export default function WorksheetProblem({
   const operator = operatorSymbols[problem.type] || '?'
   const operands = problem.operands || []
 
-  // Format the correct answer for display
-  const formatAnswer = (ans: unknown): string => {
-    if (ans === null || ans === undefined) return '?'
-    if (typeof ans === 'number') return ans.toString()
-    if (typeof ans === 'string') return ans
-    if (typeof ans === 'object' && 'numerator' in ans && 'denominator' in ans) {
-      const frac = ans as { numerator: number; denominator: number }
-      return `${frac.numerator}/${frac.denominator}`
-    }
-    return String(ans)
-  }
-
   // Determine border/background color based on state
   const getContainerStyles = () => {
     if (isSubmitted) {
@@ -213,13 +201,6 @@ export default function WorksheetProblem({
       <div className="flex items-center justify-center min-h-[60px]">
         {renderProblem()}
       </div>
-
-      {/* Show correct answer after wrong submission */}
-      {isSubmitted && !isCorrect && (
-        <div className="mt-2 text-center text-sm text-red-600">
-          Answer: {formatAnswer(problem.correctAnswer)}
-        </div>
-      )}
 
       {/* Checkmark or X indicator */}
       {isSubmitted && (

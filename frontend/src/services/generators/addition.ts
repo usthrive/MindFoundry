@@ -1,5 +1,6 @@
 import type { Problem, KumonLevel } from '@/types'
 import { generateId } from '@/lib/utils'
+import { generateAdditionHints } from './hintGenerator'
 
 /**
  * Addition Problem Generator
@@ -125,6 +126,7 @@ export function generateAdditionProblem(level: KumonLevel, sublevel?: number): P
   }
 
   const correctAnswer = operand1 + operand2
+  const operands = [operand1, operand2]
 
   // Determine display format
   // Horizontal for levels 6A-A, vertical for B+
@@ -136,10 +138,11 @@ export function generateAdditionProblem(level: KumonLevel, sublevel?: number): P
     id: generateId(),
     type: 'addition',
     level,
-    operands: [operand1, operand2],
+    operands,
     correctAnswer,
     displayFormat,
     difficulty: calculateDifficulty(operand1, operand2, level),
+    graduatedHints: generateAdditionHints(operands, level),
   }
 }
 
@@ -173,14 +176,16 @@ function generate3AProblem(sublevel?: number): Problem {
     operand2 = getRandomInRange(1, 3)
   }
 
+  const operands = [operand1, operand2]
   return {
     id: generateId(),
     type: 'addition',
     level: '3A',
-    operands: [operand1, operand2],
+    operands,
     correctAnswer: operand1 + operand2,
     displayFormat: 'horizontal',
     difficulty: calculateDifficulty(operand1, operand2, '3A'),
+    graduatedHints: generateAdditionHints(operands, '3A'),
   }
 }
 
@@ -214,14 +219,16 @@ function generate2AProblem(sublevel?: number): Problem {
     operand2 = getRandomInRange(1, 10)
   }
 
+  const operands = [operand1, operand2]
   return {
     id: generateId(),
     type: 'addition',
     level: '2A',
-    operands: [operand1, operand2],
+    operands,
     correctAnswer: operand1 + operand2,
     displayFormat: 'horizontal',
     difficulty: calculateDifficulty(operand1, operand2, '2A'),
+    graduatedHints: generateAdditionHints(operands, '2A'),
   }
 }
 
@@ -245,30 +252,34 @@ function generateLevelAProblem(sublevel?: number): Problem {
       return generateLevelAProblem(sublevel) // Retry
     }
 
+    const operands = [operand1, operand2]
     return {
       id: generateId(),
       type: 'addition',
       level: 'A',
-      operands: [operand1, operand2],
+      operands,
       correctAnswer: sum,
       displayFormat: 'horizontal',
       difficulty: calculateDifficulty(operand1, operand2, 'A'),
+      graduatedHints: generateAdditionHints(operands, 'A'),
     }
   } else if (sub <= 150) {
     // Missing addend problems (e.g., 7 + __ = 15)
     const sum = getRandomInRange(10, 20)
     const operand1 = getRandomInRange(1, sum - 1)
     const operand2 = sum - operand1 // This is what student needs to find
+    const operands = [operand1, sum]
 
     return {
       id: generateId(),
       type: 'addition',
       level: 'A',
-      operands: [operand1, sum], // [known addend, sum]
+      operands, // [known addend, sum]
       correctAnswer: operand2, // The missing addend
       displayFormat: 'horizontal',
       difficulty: 6,
       missingPosition: 1, // Second operand is missing
+      graduatedHints: generateAdditionHints([operand1, operand2], 'A'),
     }
   } else {
     // Three-number addition (e.g., 3 + 5 + 2)
@@ -282,14 +293,16 @@ function generateLevelAProblem(sublevel?: number): Problem {
       return generateLevelAProblem(sublevel) // Retry
     }
 
+    const operands = [operand1, operand2, operand3]
     return {
       id: generateId(),
       type: 'addition',
       level: 'A',
-      operands: [operand1, operand2, operand3],
+      operands,
       correctAnswer: sum,
       displayFormat: 'horizontal',
       difficulty: 7,
+      graduatedHints: generateAdditionHints([operand1, operand2], 'A'),
     }
   }
 }

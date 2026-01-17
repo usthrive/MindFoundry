@@ -80,7 +80,7 @@ const Feedback = ({
             <span className="text-3xl" role="img" aria-label={type}>
               {config.icon}
             </span>
-            <p className={cn('text-lg font-semibold', config.textColor)}>
+            <p className={cn('text-lg font-semibold whitespace-pre-line text-center', config.textColor)}>
               {message}
             </p>
           </div>

@@ -343,7 +343,16 @@ export async function completePracticeSession(
 }
 
 /**
- * Save a single problem attempt
+ * Hints/attempt metadata for tracking student performance
+ */
+export interface HintsData {
+  attemptsCount: number        // Total attempts before final answer (1 = first try)
+  firstAttemptCorrect: boolean // Was the first attempt correct?
+  hintLevelReached: string | null  // 'micro', 'visual', 'teaching', or null
+}
+
+/**
+ * Save a single problem attempt with optional hints/attempt tracking
  */
 export async function saveProblemAttempt(
   sessionId: string,
@@ -352,7 +361,8 @@ export async function saveProblemAttempt(
   problem: any,
   studentAnswer: string,
   isCorrect: boolean,
-  timeSpent: number
+  timeSpent: number,
+  hintsData?: HintsData
 ): Promise<boolean> {
   const { error } = await supabase
     .from('problem_attempts')
@@ -362,7 +372,12 @@ export async function saveProblemAttempt(
       problem_data: problem,
       student_answer: studentAnswer,
       is_correct: isCorrect,
-      time_spent: timeSpent
+      time_spent: timeSpent,
+      hints_used: hintsData ? {
+        attemptsCount: hintsData.attemptsCount,
+        firstAttemptCorrect: hintsData.firstAttemptCorrect,
+        hintLevelReached: hintsData.hintLevelReached
+      } : null
     })
 
   if (error) {
@@ -463,4 +478,306 @@ export async function getPracticeSessions(
 
   console.log(`✅ Fetched ${data?.length || 0} completed sessions for child ${childId}`)
   return data || []
+}
+
+/**
+ * Session attempt statistics from hints_used data
+ */
+export interface SessionAttemptStats {
+  firstTryCorrect: number
+  withHintsCorrect: number
+  incorrect: number
+  total: number
+}
+
+/**
+ * Get detailed attempt statistics for a session
+ * Queries problem_attempts and aggregates hints_used data
+ */
+export async function getSessionAttemptStats(sessionId: string): Promise<SessionAttemptStats> {
+  const { data, error } = await supabase
+    .from('problem_attempts')
+    .select('is_correct, hints_used')
+    .eq('session_id', sessionId)
+
+  if (error || !data) {
+    console.error('Error fetching session attempt stats:', error)
+    return { firstTryCorrect: 0, withHintsCorrect: 0, incorrect: 0, total: 0 }
+  }
+
+  let firstTryCorrect = 0
+  let withHintsCorrect = 0
+  let incorrect = 0
+
+  for (const attempt of data) {
+    const hintsData = attempt.hints_used as { firstAttemptCorrect?: boolean } | null
+    if (attempt.is_correct) {
+      // Only classify as "with hints" if explicitly marked as NOT first attempt correct
+      // Treat null hints_used (historical data) as first-try correct
+      if (hintsData?.firstAttemptCorrect === false) {
+        withHintsCorrect++
+      } else {
+        firstTryCorrect++
+      }
+    } else {
+      incorrect++
+    }
+  }
+
+  return { firstTryCorrect, withHintsCorrect, incorrect, total: data.length }
+}
+
+/**
+ * Lifetime statistics for a child across all sessions
+ */
+export interface LifetimeStats {
+  totalFirstTryCorrect: number
+  totalWithHintsCorrect: number
+  totalIncorrect: number
+  totalProblems: number
+  firstTryAccuracy: number      // percentage (0-100)
+  overallAccuracy: number       // percentage (0-100)
+  avgTimePerProblem: number     // seconds
+}
+
+/**
+ * Get lifetime statistics for a child
+ * Aggregates all problem_attempts and parses hints_used JSON
+ */
+export async function getLifetimeStats(childId: string): Promise<LifetimeStats> {
+  const { data, error } = await supabase
+    .from('problem_attempts')
+    .select('is_correct, hints_used, time_spent')
+    .eq('child_id', childId)
+
+  if (error || !data || data.length === 0) {
+    console.error('Error fetching lifetime stats:', error)
+    return {
+      totalFirstTryCorrect: 0,
+      totalWithHintsCorrect: 0,
+      totalIncorrect: 0,
+      totalProblems: 0,
+      firstTryAccuracy: 0,
+      overallAccuracy: 0,
+      avgTimePerProblem: 0
+    }
+  }
+
+  let firstTryCorrect = 0
+  let withHintsCorrect = 0
+  let incorrect = 0
+  let totalTime = 0
+
+  for (const attempt of data) {
+    const hintsData = attempt.hints_used as { firstAttemptCorrect?: boolean } | null
+    const timeSpent = attempt.time_spent || 0
+    totalTime += timeSpent
+
+    if (attempt.is_correct) {
+      // Only classify as "with hints" if explicitly marked as NOT first attempt correct
+      // Treat null hints_used (historical data) as first-try correct
+      if (hintsData?.firstAttemptCorrect === false) {
+        withHintsCorrect++
+      } else {
+        firstTryCorrect++
+      }
+    } else {
+      incorrect++
+    }
+  }
+
+  const totalProblems = data.length
+  const totalCorrect = firstTryCorrect + withHintsCorrect
+
+  return {
+    totalFirstTryCorrect: firstTryCorrect,
+    totalWithHintsCorrect: withHintsCorrect,
+    totalIncorrect: incorrect,
+    totalProblems,
+    firstTryAccuracy: totalProblems > 0 ? Math.round((firstTryCorrect / totalProblems) * 100) : 0,
+    overallAccuracy: totalProblems > 0 ? Math.round((totalCorrect / totalProblems) * 100) : 0,
+    avgTimePerProblem: totalProblems > 0 ? Math.round(totalTime / totalProblems) : 0
+  }
+}
+
+/**
+ * Daily trend data point for charting
+ */
+export interface TrendDataPoint {
+  date: string                  // YYYY-MM-DD
+  firstTryCorrect: number
+  withHintsCorrect: number
+  incorrect: number
+  total: number
+  firstTryAccuracy: number      // percentage
+}
+
+/**
+ * Get daily trend data for charting first-try accuracy over time
+ */
+export async function getDailyTrendData(
+  childId: string,
+  days: number = 30
+): Promise<TrendDataPoint[]> {
+  // Calculate the start date
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+  const startDateStr = startDate.toISOString()
+
+  const { data, error } = await supabase
+    .from('problem_attempts')
+    .select('is_correct, hints_used, created_at')
+    .eq('child_id', childId)
+    .gte('created_at', startDateStr)
+    .order('created_at', { ascending: true })
+
+  if (error || !data) {
+    console.error('Error fetching daily trend data:', error)
+    return []
+  }
+
+  // Group by date (use local date to match chart component)
+  const dateMap: Record<string, { firstTry: number; withHints: number; incorrect: number }> = {}
+
+  for (const attempt of data) {
+    // Use local date format to match DailyPracticeChart's date generation
+    const attemptDate = new Date(attempt.created_at)
+    const date = `${attemptDate.getFullYear()}-${String(attemptDate.getMonth() + 1).padStart(2, '0')}-${String(attemptDate.getDate()).padStart(2, '0')}`
+    if (!dateMap[date]) {
+      dateMap[date] = { firstTry: 0, withHints: 0, incorrect: 0 }
+    }
+
+    const hintsData = attempt.hints_used as { firstAttemptCorrect?: boolean } | null
+    if (attempt.is_correct) {
+      // Only classify as "with hints" if explicitly marked as NOT first attempt correct
+      // Treat null hints_used (historical data) as first-try correct
+      if (hintsData?.firstAttemptCorrect === false) {
+        dateMap[date].withHints++
+      } else {
+        dateMap[date].firstTry++
+      }
+    } else {
+      dateMap[date].incorrect++
+    }
+  }
+
+  // Convert to array sorted by date
+  return Object.entries(dateMap)
+    .map(([date, counts]) => {
+      const total = counts.firstTry + counts.withHints + counts.incorrect
+      return {
+        date,
+        firstTryCorrect: counts.firstTry,
+        withHintsCorrect: counts.withHints,
+        incorrect: counts.incorrect,
+        total,
+        firstTryAccuracy: total > 0 ? Math.round((counts.firstTry / total) * 100) : 0
+      }
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/**
+ * Per-level statistics
+ */
+export interface LevelStats {
+  level: string
+  totalProblems: number
+  firstTryCorrect: number
+  withHintsCorrect: number
+  incorrect: number
+  firstTryAccuracy: number
+  overallAccuracy: number
+  lastPracticed: string | null
+}
+
+/**
+ * Get performance breakdown by level
+ * Joins practice_sessions with problem_attempts to group by level
+ */
+export async function getLevelBreakdown(childId: string): Promise<LevelStats[]> {
+  // Get all sessions with their levels
+  const { data: sessions, error: sessionError } = await supabase
+    .from('practice_sessions')
+    .select('id, level, created_at')
+    .eq('child_id', childId)
+    .eq('status', 'completed')
+
+  if (sessionError || !sessions || sessions.length === 0) {
+    console.error('Error fetching sessions for level breakdown:', sessionError)
+    return []
+  }
+
+  // Create a map of session_id to level
+  const sessionLevelMap: Record<string, string> = {}
+  const levelLastPracticed: Record<string, string> = {}
+
+  for (const session of sessions) {
+    sessionLevelMap[session.id] = session.level
+    // Track most recent session per level
+    if (!levelLastPracticed[session.level] || session.created_at > levelLastPracticed[session.level]) {
+      levelLastPracticed[session.level] = session.created_at
+    }
+  }
+
+  // Get all problem attempts for these sessions
+  const sessionIds = sessions.map(s => s.id)
+  const { data: attempts, error: attemptError } = await supabase
+    .from('problem_attempts')
+    .select('session_id, is_correct, hints_used')
+    .in('session_id', sessionIds)
+
+  if (attemptError || !attempts) {
+    console.error('Error fetching attempts for level breakdown:', attemptError)
+    return []
+  }
+
+  // Aggregate by level
+  const levelMap: Record<string, { firstTry: number; withHints: number; incorrect: number }> = {}
+
+  for (const attempt of attempts) {
+    const level = sessionLevelMap[attempt.session_id]
+    if (!level) continue
+
+    if (!levelMap[level]) {
+      levelMap[level] = { firstTry: 0, withHints: 0, incorrect: 0 }
+    }
+
+    const hintsData = attempt.hints_used as { firstAttemptCorrect?: boolean } | null
+    if (attempt.is_correct) {
+      // Only classify as "with hints" if explicitly marked as NOT first attempt correct
+      // Treat null hints_used (historical data) as first-try correct
+      if (hintsData?.firstAttemptCorrect === false) {
+        levelMap[level].withHints++
+      } else {
+        levelMap[level].firstTry++
+      }
+    } else {
+      levelMap[level].incorrect++
+    }
+  }
+
+  // Convert to array and sort by level order
+  const levelOrder = ['7A', '6A', '5A', '4A', '3A', '2A', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
+
+  return Object.entries(levelMap)
+    .map(([level, counts]) => {
+      const total = counts.firstTry + counts.withHints + counts.incorrect
+      const correct = counts.firstTry + counts.withHints
+      return {
+        level,
+        totalProblems: total,
+        firstTryCorrect: counts.firstTry,
+        withHintsCorrect: counts.withHints,
+        incorrect: counts.incorrect,
+        firstTryAccuracy: total > 0 ? Math.round((counts.firstTry / total) * 100) : 0,
+        overallAccuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+        lastPracticed: levelLastPracticed[level] || null
+      }
+    })
+    .sort((a, b) => {
+      const aIndex = levelOrder.indexOf(a.level)
+      const bIndex = levelOrder.indexOf(b.level)
+      return aIndex - bIndex
+    })
 }

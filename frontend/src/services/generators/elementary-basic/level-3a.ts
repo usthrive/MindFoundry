@@ -1,5 +1,6 @@
 import type { Problem, Level3AProblemType } from '../types'
 import { randomInt, generateId, formatSequence } from '../utils'
+import { generateAdditionHints, generateGenericHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: Level3AProblemType
@@ -85,6 +86,7 @@ function generateSequenceProblem(maxNumber: number): Problem {
       'Count forward from the first number',
       'Each number is 1 more than the one before',
     ],
+    graduatedHints: generateGenericHints('sequence', '3A'),
   }
 }
 
@@ -110,6 +112,7 @@ function generateAdditionProblem(addend: number, maxFirst: number, subtype: Leve
       `Start at ${first} and count up ${addend}`,
       addend === 1 ? 'Adding 1 means the next number' : `Count: ${first}, ${first + 1}${addend > 1 ? `, ${first + 2}` : ''}${addend > 2 ? `, ${first + 3}` : ''}`,
     ],
+    graduatedHints: generateAdditionHints([first, addend], '3A'),
   }
 }
 
@@ -117,7 +120,7 @@ function generateMixedAdditionProblem(maxFirst: number): Problem {
   const addend = randomInt(1, 3)
   const first = randomInt(1, maxFirst)
   const sum = first + addend
-  
+
   return {
     id: generateId(),
     level: '3A',
@@ -132,6 +135,7 @@ function generateMixedAdditionProblem(maxFirst: number): Problem {
     hints: [
       `Start at ${first} and count up ${addend}`,
     ],
+    graduatedHints: generateAdditionHints([first, addend], '3A'),
   }
 }
 

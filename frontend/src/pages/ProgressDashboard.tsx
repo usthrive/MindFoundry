@@ -1,11 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import DailyPracticeChart from '@/components/charts/DailyPracticeChart'
 import { BadgeRow } from '@/components/badges/BadgeDisplay'
 import { getLevelDescription } from '@/utils/levelMapping'
-import { getWorksheetProgress, getPracticeSessions } from '@/services/progressService'
+import {
+  getWorksheetProgress,
+  getPracticeSessions,
+  getSessionAttemptStats,
+  getLifetimeStats,
+  getDailyTrendData,
+  getLevelBreakdown,
+  type SessionAttemptStats,
+  type LifetimeStats,
+  type TrendDataPoint,
+  type LevelStats
+} from '@/services/progressService'
 import { getChildBadges, type Badge } from '@/utils/badgeSystem'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
@@ -93,6 +105,10 @@ export default function ProgressDashboard() {
   const [recentSessions, setRecentSessions] = useState<any[]>([])
   const [dailyPracticeData, setDailyPracticeData] = useState<any[]>([])
   const [badges, setBadges] = useState<Badge[]>([])
+  const [sessionStats, setSessionStats] = useState<Record<string, SessionAttemptStats>>({})
+  const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats | null>(null)
+  const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
+  const [levelBreakdown, setLevelBreakdown] = useState<LevelStats[]>([])
   const [loading, setLoading] = useState(true)
 
   // Helper to format date as YYYY-MM-DD in local timezone
@@ -105,10 +121,13 @@ export default function ProgressDashboard() {
 
   const loadChildProgress = async (child: Child) => {
     setLoading(true)
-    const [progress, sessions, childBadges] = await Promise.all([
+    const [progress, sessions, childBadges, lifetime, trend, levels] = await Promise.all([
       getWorksheetProgress(child.id, child.current_level as KumonLevel),
       getPracticeSessions(child.id, 30),
-      getChildBadges(child.id)
+      getChildBadges(child.id),
+      getLifetimeStats(child.id),
+      getDailyTrendData(child.id, 30),
+      getLevelBreakdown(child.id)
     ])
 
     const dailyData = sessions.reduce((acc: any[], session: any) => {
@@ -128,10 +147,25 @@ export default function ProgressDashboard() {
       return acc
     }, [])
 
+    // Fetch attempt stats for recent sessions (for detailed breakdown)
+    const recentSessionsToShow = sessions.slice(0, 5)
+    const statsPromises = recentSessionsToShow.map((session: any) =>
+      getSessionAttemptStats(session.id).then(stats => ({ id: session.id, stats }))
+    )
+    const statsResults = await Promise.all(statsPromises)
+    const statsMap: Record<string, SessionAttemptStats> = {}
+    for (const { id, stats } of statsResults) {
+      statsMap[id] = stats
+    }
+
     setWorksheetProgress(progress)
-    setRecentSessions(sessions.slice(0, 5))
+    setRecentSessions(recentSessionsToShow)
     setDailyPracticeData(dailyData)
     setBadges(childBadges)
+    setSessionStats(statsMap)
+    setLifetimeStats(lifetime)
+    setTrendData(trend)
+    setLevelBreakdown(levels)
     setLoading(false)
   }
 
@@ -248,13 +282,96 @@ export default function ProgressDashboard() {
           </div>
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center shadow-sm">
             <div className="text-2xl font-bold text-purple-600">
-              {selectedChild.total_problems > 999 
+              {selectedChild.total_problems > 999
                 ? `${(selectedChild.total_problems / 1000).toFixed(1)}k`
                 : selectedChild.total_problems}
             </div>
             <div className="text-xs text-gray-500 mt-1">Problems</div>
           </div>
         </div>
+
+        {/* Lifetime Performance Card */}
+        {lifetimeStats && lifetimeStats.totalProblems > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">🎯</span>
+              <h3 className="text-sm font-semibold text-gray-700">Lifetime Performance</h3>
+            </div>
+
+            {/* Main stats row */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-emerald-600">
+                  {lifetimeStats.firstTryAccuracy}%
+                </div>
+                <div className="text-xs text-gray-500 mt-1">First-Try</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {lifetimeStats.totalProblems > 999
+                    ? `${(lifetimeStats.totalProblems / 1000).toFixed(1)}k`
+                    : lifetimeStats.totalProblems}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Problems</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">
+                  {lifetimeStats.avgTimePerProblem}s
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Avg Time</div>
+              </div>
+            </div>
+
+            {/* Breakdown bar */}
+            <div className="bg-gray-100 rounded-xl p-3">
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span className="text-gray-600">Problem Breakdown</span>
+                <span className="text-gray-500">{lifetimeStats.totalProblems} total</span>
+              </div>
+
+              {/* Stacked progress bar */}
+              <div className="h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                {lifetimeStats.totalFirstTryCorrect > 0 && (
+                  <div
+                    className="bg-emerald-500 h-full transition-all duration-500"
+                    style={{ width: `${(lifetimeStats.totalFirstTryCorrect / lifetimeStats.totalProblems) * 100}%` }}
+                    title={`First-try correct: ${lifetimeStats.totalFirstTryCorrect}`}
+                  />
+                )}
+                {lifetimeStats.totalWithHintsCorrect > 0 && (
+                  <div
+                    className="bg-blue-500 h-full transition-all duration-500"
+                    style={{ width: `${(lifetimeStats.totalWithHintsCorrect / lifetimeStats.totalProblems) * 100}%` }}
+                    title={`With hints: ${lifetimeStats.totalWithHintsCorrect}`}
+                  />
+                )}
+                {lifetimeStats.totalIncorrect > 0 && (
+                  <div
+                    className="bg-red-400 h-full transition-all duration-500"
+                    style={{ width: `${(lifetimeStats.totalIncorrect / lifetimeStats.totalProblems) * 100}%` }}
+                    title={`Incorrect: ${lifetimeStats.totalIncorrect}`}
+                  />
+                )}
+              </div>
+
+              {/* Legend */}
+              <div className="flex justify-center gap-4 mt-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-gray-600">✅ {lifetimeStats.totalFirstTryCorrect}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-gray-600">🔄 {lifetimeStats.totalWithHintsCorrect}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-400" />
+                  <span className="text-gray-600">❌ {lifetimeStats.totalIncorrect}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Badges Section */}
         {badges.length > 0 && (
@@ -305,10 +422,77 @@ export default function ProgressDashboard() {
           </p>
         </div>
 
+        {/* Level Breakdown Card */}
+        {levelBreakdown.length > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">📊</span>
+              <h3 className="text-sm font-semibold text-gray-700">Performance by Level</h3>
+            </div>
+
+            <div className="space-y-3">
+              {levelBreakdown.slice(0, 6).map((level) => (
+                <div key={level.level} className="flex items-center gap-3">
+                  {/* Level badge */}
+                  <div className={cn(
+                    'w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold',
+                    level.level === selectedChild.current_level
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700'
+                  )}>
+                    {level.level}
+                  </div>
+
+                  {/* Progress bar and stats */}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-600">
+                        {level.firstTryAccuracy}% first-try
+                      </span>
+                      <span className="text-gray-500">
+                        {level.totalProblems} problems
+                      </span>
+                    </div>
+
+                    {/* Stacked bar */}
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                      {level.firstTryCorrect > 0 && (
+                        <div
+                          className="bg-emerald-500 h-full"
+                          style={{ width: `${(level.firstTryCorrect / level.totalProblems) * 100}%` }}
+                        />
+                      )}
+                      {level.withHintsCorrect > 0 && (
+                        <div
+                          className="bg-blue-500 h-full"
+                          style={{ width: `${(level.withHintsCorrect / level.totalProblems) * 100}%` }}
+                        />
+                      )}
+                      {level.incorrect > 0 && (
+                        <div
+                          className="bg-red-400 h-full"
+                          style={{ width: `${(level.incorrect / level.totalProblems) * 100}%` }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Show more levels if available */}
+            {levelBreakdown.length > 6 && (
+              <p className="text-center text-xs text-gray-400 mt-3">
+                +{levelBreakdown.length - 6} more levels
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Activity Chart */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Daily Activity</h3>
-          <DailyPracticeChart data={dailyPracticeData} />
+          <DailyPracticeChart data={trendData.length > 0 ? trendData : dailyPracticeData} />
         </div>
 
         {/* Recent Sessions */}
@@ -321,10 +505,12 @@ export default function ProgressDashboard() {
                 const sessionAccuracy = session.problems_completed > 0
                   ? Math.round((session.problems_correct / session.problems_completed) * 100)
                   : 0
+                const stats = sessionStats[session.id]
+                const hasDetailedStats = stats && stats.total > 0
 
                 return (
-                  <div 
-                    key={session.id} 
+                  <div
+                    key={session.id}
                     className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
                   >
                     <div className="flex items-center gap-3">
@@ -342,11 +528,34 @@ export default function ProgressDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-800">
-                        {session.problems_correct}/{session.problems_completed}
-                      </p>
-                      <p className={`text-xs ${sessionAccuracy >= 80 ? 'text-green-600' : 'text-gray-500'}`}>
-                        {sessionAccuracy}%
+                      {hasDetailedStats ? (
+                        <>
+                          <p className="text-sm font-semibold text-gray-800">
+                            ✅ {stats.firstTryCorrect}/{stats.total}
+                          </p>
+                          {stats.withHintsCorrect > 0 && (
+                            <p className="text-xs text-blue-600 font-medium">
+                              +{stats.withHintsCorrect} with hints
+                            </p>
+                          )}
+                          {stats.incorrect > 0 && (
+                            <p className="text-xs text-red-500">
+                              {stats.incorrect} incorrect
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-800">
+                          {session.problems_correct}/{session.problems_completed}
+                        </p>
+                      )}
+                      <p className={cn(
+                        'text-xs',
+                        sessionAccuracy >= 90 ? 'text-green-600' :
+                        sessionAccuracy >= 70 ? 'text-yellow-600' :
+                        'text-gray-500'
+                      )}>
+                        {sessionAccuracy}% overall
                       </p>
                     </div>
                   </div>

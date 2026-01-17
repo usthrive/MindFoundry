@@ -1,5 +1,6 @@
 import type { Problem, LevelCProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
+import { generateAdditionHints, generateSubtractionHints, generateMultiplicationHints, generateDivisionHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelCProblemType
@@ -49,6 +50,7 @@ function generateReviewProblem(): Problem {
       correctAnswer: a + b,
       operands: [a, b],
       hints: ['Add column by column from right to left'],
+      graduatedHints: generateAdditionHints([a, b], 'C'),
     }
   }
   
@@ -66,6 +68,7 @@ function generateReviewProblem(): Problem {
     correctAnswer: larger - smaller,
     operands: [larger, smaller],
     hints: ['Subtract column by column from right to left'],
+    graduatedHints: generateSubtractionHints([larger, smaller], 'C'),
   }
 }
 
@@ -92,6 +95,7 @@ function generateTimesTableProblem(tables: number[]): Problem {
       correctAnswer: product,
       operands: [multiplier, table],
       hints: [`${multiplier} × ${table} is the same as ${table} × ${multiplier}`],
+      graduatedHints: generateMultiplicationHints([multiplier, table], 'C'),
     }
   }
   
@@ -110,6 +114,7 @@ function generateTimesTableProblem(tables: number[]): Problem {
       correctAnswer: multiplier,
       operands: [table, multiplier],
       hints: [`What times ${table} equals ${product}?`],
+      graduatedHints: generateMultiplicationHints([table, multiplier], 'C'),
     }
   }
   
@@ -129,6 +134,7 @@ function generateTimesTableProblem(tables: number[]): Problem {
     hints: [
       `Count by ${table}s: ${Array.from({length: multiplier}, (_, i) => table * (i + 1)).join(', ')}`,
     ],
+    graduatedHints: generateMultiplicationHints([table, multiplier], 'C'),
   }
 }
 
@@ -156,6 +162,7 @@ function generateMultiDigitMultiplication(maxMultiplicand: number, subtype: Leve
       'Start from the ones place',
       'Carry over if needed',
     ],
+    graduatedHints: generateMultiplicationHints([multiplicand, multiplier], 'C'),
   }
 }
 
@@ -197,6 +204,7 @@ function generateDivisionProblem(
       `How many times does ${divisor} go into ${dividend}?`,
       allowRemainder ? 'Remember to include the remainder if there is one' : '',
     ].filter(Boolean),
+    graduatedHints: generateDivisionHints([dividend, divisor], 'C'),
   }
 }
 

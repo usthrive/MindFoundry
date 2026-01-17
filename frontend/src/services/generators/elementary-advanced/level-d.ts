@@ -1,5 +1,6 @@
 import type { Problem, LevelDProblemType, Fraction } from '../types'
 import { randomInt, generateId, gcd } from '../utils'
+import { generateMultiplicationHints, generateDivisionHints, generateGenericHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelDProblemType
@@ -20,7 +21,7 @@ function generateReviewProblem(): Problem {
   const a = randomInt(100, 999)
   const b = randomInt(2, 9)
   const product = a * b
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -33,6 +34,7 @@ function generateReviewProblem(): Problem {
     correctAnswer: product,
     operands: [a, b],
     hints: ['Multiply each digit by the multiplier, starting from the right'],
+    graduatedHints: generateMultiplicationHints([a, b], 'D'),
   }
 }
 
@@ -40,7 +42,7 @@ function generateMultiplication2x2(): Problem {
   const a = randomInt(11, 99)
   const b = randomInt(11, 99)
   const product = a * b
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -57,6 +59,7 @@ function generateMultiplication2x2(): Problem {
       'Then multiply by the tens digit (shift one place left)',
       'Add the partial products',
     ],
+    graduatedHints: generateMultiplicationHints([a, b], 'D'),
   }
 }
 
@@ -64,7 +67,7 @@ function generateMultiplication3x2(): Problem {
   const a = randomInt(100, 999)
   const b = randomInt(11, 99)
   const product = a * b
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -81,6 +84,7 @@ function generateMultiplication3x2(): Problem {
       'Then multiply by the tens digit (shift one place left)',
       'Add the partial products',
     ],
+    graduatedHints: generateMultiplicationHints([a, b], 'D'),
   }
 }
 
@@ -89,9 +93,9 @@ function generateLongDivision(): Problem {
   const quotient = randomInt(10, 99)
   const remainder = randomInt(0, divisor - 1)
   const dividend = divisor * quotient + remainder
-  
+
   const answer = remainder > 0 ? `${quotient} R${remainder}` : quotient
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -108,13 +112,14 @@ function generateLongDivision(): Problem {
       'Multiply, subtract, bring down the next digit',
       'Repeat until done',
     ],
+    graduatedHints: generateDivisionHints([dividend, divisor], 'D'),
   }
 }
 
 function generateFractionIdentification(): Problem {
   const denominator = randomInt(2, 12)
   const numerator = randomInt(1, denominator - 1)
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -131,13 +136,14 @@ function generateFractionIdentification(): Problem {
       'The denominator is the total number of parts',
       'The numerator is the number of shaded parts',
     ],
+    graduatedHints: generateGenericHints('fraction', 'D'),
   }
 }
 
 function generateFractionShading(): Problem {
   const denominator = randomInt(2, 10)
   const numerator = randomInt(1, denominator)
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -154,6 +160,7 @@ function generateFractionShading(): Problem {
       `Divide the shape into ${denominator} equal parts`,
       `Shade ${numerator} of those parts`,
     ],
+    graduatedHints: generateGenericHints('fraction', 'D'),
   }
 }
 
@@ -161,12 +168,12 @@ function generateEquivalentFractions(): Problem {
   const originalDenom = randomInt(2, 6)
   const originalNum = randomInt(1, originalDenom - 1)
   const multiplier = randomInt(2, 5)
-  
+
   const newDenom = originalDenom * multiplier
   const newNum = originalNum * multiplier
-  
+
   const askNumerator = Math.random() < 0.5
-  
+
   if (askNumerator) {
     return {
       id: generateId(),
@@ -183,9 +190,10 @@ function generateEquivalentFractions(): Problem {
         `What was ${originalDenom} multiplied by to get ${newDenom}?`,
         `Multiply both numerator and denominator by the same number`,
       ],
+      graduatedHints: generateGenericHints('fraction', 'D'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -201,6 +209,7 @@ function generateEquivalentFractions(): Problem {
       `What was ${originalNum} multiplied by to get ${newNum}?`,
       `Multiply both numerator and denominator by the same number`,
     ],
+    graduatedHints: generateGenericHints('fraction', 'D'),
   }
 }
 
@@ -208,11 +217,11 @@ function generateReduceFraction(): Problem {
   const simpleDenom = randomInt(2, 10)
   const simpleNum = randomInt(1, simpleDenom - 1)
   const factor = randomInt(2, 5)
-  
+
   const num = simpleNum * factor
   const denom = simpleDenom * factor
   const divisor = gcd(num, denom)
-  
+
   return {
     id: generateId(),
     level: 'D',
@@ -228,6 +237,7 @@ function generateReduceFraction(): Problem {
       'Find the greatest common factor of the numerator and denominator',
       'Divide both by that factor',
     ],
+    graduatedHints: generateGenericHints('fraction', 'D'),
   }
 }
 
