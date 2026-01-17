@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Feedback from '@/components/feedback/Feedback'
+import { FeedbackModal } from '@/components/feedback'
 import NumberPad from '@/components/input/NumberPad'
 import InputDisplay from '@/components/input/InputDisplay'
 import TapToSelect from '@/components/input/TapToSelect'
@@ -67,6 +68,10 @@ export default function StudyPage() {
   const [attemptCount, setAttemptCount] = useState(0)  // Wrong attempts for current problem
   const [currentHintLevel, setCurrentHintLevel] = useState<HintLevel | null>(null)
   const [showTeaching, setShowTeaching] = useState(false)  // Full teaching modal visible
+
+  // Post-completion feedback prompt
+  const [showCompletionFeedback, setShowCompletionFeedback] = useState(false)
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
 
   // Check if current problem supports decimals
   const supportsDecimals = () => {
@@ -462,6 +467,12 @@ export default function StudyPage() {
         })
         setInputValue('')
 
+        // Show feedback prompt after completion
+        setShowCompletionFeedback(true)
+        setTimeout(() => {
+          setShowCompletionFeedback(false)
+        }, 10000) // Hide after 10 seconds
+
         // Save session completion and advance
         setTimeout(() => {
           handleSessionComplete(newCorrect, newCompleted)
@@ -668,6 +679,12 @@ export default function StudyPage() {
       message: scorecardLines,
       show: true
     })
+
+    // Show feedback prompt after completion
+    setShowCompletionFeedback(true)
+    setTimeout(() => {
+      setShowCompletionFeedback(false)
+    }, 10000) // Hide after 10 seconds
 
     // Wait briefly then handle session complete (reduced from 3000ms for faster transition)
     setTimeout(() => {
@@ -1097,7 +1114,36 @@ export default function StudyPage() {
           )}
         </Card>
 
+        {/* Post-completion feedback prompt - subtle text link */}
+        {showCompletionFeedback && (
+          <div className="text-center mt-4 animate-fade-in">
+            <p className="text-sm text-gray-500">
+              Something wrong with this worksheet?{' '}
+              <button
+                onClick={() => {
+                  setFeedbackModalOpen(true)
+                  setShowCompletionFeedback(false)
+                }}
+                className="text-primary hover:text-primary-dark underline font-medium"
+              >
+                Give Feedback
+              </button>
+            </p>
+          </div>
+        )}
+
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        initialContext={{
+          currentLevel,
+          currentWorksheet,
+        }}
+        childId={currentChild?.id}
+      />
     </div>
   )
 }

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { FeedbackModal } from '@/components/feedback'
 
 interface NavItem {
   icon: string
@@ -12,6 +14,7 @@ export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, currentChild } = useAuth()
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
 
   const navItems: NavItem[] = [
     { icon: '🏠', label: 'Home', path: '/select-child', requiresAuth: true },
@@ -72,7 +75,23 @@ export default function BottomNav() {
             </button>
           )
         })}
+
+        {/* Feedback/Help Button */}
+        <button
+          onClick={() => setIsFeedbackOpen(true)}
+          className="flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-all text-gray-500 hover:text-gray-700"
+        >
+          <span className="text-2xl mb-1">💬</span>
+          <span className="text-xs font-medium">Help</span>
+        </button>
       </nav>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        childId={currentChild?.id}
+      />
     </div>
   )
 }
