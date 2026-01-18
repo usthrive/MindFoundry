@@ -202,6 +202,8 @@ export default function StudyPage() {
   // Keyboard input support - handles both single-problem and worksheet modes
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't capture keyboard events when parent challenge modal is open
+      if (showParentChallenge) return
       if (!sessionActive) return
 
       const worksheetModeActive = shouldUseWorksheetMode()
@@ -261,7 +263,7 @@ export default function StudyPage() {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [inputValue, currentProblem, sessionActive, worksheetMode, currentLevel])
+  }, [inputValue, currentProblem, sessionActive, worksheetMode, currentLevel, showParentChallenge])
 
   const handleNumberClick = (num: number) => {
     if (num === -1) { // Negative sign signal (Level G+)

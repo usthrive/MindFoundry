@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 
@@ -41,6 +41,18 @@ export default function ParentModeChallenge({ isOpen, onSuccess, onCancel }: Par
   const [userAnswer, setUserAnswer] = useState('')
   const [error, setError] = useState(false)
   const [attempts, setAttempts] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Explicit focus management - autoFocus alone is unreliable across browsers
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to ensure DOM is ready and modal is visible
+      const timer = setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -67,7 +79,13 @@ export default function ParentModeChallenge({ isOpen, onSuccess, onCancel }: Par
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      onKeyUp={(e) => e.stopPropagation()}
+      onKeyPress={(e) => e.stopPropagation()}
+    >
       <Card variant="elevated" padding="lg" className="w-full max-w-md">
         <div className="text-center mb-6">
           <div className="text-4xl mb-4">🔐</div>
@@ -84,7 +102,10 @@ export default function ParentModeChallenge({ isOpen, onSuccess, onCancel }: Par
             </p>
 
             <input
-              type="number"
+              ref={inputRef}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9-]*"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               className={`w-full text-center text-2xl px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 ${

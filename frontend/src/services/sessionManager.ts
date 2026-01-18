@@ -278,63 +278,72 @@ export function getOperationForWorksheet(
  * Get a human-readable label for what's being practiced at a specific worksheet
  */
 export function getWorksheetLabel(level: KumonLevel, worksheetNumber: number): string {
-  // Level 3A progression
+  // Level 3A progression (aligned with level-3a.ts problem generator)
   if (level === '3A') {
     if (worksheetNumber <= 70) return 'Number Sequences to 120'
     if (worksheetNumber <= 130) return 'Addition +1 only'
-    if (worksheetNumber <= 160) return 'Addition +2 only'
-    if (worksheetNumber <= 180) return 'Addition +3 only'
+    if (worksheetNumber <= 170) return 'Addition +2 only'
+    if (worksheetNumber <= 190) return 'Addition +3 only'
     return 'Addition +1, +2, +3 Mixed'
   }
 
-  // Level 2A progression
+  // Level 2A progression (aligned with level-2a.ts problem generator)
   if (level === '2A') {
     if (worksheetNumber <= 10) return 'Review Addition +1-3'
     if (worksheetNumber <= 30) return 'Addition +4 only'
     if (worksheetNumber <= 50) return 'Addition +5 only'
-    if (worksheetNumber <= 70) return 'Addition +4-5 Mixed'
+    if (worksheetNumber <= 70) return 'Addition +1-5 Mixed'
     if (worksheetNumber <= 90) return 'Addition +6 only'
     if (worksheetNumber <= 110) return 'Addition +7 only'
-    if (worksheetNumber <= 130) return 'Addition +6-7 Mixed'
+    if (worksheetNumber <= 130) return 'Addition +1-7 Mixed'
     if (worksheetNumber <= 150) return 'Addition +8 only'
-    if (worksheetNumber <= 170) return 'Addition +9 and +10'
+    if (worksheetNumber <= 160) return 'Addition +9 only'
+    if (worksheetNumber <= 170) return 'Addition +10 only'
     return 'Addition +1 through +10 Mixed'
   }
 
-  // Level A progression
+  // Level A progression (aligned with level-a.ts problem generator)
   if (level === 'A') {
     if (worksheetNumber <= 80) return 'Addition Mastery'
-    if (worksheetNumber <= 90) return 'Subtraction -1 only'
-    if (worksheetNumber <= 100) return 'Subtraction -2 only'
-    if (worksheetNumber <= 110) return 'Subtraction -3 only'
-    if (worksheetNumber <= 120) return 'Subtraction -1, -2, -3 Mixed'
-    if (worksheetNumber <= 140) return 'Subtraction up to -5'
-    if (worksheetNumber <= 160) return 'Subtraction from 10'
-    if (worksheetNumber <= 180) return 'Subtraction from teens'
-    return 'Subtraction within 20'
+    if (worksheetNumber <= 90) return 'Subtracting 1'
+    if (worksheetNumber <= 100) return 'Subtracting 2'
+    if (worksheetNumber <= 110) return 'Subtracting 3'
+    if (worksheetNumber <= 120) return 'Subtracting 1, 2, 3 Mixed'
+    if (worksheetNumber <= 130) return 'Subtracting up to 5'
+    if (worksheetNumber <= 140) return 'Subtracting from 10'
+    if (worksheetNumber <= 150) return 'Subtracting from 11'
+    if (worksheetNumber <= 160) return 'Subtracting from 12'
+    if (worksheetNumber <= 170) return 'Subtracting from 14'
+    if (worksheetNumber <= 180) return 'Subtracting from 16'
+    if (worksheetNumber <= 190) return 'Subtracting from 20'
+    return 'Subtraction Summary'
   }
 
-  // Level B progression
+  // Level B progression (aligned with level-b.ts problem generator)
   if (level === 'B') {
     if (worksheetNumber <= 10) return 'Addition Review'
     if (worksheetNumber <= 40) return '2-Digit Addition (No Regrouping)'
     if (worksheetNumber <= 70) return '2-Digit Addition (With Carrying)'
     if (worksheetNumber <= 100) return '3-Digit Addition'
     if (worksheetNumber <= 120) return 'Subtraction Review'
-    if (worksheetNumber <= 150) return '2-Digit Subtraction (With Borrowing)'
-    if (worksheetNumber <= 160) return 'Mixed Add/Subtract 2-Digit'
-    return '3-Digit Subtraction'
+    if (worksheetNumber <= 150) return '2-Digit Subtraction (No Borrowing)'
+    if (worksheetNumber <= 180) return '2-Digit Subtraction (With Borrowing)'
+    if (worksheetNumber <= 190) return '3-Digit Subtraction'
+    return 'Mixed Add/Subtract 2-Digit'
   }
 
-  // Level C progression
+  // Level C progression (aligned with level-c.ts problem generator)
   if (level === 'C') {
     if (worksheetNumber <= 10) return 'Review'
-    if (worksheetNumber <= 30) return 'Multiplication ×2-5 Tables'
-    if (worksheetNumber <= 50) return 'Multiplication ×6-9 Tables'
+    if (worksheetNumber <= 34) return 'Multiplication ×2-5 Tables'
+    if (worksheetNumber <= 60) return 'Multiplication ×6-9 Tables'
+    if (worksheetNumber <= 70) return 'All Times Tables Mixed'
     if (worksheetNumber <= 110) return 'Multi-Digit Multiplication'
     if (worksheetNumber <= 120) return 'Introduction to Division'
+    if (worksheetNumber <= 140) return 'Division (Exact)'
     if (worksheetNumber <= 160) return 'Division with Remainders'
-    return 'Division Practice'
+    if (worksheetNumber <= 180) return '2-Digit Division'
+    return '3-Digit Division'
   }
 
   // Default labels for other levels
