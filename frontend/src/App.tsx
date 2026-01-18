@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import BottomNav from '@/components/navigation/BottomNav'
 import AuthPage from '@/pages/AuthPage'
+import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import ChildSelectPage from '@/pages/ChildSelectPage'
 import StudyPage from '@/pages/StudyPage'
@@ -16,6 +17,7 @@ function App() {
         <div className="min-h-screen pb-20"> {/* Add padding for bottom nav */}
           <Routes>
           <Route path="/login" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route
             path="/onboarding"
             element={
