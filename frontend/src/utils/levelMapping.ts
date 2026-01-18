@@ -12,6 +12,12 @@ export function getInitialLevelForGrade(gradeLevel: number): KumonLevel {
   // Reference: /home/usthr/Penta_University/Math_Tutor/Requirements/06-KUMON-OFFICIAL-PROGRESSION.md
 
   switch (gradeLevel) {
+    case -2: // Pre-K (Age 3-4)
+      return '7A' // Counting to 10
+
+    case -1: // Pre-K+ (Age 4-5)
+      return '6A' // Number Recognition to 30
+
     case 0: // Kindergarten
       return '4A' // Writing numbers to 50 (Ages 5-6)
 
@@ -36,7 +42,7 @@ export function getInitialLevelForGrade(gradeLevel: number): KumonLevel {
     default:
       // For grades above 6th or invalid inputs, default to level F
       // Could extend to G, H, etc. for higher grades if needed
-      return gradeLevel > 6 ? 'F' : '3A'
+      return gradeLevel > 6 ? 'F' : '7A'
   }
 }
 

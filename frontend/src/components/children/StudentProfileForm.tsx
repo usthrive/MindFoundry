@@ -13,6 +13,8 @@ interface StudentProfileFormProps {
 const AVATARS = ['🎓', '📚', '🚀', '⭐', '🎯', '🏆', '💡', '🎨', '🎭', '🎪', '🎸', '🎮']
 
 const GRADE_LEVELS = [
+  { value: -2, label: 'Pre-K (Age 3-4)' },
+  { value: -1, label: 'Pre-K+ (Age 4-5)' },
   { value: 0, label: 'Kindergarten' },
   { value: 1, label: '1st Grade' },
   { value: 2, label: '2nd Grade' },
@@ -25,8 +27,8 @@ const GRADE_LEVELS = [
 export default function StudentProfileForm({ fullName, onComplete, onBack }: StudentProfileFormProps) {
   const { user, refreshChildren } = useAuth()
   const [name, setName] = useState(fullName || '')
-  const [age, setAge] = useState(9)
-  const [gradeLevel, setGradeLevel] = useState(3)
+  const [age, setAge] = useState(6)
+  const [gradeLevel, setGradeLevel] = useState(1)
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -101,14 +103,14 @@ export default function StudentProfileForm({ fullName, onComplete, onBack }: Stu
               value={age}
               onChange={(e) => {
                 const value = parseInt(e.target.value)
-                setAge(isNaN(value) ? 9 : value)
+                setAge(isNaN(value) ? 6 : value)
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               required
-              min={4}
+              min={3}
               max={11}
             />
-            <p className="text-xs text-gray-500 mt-1">Must be between 4 and 11 years old</p>
+            <p className="text-xs text-gray-500 mt-1">Must be between 3 and 11 years old</p>
           </div>
 
           {/* Grade Level Select */}

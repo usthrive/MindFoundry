@@ -2,15 +2,21 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserProfile, getParentPin } from '@/services/userService'
+import type { Database } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import ChildSelector from '@/components/children/ChildSelector'
 import AddChildModal from '@/components/children/AddChildModal'
+import EditChildModal from '@/components/children/EditChildModal'
 import PinEntryModal from '@/components/auth/PinEntryModal'
+
+type Child = Database['public']['Tables']['children']['Row']
 
 export default function ChildSelectPage() {
   const { user, children, selectChild, currentChild, logout, loading } = useAuth()
   const navigate = useNavigate()
   const [showAddChildModal, setShowAddChildModal] = useState(false)
+  const [showEditChildModal, setShowEditChildModal] = useState(false)
+  const [editingChild, setEditingChild] = useState<Child | null>(null)
   const [showPinModal, setShowPinModal] = useState(false)
   const [parentPin, setParentPin] = useState<string | null>(null)
   const [pendingChildId, setPendingChildId] = useState<string | null>(null)
@@ -83,6 +89,20 @@ export default function ChildSelectPage() {
     console.log('Child profile created successfully!')
   }
 
+  const handleEditChild = (child: Child) => {
+    setEditingChild(child)
+    setShowEditChildModal(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setShowEditChildModal(false)
+    setEditingChild(null)
+  }
+
+  const handleChildUpdated = () => {
+    console.log('Child profile updated successfully!')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -126,6 +146,7 @@ export default function ChildSelectPage() {
               children={children}
               onSelectChild={handleSelectChild}
               onAddChild={handleAddChild}
+              onEditChild={handleEditChild}
             />
           </div>
         </div>
@@ -136,6 +157,16 @@ export default function ChildSelectPage() {
           onClose={handleCloseModal}
           onSuccess={handleChildAdded}
         />
+
+        {/* Edit Child Modal */}
+        {editingChild && (
+          <EditChildModal
+            isOpen={showEditChildModal}
+            child={editingChild}
+            onClose={handleCloseEditModal}
+            onSuccess={handleChildUpdated}
+          />
+        )}
 
         {/* PIN Entry Modal for switching children */}
         {parentPin && (

@@ -14,6 +14,8 @@ interface AddChildModalProps {
 const AVATARS = ['👦', '👧', '🧒', '👶', '🦸‍♂️', '🦸‍♀️', '🧙‍♂️', '🧙‍♀️', '🧑‍🎓', '👨‍🎓', '👩‍🎓', '🧑‍🔬']
 
 const GRADE_LEVELS = [
+  { value: -2, label: 'Pre-K (Age 3-4)' },
+  { value: -1, label: 'Pre-K+ (Age 4-5)' },
   { value: 0, label: 'Kindergarten' },
   { value: 1, label: '1st Grade' },
   { value: 2, label: '2nd Grade' },
@@ -26,8 +28,8 @@ const GRADE_LEVELS = [
 export default function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps) {
   const { user, refreshChildren } = useAuth()
   const [name, setName] = useState('')
-  const [age, setAge] = useState(7)
-  const [gradeLevel, setGradeLevel] = useState(1)
+  const [age, setAge] = useState(5)
+  const [gradeLevel, setGradeLevel] = useState(0)
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,8 +64,8 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: AddChildMo
 
       // Reset form
       setName('')
-      setAge(7)
-      setGradeLevel(1)
+      setAge(5)
+      setGradeLevel(0)
       setSelectedAvatar(AVATARS[0])
 
       onSuccess()
@@ -121,11 +123,11 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: AddChildMo
                 value={age}
                 onChange={(e) => {
                   const value = parseInt(e.target.value)
-                  setAge(isNaN(value) ? 7 : value)
+                  setAge(isNaN(value) ? 5 : value)
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
-                min={4}
+                min={3}
                 max={11}
               />
             </div>

@@ -389,6 +389,49 @@ export async function saveProblemAttempt(
 }
 
 /**
+ * Update child profile (name, age, grade, level, worksheet)
+ */
+export async function updateChildProfile(
+  childId: string,
+  updates: {
+    name?: string
+    age?: number
+    grade_level?: number
+    current_level?: string
+    current_worksheet?: number
+  }
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('children')
+    .update(updates)
+    .eq('id', childId)
+
+  if (error) {
+    console.error('Error updating child profile:', error)
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Delete child profile
+ */
+export async function deleteChildProfile(childId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('children')
+    .delete()
+    .eq('id', childId)
+
+  if (error) {
+    console.error('Error deleting child profile:', error)
+    return false
+  }
+
+  return true
+}
+
+/**
  * Get child profile by ID
  */
 export async function getChildProfile(childId: string): Promise<Child | null> {
