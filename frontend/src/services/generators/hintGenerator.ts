@@ -513,9 +513,9 @@ export function generateFractionAddSameDenomHints(
  * This is where most students struggle - the hint must address the WHY.
  */
 export function generateFractionAddDiffDenomHints(
-  num1: number,
+  _num1: number,
   denom1: number,
-  num2: number,
+  _num2: number,
   denom2: number,
   level: KumonLevel
 ): ProblemHints {
@@ -583,9 +583,9 @@ export function generateFractionSubtractSameDenomHints(
  * Fraction Subtraction - Different Denominators
  */
 export function generateFractionSubtractDiffDenomHints(
-  num1: number,
+  _num1: number,
   denom1: number,
-  num2: number,
+  _num2: number,
   denom2: number,
   level: KumonLevel
 ): ProblemHints {
@@ -918,7 +918,7 @@ export function generateDecimalToFractionHints(
  * Pedagogy: Show WHY order matters, not just PEMDAS memorization
  */
 export function generateOrderOfOperationsHints(
-  expression: string,
+  _expression: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1167,6 +1167,8 @@ export function generateExpressionEvaluationHints(
 }
 
 export function generateLikeTermsHints(
+  _terms1: number[],
+  _terms2: number[],
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1193,6 +1195,8 @@ export function generateLikeTermsHints(
 }
 
 export function generateDistributionHints(
+  _coefficient: number,
+  _expression: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1246,6 +1250,9 @@ export function generateOneStepEquationHints(
 }
 
 export function generateTwoStepEquationHints(
+  _a: number,
+  _b: number,
+  _result: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1272,6 +1279,8 @@ export function generateTwoStepEquationHints(
 }
 
 export function generateSubstitutionHints(
+  _eq1: string,
+  _eq2: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1298,6 +1307,8 @@ export function generateSubstitutionHints(
 }
 
 export function generateEliminationHints(
+  _eq1: string,
+  _eq2: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1324,6 +1335,7 @@ export function generateEliminationHints(
 }
 
 export function generateInequalityHints(
+  _expression: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1350,8 +1362,10 @@ export function generateInequalityHints(
 }
 
 export function generateSlopeInterceptHints(
-  slope: number,
-  yIntercept: number,
+  _x1: number,
+  _y1: number,
+  _x2: number,
+  _y2: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1364,7 +1378,7 @@ export function generateSlopeInterceptHints(
     },
     visual: {
       level: 'visual',
-      text: `Plot b on the y-axis. From there, use slope m: rise ${slope >= 0 ? slope : Math.abs(slope)} units ${slope >= 0 ? 'up' : 'down'}, run 1 right.`,
+      text: `Plot b on the y-axis. From there, use slope m. Rise over run!`,
       animationId: 'slope-intercept-graph',
       duration: 20,
     },
@@ -1382,6 +1396,10 @@ export function generateSlopeInterceptHints(
 // ============================================
 
 export function generateFOILHints(
+  _a: number,
+  _b: number,
+  _c: number,
+  _d: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1408,6 +1426,9 @@ export function generateFOILHints(
 }
 
 export function generateFactorTrinomialHints(
+  _a: number,
+  _b: number,
+  _c: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1434,6 +1455,8 @@ export function generateFactorTrinomialHints(
 }
 
 export function generateDifferenceOfSquaresHints(
+  _aSquared: number,
+  _bSquared: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1521,6 +1544,8 @@ export function generateSimplifyRadicalHints(
 // ============================================
 
 export function generateLimitHints(
+  _expression: string,
+  _approachValue: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1575,6 +1600,8 @@ export function generatePowerRuleDerivativeHints(
 }
 
 export function generateProductRuleHints(
+  _f: string,
+  _g: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1601,6 +1628,7 @@ export function generateProductRuleHints(
 }
 
 export function generateChainRuleHints(
+  _expression: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1627,6 +1655,8 @@ export function generateChainRuleHints(
 }
 
 export function generateIntegrationPowerRuleHints(
+  _coefficient: number,
+  _exponent: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1653,6 +1683,8 @@ export function generateIntegrationPowerRuleHints(
 }
 
 export function generateUSubstitutionHints(
+  _expression: string,
+  _u: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1683,6 +1715,8 @@ export function generateUSubstitutionHints(
 // ============================================
 
 export function generateTrigRatioHints(
+  _func: string,
+  _angle: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1736,6 +1770,7 @@ export function generateUnitCircleHints(
 }
 
 export function generateTrigIdentityHints(
+  _type: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1828,6 +1863,8 @@ export function generateGeometricSequenceHints(
 // ============================================
 
 export function generateVectorAdditionHints(
+  _vec1: number[],
+  _vec2: number[],
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1854,6 +1891,7 @@ export function generateVectorAdditionHints(
 }
 
 export function generateVectorMagnitudeHints(
+  _vector: number[],
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1880,6 +1918,8 @@ export function generateVectorMagnitudeHints(
 }
 
 export function generateDotProductHints(
+  _vec1: number[],
+  _vec2: number[],
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1906,6 +1946,8 @@ export function generateDotProductHints(
 }
 
 export function generateCrossProductHints(
+  _vec1: number[],
+  _vec2: number[],
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -1988,6 +2030,7 @@ export function generateMatrixMultiplicationHints(
 }
 
 export function generateDeterminantHints(
+  _matrix: number[][],
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -2074,6 +2117,7 @@ export function generateCombinationHints(
 }
 
 export function generateBasicProbabilityHints(
+  _type: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -2100,6 +2144,7 @@ export function generateBasicProbabilityHints(
 }
 
 export function generateConditionalProbabilityHints(
+  _type: string,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -2208,6 +2253,9 @@ export function generateStandardDeviationHints(
 }
 
 export function generateZScoreHints(
+  _x: number,
+  _mean: number,
+  _stdDev: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -2234,6 +2282,9 @@ export function generateZScoreHints(
 }
 
 export function generateNormalDistributionHints(
+  _mean: number,
+  _stdDev: number,
+  _x: number,
   level: KumonLevel
 ): ProblemHints {
   void level
@@ -3259,35 +3310,35 @@ export function generateHintsForProblem(
     case 'evaluate_expression':
       return generateExpressionEvaluationHints('x', operands[0], level)
     case 'simplify_like_terms':
-      return generateLikeTermsHints(level)
+      return generateLikeTermsHints([], [], level)
     case 'simplify_with_distribution':
     case 'distribution':
-      return generateDistributionHints(level)
+      return generateDistributionHints(0, '', level)
     case 'solve_one_step':
       return generateOneStepEquationHints('addition', level)
     case 'solve_two_step':
-      return generateTwoStepEquationHints(level)
+      return generateTwoStepEquationHints(0, 0, 0, level)
     case 'substitution':
     case 'system_substitution':
-      return generateSubstitutionHints(level)
+      return generateSubstitutionHints('', '', level)
     case 'elimination':
     case 'system_elimination':
-      return generateEliminationHints(level)
+      return generateEliminationHints('', '', level)
     case 'inequality':
     case 'solve_inequality':
-      return generateInequalityHints(level)
+      return generateInequalityHints('', level)
     case 'slope_intercept':
-      return generateSlopeInterceptHints(operands[0] || 1, operands[1] || 0, level)
+      return generateSlopeInterceptHints(operands[0] || 0, operands[1] || 0, operands[2] || 0, operands[3] || 0, level)
 
     // Quadratics & Factoring (Level I-J)
     case 'foil':
     case 'foil_binomials':
-      return generateFOILHints(level)
+      return generateFOILHints(0, 0, 0, 0, level)
     case 'factor_trinomial':
-      return generateFactorTrinomialHints(level)
+      return generateFactorTrinomialHints(0, 0, 0, level)
     case 'difference_of_squares':
     case 'factor_difference_of_squares':
-      return generateDifferenceOfSquaresHints(level)
+      return generateDifferenceOfSquaresHints(0, 0, level)
     case 'quadratic_formula':
       return generateQuadraticFormulaHints(operands[0] || 1, operands[1] || 0, operands[2] || 0, level)
     case 'simplify_radical':
@@ -3297,30 +3348,30 @@ export function generateHintsForProblem(
     // Calculus (Levels L-O)
     case 'limit':
     case 'evaluate_limit':
-      return generateLimitHints(level)
+      return generateLimitHints('', 0, level)
     case 'power_rule':
     case 'derivative_power':
       return generatePowerRuleDerivativeHints(operands[0] || 1, operands[1] || 2, level)
     case 'product_rule':
-      return generateProductRuleHints(level)
+      return generateProductRuleHints('', '', level)
     case 'chain_rule':
-      return generateChainRuleHints(level)
+      return generateChainRuleHints('', level)
     case 'indefinite_integral':
     case 'integration':
-      return generateIntegrationPowerRuleHints(level)
+      return generateIntegrationPowerRuleHints(0, 0, level)
     case 'u_substitution':
     case 'integration_by_substitution':
-      return generateUSubstitutionHints(level)
+      return generateUSubstitutionHints('', '', level)
 
     // Trigonometry (Level M)
     case 'trig_ratio':
     case 'evaluate_trig_ratio':
-      return generateTrigRatioHints(level)
+      return generateTrigRatioHints('', 0, level)
     case 'unit_circle':
       return generateUnitCircleHints(String(operands[0]), level)
     case 'trig_identity':
     case 'pythagorean_identities':
-      return generateTrigIdentityHints(level)
+      return generateTrigIdentityHints('', level)
 
     // Sequences (Level N)
     case 'arithmetic_sequence':
@@ -3333,14 +3384,14 @@ export function generateHintsForProblem(
     // Vectors (Level XV)
     case 'vector_addition':
     case 'vector_addition_2d':
-      return generateVectorAdditionHints(level)
+      return generateVectorAdditionHints([], [], level)
     case 'vector_magnitude':
-      return generateVectorMagnitudeHints(level)
+      return generateVectorMagnitudeHints([], level)
     case 'dot_product':
-      return generateDotProductHints(level)
+      return generateDotProductHints([], [], level)
     case 'cross_product':
     case 'cross_product_3d':
-      return generateCrossProductHints(level)
+      return generateCrossProductHints([], [], level)
 
     // Matrices (Level XM)
     case 'matrix_addition':
@@ -3349,7 +3400,7 @@ export function generateHintsForProblem(
       return generateMatrixMultiplicationHints(level)
     case 'determinant':
     case 'matrix_determinant':
-      return generateDeterminantHints(level)
+      return generateDeterminantHints([[]], level)
 
     // Probability (Level XP)
     case 'permutation':
@@ -3360,9 +3411,9 @@ export function generateHintsForProblem(
       return generateCombinationHints(operands[0], operands[1], level)
     case 'probability':
     case 'probability_basic':
-      return generateBasicProbabilityHints(level)
+      return generateBasicProbabilityHints('', level)
     case 'conditional_probability':
-      return generateConditionalProbabilityHints(level)
+      return generateConditionalProbabilityHints('', level)
 
     // Statistics (Level XS)
     case 'mean':
@@ -3375,9 +3426,9 @@ export function generateHintsForProblem(
       return generateStandardDeviationHints(level)
     case 'z_score':
     case 'z_scores':
-      return generateZScoreHints(level)
+      return generateZScoreHints(0, 0, 0, level)
     case 'normal_distribution':
-      return generateNormalDistributionHints(level)
+      return generateNormalDistributionHints(0, 0, 0, level)
 
     default:
       return generateGenericHints(operation, level)

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useCelebration } from '@/contexts/CelebrationContext'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Feedback from '@/components/feedback/Feedback'
@@ -30,12 +31,14 @@ import {
   getChildProfile
 } from '@/services/progressService'
 import { checkAndAwardBadges } from '@/utils/badgeSystem'
-import type { KumonLevel, HintLevel } from '@/types'
+import { celebrationTrigger } from '@/services/achievements'
+import type { KumonLevel, HintLevel, MasteryStatus } from '@/types'
 import type { Problem } from '@/services/generators/types'
 import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
 
 export default function StudyPage() {
   const { user, currentChild, logout } = useAuth()
+  const { triggerCelebration } = useCelebration()
   const navigate = useNavigate()
 
   const [inputValue, setInputValue] = useState('')
@@ -589,6 +592,51 @@ export default function StudyPage() {
       })
       if (newBadges.length > 0) {
         console.log(`New badges earned: ${newBadges.map(b => b.display_name).join(', ')}`)
+      }
+
+      // Check for achievements and trigger celebrations
+      try {
+        const sessionResult = {
+          session: {
+            id: sessionId,
+            childId: currentChild.id,
+            sessionNumber: 1 as const,
+            startedAt: new Date(sessionStartTime).toISOString(),
+            completedAt: new Date().toISOString(),
+            problemsCompleted: totalProblems,
+            problemsCorrect: score,
+            timeSpent: totalTimeSpent,
+            status: 'completed' as const,
+          },
+          child: {
+            id: currentChild.id,
+            userId: currentChild.user_id,
+            name: currentChild.name,
+            age: currentChild.age,
+            gradeLevel: currentChild.grade_level,
+            avatar: currentChild.avatar,
+            currentLevel: updatedChild.current_level as KumonLevel,
+            tier: (currentChild.tier || 'free') as 'free' | 'basic' | 'plus' | 'premium',
+            streak: updatedChild.streak,
+            totalProblems: updatedChild.total_problems,
+            createdAt: currentChild.created_at,
+            updatedAt: currentChild.updated_at,
+          },
+          dailyStreak: updatedChild.streak,
+          masteryStatuses: [] as MasteryStatus[],
+          isFirstProblem: updatedChild.total_problems <= totalProblems,
+          levelCompleted: false,
+          previousLevel: undefined,
+        }
+
+        const achievements = await celebrationTrigger.checkForAchievements(sessionResult)
+
+        // Trigger celebration for each new achievement
+        for (const achievement of achievements) {
+          triggerCelebration(achievement)
+        }
+      } catch (error) {
+        console.error('Error checking achievements:', error)
       }
     }
 

@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { CelebrationProvider } from '@/contexts/CelebrationContext'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import BottomNav from '@/components/navigation/BottomNav'
+import { CelebrationModal } from '@/components/celebrations'
 import AuthPage from '@/pages/AuthPage'
 import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import OnboardingPage from '@/pages/OnboardingPage'
@@ -13,6 +15,7 @@ import TestLevelsPage from '@/pages/TestLevelsPage'
 function App() {
   return (
     <AuthProvider>
+      <CelebrationProvider>
       <BrowserRouter>
         <div className="min-h-screen pb-20"> {/* Add padding for bottom nav */}
           <Routes>
@@ -62,8 +65,11 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
           <BottomNav />
+          {/* Global celebration modal - renders on top of everything */}
+          <CelebrationModal />
         </div>
       </BrowserRouter>
+      </CelebrationProvider>
     </AuthProvider>
   )
 }

@@ -3,7 +3,6 @@ import { randomInt, generateId, lcm, simplifyFraction, randomChoice } from '../u
 import {
   generateFractionMultiplyHints,
   generateFractionAddSameDenomHints,
-  generateOrderOfOperationsHints,
   generateOrderOfOpsFractionsHints,
   generateFractionToDecimalHints,
   generateDecimalToFractionHints,
