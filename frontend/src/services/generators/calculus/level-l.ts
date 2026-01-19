@@ -1,5 +1,13 @@
 import type { Problem, LevelLProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateLimitHints,
+  generatePowerRuleDerivativeHints,
+  generateProductRuleHints,
+  generateChainRuleHints,
+  generateIntegrationPowerRuleHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelLProblemType
@@ -40,9 +48,10 @@ function generateLogProperties(): Problem {
       question: `Expand: log(${a}${b === 1 ? '' : `^${b}`} × x)`,
       correctAnswer: `${b} log(${a}) + log(x)`,
       hints: ['log(ab) = log(a) + log(b)', 'log(a^n) = n log(a)'],
+      graduatedHints: generateGenericHints('log_expand', 'L'),
     }
   }
-  
+
   if (type === 'condense') {
     const a = randomInt(2, 4)
     return {
@@ -56,9 +65,10 @@ function generateLogProperties(): Problem {
       question: `Condense: ${a} log(x) + log(y)`,
       correctAnswer: `log(x^${a}y)`,
       hints: ['n log(a) = log(a^n)', 'log(a) + log(b) = log(ab)'],
+      graduatedHints: generateGenericHints('log_condense', 'L'),
     }
   }
-  
+
   const power = randomInt(2, 5)
   const result = Math.pow(base === 'e' ? Math.E : base as number, power)
   return {
@@ -72,6 +82,7 @@ function generateLogProperties(): Problem {
     question: `Evaluate: log_${base}(${Math.round(result)})`,
     correctAnswer: power,
     hints: [`${base}^? = ${Math.round(result)}`],
+    graduatedHints: generateGenericHints('log_evaluate', 'L'),
   }
 }
 
@@ -93,6 +104,7 @@ function generateLogEquation(): Problem {
     hints: [
       `Convert to exponential form: ${base}^${result} = x`,
     ],
+    graduatedHints: generateGenericHints('log_equation', 'L'),
   }
 }
 
@@ -105,7 +117,7 @@ function generateLimit(): Problem {
     const c = randomInt(-5, 10)
     const bStr = b >= 0 ? `+ ${b}x` : `- ${Math.abs(b)}x`
     const cStr = c >= 0 ? `+ ${c}` : `- ${Math.abs(c)}`
-    
+
     return {
       id: generateId(),
       level: 'L',
@@ -117,9 +129,10 @@ function generateLimit(): Problem {
       question: `Evaluate: lim(x→${c}) (${a}x² ${bStr} ${cStr})`,
       correctAnswer: a * c * c + b * c + c,
       hints: ['For continuous functions, substitute directly'],
+      graduatedHints: generateLimitHints(`${a}x² ${bStr} ${cStr}`, c, 'L'),
     }
   }
-  
+
   if (type === 'infinity') {
     const a = randomInt(1, 5)
     const b = randomInt(1, 5)
@@ -137,9 +150,10 @@ function generateLimit(): Problem {
         'Divide all terms by the highest power of x',
         'As x→∞, 1/x → 0',
       ],
+      graduatedHints: generateLimitHints(`(${a}x² + x)/(${b}x² + 1)`, Infinity, 'L'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'L',
@@ -151,6 +165,7 @@ function generateLimit(): Problem {
     question: `Evaluate: lim(x→0) (sin(x)/x)`,
     correctAnswer: 1,
     hints: ['This is a special limit equal to 1'],
+    graduatedHints: generateLimitHints('sin(x)/x', 0, 'L'),
   }
 }
 
@@ -169,6 +184,7 @@ function generatePowerRule(): Problem {
     question: `Find the derivative: f(x) = ${a === 1 ? '' : a}x^${n}`,
     correctAnswer: `${a * n}x^${n - 1}`,
     hints: ['Power rule: d/dx[x^n] = nx^(n-1)'],
+    graduatedHints: generatePowerRuleDerivativeHints(a, n, 'L'),
   }
 }
 
@@ -189,6 +205,7 @@ function generateProductRule(): Problem {
       'Product rule: (fg)\' = f\'g + fg\'',
       `f = ${a === 1 ? '' : a}x², g = e^x`,
     ],
+    graduatedHints: generateProductRuleHints(`${a === 1 ? '' : a}x²`, 'e^x', 'L'),
   }
 }
 
@@ -207,6 +224,7 @@ function generateQuotientRule(): Problem {
       'Quotient rule: (f/g)\' = (f\'g - fg\')/g²',
       'f = x², g = x + 1',
     ],
+    graduatedHints: generateGenericHints('quotient_rule', 'L'),
   }
 }
 
@@ -231,6 +249,7 @@ function generateChainRule(): Problem {
       'Chain rule: d/dx[g(x)^n] = n·g(x)^(n-1)·g\'(x)',
       `g(x) = ${a === 1 ? '' : a}x ${bStr}, g'(x) = ${a}`,
     ],
+    graduatedHints: generateChainRuleHints(`(${a === 1 ? '' : a}x ${bStr})^${n}`, 'L'),
   }
 }
 
@@ -256,6 +275,7 @@ function generateTangentLine(): Problem {
       `Find the point: (${x0}, ${y0})`,
       'Use point-slope form',
     ],
+    graduatedHints: generateGenericHints('tangent_line', 'L'),
   }
 }
 
@@ -274,6 +294,7 @@ function generateIndefiniteIntegral(): Problem {
     question: `Evaluate: ∫ ${a === 1 ? '' : a}x^${n} dx`,
     correctAnswer: `${a}x^${n + 1}/${n + 1} + C`,
     hints: ['Power rule for integration: ∫x^n dx = x^(n+1)/(n+1) + C'],
+    graduatedHints: generateIntegrationPowerRuleHints(a, n, 'L'),
   }
 }
 
@@ -299,6 +320,7 @@ function generateDefiniteIntegral(): Problem {
       'Apply the Fundamental Theorem of Calculus',
       `F(${b}) - F(${a})`,
     ],
+    graduatedHints: generateGenericHints('definite_integral', 'L'),
   }
 }
 

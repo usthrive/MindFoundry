@@ -1,5 +1,14 @@
 import type { Problem, LevelXPProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generatePermutationHints,
+  generateCombinationHints,
+  generateBinomialExpansionHints,
+  generateBasicProbabilityHints,
+  generateConditionalProbabilityHints,
+  generateExpectedValueHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function factorial(n: number): number {
   if (n <= 1) return 1
@@ -43,6 +52,7 @@ function generatePermutationBasic(): Problem {
       'This is a permutation: P(n,r) = n!/(n-r)!',
       `P(${n},${r}) = ${n}!/${n - r}!`,
     ],
+    graduatedHints: generatePermutationHints(n, r, 'XP'),
   }
 }
 
@@ -73,6 +83,7 @@ function generatePermutationWithRepetition(): Problem {
       'Use the formula for permutations with repetition',
       'n!/(n₁! × n₂! × ... × nₖ!)',
     ],
+    graduatedHints: generateGenericHints('permutation_repetition', 'XP'),
   }
 }
 
@@ -95,6 +106,7 @@ function generateCircularPermutation(): Problem {
         'For circular arrangements, fix one position',
         'Circular permutation = (n-1)!',
       ],
+      graduatedHints: generateGenericHints('circular_permutation', 'XP'),
     }
   }
 
@@ -113,6 +125,7 @@ function generateCircularPermutation(): Problem {
         'Necklace can be flipped, so divide by 2',
         '(n-1)!/2',
       ],
+      graduatedHints: generateGenericHints('necklace_permutation', 'XP'),
     }
   }
 
@@ -127,6 +140,7 @@ function generateCircularPermutation(): Problem {
     question: `${n} keys are to be arranged on a circular key ring. How many distinct arrangements are possible?`,
     correctAnswer: `${factorial(n - 1)}/2 = ${factorial(n - 1) / 2}`,
     hints: ['Key ring can be flipped, use (n-1)!/2'],
+    graduatedHints: generateGenericHints('circular_permutation', 'XP'),
   }
 }
 
@@ -148,6 +162,7 @@ function generateCombinationWithRepetition(): Problem {
       'Combination with repetition: C(n+r-1, r)',
       `C(${n + r - 1}, ${r})`,
     ],
+    graduatedHints: generateGenericHints('combination_repetition', 'XP'),
   }
 }
 
@@ -178,6 +193,7 @@ function generateBayesTheorem(): Problem {
     question: scenario.question,
     correctAnswer: scenario.answer,
     hints: scenario.hints,
+    graduatedHints: generateGenericHints('bayes_theorem', 'XP'),
   }
 }
 
@@ -199,6 +215,7 @@ function generateIndependentEvents(): Problem {
       'For independent events, multiply probabilities',
       'P(A and B) = P(A) × P(B)',
     ],
+    graduatedHints: generateGenericHints('independent_events', 'XP'),
   }
 }
 
@@ -220,6 +237,7 @@ function generateCombinationBasic(): Problem {
       'This is a combination: C(n,r) = n!/[r!(n-r)!]',
       `C(${n},${r}) = ${n}!/[${r}!×${n - r}!]`,
     ],
+    graduatedHints: generateCombinationHints(n, r, 'XP'),
   }
 }
 
@@ -244,6 +262,7 @@ function generateBinomialExpansion(): Problem {
       'Use the Binomial Theorem',
       'The term with x³ has the form C(n,3) × (ax)³ × b^(n-3)',
     ],
+    graduatedHints: generateBinomialExpansionHints(a, b, n, 'XP'),
   }
 }
 
@@ -263,6 +282,7 @@ function generateProbabilityBasic(): Problem {
       question: `What is the probability of rolling a ${target} on a fair die?`,
       correctAnswer: '1/6',
       hints: ['P(event) = favorable outcomes / total outcomes'],
+      graduatedHints: generateBasicProbabilityHints('dice', 'XP'),
     }
   }
   
@@ -279,6 +299,7 @@ function generateProbabilityBasic(): Problem {
       question: `What is the probability of drawing a ${suit} from a standard deck?`,
       correctAnswer: '13/52 = 1/4',
       hints: ['13 cards of each suit in a deck of 52'],
+      graduatedHints: generateBasicProbabilityHints('cards', 'XP'),
     }
   }
   
@@ -294,6 +315,7 @@ function generateProbabilityBasic(): Problem {
     question: `What is the probability of getting all heads in ${flips} coin flips?`,
     correctAnswer: `1/${Math.pow(2, flips)}`,
     hints: ['Each flip has probability 1/2, multiply for independent events'],
+    graduatedHints: generateBasicProbabilityHints('coins', 'XP'),
   }
 }
 
@@ -304,7 +326,7 @@ function generateConditionalProbability(): Problem {
     const red = randomInt(3, 6)
     const blue = randomInt(3, 6)
     const total = red + blue
-    
+
     return {
       id: generateId(),
       level: 'XP',
@@ -319,6 +341,7 @@ function generateConditionalProbability(): Problem {
         'After drawing first red, there are now red-1 red balls',
         'Total balls is now total-1',
       ],
+      graduatedHints: generateConditionalProbabilityHints('bag', 'XP'),
     }
   }
   
@@ -333,6 +356,7 @@ function generateConditionalProbability(): Problem {
     question: `Two cards are drawn without replacement. What is P(2nd is Ace | 1st is Ace)?`,
     correctAnswer: '3/51',
     hints: ['After drawing one ace, 3 aces remain in 51 cards'],
+    graduatedHints: generateConditionalProbabilityHints('cards', 'XP'),
   }
 }
 
@@ -354,6 +378,7 @@ function generateExpectedValue(): Problem {
         'E(X) = Σ x × P(x)',
         '(1+2+3+4+5+6)/6',
       ],
+      graduatedHints: generateExpectedValueHints('dice', 'XP'),
     }
   }
   
@@ -374,6 +399,7 @@ function generateExpectedValue(): Problem {
       'E(X) = (win × P(win)) + (lose × P(lose))',
       `(${win} × 0.5) + (-${lose} × 0.5)`,
     ],
+    graduatedHints: generateExpectedValueHints('game', 'XP'),
   }
 }
 

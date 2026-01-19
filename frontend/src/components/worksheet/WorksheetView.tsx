@@ -175,17 +175,24 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       return answer.toLowerCase() === correctAnswer.toLowerCase()
     } else if (typeof correctAnswer === 'object' && 'numerator' in correctAnswer) {
       const frac = correctAnswer as { numerator: number; denominator: number }
-      if (frac.denominator === 1) {
-        return parseInt(answer, 10) === frac.numerator
-      } else {
-        const parts = answer.split('/')
-        if (parts.length === 2) {
-          const studentNum = parseInt(parts[0].trim(), 10)
-          const studentDen = parseInt(parts[1].trim(), 10)
-          if (!isNaN(studentNum) && !isNaN(studentDen) && studentDen !== 0) {
-            return studentNum * frac.denominator === frac.numerator * studentDen
-          }
+
+      // Try parsing as a fraction first (works for both "12/6" and simple fractions)
+      const parts = answer.split('/')
+      if (parts.length === 2) {
+        const studentNum = parseInt(parts[0].trim(), 10)
+        const studentDen = parseInt(parts[1].trim(), 10)
+        if (!isNaN(studentNum) && !isNaN(studentDen) && studentDen !== 0) {
+          // Cross-multiply to check equivalence: studentNum/studentDen = frac.numerator/frac.denominator
+          return studentNum * frac.denominator === frac.numerator * studentDen
         }
+      }
+
+      // Try parsing as an integer (for whole number answers like "2" when answer is 2/1)
+      const asInt = parseInt(answer.trim(), 10)
+      if (!isNaN(asInt) && String(asInt) === answer.trim()) {
+        // Integer is equivalent to fraction with denominator 1
+        // asInt/1 = frac.numerator/frac.denominator
+        return asInt * frac.denominator === frac.numerator
       }
     }
     return false
@@ -623,30 +630,31 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         )}
       </div>
 
-      {/* Score summary after submission */}
+      {/* Show per-page score summary after submission */}
       {currentPageState.submitted && (() => {
-        // Calculate first-attempt correct count
-        const firstAttemptCorrect = Object.values(currentPageState.firstAttemptResults)
-          .filter(result => result === true).length
-        // Calculate corrected count (problems fixed after hints)
-        const correctedCount = Object.values(currentPageState.correctedProblems)
-          .filter(Boolean).length
+        const firstAttemptCorrect = currentPageState.problems.filter(
+          (_, index) => currentPageState.firstAttemptResults[index] === true
+        ).length
+        const totalProblems = currentPageState.problems.length
+        const correctedCount = Object.values(currentPageState.correctedProblems).filter(Boolean).length
 
         return (
           <div className="text-center text-lg font-medium">
-            <span className="text-green-600 font-bold">
-              {firstAttemptCorrect}
-            </span>
-            <span className="text-gray-500">/{currentPageState.problems.length}</span>
-            {correctedCount > 0 && (
-              <span className="text-blue-500 ml-2" title="Problems corrected after hints">
-                +{correctedCount}✓
+            {hasWrongAnswers ? (
+              <span className="text-amber-600">
+                Try the highlighted problems again!
               </span>
-            )}
-            {hasWrongAnswers && (
-              <span className="text-amber-600 ml-2">
-                (Try the highlighted problems again!)
-              </span>
+            ) : (
+              <>
+                <span className="text-green-600">
+                  ✓ First try: {firstAttemptCorrect}/{totalProblems}
+                </span>
+                {correctedCount > 0 && (
+                  <span className="text-blue-600 ml-2">
+                    | Fixed with hints: {correctedCount}
+                  </span>
+                )}
+              </>
             )}
           </div>
         )

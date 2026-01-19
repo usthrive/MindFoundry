@@ -1,5 +1,10 @@
 import type { Problem, LevelJProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateFOILHints,
+  generateQuadraticFormulaHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelJProblemType
@@ -58,6 +63,7 @@ function generatePolynomialExpansion(): Problem {
       'Multiply the first two binomials using FOIL',
       'Then multiply the result by the third binomial',
     ],
+    graduatedHints: generateFOILHints(a, b, c, d, 'J'),
   }
 }
 
@@ -84,9 +90,10 @@ function generateSumDifferenceCubes(): Problem {
         'Sum of cubes: a³ + b³ = (a + b)(a² - ab + b²)',
         `Here a = ${a === 1 ? '' : a}x and b = ${b}`,
       ],
+      graduatedHints: generateGenericHints('sum_cubes', 'J'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'J',
@@ -101,6 +108,7 @@ function generateSumDifferenceCubes(): Problem {
       'Difference of cubes: a³ - b³ = (a - b)(a² + ab + b²)',
       `Here a = ${a === 1 ? '' : a}x and b = ${b}`,
     ],
+    graduatedHints: generateGenericHints('difference_cubes', 'J'),
   }
 }
 
@@ -130,6 +138,7 @@ function generateFactorByGrouping(): Problem {
       'Factor out the GCF from each group',
       'Factor out the common binomial',
     ],
+    graduatedHints: generateGenericHints('factor_by_grouping', 'J'),
   }
 }
 
@@ -170,6 +179,7 @@ function generateComplexMultiplication(): Problem {
       'Use FOIL, remembering that i² = -1',
       'Combine real parts and imaginary parts',
     ],
+    graduatedHints: generateGenericHints('complex_multiplication', 'J'),
   }
 }
 
@@ -197,6 +207,7 @@ function generatePowersOfI(): Problem {
       'Powers of i cycle: i¹ = i, i² = -1, i³ = -i, i⁴ = 1',
       `Find ${power} mod 4`,
     ],
+    graduatedHints: generateGenericHints('powers_of_i', 'J'),
   }
 }
 
@@ -235,6 +246,7 @@ function generateDiscriminant(): Problem {
       'Discriminant = b² - 4ac',
       `b² = ${b * b}, 4ac = ${4 * a * c}`,
     ],
+    graduatedHints: generateQuadraticFormulaHints(a, b, c, 'J'),
   }
 }
 
@@ -263,9 +275,10 @@ function generateSumProductOfRoots(): Problem {
       question: `Find the sum of the roots: ${a === 1 ? '' : a}x² ${bStr} ${cStr} = 0`,
       correctAnswer: Number.isInteger(sumOfRoots) ? sumOfRoots : `${-b}/${a}`,
       hints: ['Sum of roots = -b/a'],
+      graduatedHints: generateGenericHints('sum_of_roots', 'J'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'J',
@@ -277,6 +290,7 @@ function generateSumProductOfRoots(): Problem {
     question: `Find the product of the roots: ${a === 1 ? '' : a}x² ${bStr} ${cStr} = 0`,
     correctAnswer: Number.isInteger(productOfRoots) ? productOfRoots : `${c}/${a}`,
     hints: ['Product of roots = c/a'],
+    graduatedHints: generateGenericHints('product_of_roots', 'J'),
   }
 }
 
@@ -322,6 +336,7 @@ function generatePolynomialDivision(): Problem {
       'Divide the leading terms first',
       `Divide by (x ${r >= 0 ? '- ' + r : '+ ' + Math.abs(r)})`,
     ],
+    graduatedHints: generateGenericHints('polynomial_division', 'J'),
   }
 }
 
@@ -361,6 +376,7 @@ function generateRemainderTheorem(): Problem {
       `Substitute x = ${c} into the polynomial`,
       `f(${c}) = ${a}(${c})³ + ${b}(${c})² + ${d}(${c}) + ${e}`,
     ],
+    graduatedHints: generateGenericHints('remainder_theorem', 'J'),
   }
 }
 

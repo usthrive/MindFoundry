@@ -667,13 +667,13 @@ export default function StudyPage() {
   const handleWorksheetComplete = async (totalCorrect: number, totalProblems: number) => {
     setSessionActive(false)
 
-    // Build detailed scorecard message
+    // Build detailed scorecard message with clearer labels
     const scorecardLines = [
       `🎉 Worksheet Complete!`,
       ``,
-      `✅ First Try: ${firstTryCorrect}/${totalProblems} (${Math.round((firstTryCorrect / totalProblems) * 100)}%)`,
-      withHintsCorrect > 0 ? `🔄 With Hints: ${withHintsCorrect}/${totalProblems} (${Math.round((withHintsCorrect / totalProblems) * 100)}%)` : null,
-      totalIncorrect > 0 ? `❌ Incorrect: ${totalIncorrect}/${totalProblems} (${Math.round((totalIncorrect / totalProblems) * 100)}%)` : null,
+      `✅ Correct on First Try: ${firstTryCorrect}/${totalProblems} (${Math.round((firstTryCorrect / totalProblems) * 100)}%)`,
+      withHintsCorrect > 0 ? `🔄 Correct After Hints: ${withHintsCorrect}/${totalProblems}` : null,
+      totalIncorrect > 0 ? `❌ Still Learning: ${totalIncorrect}/${totalProblems}` : null,
     ].filter(Boolean).join('\n')
 
     setFeedback({

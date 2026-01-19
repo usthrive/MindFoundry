@@ -1,5 +1,16 @@
 import type { Problem, LevelGProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateIntegerAdditionHints,
+  generateIntegerSubtractionHints,
+  generateIntegerMultiplicationHints,
+  generateIntegerDivisionHints,
+  generateExpressionEvaluationHints,
+  generateLikeTermsHints,
+  generateDistributionHints,
+  generateOneStepEquationHints,
+  generateTwoStepEquationHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelGProblemType
@@ -42,6 +53,7 @@ function generateIntegerAddition(): Problem {
       a < 0 && b < 0 ? 'Both negative: add absolute values, result is negative' :
       'Different signs: subtract smaller absolute value from larger, keep sign of larger',
     ],
+    graduatedHints: generateIntegerAdditionHints(a, b, 'G'),
   }
 }
 
@@ -68,6 +80,7 @@ function generateIntegerSubtraction(): Problem {
       'Subtracting a negative is the same as adding a positive',
       `${aStr} - (${b}) = ${aStr} + ${-b}`,
     ],
+    graduatedHints: generateIntegerSubtractionHints(a, b, 'G'),
   }
 }
 
@@ -94,6 +107,7 @@ function generateIntegerMultiplication(): Problem {
       'Multiply the absolute values',
       (a >= 0) === (b >= 0) ? 'Same signs = positive result' : 'Different signs = negative result',
     ],
+    graduatedHints: generateIntegerMultiplicationHints(a, b, 'G'),
   }
 }
 
@@ -120,6 +134,7 @@ function generateIntegerDivision(): Problem {
       'Divide the absolute values',
       (a >= 0) === (b >= 0) ? 'Same signs = positive result' : 'Different signs = negative result',
     ],
+    graduatedHints: generateIntegerDivisionHints(a, b, 'G'),
   }
 }
 
@@ -144,6 +159,7 @@ function generateEvaluateExpression(): Problem {
       `Substitute ${x} for x`,
       `${a}(${x}) + ${b >= 0 ? b : `(${b})`} = ${a * x} + ${b >= 0 ? b : `(${b})`}`,
     ],
+    graduatedHints: generateExpressionEvaluationHints(`${a}x + ${b >= 0 ? b : `(${b})`}`, x, 'G'),
   }
 }
 
@@ -187,6 +203,7 @@ function generateSimplifyLikeTerms(): Problem {
       'Combine the x terms together',
       'Combine the constant terms together',
     ],
+    graduatedHints: generateLikeTermsHints([a, b], [c, d], 'G'),
   }
 }
 
@@ -226,6 +243,7 @@ function generateSimplifyWithDistribution(): Problem {
       `Distribute ${a} to each term inside parentheses`,
       `${a} × ${b}x = ${a * b}x and ${a} × ${c >= 0 ? c : `(${c})`} = ${a * c}`,
     ],
+    graduatedHints: generateDistributionHints(a, `${b}x ${cStr}`, 'G'),
   }
 }
 
@@ -233,10 +251,10 @@ function generateSolveOneStep(): Problem {
   const x = randomInt(-10, 10)
   const a = randomInt(2, 10)
   const op = randomChoice(['+', '-', '×', '÷'])
-  
+
   let equation: string
   let hints: string[]
-  
+
   switch (op) {
     case '+': {
       const b = randomInt(1, 15)
@@ -264,7 +282,7 @@ function generateSolveOneStep(): Problem {
       equation = `x + 5 = ${x + 5}`
       hints = ['Subtract 5 from both sides']
   }
-  
+
   return {
     id: generateId(),
     level: 'G',
@@ -276,6 +294,7 @@ function generateSolveOneStep(): Problem {
     question: `Solve for x: ${equation}`,
     correctAnswer: x,
     hints,
+    graduatedHints: generateOneStepEquationHints(equation, 'G'),
   }
 }
 
@@ -301,6 +320,7 @@ function generateSolveTwoStep(): Problem {
       `First, ${b >= 0 ? `subtract ${b}` : `add ${Math.abs(b)}`} from both sides`,
       `Then divide both sides by ${a}`,
     ],
+    graduatedHints: generateTwoStepEquationHints(a, b, result, 'G'),
   }
 }
 
@@ -327,6 +347,7 @@ function generateSolveWithDistribution(): Problem {
       `First distribute: ${a * b}x ${a * c >= 0 ? `+ ${a * c}` : `- ${Math.abs(a * c)}`} = ${result}`,
       'Then solve the two-step equation',
     ],
+    graduatedHints: generateTwoStepEquationHints(a * b, a * c, result, 'G'),
   }
 }
 

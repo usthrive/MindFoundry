@@ -1,5 +1,18 @@
 import type { Problem, LevelOProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateTangentNormalHints,
+  generateIncreasingDecreasingHints,
+  generateConcavityHints,
+  generateExtremaHints,
+  generateUSubstitutionHints,
+  generateIntegrationByPartsHints,
+  generatePartialFractionsHints,
+  generateAreaBetweenCurvesHints,
+  generateVolumeHints,
+  generateSeparableDEHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelOProblemType
@@ -40,6 +53,7 @@ function generateTangentNormal(): Problem {
         `Point: (${x0}, ${y0})`,
         'Use point-slope form',
       ],
+      graduatedHints: generateTangentNormalHints('tangent', `${a === 1 ? '' : a}x²`, x0, 'O'),
     }
   }
   
@@ -57,6 +71,7 @@ function generateTangentNormal(): Problem {
       'Normal is perpendicular to tangent',
       `Slope of normal = -1/(slope of tangent)`,
     ],
+    graduatedHints: generateTangentNormalHints('normal', `${a === 1 ? '' : a}x²`, x0, 'O'),
   }
 }
 
@@ -75,7 +90,7 @@ function generateIncreasingDecreasing(): Problem {
     difficulty: 2,
     displayFormat: 'horizontal',
     question: `Find the intervals where f(x) = ${a === 1 ? '' : a === -1 ? '-' : a}(x ${hStr})² is increasing and decreasing`,
-    correctAnswer: a > 0 
+    correctAnswer: a > 0
       ? `Decreasing on (-∞, ${h}), Increasing on (${h}, ∞)`
       : `Increasing on (-∞, ${h}), Decreasing on (${h}, ∞)`,
     hints: [
@@ -83,6 +98,7 @@ function generateIncreasingDecreasing(): Problem {
       'Test the sign of f\'(x) in each interval',
       'f is increasing where f\' > 0, decreasing where f\' < 0',
     ],
+    graduatedHints: generateIncreasingDecreasingHints(`${a === 1 ? '' : a === -1 ? '-' : a}(x ${hStr})²`, 'O'),
   }
 }
 
@@ -104,6 +120,7 @@ function generateConcavity(): Problem {
       'Inflection points where f\'\'(x) = 0 and f\'\' changes sign',
       'Concave up where f\'\' > 0, concave down where f\'\' < 0',
     ],
+    graduatedHints: generateConcavityHints(`${a === 1 ? '' : a}x³ - 3x`, 'O'),
   }
 }
 
@@ -132,6 +149,7 @@ function generateMaxMin(): Problem {
       'Use the second derivative test',
       `f'(x) = ${2 * a}x ${b >= 0 ? '+' : '-'} ${Math.abs(b)}`,
     ],
+    graduatedHints: generateExtremaHints(`${a}x² ${bStr} ${cStr}`, 'O'),
   }
 }
 
@@ -154,6 +172,7 @@ function generateSubstitution(): Problem {
       'Then du = 2x dx, so x dx = du/2',
       'Substitute and integrate',
     ],
+    graduatedHints: generateUSubstitutionHints(`x(x² + ${a})^${n}`, `x² + ${a}`, 'O'),
   }
 }
 
@@ -173,6 +192,7 @@ function generateByParts(): Problem {
       'Let u = x, dv = e^x dx',
       'Then du = dx, v = e^x',
     ],
+    graduatedHints: generateIntegrationByPartsHints('x·e^x', 'x', 'e^x', 'O'),
   }
 }
 
@@ -195,6 +215,7 @@ function generatePartialFractions(): Problem {
       'Set up partial fractions: A/(x-a) + B/(x+b)',
       'Solve for A and B, then integrate each term',
     ],
+    graduatedHints: generatePartialFractionsHints(`${a + b}/(x² - ${a * b})`, 'O'),
   }
 }
 
@@ -216,6 +237,7 @@ function generateAreaBetweenCurves(): Problem {
       'Set up the integral: ∫(upper - lower) dx',
       'The curves intersect at x = 0 and x = ' + a,
     ],
+    graduatedHints: generateAreaBetweenCurvesHints('x²', `${a}x`, 'O'),
   }
 }
 
@@ -236,6 +258,7 @@ function generateVolume(): Problem {
       'Disk method: V = π∫[a to b] [f(x)]² dx',
       `[f(x)]² = ${r * r}x²`,
     ],
+    graduatedHints: generateVolumeHints('disk', `${r === 1 ? '' : r}x`, 'O'),
   }
 }
 
@@ -255,6 +278,7 @@ function generateSeparableDE(): Problem {
       'Integrate both sides',
       'Solve for y',
     ],
+    graduatedHints: generateSeparableDEHints('dy/dx = xy', 'O'),
   }
 }
 
@@ -274,6 +298,7 @@ function generateFirstOrderLinear(): Problem {
       'Find integrating factor: μ = e^∫P dx = e^x',
       'Multiply through and integrate',
     ],
+    graduatedHints: generateGenericHints('first_order_linear_de', 'O'),
   }
 }
 

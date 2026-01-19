@@ -1,5 +1,18 @@
 import type { Problem, LevelNProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateArithmeticSequenceHints,
+  generateGeometricSequenceHints,
+  generateSigmaNotationHints,
+  generateRecurrenceHints,
+  generateInductionHints,
+  generateInfiniteSeriesHints,
+  generateLimitHints,
+  generateContinuityHints,
+  generateTrigDerivativeHints,
+  generateHigherDerivativeHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelNProblemType
@@ -37,6 +50,7 @@ function generateArithmeticSequence(): Problem {
       'Formula: aₙ = a₁ + (n-1)d',
       `aₙ = ${a1} + (${n}-1)(${d})`,
     ],
+    graduatedHints: generateArithmeticSequenceHints(a1, d, n, 'N'),
   }
 }
 
@@ -61,6 +75,7 @@ function generateGeometricSequence(): Problem {
       'Formula: aₙ = a₁ × r^(n-1)',
       `aₙ = ${a1} × ${r}^${n - 1}`,
     ],
+    graduatedHints: generateGeometricSequenceHints(a1, r, n, 'N'),
   }
 }
 
@@ -86,6 +101,7 @@ function generateArithmeticSeries(): Problem {
       'Formula: Sₙ = n(a₁ + aₙ)/2',
       'First find aₙ, then use the formula',
     ],
+    graduatedHints: generateGenericHints('arithmetic_series', 'N'),
   }
 }
 
@@ -108,6 +124,7 @@ function generateSigmaNotation(): Problem {
       question: `Expand: Σ(i=${start} to ${end}) ${a}i`,
       correctAnswer: Array.from({ length: end - start + 1 }, (_, i) => a * (start + i)).join(' + '),
       hints: ['Substitute each value of i from the lower to upper bound'],
+      graduatedHints: generateSigmaNotationHints('expand', start, end, 'N'),
     }
   }
   
@@ -128,6 +145,7 @@ function generateSigmaNotation(): Problem {
       'This is the sum of first n natural numbers',
       'Formula: n(n+1)/2',
     ],
+    graduatedHints: generateSigmaNotationHints('evaluate', 1, n, 'N'),
   }
 }
 
@@ -155,6 +173,7 @@ function generateRecurrence(): Problem {
       'Calculate each term in order',
       `a₂ = ${multiplier}(${a1}) ${addend >= 0 ? '+' : '-'} ${Math.abs(addend)} = ${sequence[1]}`,
     ],
+    graduatedHints: generateRecurrenceHints(a1, multiplier, addend, 'N'),
   }
 }
 
@@ -201,6 +220,7 @@ function generateInductionProof(): Problem {
         'Step 2 (Inductive Step): Assume P(k) is true, prove P(k+1)',
         formula.inductiveStep,
       ],
+      graduatedHints: generateInductionHints('sum', formula.statement, 'N'),
     }
   }
   
@@ -229,6 +249,7 @@ function generateInductionProof(): Problem {
         'Step 2: Assume divisible for n = k, prove for n = k+1',
         `Show that the difference is also divisible by ${div.divisor}`,
       ],
+      graduatedHints: generateInductionHints('divisibility', div.expr, 'N'),
     }
   }
   
@@ -249,6 +270,7 @@ function generateInductionProof(): Problem {
       'Step 2: Assume 2^k > k² for some k ≥ ' + n0,
       'Prove 2^(k+1) > (k+1)² by showing 2·k² > (k+1)²',
     ],
+    graduatedHints: generateInductionHints('inequality', `2ⁿ > n²`, 'N'),
   }
 }
 
@@ -274,6 +296,7 @@ function generateInfiniteGeometricSeries(): Problem {
       'Converges only if |r| < 1',
       'Formula: S = a/(1-r)',
     ],
+    graduatedHints: generateInfiniteSeriesHints(a, rValue, 'N'),
   }
 }
 
@@ -299,6 +322,7 @@ function generateLimitOfFunction(): Problem {
       question: `Evaluate: lim(x→${x0}) (${a}x² ${bStr})`,
       correctAnswer: result,
       hints: ['For polynomials, substitute directly'],
+      graduatedHints: generateLimitHints(`${a}x² ${bStr}`, x0, 'N'),
     }
   }
   
@@ -314,6 +338,7 @@ function generateLimitOfFunction(): Problem {
       question: `Evaluate: lim(x→0) (1 - cos(x))/x²`,
       correctAnswer: '1/2',
       hints: ['This is a standard limit', 'Use L\'Hôpital\'s rule or series expansion'],
+      graduatedHints: generateLimitHints('(1 - cos(x))/x²', 0, 'N'),
     }
   }
   
@@ -328,6 +353,7 @@ function generateLimitOfFunction(): Problem {
     question: `Evaluate: lim(x→∞) (3x² + x)/(x² + 1)`,
     correctAnswer: 3,
     hints: ['Divide numerator and denominator by x²'],
+    graduatedHints: generateLimitHints('(3x² + x)/(x² + 1)', Infinity, 'N'),
   }
 }
 
@@ -349,6 +375,7 @@ function generateContinuity(): Problem {
       'Check: 1) f(a) exists, 2) lim(x→a) f(x) exists, 3) lim(x→a) f(x) = f(a)',
       'Polynomials are continuous everywhere',
     ],
+    graduatedHints: generateContinuityHints(`${a}x²`, x0, 'N'),
   }
 }
 
@@ -372,6 +399,7 @@ function generateTrigDerivative(): Problem {
     question: `Find the derivative: d/dx[${func}(x)]`,
     correctAnswer: derivatives[func],
     hints: [`Memorize: d/dx[sin(x)] = cos(x), d/dx[cos(x)] = -sin(x), d/dx[tan(x)] = sec²(x)`],
+    graduatedHints: generateTrigDerivativeHints(func, 'N'),
   }
 }
 
@@ -393,6 +421,7 @@ function generateHigherOrderDerivative(): Problem {
       'Apply the power rule repeatedly',
       'Each derivative reduces the power by 1',
     ],
+    graduatedHints: generateHigherDerivativeHints(a, n + 2, n, 'N'),
   }
 }
 

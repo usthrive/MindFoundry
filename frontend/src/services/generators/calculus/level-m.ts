@@ -1,5 +1,12 @@
 import type { Problem, LevelMProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateSlopeInterceptHints,
+  generateTrigRatioHints,
+  generateUnitCircleHints,
+  generateTrigIdentityHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelMProblemType
@@ -36,12 +43,13 @@ function generateEquationOfLine(): Problem {
       question: `Find the equation of the line through (${x1}, ${y1}) and (${x2}, ${y2})`,
       correctAnswer: `x = ${x1}`,
       hints: ['Vertical line: x = constant'],
+      graduatedHints: generateGenericHints('vertical_line', 'M'),
     }
   }
-  
+
   const slope = (y2 - y1) / (x2 - x1)
   const yIntercept = y1 - slope * x1
-  
+
   return {
     id: generateId(),
     level: 'M',
@@ -56,6 +64,7 @@ function generateEquationOfLine(): Problem {
       `slope = (${y2} - ${y1})/(${x2} - ${x1})`,
       'Use point-slope form: y - y1 = m(x - x1)',
     ],
+    graduatedHints: generateSlopeInterceptHints(x1, y1, x2, y2, 'M'),
   }
 }
 
@@ -78,6 +87,7 @@ function generateEquationOfCircle(): Problem {
     question: `Write the equation of a circle with center (${h}, ${k}) and radius ${r}`,
     correctAnswer: `(x ${hStr})² + (y ${kStr})² = ${r * r}`,
     hints: ['Standard form: (x - h)² + (y - k)² = r²'],
+    graduatedHints: generateGenericHints('circle_equation', 'M'),
   }
 }
 
@@ -116,6 +126,7 @@ function generateTrigRatio(): Problem {
     question: `Evaluate: ${func}(${angle}°)`,
     correctAnswer: values[angle][func as keyof typeof values[0]],
     hints: ['Use the unit circle or special triangles'],
+    graduatedHints: generateTrigRatioHints(func, angle, 'M'),
   }
 }
 
@@ -145,6 +156,7 @@ function generateUnitCircle(): Problem {
     question: `Find the coordinates of the point on the unit circle at angle ${angle}`,
     correctAnswer: coordinates[angle],
     hints: ['(cos θ, sin θ)'],
+    graduatedHints: generateUnitCircleHints(String(angle), 'M'),
   }
 }
 
@@ -163,9 +175,10 @@ function generatePythagoreanIdentity(): Problem {
       question: `Simplify: sin²θ + cos²θ`,
       correctAnswer: '1',
       hints: ['This is the Pythagorean identity'],
+      graduatedHints: generateTrigIdentityHints('pythagorean', 'M'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'M',
@@ -177,6 +190,7 @@ function generatePythagoreanIdentity(): Problem {
     question: `Simplify: 1 - sin²θ`,
     correctAnswer: 'cos²θ',
     hints: ['Use sin²θ + cos²θ = 1', 'Rearrange: cos²θ = 1 - sin²θ'],
+    graduatedHints: generateTrigIdentityHints('pythagorean', 'M'),
   }
 }
 
@@ -199,6 +213,7 @@ function generateTrigEquation(): Problem {
       'Find the reference angle',
       'Determine which quadrants have this value',
     ],
+    graduatedHints: generateGenericHints('trig_equation', 'M'),
   }
 }
 
@@ -223,6 +238,7 @@ function generateSineCosineGraph(): Problem {
       'Period = 2π/b',
       'Phase shift = c/b (to the right)',
     ],
+    graduatedHints: generateGenericHints('trig_graph', 'M'),
   }
 }
 
@@ -240,13 +256,14 @@ function generateSumDifferenceFormula(): Problem {
       difficulty: 2,
       displayFormat: 'horizontal',
       question: `Expand: sin(A ${type === 'sum' ? '+' : '-'} B)`,
-      correctAnswer: type === 'sum' 
+      correctAnswer: type === 'sum'
         ? 'sin(A)cos(B) + cos(A)sin(B)'
         : 'sin(A)cos(B) - cos(A)sin(B)',
       hints: [`sin(A ± B) = sin(A)cos(B) ± cos(A)sin(B)`],
+      graduatedHints: generateTrigIdentityHints('sum_difference', 'M'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'M',
@@ -260,6 +277,7 @@ function generateSumDifferenceFormula(): Problem {
       ? 'cos(A)cos(B) - sin(A)sin(B)'
       : 'cos(A)cos(B) + sin(A)sin(B)',
     hints: ['cos(A ± B) = cos(A)cos(B) ∓ sin(A)sin(B)'],
+    graduatedHints: generateTrigIdentityHints('sum_difference', 'M'),
   }
 }
 
@@ -278,9 +296,10 @@ function generateDoubleAngle(): Problem {
       question: `Express sin(2θ) in terms of sin(θ) and cos(θ)`,
       correctAnswer: '2sin(θ)cos(θ)',
       hints: ['Double angle formula for sine'],
+      graduatedHints: generateTrigIdentityHints('double_angle', 'M'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'M',
@@ -292,6 +311,7 @@ function generateDoubleAngle(): Problem {
     question: `Express cos(2θ) in terms of cos(θ)`,
     correctAnswer: '2cos²(θ) - 1',
     hints: ['cos(2θ) = cos²θ - sin²θ = 2cos²θ - 1 = 1 - 2sin²θ'],
+    graduatedHints: generateTrigIdentityHints('double_angle', 'M'),
   }
 }
 
@@ -311,6 +331,7 @@ function generateLawOfSines(): Problem {
     question: `In triangle ABC, angle A = ${A}°, angle B = ${B}°, and side a = ${a}. Find side b.`,
     correctAnswer: `b = ${a} × sin(${B}°)/sin(${A}°)`,
     hints: ['Law of Sines: a/sin(A) = b/sin(B) = c/sin(C)'],
+    graduatedHints: generateGenericHints('law_of_sines', 'M'),
   }
 }
 
@@ -330,6 +351,7 @@ function generateLawOfCosines(): Problem {
     question: `In triangle ABC, a = ${a}, b = ${b}, and angle C = ${angleC}°. Find side c.`,
     correctAnswer: `c² = ${a}² + ${b}² - 2(${a})(${b})cos(${angleC}°)`,
     hints: ['Law of Cosines: c² = a² + b² - 2ab·cos(C)'],
+    graduatedHints: generateGenericHints('law_of_cosines', 'M'),
   }
 }
 

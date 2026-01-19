@@ -1,5 +1,14 @@
 import type { Problem, LevelXVProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
+import {
+  generateVectorAdditionHints,
+  generateVectorMagnitudeHints,
+  generateDotProductHints,
+  generateCrossProductHints,
+  generateVectorLineHints,
+  generatePlaneEquationHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelXVProblemType
@@ -29,6 +38,7 @@ function generateVectorAddition(): Problem {
     question: `Add the vectors: a = <${a1}, ${a2}> and b = <${b1}, ${b2}>`,
     correctAnswer: `<${a1 + b1}, ${a2 + b2}>`,
     hints: ['Add corresponding components: <a₁+b₁, a₂+b₂>'],
+    graduatedHints: generateVectorAdditionHints([a1, a2], [b1, b2], 'XV'),
   }
 }
 
@@ -48,6 +58,7 @@ function generateScalarMultiplication(): Problem {
     question: `Calculate ${k} × <${a1}, ${a2}>`,
     correctAnswer: `<${k * a1}, ${k * a2}>`,
     hints: ['Multiply each component by the scalar: k<a, b> = <ka, kb>'],
+    graduatedHints: generateGenericHints('scalar_multiplication', 'XV'),
   }
 }
 
@@ -68,6 +79,7 @@ function generateVectorSubtraction(): Problem {
     question: `Subtract vectors: a - b where a = <${a1}, ${a2}> and b = <${b1}, ${b2}>`,
     correctAnswer: `<${a1 - b1}, ${a2 - b2}>`,
     hints: ['a - b = <a₁-b₁, a₂-b₂>'],
+    graduatedHints: generateGenericHints('vector_subtraction', 'XV'),
   }
 }
 
@@ -98,6 +110,7 @@ function generate3DCoordinates(): Problem {
       'd = √((x₂-x₁)² + (y₂-y₁)² + (z₂-z₁)²)',
       'The 3D distance formula extends the 2D Pythagorean theorem',
     ],
+    graduatedHints: generateGenericHints('distance_3d', 'XV'),
   }
 }
 
@@ -124,6 +137,7 @@ function generateVectorProjection(): Problem {
       'proj_b(a) = ((a·b)/(b·b)) × b',
       'First calculate a·b and |b|²',
     ],
+    graduatedHints: generateGenericHints('vector_projection', 'XV'),
   }
 }
 
@@ -159,6 +173,7 @@ function generateParallelPerpendicular(): Problem {
       'Parallel: a = kb for some scalar k',
       'Perpendicular: a·b = 0',
     ],
+    graduatedHints: generateGenericHints('parallel_perpendicular', 'XV'),
   }
 }
 
@@ -178,6 +193,7 @@ function generateVectorMagnitude(): Problem {
     question: `Find the magnitude of the vector v = <${a}, ${b}>`,
     correctAnswer: Number.isInteger(magnitude) ? magnitude : `√${a * a + b * b}`,
     hints: ['|v| = √(a² + b²)'],
+    graduatedHints: generateVectorMagnitudeHints([a, b], 'XV'),
   }
 }
 
@@ -199,6 +215,7 @@ function generateUnitVector(): Problem {
       'Unit vector = v/|v|',
       'First find |v|, then divide each component by |v|',
     ],
+    graduatedHints: generateGenericHints('unit_vector', 'XV'),
   }
 }
 
@@ -224,6 +241,7 @@ function generateDotProduct(): Problem {
       'a · b = a₁b₁ + a₂b₂',
       `${a1}(${b1}) + ${a2}(${b2})`,
     ],
+    graduatedHints: generateDotProductHints([a1, a2], [b1, b2], 'XV'),
   }
 }
 
@@ -247,6 +265,7 @@ function generateAngleBetweenVectors(): Problem {
       'cos(θ) = (a · b)/(|a| |b|)',
       'First find dot product and magnitudes',
     ],
+    graduatedHints: generateGenericHints('angle_between_vectors', 'XV'),
   }
 }
 
@@ -276,6 +295,7 @@ function generateCrossProduct(): Problem {
       'a × b = <a₂b₃-a₃b₂, a₃b₁-a₁b₃, a₁b₂-a₂b₁>',
       'Use the determinant method',
     ],
+    graduatedHints: generateCrossProductHints([a1, a2, a3], [b1, b2, b3], 'XV'),
   }
 }
 
@@ -301,6 +321,7 @@ function generateLineEquation(): Problem {
       'Vector form: r = r₀ + td',
       'where r₀ is a point and d is the direction',
     ],
+    graduatedHints: generateVectorLineHints([x0, y0, z0], [d1, d2, d3], 'XV'),
   }
 }
 
@@ -328,6 +349,7 @@ function generatePlaneEquation(): Problem {
       'Plane equation: a(x-x₀) + b(y-y₀) + c(z-z₀) = 0',
       'Or: ax + by + cz = d',
     ],
+    graduatedHints: generatePlaneEquationHints([x0, y0, z0], [a, b, c], 'XV'),
   }
 }
 

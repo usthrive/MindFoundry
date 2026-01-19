@@ -1,5 +1,15 @@
 import type { Problem, LevelFProblemType, Fraction } from '../types'
 import { randomInt, generateId, lcm, simplifyFraction, randomChoice } from '../utils'
+import {
+  generateFractionMultiplyHints,
+  generateFractionAddSameDenomHints,
+  generateOrderOfOperationsHints,
+  generateOrderOfOpsFractionsHints,
+  generateFractionToDecimalHints,
+  generateDecimalToFractionHints,
+  generateDecimalHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelFProblemType
@@ -21,11 +31,11 @@ function generateReviewProblem(): Problem {
   const denom1 = randomInt(2, 10)
   const num2 = randomInt(1, 8)
   const denom2 = randomInt(2, 10)
-  
+
   const resultNum = num1 * num2
   const resultDenom = denom1 * denom2
   const simplified = simplifyFraction(resultNum, resultDenom)
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -38,18 +48,19 @@ function generateReviewProblem(): Problem {
     correctAnswer: simplified,
     operands: [num1, denom1, num2, denom2],
     hints: ['Multiply numerators, multiply denominators, then simplify'],
+    graduatedHints: generateFractionMultiplyHints(num1, denom1, num2, denom2, 'F'),
   }
 }
 
 function generateThreeFractionMultDiv(): Problem {
   const nums = [randomInt(1, 5), randomInt(1, 5), randomInt(1, 5)]
   const denoms = [randomInt(2, 8), randomInt(2, 8), randomInt(2, 8)]
-  
+
   const ops = [randomChoice(['×', '÷']), randomChoice(['×', '÷'])]
-  
+
   let resultNum = nums[0]
   let resultDenom = denoms[0]
-  
+
   for (let i = 1; i < 3; i++) {
     if (ops[i - 1] === '×') {
       resultNum *= nums[i]
@@ -59,9 +70,9 @@ function generateThreeFractionMultDiv(): Problem {
       resultDenom *= nums[i]
     }
   }
-  
+
   const simplified = simplifyFraction(resultNum, resultDenom)
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -76,6 +87,7 @@ function generateThreeFractionMultDiv(): Problem {
       'Work from left to right',
       'For division, multiply by the reciprocal',
     ],
+    graduatedHints: generateOrderOfOpsFractionsHints([nums[0], denoms[0], nums[1], denoms[1], nums[2], denoms[2]], 'F'),
   }
 }
 
@@ -83,9 +95,9 @@ function generateThreeFractionAddition(): Problem {
   const denom = randomInt(3, 10)
   const nums = [randomInt(1, denom - 1), randomInt(1, denom - 1), randomInt(1, denom - 1)]
   const sum = nums[0] + nums[1] + nums[2]
-  
+
   const simplified = simplifyFraction(sum, denom)
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -101,6 +113,7 @@ function generateThreeFractionAddition(): Problem {
       'Keep the common denominator',
       'Simplify if possible',
     ],
+    graduatedHints: generateFractionAddSameDenomHints(nums[0] + nums[1], nums[2], denom, 'F'),
   }
 }
 
@@ -111,17 +124,17 @@ function generateOrderOfOperations(): Problem {
   const denom2 = randomInt(2, 6)
   const num3 = randomInt(1, 5)
   const denom3 = randomInt(2, 6)
-  
+
   const productNum = num2 * num3
   const productDenom = denom2 * denom3
-  
+
   const commonDenom = lcm(denom1, productDenom)
   const term1Num = num1 * (commonDenom / denom1)
   const term2Num = productNum * (commonDenom / productDenom)
-  
+
   const resultNum = term1Num + term2Num
   const simplified = simplifyFraction(resultNum, commonDenom)
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -137,6 +150,7 @@ function generateOrderOfOperations(): Problem {
       `First calculate ${num2}/${denom2} × ${num3}/${denom3}`,
       'Then add to the first fraction',
     ],
+    graduatedHints: generateOrderOfOpsFractionsHints([num1, denom1, num2, denom2, num3, denom3], 'F'),
   }
 }
 
@@ -144,9 +158,9 @@ function generateFractionToDecimal(): Problem {
   const denominators = [2, 4, 5, 8, 10, 20, 25, 50, 100]
   const denom = randomChoice(denominators)
   const num = randomInt(1, denom - 1)
-  
+
   const decimal = (num / denom).toFixed(denom === 100 ? 2 : denom <= 4 ? 2 : 3).replace(/\.?0+$/, '')
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -162,13 +176,14 @@ function generateFractionToDecimal(): Problem {
       'Divide the numerator by the denominator',
       `${num} ÷ ${denom} = ?`,
     ],
+    graduatedHints: generateFractionToDecimalHints(num, denom, 'F'),
   }
 }
 
 function generateDecimalToFraction(): Problem {
   const decimals = [0.5, 0.25, 0.75, 0.2, 0.4, 0.6, 0.8, 0.1, 0.125, 0.375]
   const decimal = randomChoice(decimals)
-  
+
   const fractionMap: Record<number, Fraction> = {
     0.5: { numerator: 1, denominator: 2 },
     0.25: { numerator: 1, denominator: 4 },
@@ -181,7 +196,7 @@ function generateDecimalToFraction(): Problem {
     0.125: { numerator: 1, denominator: 8 },
     0.375: { numerator: 3, denominator: 8 },
   }
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -196,6 +211,7 @@ function generateDecimalToFraction(): Problem {
       'Think about what fraction this decimal represents',
       'Reduce to lowest terms',
     ],
+    graduatedHints: generateDecimalToFractionHints(decimal, 'F'),
   }
 }
 
@@ -230,15 +246,15 @@ function generateWordProblem(): Problem {
       },
     },
   ]
-  
+
   const scenario = randomChoice(scenarios)
   const { params, answer } = scenario.generator()
-  
+
   let question = scenario.template
   for (const [key, value] of Object.entries(params)) {
     question = question.replace(`{${key}}`, String(value))
   }
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -254,6 +270,7 @@ function generateWordProblem(): Problem {
       'Set up the fraction problem',
       'Simplify your answer',
     ],
+    graduatedHints: generateGenericHints('word_problem', 'F'),
   }
 }
 
@@ -261,25 +278,30 @@ function generateDecimalOperations(): Problem {
   const a = (randomInt(1, 99) / 10).toFixed(1)
   const b = (randomInt(1, 99) / 10).toFixed(1)
   const op = randomChoice(['+', '-', '×'])
-  
+
   let result: number
+  let decimalOp: string
   switch (op) {
     case '+':
       result = parseFloat(a) + parseFloat(b)
+      decimalOp = 'decimal_add'
       break
     case '-':
       result = Math.abs(parseFloat(a) - parseFloat(b))
+      decimalOp = 'decimal_subtract'
       break
     case '×':
       result = parseFloat(a) * parseFloat(b)
+      decimalOp = 'decimal_multiply'
       break
     default:
       result = 0
+      decimalOp = 'decimal_add'
   }
-  
+
   const displayA = op === '-' && parseFloat(a) < parseFloat(b) ? b : a
   const displayB = op === '-' && parseFloat(a) < parseFloat(b) ? a : b
-  
+
   return {
     id: generateId(),
     level: 'F',
@@ -293,6 +315,7 @@ function generateDecimalOperations(): Problem {
     hints: [
       op === '×' ? 'Count total decimal places in the answer' : 'Line up the decimal points',
     ],
+    graduatedHints: generateDecimalHints([parseFloat(displayA), parseFloat(displayB)], decimalOp, 'F'),
   }
 }
 

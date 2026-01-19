@@ -1,5 +1,14 @@
 import type { Problem, LevelXMProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateMatrixAddHints,
+  generateMatrixMultHints,
+  generateDeterminantHints,
+  generateMatrixInverseHints,
+  generateMatrixSystemHints,
+  generateTransformationHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelXMProblemType
@@ -33,6 +42,7 @@ function generateMatrixAddition(): Problem {
     question: `Add: [[${a11}, ${a12}], [${a21}, ${a22}]] + [[${b11}, ${b12}], [${b21}, ${b22}]]`,
     correctAnswer: `[[${a11 + b11}, ${a12 + b12}], [${a21 + b21}, ${a22 + b22}]]`,
     hints: ['Add corresponding elements'],
+    graduatedHints: generateMatrixAddHints([[a11, a12], [a21, a22]], [[b11, b12], [b21, b22]], 'XM'),
   }
 }
 
@@ -65,6 +75,7 @@ function generateMatrixMultiplication(): Problem {
       'Row × Column',
       'c₁₁ = a₁₁b₁₁ + a₁₂b₂₁',
     ],
+    graduatedHints: generateMatrixMultHints([[a11, a12], [a21, a22]], [[b11, b12], [b21, b22]], 'XM'),
   }
 }
 
@@ -87,6 +98,7 @@ function generateDeterminant(): Problem {
     question: `Find the determinant: [[${a}, ${b}], [${c}, ${d}]]`,
     correctAnswer: det,
     hints: ['det = ad - bc'],
+    graduatedHints: generateDeterminantHints([[a, b], [c, d]], 'XM'),
   }
 }
 
@@ -116,6 +128,7 @@ function generateInverse(): Problem {
       'A⁻¹ = (1/det) × [[d, -b], [-c, a]]',
       `det = ${det}`,
     ],
+    graduatedHints: generateMatrixInverseHints([[a, b], [c, d]], 'XM'),
   }
 }
 
@@ -145,6 +158,7 @@ function generateSystemWithMatrices(): Problem {
       'X = A⁻¹B',
       'First find the inverse of A',
     ],
+    graduatedHints: generateMatrixSystemHints([[a, b], [c, d]], [e, f], 'XM'),
   }
 }
 
@@ -169,6 +183,7 @@ function generateMatrixSubtraction(): Problem {
     question: `Subtract: [[${a11}, ${a12}], [${a21}, ${a22}]] - [[${b11}, ${b12}], [${b21}, ${b22}]]`,
     correctAnswer: `[[${a11 - b11}, ${a12 - b12}], [${a21 - b21}, ${a22 - b22}]]`,
     hints: ['Subtract corresponding elements'],
+    graduatedHints: generateGenericHints('matrix_subtraction', 'XM'),
   }
 }
 
@@ -193,6 +208,7 @@ function generateSetUnion(): Problem {
     question: `Find A ∪ B where A = {${[...setA].sort((a, b) => a - b).join(', ')}} and B = {${[...setB].sort((a, b) => a - b).join(', ')}}`,
     correctAnswer: `{${[...union].sort((a, b) => a - b).join(', ')}}`,
     hints: ['Union includes all elements from both sets'],
+    graduatedHints: generateGenericHints('set_union', 'XM'),
   }
 }
 
@@ -217,6 +233,7 @@ function generateSetIntersection(): Problem {
     question: `Find A ∩ B where A = {${[...setA].sort((a, b) => a - b).join(', ')}} and B = {${[...setB].sort((a, b) => a - b).join(', ')}}`,
     correctAnswer: `{${intersection.sort((a, b) => a - b).join(', ')}}`,
     hints: ['Intersection includes only elements in BOTH sets'],
+    graduatedHints: generateGenericHints('set_intersection', 'XM'),
   }
 }
 
@@ -240,6 +257,7 @@ function generateSetDifference(): Problem {
     question: `Find A - B where A = {${[...setA].sort((a, b) => a - b).join(', ')}} and B = {${[...setB].sort((a, b) => a - b).join(', ')}}`,
     correctAnswer: `{${difference.sort((a, b) => a - b).join(', ')}}`,
     hints: ['A - B contains elements in A that are NOT in B'],
+    graduatedHints: generateGenericHints('set_difference', 'XM'),
   }
 }
 
@@ -280,6 +298,7 @@ function generateMapping(): Problem {
       'Onto: every element in codomain is mapped to',
       'Many-to-one: multiple inputs map to same output',
     ],
+    graduatedHints: generateGenericHints('mapping', 'XM'),
   }
 }
 
@@ -300,6 +319,7 @@ function generateDomainRange(): Problem {
       question: `Find the range of f(x) = ${a}x ${b >= 0 ? '+' : ''}${b} for domain {1, 2, 3, 4}`,
       correctAnswer: `{${[1, 2, 3, 4].map(x => a * x + b).join(', ')}}`,
       hints: ['Evaluate f(x) for each element in the domain'],
+      graduatedHints: generateGenericHints('domain_range', 'XM'),
     }
   }
 
@@ -314,6 +334,7 @@ function generateDomainRange(): Problem {
     question: `Find the range of f(x) = x² for domain {-2, -1, 0, 1, 2}`,
     correctAnswer: '{0, 1, 4}',
     hints: ['Calculate f(x) for each value', 'Remove duplicates in the range'],
+    graduatedHints: generateGenericHints('domain_range', 'XM'),
   }
 }
 
@@ -342,6 +363,7 @@ function generateCompositeMapping(): Problem {
       `First calculate f(${x}) = ${fx}`,
       `Then calculate g(${fx})`,
     ],
+    graduatedHints: generateGenericHints('composite_mapping', 'XM'),
   }
 }
 
@@ -387,6 +409,7 @@ function generateTransformation(): Problem {
         axis === 'y-axis' ? '(x, y) → (-x, y)' :
         '(x, y) → (y, x)',
       ],
+      graduatedHints: generateTransformationHints('reflection', axis, 'XM'),
     }
   }
   
@@ -429,6 +452,7 @@ function generateTransformation(): Problem {
         angle === 180 ? '(x, y) → (-x, -y)' :
         '(x, y) → (y, -x)',
       ],
+      graduatedHints: generateTransformationHints('rotation', angle.toString(), 'XM'),
     }
   }
   
@@ -447,6 +471,7 @@ function generateTransformation(): Problem {
     question: `Scale the point (${x}, ${y}) by a factor of ${k}`,
     correctAnswer: `(${k * x}, ${k * y})`,
     hints: ['(x, y) → (kx, ky)'],
+    graduatedHints: generateTransformationHints('scaling', k.toString(), 'XM'),
   }
 }
 

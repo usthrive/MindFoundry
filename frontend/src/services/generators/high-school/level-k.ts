@@ -1,5 +1,10 @@
 import type { Problem, LevelKProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateQuadraticFormulaHints,
+  generateInequalityHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelKProblemType
@@ -43,6 +48,7 @@ function generateQuadraticReview(): Problem {
       'Convert to vertex form: f(x) = a(x - h)² + k',
       'Or use: h = -b/(2a), k = f(h)',
     ],
+    graduatedHints: generateQuadraticFormulaHints(a, expanded_b, expanded_c, 'K'),
   }
 }
 
@@ -70,6 +76,7 @@ function generateMaxMin(): Problem {
       `This is in vertex form, vertex is (${h}, ${k})`,
       `Since a ${a > 0 ? '> 0' : '< 0'}, the parabola opens ${a > 0 ? 'up' : 'down'}`,
     ],
+    graduatedHints: generateGenericHints('max_min_value', 'K'),
   }
 }
 
@@ -99,6 +106,7 @@ function generateMaxMinRestrictedDomain(): Problem {
       'Evaluate f(x) at the endpoints',
       'Compare all values to find max and min',
     ],
+    graduatedHints: generateGenericHints('max_min_restricted', 'K'),
   }
 }
 
@@ -136,6 +144,7 @@ function generateQuadraticInequality(): Problem {
       'Find the zeros',
       'Test intervals to determine the solution',
     ],
+    graduatedHints: generateInequalityHints(`x² ${bStr} ${cStr} ${op} 0`, 'K'),
   }
 }
 
@@ -162,6 +171,7 @@ function generateCubicGraphing(): Problem {
       'The number outside shifts vertically',
       'A negative leading coefficient reflects over the x-axis',
     ],
+    graduatedHints: generateGenericHints('transformations', 'K'),
   }
 }
 
@@ -187,6 +197,7 @@ function generateAsymptotes(): Problem {
       'Vertical asymptote: set denominator = 0',
       'Horizontal asymptote: the value the function approaches as x → ±∞',
     ],
+    graduatedHints: generateGenericHints('asymptotes', 'K'),
   }
 }
 
@@ -210,6 +221,7 @@ function generateRationalEquation(): Problem {
       'Then solve the linear equation',
       'Check that x ≠ 0',
     ],
+    graduatedHints: generateGenericHints('rational_equation', 'K'),
   }
 }
 
@@ -239,6 +251,7 @@ function generateRadicalEquation(): Problem {
       'Solve the resulting equation',
       'Check your answer in the original equation',
     ],
+    graduatedHints: generateGenericHints('radical_equation', 'K'),
   }
 }
 
@@ -266,6 +279,7 @@ function generateExponentialGraph(): Problem {
       'Vertical shift: same sign as k',
       'Horizontal asymptote is y = k',
     ],
+    graduatedHints: generateGenericHints('exponential_graph', 'K'),
   }
 }
 
@@ -288,6 +302,7 @@ function generateExponentialEquation(): Problem {
       `Express ${result} as a power of ${base}`,
       `${result} = ${base}^${exponent}`,
     ],
+    graduatedHints: generateGenericHints('exponential_equation', 'K'),
   }
 }
 

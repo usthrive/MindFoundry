@@ -1,5 +1,15 @@
 import type { Problem, LevelXSProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateCentralTendencyHints,
+  generateVarianceHints,
+  generateBinomialDistributionHints,
+  generateNormalDistributionHints,
+  generateZScoreHints,
+  generateConfidenceIntervalHints,
+  generateHypothesisTestHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelXSProblemType
@@ -44,6 +54,7 @@ function generateMeanMedianMode(): Problem {
       question: `Find the mean of: ${data.join(', ')}`,
       correctAnswer: mean,
       hints: ['Mean = sum of values / number of values'],
+      graduatedHints: generateCentralTendencyHints('mean', data, 'XS'),
     }
   }
   
@@ -59,6 +70,7 @@ function generateMeanMedianMode(): Problem {
       question: `Find the median of: ${data.join(', ')}`,
       correctAnswer: median,
       hints: ['Sort the data and find the middle value'],
+      graduatedHints: generateCentralTendencyHints('median', data, 'XS'),
     }
   }
   
@@ -73,6 +85,7 @@ function generateMeanMedianMode(): Problem {
     question: `Find the mode of: ${data.join(', ')}`,
     correctAnswer: modes.length === data.length ? 'No mode' : modes.join(', '),
     hints: ['Mode is the most frequent value'],
+    graduatedHints: generateCentralTendencyHints('mode', data, 'XS'),
   }
 }
 
@@ -100,6 +113,7 @@ function generateVarianceStdDev(): Problem {
         `Mean = ${mean.toFixed(2)}`,
         'Variance = Σ(x - mean)²/n',
       ],
+      graduatedHints: generateVarianceHints('variance', data, 'XS'),
     }
   }
   
@@ -117,6 +131,7 @@ function generateVarianceStdDev(): Problem {
       'Standard deviation = √variance',
       `Mean = ${mean.toFixed(2)}`,
     ],
+    graduatedHints: generateVarianceHints('stddev', data, 'XS'),
   }
 }
 
@@ -139,6 +154,7 @@ function generateBinomialDistribution(): Problem {
       'P(X = k) = C(n,k) × p^k × (1-p)^(n-k)',
       'First calculate C(n,k)',
     ],
+    graduatedHints: generateBinomialDistributionHints(n, p, k, 'XS'),
   }
 }
 
@@ -161,6 +177,7 @@ function generateNormalDistribution(): Problem {
       'Convert to z-score first',
       'z = (x - μ)/σ',
     ],
+    graduatedHints: generateNormalDistributionHints(mean, stdDev, x, 'XS'),
   }
 }
 
@@ -184,6 +201,7 @@ function generateZScore(): Problem {
       question: `A test has mean ${mean} and std dev ${stdDev}. Find the z-score for a score of ${x}.`,
       correctAnswer: z,
       hints: ['z = (x - μ)/σ'],
+      graduatedHints: generateZScoreHints(x, mean, stdDev, 'XS'),
     }
   }
   
@@ -198,6 +216,7 @@ function generateZScore(): Problem {
     question: `A z-score of ${z} means the value is how many standard deviations from the mean?`,
     correctAnswer: `${Math.abs(Number(z))} standard deviation${Math.abs(Number(z)) !== 1 ? 's' : ''} ${Number(z) >= 0 ? 'above' : 'below'} the mean`,
     hints: ['Z-score tells how many standard deviations from mean'],
+    graduatedHints: generateGenericHints('z_score_interpret', 'XS'),
   }
 }
 
@@ -225,6 +244,7 @@ function generateConfidenceInterval(): Problem {
       `CI = x̄ ± z*(s/√n)`,
       `z* for ${confidence}% is ${z}`,
     ],
+    graduatedHints: generateConfidenceIntervalHints(xbar, s, n, confidence, 'XS'),
   }
 }
 
@@ -267,6 +287,7 @@ function generateSamplingMethods(): Problem {
       question: `What sampling method is this: "${method.scenario}"?`,
       correctAnswer: method.name,
       hints: [method.description],
+      graduatedHints: generateGenericHints('sampling', 'XS'),
     }
   }
 
@@ -281,6 +302,7 @@ function generateSamplingMethods(): Problem {
     question: `Describe ${method.name}`,
     correctAnswer: method.description,
     hints: [`Example: ${method.scenario}`],
+    graduatedHints: generateGenericHints('sampling', 'XS'),
   }
 }
 
@@ -310,6 +332,7 @@ function generateRegression(): Problem {
       `x̄ = ${meanX.toFixed(2)}, ȳ = ${meanY.toFixed(2)}`,
       'Calculate deviations from means first',
     ],
+    graduatedHints: generateGenericHints('regression', 'XS'),
   }
 }
 
@@ -333,6 +356,7 @@ function generateStandardError(): Problem {
       'SE = s / √n',
       `√${n} = ${Math.sqrt(n)}`,
     ],
+    graduatedHints: generateGenericHints('standard_error', 'XS'),
   }
 }
 
@@ -357,6 +381,7 @@ function generateChiSquare(): Problem {
       `Expected frequency = ${total}/${observed.length} = ${expected}`,
       'χ² = Σ(Observed - Expected)² / Expected',
     ],
+    graduatedHints: generateGenericHints('chi_square', 'XS'),
   }
 }
 
@@ -366,7 +391,7 @@ function generateHypothesisTest(): Problem {
   if (type === 'setup') {
     const scenario = randomChoice(['greater', 'less', 'different'])
     const claimed = randomInt(50, 100)
-    
+
     return {
       id: generateId(),
       level: 'XS',
@@ -376,15 +401,16 @@ function generateHypothesisTest(): Problem {
       difficulty: 2,
       displayFormat: 'horizontal',
       question: `A company claims the mean is ${claimed}. You believe it is ${scenario === 'greater' ? 'higher' : scenario === 'less' ? 'lower' : 'different'}. State the hypotheses.`,
-      correctAnswer: scenario === 'greater' 
+      correctAnswer: scenario === 'greater'
         ? `H₀: μ = ${claimed}, H₁: μ > ${claimed}`
-        : scenario === 'less' 
+        : scenario === 'less'
         ? `H₀: μ = ${claimed}, H₁: μ < ${claimed}`
         : `H₀: μ = ${claimed}, H₁: μ ≠ ${claimed}`,
       hints: [
         'H₀ (null) includes equality',
         'H₁ (alternative) is what you want to prove',
       ],
+      graduatedHints: generateHypothesisTestHints('setup', scenario, 'XS'),
     }
   }
   
@@ -405,6 +431,7 @@ function generateHypothesisTest(): Problem {
       'If p-value < α, reject H₀',
       'If p-value ≥ α, fail to reject H₀',
     ],
+    graduatedHints: generateHypothesisTestHints('decision', pValue.toString(), 'XS'),
   }
 }
 

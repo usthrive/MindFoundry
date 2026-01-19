@@ -1,5 +1,14 @@
 import type { Problem, LevelHProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateTwoStepEquationHints,
+  generateSubstitutionHints,
+  generateEliminationHints,
+  generateInequalityHints,
+  generateSlopeInterceptHints,
+  generateFOILHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelHProblemType
@@ -39,6 +48,7 @@ function generateBasicsReview(): Problem {
     question: `Solve for x: ${a}x ${bStr} = ${result}`,
     correctAnswer: x,
     hints: ['Isolate x by performing inverse operations'],
+    graduatedHints: generateTwoStepEquationHints(a, b, result, 'H'),
   }
 }
 
@@ -64,6 +74,7 @@ function generateSolveForVariable(): Problem {
       `Isolate terms with ${targetVar} on one side`,
       `Divide by the coefficient of ${targetVar}`,
     ],
+    graduatedHints: generateGenericHints('solve_for_variable', 'H'),
   }
 }
 
@@ -91,6 +102,7 @@ function generateTransformFormula(): Problem {
     question: `Solve ${formula.original} for ${formula.solveFor}`,
     correctAnswer: formula.answer,
     hints: ['Isolate the variable you are solving for'],
+    graduatedHints: generateGenericHints('transform_formula', 'H'),
   }
 }
 
@@ -124,6 +136,7 @@ function generateSystemSubstitution(): Problem {
       'Substitute into the first equation',
       'Solve for y, then find x',
     ],
+    graduatedHints: generateSubstitutionHints(`${a1}x ${b1Str} = ${c1}`, `x ${b2Str} = ${c2}`, 'H'),
   }
 }
 
@@ -157,6 +170,7 @@ function generateSystemElimination(): Problem {
       'Solve for x',
       'Substitute to find y',
     ],
+    graduatedHints: generateEliminationHints(`${a1}x ${b1Str} = ${c1}`, `${a2}x ${b2Str} = ${c2}`, 'H'),
   }
 }
 
@@ -187,6 +201,7 @@ function generateLinearInequality(): Problem {
       'Solve like an equation',
       a < 0 ? 'Remember to flip the inequality when dividing by a negative' : '',
     ].filter(Boolean),
+    graduatedHints: generateInequalityHints(`${a}x ${bStr} ${op} ${c}`, 'H'),
   }
 }
 
@@ -209,6 +224,7 @@ function generateFunctionNotation(): Problem {
     question: `If f(x) = ${a}x ${bStr}, find f(${x})`,
     correctAnswer: result,
     hints: [`Substitute ${x} for x in the expression`],
+    graduatedHints: generateGenericHints('function_notation', 'H'),
   }
 }
 
@@ -235,6 +251,7 @@ function generateSlopeInterceptForm(): Problem {
       `First find the slope: m = (${y2} - ${y1})/(${x2} - ${x1})`,
       'Then use point-slope form and convert',
     ],
+    graduatedHints: generateSlopeInterceptHints(x1, y1, x2, y2, 'H'),
   }
 }
 
@@ -268,6 +285,7 @@ function generatePolynomialAddition(): Problem {
     question: `Add: (${poly1}) + (${poly2})`,
     correctAnswer: answer,
     hints: ['Combine like terms: x² with x², x with x, constants with constants'],
+    graduatedHints: generateGenericHints('polynomial_addition', 'H'),
   }
 }
 
@@ -304,6 +322,7 @@ function generatePolynomialMultiplication(): Problem {
       'Use FOIL: First, Outer, Inner, Last',
       'Then combine like terms',
     ],
+    graduatedHints: generateFOILHints(a, b, c, d, 'H'),
   }
 }
 

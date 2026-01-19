@@ -1,5 +1,13 @@
 import type { Problem, LevelIProblemType } from '../types'
 import { randomInt, generateId, randomChoice } from '../utils'
+import {
+  generateFOILHints,
+  generateFactorTrinomialHints,
+  generateDifferenceOfSquaresHints,
+  generateQuadraticFormulaHints,
+  generateSimplifyRadicalHints,
+  generateGenericHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelIProblemType
@@ -50,6 +58,7 @@ function generateFOIL(): Problem {
     question: `Expand: (${a === 1 ? '' : a}x ${bStr})(${c === 1 ? '' : c}x ${dStr})`,
     correctAnswer: answer,
     hints: ['FOIL: First, Outer, Inner, Last', 'Combine like terms'],
+    graduatedHints: generateFOILHints(a, b, c, d, 'I'),
   }
 }
 
@@ -71,9 +80,10 @@ function generateSpecialProducts(): Problem {
       question: `Expand: (${a === 1 ? '' : a}x + ${b})²`,
       correctAnswer: expanded,
       hints: ['(a + b)² = a² + 2ab + b²'],
+      graduatedHints: generateGenericHints('special_products', 'I'),
     }
   }
-  
+
   if (type === 'square_diff') {
     const expanded = `${a * a}x² - ${2 * a * b}x + ${b * b}`
     return {
@@ -87,9 +97,10 @@ function generateSpecialProducts(): Problem {
       question: `Expand: (${a === 1 ? '' : a}x - ${b})²`,
       correctAnswer: expanded,
       hints: ['(a - b)² = a² - 2ab + b²'],
+      graduatedHints: generateGenericHints('special_products', 'I'),
     }
   }
-  
+
   const expanded = `${a * a}x² - ${b * b}`
   return {
     id: generateId(),
@@ -102,6 +113,7 @@ function generateSpecialProducts(): Problem {
     question: `Expand: (${a === 1 ? '' : a}x + ${b})(${a === 1 ? '' : a}x - ${b})`,
     correctAnswer: expanded,
     hints: ['(a + b)(a - b) = a² - b²'],
+    graduatedHints: generateDifferenceOfSquaresHints(a * a, b * b, 'I'),
   }
 }
 
@@ -127,6 +139,7 @@ function generateFactorGCF(): Problem {
     question: `Factor: ${term1}x ${term2Str}`,
     correctAnswer: `${gcf}(${a === 1 ? '' : a}x ${bStr})`,
     hints: [`Find the GCF of ${term1} and ${Math.abs(term2)}`],
+    graduatedHints: generateGenericHints('factor_gcf', 'I'),
   }
 }
 
@@ -156,6 +169,7 @@ function generateFactorTrinomialLeading1(): Problem {
     hints: [
       `Find two numbers that multiply to ${c} and add to ${b}`,
     ],
+    graduatedHints: generateFactorTrinomialHints(1, b, c, 'I'),
   }
 }
 
@@ -187,6 +201,7 @@ function generateFactorTrinomialLeadingA(): Problem {
       'Use the AC method or trial and error',
       `Multiply ${a} × ${last} = ${a * last}`,
     ],
+    graduatedHints: generateFactorTrinomialHints(a, middle, last, 'I'),
   }
 }
 
@@ -208,6 +223,7 @@ function generateDifferenceOfSquares(): Problem {
     question: `Factor: ${aSquared === 1 ? '' : aSquared}x² - ${bSquared}`,
     correctAnswer: `(${a === 1 ? '' : a}x + ${b})(${a === 1 ? '' : a}x - ${b})`,
     hints: ['Difference of squares: a² - b² = (a + b)(a - b)'],
+    graduatedHints: generateDifferenceOfSquaresHints(aSquared, bSquared, 'I'),
   }
 }
 
@@ -233,6 +249,7 @@ function generateSimplifySquareRoot(): Problem {
       `Find the largest perfect square factor of ${radicand}`,
       `${radicand} = ${coefficient} × ${remaining}`,
     ],
+    graduatedHints: generateSimplifyRadicalHints(radicand, 'I'),
   }
 }
 
@@ -260,6 +277,7 @@ function generateSolveByFactoring(): Problem {
       'Factor the trinomial',
       'Set each factor equal to zero',
     ],
+    graduatedHints: generateFactorTrinomialHints(1, b, c, 'I'),
   }
 }
 
@@ -289,13 +307,14 @@ function generateQuadraticFormula(): Problem {
     difficulty: 3,
     displayFormat: 'horizontal',
     question: `Solve using the quadratic formula: ${a === 1 ? '' : a}x² ${bStr} ${cStr} = 0`,
-    correctAnswer: Number.isInteger(x1) && Number.isInteger(x2) 
+    correctAnswer: Number.isInteger(x1) && Number.isInteger(x2)
       ? `x = ${x1} or x = ${x2}`
       : `x = (${-b} ± ${sqrtDisc})/${2 * a}`,
     hints: [
       'x = (-b ± √(b² - 4ac)) / 2a',
       `a = ${a}, b = ${b}, c = ${c}`,
     ],
+    graduatedHints: generateQuadraticFormulaHints(a, b, c, 'I'),
   }
 }
 
@@ -320,9 +339,10 @@ function generatePythagorean(): Problem {
       question: `A right triangle has legs of length ${a} and ${b}. Find the hypotenuse.`,
       correctAnswer: c,
       hints: ['Use the Pythagorean theorem: a² + b² = c²'],
+      graduatedHints: generateGenericHints('pythagorean', 'I'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'I',
@@ -334,6 +354,7 @@ function generatePythagorean(): Problem {
     question: `A right triangle has a leg of length ${a} and hypotenuse of length ${c}. Find the other leg.`,
     correctAnswer: b,
     hints: ['Use the Pythagorean theorem: a² + b² = c²', 'Solve for the unknown leg'],
+    graduatedHints: generateGenericHints('pythagorean', 'I'),
   }
 }
 
