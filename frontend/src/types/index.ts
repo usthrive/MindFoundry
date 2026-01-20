@@ -141,3 +141,128 @@ export interface SessionState {
   feedback: Feedback | null;
   showBrainBreak: boolean;
 }
+
+// ============================================
+// YouTube Video Integration Types
+// ============================================
+
+export type VideoTier = 'short' | 'detailed';
+
+export type VideoTriggerType =
+  | 'concept_intro'      // New concept introduction
+  | 'struggle_detected'  // 3+ wrong answers
+  | 'explicit_request'   // Help menu or button click
+  | 'review_mode'        // Post-session review
+  | 'parent_view';       // Parent dashboard preview
+
+export type VideoFeedback = 'helpful' | 'not_helpful' | 'skipped';
+
+export type TeachingStyle =
+  | 'song'
+  | 'animation'
+  | 'whiteboard'
+  | 'visual_model'
+  | 'lecture'
+  | 'demonstration'
+  | 'drill';
+
+// Video metadata from video_library table
+export interface Video {
+  id: string;
+  youtubeId: string;
+  title: string;
+  channelName: string;
+  durationSeconds: number;
+  thumbnailUrl: string | null;
+  tier: VideoTier;
+  minAge: number;
+  maxAge: number;
+  kumonLevel: string;
+  scoreOverall: number | null;
+  teachingStyle: TeachingStyle | null;
+  isActive: boolean;
+}
+
+// Concept-to-video mapping from concept_videos table
+export interface ConceptVideo {
+  id: string;
+  conceptId: string;
+  conceptName: string;
+  kumonLevel: string;
+  shortVideoId: string | null;
+  detailedVideoId: string | null;
+  showAtIntroduction: boolean;
+  showInHints: boolean;
+  showInHelpMenu: boolean;
+}
+
+// Video view record from video_views table
+export interface VideoView {
+  id: string;
+  childId: string;
+  videoId: string;
+  conceptId: string;
+  triggerType: VideoTriggerType;
+  sessionId: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  watchDurationSeconds: number;
+  completionPercentage: number;
+  userFeedback: VideoFeedback | null;
+  accuracyBeforeVideo: number | null;
+  accuracyAfterVideo: number | null;
+}
+
+// Video preferences from video_preferences table
+export interface VideoPreferences {
+  id: string;
+  childId: string;
+  videosEnabled: boolean;
+  autoSuggestEnabled: boolean;
+  suggestThreshold: number;
+  showInConceptIntro: boolean;
+  showInReview: boolean;
+  maxVideosPerDay: number;
+  maxVideoDurationMinutes: number;
+  suggestionsDismissedToday: number;
+  videosWatchedToday: number;
+}
+
+// Video suggestion for UI components
+export interface VideoSuggestion {
+  video: Video;
+  conceptId: string;
+  conceptName: string;
+  triggerType: VideoTriggerType;
+  reason: string;
+  urgency: 'gentle' | 'suggested' | 'recommended';
+  message: string;
+}
+
+// Video analytics for parent dashboard
+export interface VideoAnalytics {
+  totalVideosWatched: number;
+  totalMinutesWatched: number;
+  averageCompletion: number;
+  videosWatchedThisWeek: number;
+  minutesWatchedThisWeek: number;
+  mostHelpfulVideos: Array<{
+    video: Video;
+    timesWatched: number;
+    averageCompletion: number;
+    helpfulRating: number;
+  }>;
+  conceptsReviewed: string[];
+  videosByTriggerType: Record<VideoTriggerType, number>;
+}
+
+// Video effectiveness data
+export interface VideoEffectiveness {
+  videoId: string;
+  childId: string;
+  conceptId: string;
+  accuracyBefore: number;
+  accuracyAfter: number;
+  improvement: number;
+  wasHelpful: boolean;
+}

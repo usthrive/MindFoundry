@@ -162,6 +162,159 @@ export type Database = {
         }
         Update: never
       }
+      // YouTube Video Integration Tables
+      video_library: {
+        Row: {
+          id: string
+          youtube_id: string
+          title: string
+          channel_name: string
+          duration_seconds: number
+          thumbnail_url: string | null
+          tier: 'short' | 'detailed'
+          min_age: number
+          max_age: number
+          kumon_level: string
+          score_age_appropriate: number | null
+          score_educational: number | null
+          score_production: number | null
+          score_engagement: number | null
+          score_safety: number | null
+          score_overall: number | null
+          teaching_style: string | null
+          is_active: boolean
+          verified_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          youtube_id: string
+          title: string
+          channel_name: string
+          duration_seconds: number
+          thumbnail_url?: string | null
+          tier: 'short' | 'detailed'
+          min_age?: number
+          max_age?: number
+          kumon_level: string
+          score_overall?: number | null
+          teaching_style?: string | null
+        }
+        Update: {
+          title?: string
+          thumbnail_url?: string | null
+          is_active?: boolean
+          verified_at?: string | null
+        }
+      }
+      concept_videos: {
+        Row: {
+          id: string
+          concept_id: string
+          concept_name: string
+          kumon_level: string
+          short_video_id: string | null
+          detailed_video_id: string | null
+          show_at_introduction: boolean
+          show_in_hints: boolean
+          show_in_help_menu: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          concept_id: string
+          concept_name: string
+          kumon_level: string
+          short_video_id?: string | null
+          detailed_video_id?: string | null
+          show_at_introduction?: boolean
+          show_in_hints?: boolean
+          show_in_help_menu?: boolean
+        }
+        Update: {
+          short_video_id?: string | null
+          detailed_video_id?: string | null
+          show_at_introduction?: boolean
+          show_in_hints?: boolean
+          show_in_help_menu?: boolean
+        }
+      }
+      video_views: {
+        Row: {
+          id: string
+          child_id: string
+          video_id: string
+          concept_id: string
+          trigger_type: 'concept_intro' | 'struggle_detected' | 'explicit_request' | 'review_mode' | 'parent_view'
+          session_id: string | null
+          started_at: string
+          ended_at: string | null
+          watch_duration_seconds: number
+          completion_percentage: number
+          user_feedback: 'helpful' | 'not_helpful' | 'skipped' | null
+          accuracy_before_video: number | null
+          accuracy_after_video: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          child_id: string
+          video_id: string
+          concept_id: string
+          trigger_type: 'concept_intro' | 'struggle_detected' | 'explicit_request' | 'review_mode' | 'parent_view'
+          session_id?: string | null
+          started_at?: string
+          accuracy_before_video?: number | null
+        }
+        Update: {
+          ended_at?: string | null
+          watch_duration_seconds?: number
+          completion_percentage?: number
+          user_feedback?: 'helpful' | 'not_helpful' | 'skipped' | null
+          accuracy_after_video?: number | null
+        }
+      }
+      video_preferences: {
+        Row: {
+          id: string
+          child_id: string
+          videos_enabled: boolean
+          auto_suggest_enabled: boolean
+          suggest_threshold: number
+          show_in_concept_intro: boolean
+          show_in_review: boolean
+          max_videos_per_day: number
+          max_video_duration_minutes: number
+          suggestions_dismissed_today: number
+          videos_watched_today: number
+          last_reset_date: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          child_id: string
+          videos_enabled?: boolean
+          auto_suggest_enabled?: boolean
+          suggest_threshold?: number
+          show_in_concept_intro?: boolean
+          show_in_review?: boolean
+          max_videos_per_day?: number
+          max_video_duration_minutes?: number
+        }
+        Update: {
+          videos_enabled?: boolean
+          auto_suggest_enabled?: boolean
+          suggest_threshold?: number
+          show_in_concept_intro?: boolean
+          show_in_review?: boolean
+          max_videos_per_day?: number
+          max_video_duration_minutes?: number
+          suggestions_dismissed_today?: number
+          videos_watched_today?: number
+        }
+      }
     }
   }
 }

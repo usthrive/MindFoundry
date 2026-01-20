@@ -9,8 +9,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import type { KumonLevel } from '@/types'
+import type { KumonLevel, Video } from '@/types'
 import { getConceptAnimation, type ConceptIntroConfig } from '@/services/conceptAnimationMapping'
+import { ConceptVideoSection } from '@/components/video'
+import { VideoPlayerModal } from '@/components/video'
+import { hasVideoForConcept, recordVideoViewStart } from '@/services/videoService'
 import AnimationPlayer from '@/components/animations/core/AnimationPlayer'
 import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
 import NumberLineAnimation from '@/components/animations/visualizations/NumberLineAnimation'
@@ -34,6 +37,8 @@ interface ConceptIntroModalProps {
   level: KumonLevel
   worksheet: number
   onComplete: () => void
+  childId?: string
+  childAge?: number
 }
 
 export default function ConceptIntroModal({
@@ -42,6 +47,8 @@ export default function ConceptIntroModal({
   level: _level,
   worksheet: _worksheet,
   onComplete,
+  childId,
+  childAge = 7,
 }: ConceptIntroModalProps) {
   // Note: _level and _worksheet are available for future enhancements (e.g., showing level info)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -52,6 +59,12 @@ export default function ConceptIntroModal({
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false)
   // For optional concepts: track if user chose to watch animation
   const [showingOptionalAnimation, setShowingOptionalAnimation] = useState(false)
+
+  // Video integration state
+  const [showVideoSection, setShowVideoSection] = useState(false)
+  const [conceptHasVideo, setConceptHasVideo] = useState(false)
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
 
   // Get current concept config
   const currentConcept = concepts[currentIndex]
@@ -83,6 +96,18 @@ export default function ConceptIntroModal({
       setHasPlayedOnce(true)
     }
   }, [canContinue, hasPlayedOnce])
+
+  // Check if video exists for current concept when animation completes
+  useEffect(() => {
+    if (canContinue && currentConcept && childId) {
+      hasVideoForConcept(currentConcept).then((hasVideo) => {
+        setConceptHasVideo(hasVideo)
+        if (hasVideo) {
+          setShowVideoSection(true)
+        }
+      })
+    }
+  }, [canContinue, currentConcept, childId])
 
   // Ready state countdown (3 seconds before animation starts)
   // Only runs for mandatory concepts OR if user chose to watch optional animation
@@ -136,11 +161,35 @@ export default function ConceptIntroModal({
       setCurrentIndex((prev) => prev + 1)
       setCanContinue(false)
       setShowingOptionalAnimation(false) // Reset for next concept
+      setShowVideoSection(false) // Reset video section for next concept
+      setConceptHasVideo(false)
     } else {
       // All concepts viewed
       onComplete()
     }
   }, [canContinue, hasPlayedOnce, currentIndex, totalConcepts, onComplete])
+
+  // Handle video watch from concept intro
+  const handleWatchVideo = useCallback((video: Video) => {
+    setSelectedVideo(video)
+    setShowVideoPlayer(true)
+
+    // Record video view start
+    if (childId && currentConcept) {
+      recordVideoViewStart(
+        childId,
+        video.id,
+        currentConcept,
+        'concept_intro'
+      )
+    }
+  }, [childId, currentConcept])
+
+  // Handle skip video (continue without watching)
+  const handleSkipVideo = useCallback(() => {
+    setShowVideoSection(false)
+    // Proceed to continue or next concept
+  }, [])
 
   // Handle close button (always close when hasPlayedOnce, regardless of current concept)
   const handleClose = useCallback(() => {
@@ -377,6 +426,7 @@ export default function ConceptIntroModal({
   if (!show || concepts.length === 0) return null
 
   return (
+    <>
     <AnimatePresence>
       {show && (
         <motion.div
@@ -594,6 +644,16 @@ export default function ConceptIntroModal({
                             Watch Again
                           </button>
                         </div>
+
+                        {/* Optional Video Section - shows after animation completes */}
+                        {canContinue && conceptHasVideo && showVideoSection && childId && (
+                          <ConceptVideoSection
+                            conceptId={currentConcept}
+                            childAge={childAge}
+                            onWatch={handleWatchVideo}
+                            onSkip={handleSkipVideo}
+                          />
+                        )}
                       </>
                     )}
                   </motion.div>
@@ -649,5 +709,23 @@ export default function ConceptIntroModal({
         </motion.div>
       )}
     </AnimatePresence>
+
+    {/* Video Player Modal for concept intro videos */}
+    {selectedVideo && childId && (
+      <VideoPlayerModal
+        show={showVideoPlayer}
+        video={selectedVideo}
+        conceptId={currentConcept}
+        conceptName={config?.title}
+        triggerType="concept_intro"
+        childId={childId}
+        onClose={() => {
+          setShowVideoPlayer(false)
+          setSelectedVideo(null)
+          setShowVideoSection(false) // Hide video section after watching
+        }}
+      />
+    )}
+    </>
   )
 }

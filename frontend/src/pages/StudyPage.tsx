@@ -19,6 +19,10 @@ import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/Wor
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { ConceptIntroModal } from '@/components/concept-intro'
+import { VideoPlayerModal, VideoSuggestionBanner } from '@/components/video'
+import { useVideoPlayer } from '@/hooks/useVideoPlayer'
+import { useVideoSuggestion } from '@/hooks/useVideoSuggestion'
+import { getConceptFromProblem } from '@/services/videoSelectionService'
 import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
 import { getUnseenNewConcepts, markConceptsSeen } from '@/services/conceptIntroService'
 import { getProblemsPerPage, usesTapToSelect } from '@/utils/worksheetConfig'
@@ -82,6 +86,31 @@ export default function StudyPage() {
   // Concept Introduction Modal state
   const [showConceptIntro, setShowConceptIntro] = useState(false)
   const [pendingConcepts, setPendingConcepts] = useState<string[]>([])
+
+  // Video Integration - hooks for video player and suggestions
+  const currentConceptId = currentProblem && currentProblem.operands
+    ? getConceptFromProblem({
+        type: currentProblem.type,
+        level: currentLevel,
+        operands: currentProblem.operands,
+        missingPosition: currentProblem.missingPosition,
+      })
+    : ''
+
+  const videoPlayer = useVideoPlayer({
+    childId: currentChild?.id || '',
+    onVideoComplete: () => {
+      // Video completed - could track effectiveness here
+    },
+  })
+
+  const videoSuggestion = useVideoSuggestion({
+    childId: currentChild?.id || '',
+    childAge: currentChild?.age || 7,
+    conceptId: currentConceptId,
+    conceptName: currentConceptId.replace(/_/g, ' '),
+    enabled: sessionActive && !!currentChild,
+  })
 
   // Check if current problem supports decimals
   const supportsDecimals = () => {
@@ -528,6 +557,9 @@ export default function StudyPage() {
       setProblemsCorrect(newCorrect)
       setProblemsCompleted(newCompleted)
 
+      // Track correct answer for video suggestion (resets consecutive mistakes)
+      videoSuggestion.recordCorrectAnswer()
+
       // Check if session is complete
       if (newCompleted >= 10) {
         setSessionActive(false)
@@ -568,6 +600,9 @@ export default function StudyPage() {
       // Wrong answer - implement graduated hint system
       const newAttemptCount = attemptCount + 1
       setAttemptCount(newAttemptCount)
+
+      // Track incorrect answer for video suggestion (may trigger suggestion after 3+ mistakes)
+      videoSuggestion.recordIncorrectAnswer()
 
       if (newAttemptCount === 1) {
         // 1st wrong answer: Show micro-hint, allow retry
@@ -1282,7 +1317,37 @@ export default function StudyPage() {
         level={currentLevel}
         worksheet={currentWorksheet}
         onComplete={handleConceptIntroComplete}
+        childId={currentChild?.id}
+        childAge={currentChild?.age}
       />
+
+      {/* Video Suggestion Banner - appears after consecutive mistakes */}
+      {currentChild && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto">
+          <VideoSuggestionBanner
+            show={videoSuggestion.showSuggestion}
+            suggestion={videoSuggestion.suggestion}
+            onWatch={(video) => {
+              const suggestion = videoSuggestion.acceptSuggestion()
+              if (suggestion) {
+                videoPlayer.openVideo({
+                  video,
+                  conceptId: currentConceptId,
+                  conceptName: currentConceptId.replace(/_/g, ' '),
+                  triggerType: 'struggle_detected',
+                  sessionId: sessionId || undefined,
+                })
+              }
+            }}
+            onDismiss={videoSuggestion.dismissSuggestion}
+          />
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {currentChild && (
+        <VideoPlayerModal {...videoPlayer.modalProps} />
+      )}
 
       {/* Feedback Modal */}
       <FeedbackModal

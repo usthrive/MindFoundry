@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import DailyPracticeChart from '@/components/charts/DailyPracticeChart'
 import { BadgeRow } from '@/components/badges/BadgeDisplay'
+import { VideoAnalyticsCard, VideoPreferencesForm } from '@/components/dashboard'
 import { getLevelDescription } from '@/utils/levelMapping'
 import {
   getWorksheetProgress,
@@ -383,6 +384,12 @@ export default function ProgressDashboard() {
             <BadgeRow badges={badges} maxDisplay={6} />
           </div>
         )}
+
+        {/* Video Analytics Section */}
+        <VideoAnalyticsCard childId={selectedChild.id} />
+
+        {/* Video Preferences Section */}
+        <VideoPreferencesForm childId={selectedChild.id} childName={selectedChild.name} />
 
         {/* Level Journey */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
