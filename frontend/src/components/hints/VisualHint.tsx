@@ -3,6 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 
+// Import new animation components (Phase 1.12)
+import {
+  NumberLineAnimation,
+  CountingObjectsAnimation,
+  TenFrameAnimation,
+  PlaceValueAnimation,
+} from '@/components/animations'
+
 export interface VisualHintProps {
   /** Hint text description */
   text: string
@@ -87,38 +95,111 @@ export default function VisualHint({
   }, [show, duration])
 
   // Render the appropriate animation based on animationId
+  // PHASE 1.12: Using new animation components from @/components/animations
   const renderAnimation = () => {
-    // For now, render placeholder animations
-    // These will be replaced with actual Lottie/Rive animations
+    // Convert problemData to the format expected by new animation components
+    const animationProblemData = problemData ? {
+      operands: problemData.operands,
+      operation: problemData.operation as 'addition' | 'subtraction' | 'multiplication' | 'division' | undefined,
+      correctAnswer: problemData.correctAnswer,
+    } : undefined
+
     // PEDAGOGICAL: Pass showSolution=false to show SETUP only, not the answer
     switch (animationId) {
+      // Number Line Animations (Levels 3A-A)
       case 'number-line-addition':
       case 'number-line-setup':
-        return <NumberLineAnimation problemData={problemData} showSolution={showSolution} />
+        return (
+          <NumberLineAnimation
+            problemData={animationProblemData}
+            showSolution={showSolution}
+          />
+        )
       case 'number-line-subtraction':
       case 'number-line-setup-subtraction':
-        return <NumberLineAnimation problemData={problemData} isSubtraction showSolution={showSolution} />
+        return (
+          <NumberLineAnimation
+            problemData={animationProblemData}
+            isSubtraction
+            showSolution={showSolution}
+          />
+        )
+
+      // Counting Animations (Levels 7A-6A)
       case 'counting-objects':
       case 'counting-objects-setup':
-        return <CountingObjectsAnimation problemData={problemData} showSolution={showSolution} />
+        return (
+          <CountingObjectsAnimation
+            problemData={animationProblemData}
+            showSolution={showSolution}
+          />
+        )
+      case 'dot-pattern':
+      case 'dot-pattern-setup':
+        return (
+          <CountingObjectsAnimation
+            problemData={animationProblemData}
+            objectEmoji="⚫"
+            showSolution={showSolution}
+          />
+        )
+
+      // Ten Frame / Make-10 Animations (Level 2A)
+      case 'ten-frame':
+      case 'make-10-setup':
+        return (
+          <TenFrameAnimation
+            problemData={animationProblemData}
+            showSolution={showSolution}
+          />
+        )
+
+      // Place Value / Regrouping Animations (Level B)
       case 'base-10-blocks':
       case 'place-value-setup':
-        return <Base10BlocksAnimation problemData={problemData} showSolution={showSolution} />
-      case 'make-10-setup':
-        return <Make10SetupAnimation problemData={problemData} showSolution={showSolution} />
-      case 'objects-setup-subtraction':
-        return <ObjectsSetupAnimation problemData={problemData} showSolution={showSolution} />
+        return (
+          <PlaceValueAnimation
+            problemData={animationProblemData}
+            operationType="addition"
+            showSolution={showSolution}
+          />
+        )
+      case 'carrying-setup':
+        return (
+          <PlaceValueAnimation
+            problemData={animationProblemData}
+            operationType="addition"
+            showRegrouping
+            showSolution={showSolution}
+          />
+        )
       case 'borrowing-setup':
       case 'vertical-subtraction-setup':
-        return <VerticalSetupAnimation problemData={problemData} showSolution={showSolution} />
+        return (
+          <PlaceValueAnimation
+            problemData={animationProblemData}
+            operationType="subtraction"
+            showRegrouping
+            showSolution={showSolution}
+          />
+        )
+
+      // Subtraction with Objects (Level A)
+      case 'objects-setup-subtraction':
+        return <ObjectsSetupAnimation problemData={problemData} showSolution={showSolution} />
+
+      // Multiplication Animations (Level C+) - Keep legacy for now
       case 'array-setup':
         return <ArraySetupAnimation problemData={problemData} showSolution={showSolution} />
       case 'area-model-setup':
         return <AreaModelSetupAnimation problemData={problemData} showSolution={showSolution} />
+
+      // Division Animations (Level C+) - Keep legacy for now
       case 'division-grouping-setup':
         return <DivisionGroupingSetupAnimation problemData={problemData} showSolution={showSolution} />
       case 'long-division-setup':
         return <LongDivisionSetupAnimation problemData={problemData} showSolution={showSolution} />
+
       default:
         // Generic hint display if no specific animation
         return (
@@ -188,11 +269,14 @@ export default function VisualHint({
 }
 
 // ============================================
-// PEDAGOGICAL ANIMATION COMPONENTS
+// LEGACY ANIMATION COMPONENTS (Level C+ - To be migrated in future phases)
 // ============================================
-// These animations follow the principle: "Show SETUP, hide SOLUTION"
-// When showSolution=false (default), they show only the starting point
-// to prompt student thinking, NOT the answer.
+// NOTE: NumberLineAnimation, CountingObjectsAnimation, TenFrameAnimation,
+// and PlaceValueAnimation have been moved to @/components/animations/
+// (Phase 1.12: Educational Animation System)
+//
+// The components below are kept for Level C+ problem types.
+// They will be migrated to the new animation system in future phases.
 
 interface AnimationProps {
   problemData?: {
@@ -203,199 +287,6 @@ interface AnimationProps {
   isSubtraction?: boolean
   /** PEDAGOGICAL: When false (default), shows setup only without solution */
   showSolution?: boolean
-}
-
-/**
- * NumberLineAnimation - Shows number line with starting position
- * SETUP MODE: Shows starting number highlighted, no jumps or end position
- * SOLUTION MODE: Animates jumps and shows final answer (only for teaching)
- */
-function NumberLineAnimation({ problemData, isSubtraction, showSolution = false }: AnimationProps) {
-  const [step, setStep] = useState(0)
-  const operands = problemData?.operands || [5, 3]
-  const start = operands[0]
-  const jumps = isSubtraction ? -operands[1] : operands[1]
-  const end = start + jumps
-
-  useEffect(() => {
-    // Only animate if showing solution
-    if (!showSolution) return
-
-    const interval = setInterval(() => {
-      setStep((prev) => (prev < Math.abs(jumps) ? prev + 1 : prev))
-    }, 800)
-    return () => clearInterval(interval)
-  }, [jumps, showSolution])
-
-  // Generate number line points
-  const minVal = Math.min(0, start, end) - 1
-  const maxVal = Math.max(10, start, end) + 1
-  const points = Array.from({ length: maxVal - minVal + 1 }, (_, i) => minVal + i)
-
-  return (
-    <div className="relative">
-      {/* Number Line */}
-      <div className="flex items-center justify-center gap-1 mb-2">
-        {points.map((n) => (
-          <div
-            key={n}
-            className={cn(
-              'w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium',
-              // SETUP: Only highlight starting position
-              n === start ? 'bg-primary text-white' : '',
-              // SOLUTION: Also highlight current position and end
-              showSolution && n === start + (isSubtraction ? -step : step) && step > 0 ? 'bg-primary text-white' : '',
-              showSolution && n === end && step >= Math.abs(jumps) ? 'bg-green-500 text-white' : ''
-            )}
-          >
-            {n}
-          </div>
-        ))}
-      </div>
-      {/* Jump indicator - only shown in solution mode */}
-      <div className="text-center text-lg">
-        {!showSolution ? (
-          // SETUP: Prompt for direction
-          <span className="text-gray-500">
-            Start here. Which way do you go?
-          </span>
-        ) : (
-          <>
-            {step > 0 && step <= Math.abs(jumps) && (
-              <motion.span
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-primary font-bold"
-              >
-                +{step} {isSubtraction ? '←' : '→'}
-              </motion.span>
-            )}
-            {step >= Math.abs(jumps) && (
-              <span className="text-green-600 font-bold">
-                = {end}
-              </span>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/**
- * CountingObjectsAnimation - Shows objects to count
- * SETUP MODE: Shows all objects at once, no counting animation or total
- * SOLUTION MODE: Counts objects one by one and shows total
- */
-function CountingObjectsAnimation({ problemData, showSolution = false }: AnimationProps) {
-  const [count, setCount] = useState(0)
-  const operands = problemData?.operands || [5, 3]
-  const total = operands[0] + operands[1]
-
-  useEffect(() => {
-    // Only animate counting if showing solution
-    if (!showSolution) return
-
-    const interval = setInterval(() => {
-      setCount((prev) => (prev < total ? prev + 1 : prev))
-    }, 600)
-    return () => clearInterval(interval)
-  }, [total, showSolution])
-
-  return (
-    <div className="text-center">
-      <div className="flex flex-wrap justify-center gap-2 mb-3">
-        {Array.from({ length: total }, (_, i) => (
-          <motion.span
-            key={i}
-            initial={{ scale: showSolution ? 0 : 1 }}
-            animate={{ scale: showSolution ? (i < count ? 1 : 0) : 1 }}
-            className="text-3xl"
-          >
-            🍎
-          </motion.span>
-        ))}
-      </div>
-      <div className="text-2xl font-bold text-primary">
-        {showSolution ? `${count} / ${total}` : 'How many in total?'}
-      </div>
-    </div>
-  )
-}
-
-/**
- * Base10BlocksAnimation - Shows place value blocks
- * SETUP MODE: Shows blocks for numbers separately, no combining
- * SOLUTION MODE: Animates combining blocks
- */
-function Base10BlocksAnimation({ problemData, showSolution = false }: AnimationProps) {
-  const operands = problemData?.operands || [23, 15]
-
-  const renderBlocks = (num: number) => {
-    const tens = Math.floor(num / 10)
-    const ones = num % 10
-    return (
-      <div className="flex items-end gap-2">
-        {/* Tens (rods) */}
-        {Array.from({ length: tens }, (_, i) => (
-          <div key={`ten-${i}`} className="w-3 h-16 bg-blue-400 rounded" />
-        ))}
-        {/* Ones (units) */}
-        <div className="flex flex-wrap gap-0.5 w-8">
-          {Array.from({ length: ones }, (_, i) => (
-            <div key={`one-${i}`} className="w-3 h-3 bg-yellow-400 rounded" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="text-center">
-      <div className="flex items-center justify-center gap-4">
-        {renderBlocks(operands[0])}
-        <span className="text-2xl font-bold text-gray-600">+</span>
-        {renderBlocks(operands[1])}
-      </div>
-      <div className="mt-2 text-gray-500">
-        {showSolution ? '' : 'Add the ones first. Do you need to regroup?'}
-      </div>
-    </div>
-  )
-}
-
-/**
- * Make10SetupAnimation - Shows 10-frame for make-10 strategy
- * SETUP MODE: Empty 10-frame, prompting student to fill
- */
-function Make10SetupAnimation({ problemData, showSolution = false }: AnimationProps) {
-  const operands = problemData?.operands || [8, 5]
-  const num1 = operands[0]
-
-  // Mark unused to avoid TS error
-  void showSolution
-
-  return (
-    <div className="text-center">
-      {/* 10-frame grid */}
-      <div className="inline-grid grid-cols-5 gap-1 mb-3">
-        {Array.from({ length: 10 }, (_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'w-8 h-8 border-2 border-gray-300 rounded flex items-center justify-center',
-              i < num1 ? 'bg-blue-100' : ''
-            )}
-          >
-            {i < num1 && <span className="text-lg">●</span>}
-          </div>
-        ))}
-      </div>
-      <p className="text-gray-600">
-        You have {num1}. How many more to make 10?
-      </p>
-    </div>
-  )
 }
 
 /**

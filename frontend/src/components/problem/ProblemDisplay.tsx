@@ -82,6 +82,19 @@ const ProblemDisplay = ({
   const operator = operatorSymbols[problem.type] || '?'
   const operands = problem.operands || []
 
+  // For counting problems (Level 7A, Pre-K), display question only
+  // The visual assets and answer choices are handled by the parent component
+  if (problem.type === 'counting') {
+    const questionText = getQuestionText() || 'How many?'
+    return (
+      <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
+        <p className={cn('font-semibold text-gray-700 text-center', 'text-xl sm:text-2xl md:text-3xl')}>
+          {questionText}
+        </p>
+      </div>
+    )
+  }
+
   // For complex types, display the question string directly
   if (isComplexType && getQuestionText()) {
     const questionText = getQuestionText()!

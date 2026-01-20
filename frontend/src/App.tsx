@@ -11,6 +11,7 @@ import ChildSelectPage from '@/pages/ChildSelectPage'
 import StudyPage from '@/pages/StudyPage'
 import ProgressDashboard from '@/pages/ProgressDashboard'
 import TestLevelsPage from '@/pages/TestLevelsPage'
+import AnimationTestPage from '@/pages/AnimationTestPage'
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
             }
           />
           <Route path="/test-levels" element={<TestLevelsPage />} />
+          <Route path="/test-animations" element={<AnimationTestPage />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
           <BottomNav />

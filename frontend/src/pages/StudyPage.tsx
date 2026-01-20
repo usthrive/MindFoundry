@@ -18,6 +18,9 @@ import ParentModeChallenge from '@/components/auth/ParentModeChallenge'
 import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
+import { ConceptIntroModal } from '@/components/concept-intro'
+import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
+import { getUnseenNewConcepts, markConceptsSeen } from '@/services/conceptIntroService'
 import { getProblemsPerPage, usesTapToSelect } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
 import {
@@ -76,6 +79,10 @@ export default function StudyPage() {
   const [showCompletionFeedback, setShowCompletionFeedback] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
 
+  // Concept Introduction Modal state
+  const [showConceptIntro, setShowConceptIntro] = useState(false)
+  const [pendingConcepts, setPendingConcepts] = useState<string[]>([])
+
   // Check if current problem supports decimals
   const supportsDecimals = () => {
     // Level F worksheets 1-160 support decimal problems
@@ -96,6 +103,38 @@ export default function StudyPage() {
   // Check if current problem uses tap-to-select (Pre-K levels 7A, 6A)
   const isTapToSelectProblem = () => {
     return currentProblem?.interactionType === 'match' && Array.isArray(currentProblem?.operands)
+  }
+
+  // Check if current problem is a counting problem with visual assets
+  const isCountingProblem = () => {
+    return currentProblem?.type === 'counting' && currentProblem?.visualAssets?.length > 0
+  }
+
+  // Parse visual assets to get count and emoji for counting problems
+  // e.g., 'star_5' → { count: 5, emoji: '🌟' }
+  const OBJECT_EMOJI_MAP: Record<string, string> = {
+    apple: '🍎', star: '🌟', ball: '🔵', flower: '🌸', heart: '❤️',
+    cat: '🐱', dog: '🐶', fish: '🐟', bird: '🐦', tree: '🌳',
+    dots: '●', // For dot patterns
+  }
+
+  const getCountingDisplayData = () => {
+    if (!isCountingProblem()) return null
+    const visualAsset = currentProblem?.visualAssets?.[0] // e.g., 'star_5' or 'dots_pattern_dice'
+    if (!visualAsset) return null
+
+    // Handle dot patterns: 'dots_pattern_dice' → just use dots emoji
+    if (visualAsset.startsWith('dots_pattern')) {
+      return { count: currentProblem?.correctAnswer as number || 5, emoji: '●' }
+    }
+
+    // Handle object_count format: 'star_5' → { count: 5, emoji: '🌟' }
+    const parts = visualAsset.split('_')
+    const object = parts[0]
+    const count = parseInt(parts[parts.length - 1], 10)
+    const emoji = OBJECT_EMOJI_MAP[object] || '🌟'
+
+    return { count: isNaN(count) ? (currentProblem?.correctAnswer as number || 5) : count, emoji }
   }
 
   // Check if level should use worksheet mode (multiple problems per page)
@@ -120,6 +159,29 @@ export default function StudyPage() {
     if (['C', 'D', 'E', 'F'].includes(currentLevel)) return 'grade3_5' // Fixed typo
     if (['G', 'H', 'I'].includes(currentLevel)) return 'grade5_6'
     return 'middle_school'
+  }
+
+  // Check for unseen concept introductions and show modal if any
+  const checkForNewConcepts = (level: KumonLevel, worksheet: number) => {
+    if (!currentChild) return
+
+    const unseenConcepts = getUnseenNewConcepts(currentChild.id, level, worksheet)
+    if (unseenConcepts.length > 0) {
+      setPendingConcepts(unseenConcepts)
+      setShowConceptIntro(true)
+    }
+  }
+
+  // Handle completion of concept intro modal
+  const handleConceptIntroComplete = () => {
+    if (!currentChild) return
+
+    // Mark all pending concepts as seen
+    markConceptsSeen(currentChild.id, pendingConcepts)
+
+    // Clear state and hide modal
+    setPendingConcepts([])
+    setShowConceptIntro(false)
   }
 
   // Redirect to login if not authenticated
@@ -173,12 +235,16 @@ export default function StudyPage() {
 
         // Create new practice session - use fresh level from position or child data
         const levelToUse = position?.level || (currentChild.current_level as KumonLevel)
+        const worksheetToUse = position?.worksheet || currentChild.current_worksheet
         const newSessionId = await createPracticeSession(
           currentChild.id,
           levelToUse
         )
         setSessionId(newSessionId)
         setSessionStartTime(Date.now())
+
+        // Check for new concepts to introduce at this worksheet
+        checkForNewConcepts(levelToUse, worksheetToUse)
       } catch (error) {
         console.error('Error loading practice session:', error)
         // Show error message to user
@@ -658,6 +724,9 @@ export default function StudyPage() {
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+
+    // Check for new concepts to introduce at the next worksheet
+    checkForNewConcepts(currentLevel, nextWorksheet)
   }
 
   // Handler for worksheet page completion (multi-problem view)
@@ -774,6 +843,9 @@ export default function StudyPage() {
     const newSessionId = await createPracticeSession(currentChild.id, level)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+
+    // Check for new concepts to introduce at the start of the new level
+    checkForNewConcepts(level, 1)
   }
 
   const handleWorksheetJump = async (worksheetNum: number) => {
@@ -802,6 +874,9 @@ export default function StudyPage() {
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+
+    // Check for new concepts to introduce at the jumped worksheet
+    checkForNewConcepts(currentLevel, worksheetNum)
   }
 
   const toggleParentMode = () => {
@@ -938,11 +1013,27 @@ export default function StudyPage() {
             <>
               {/* Single Problem Mode: Original view */}
               <h2 className="mb-6 text-center text-xl sm:text-2xl font-semibold text-gray-700">
-                Solve the problem:
+                {isCountingProblem() ? 'Count the objects!' : 'Solve the problem:'}
               </h2>
 
               {currentProblem && (
-                <div className="mb-6 flex justify-center">
+                <div className="mb-6 flex flex-col items-center">
+                  {/* Visual display for counting problems (Pre-K) */}
+                  {isCountingProblem() && (() => {
+                    const countingData = getCountingDisplayData()
+                    if (!countingData) return null
+                    return (
+                      <div className="mb-4">
+                        <CountingObjectsAnimation
+                          problemData={{ operands: [countingData.count] }}
+                          objectEmoji={countingData.emoji}
+                          showSolution={false}
+                          className="mx-auto"
+                        />
+                      </div>
+                    )
+                  })()}
+
                   {isSequenceProblem() && currentProblem.sequenceData ? (
                     // Sequence problems use SequenceDisplay with inline input
                     <SequenceDisplay
@@ -952,7 +1043,7 @@ export default function StudyPage() {
                       correctAnswers={[currentProblem.correctAnswer as number]}
                     />
                   ) : (
-                    // Regular problems use ProblemDisplay
+                    // Regular problems use ProblemDisplay (shows question for counting, math for others)
                     <ProblemDisplay
                       problem={currentProblem}
                       studentAnswer={inputValue}
@@ -1183,6 +1274,15 @@ export default function StudyPage() {
         )}
 
       </div>
+
+      {/* Concept Introduction Modal */}
+      <ConceptIntroModal
+        show={showConceptIntro}
+        concepts={pendingConcepts}
+        level={currentLevel}
+        worksheet={currentWorksheet}
+        onComplete={handleConceptIntroComplete}
+      />
 
       {/* Feedback Modal */}
       <FeedbackModal
