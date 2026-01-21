@@ -1,9 +1,12 @@
 /**
  * Concept Introduction Modal
  * Phase 1.12: Educational Animation System
+ * Phase 1.19: Step-Based Wizard with Video-First Flow
  *
- * Full-screen modal that introduces new mathematical concepts with animations.
- * Shows when students encounter new concepts at a worksheet.
+ * Step-based modal that introduces new mathematical concepts:
+ * 1. Intro Screen: Announces the new concept
+ * 2. Videos Step: Shows 2 videos that must be watched
+ * 3. Animation Step: Shows the educational animation
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -11,9 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import type { KumonLevel, Video } from '@/types'
 import { getConceptAnimation, type ConceptIntroConfig } from '@/services/conceptAnimationMapping'
-import { ConceptVideoSection } from '@/components/video'
-import { VideoPlayerModal } from '@/components/video'
-import { hasVideoForConcept, recordVideoViewStart } from '@/services/videoService'
+import { recordVideoViewStart, getVideosForConcept } from '@/services/videoService'
 import AnimationPlayer from '@/components/animations/core/AnimationPlayer'
 import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
 import NumberLineAnimation from '@/components/animations/visualizations/NumberLineAnimation'
@@ -31,6 +32,119 @@ import BalanceScaleAnimation from '@/components/animations/visualizations/algebr
 import AlgebraTilesAnimation from '@/components/animations/visualizations/algebra/AlgebraTilesAnimation'
 import CoordinatePlotAnimation from '@/components/animations/visualizations/algebra/CoordinatePlotAnimation'
 
+// ============ VideoCard Component ============
+interface VideoCardProps {
+  video: Video | null
+  label: string
+  isWatched: boolean
+  onWatchComplete: () => void
+  childId?: string
+  conceptId?: string
+}
+
+function VideoCard({ video, label, isWatched, onWatchComplete, childId, conceptId }: VideoCardProps) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [watchTimer, setWatchTimer] = useState<NodeJS.Timeout | null>(null)
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (watchTimer) clearTimeout(watchTimer)
+    }
+  }, [watchTimer])
+
+  const handlePlayClick = useCallback(() => {
+    setIsPlaying(true)
+
+    // Record video view start
+    if (video && childId && conceptId) {
+      recordVideoViewStart(childId, video.id, conceptId, 'concept_intro')
+    }
+
+    // Mark as watched after 5 seconds of viewing
+    const timer = setTimeout(() => {
+      onWatchComplete()
+    }, 5000)
+    setWatchTimer(timer)
+  }, [video, childId, conceptId, onWatchComplete])
+
+  // Format duration helper
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${String(secs).padStart(2, '0')}`
+  }
+
+  if (!video) {
+    return (
+      <div className="bg-gray-100 rounded-lg p-6 text-center">
+        <div className="text-gray-400 text-3xl mb-2">📹</div>
+        <p className="text-gray-400 text-sm">No video available</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn(
+      'bg-white rounded-xl shadow-sm border-2 transition-all overflow-hidden',
+      isWatched ? 'border-green-500' : 'border-gray-200'
+    )}>
+      {/* Video Label Header */}
+      <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
+        <span className="font-medium text-gray-700 text-sm">{label}</span>
+        {isWatched && (
+          <span className="text-green-500 text-sm font-medium flex items-center gap-1">
+            <span>✓</span> Watched
+          </span>
+        )}
+      </div>
+
+      {/* Video Player or Thumbnail */}
+      <div className="aspect-video bg-black">
+        {isPlaying ? (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={video.title}
+          />
+        ) : (
+          <div
+            className="relative w-full h-full cursor-pointer group"
+            onClick={handlePlayClick}
+          >
+            <img
+              src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+              alt={video.title}
+              className="w-full h-full object-cover"
+            />
+            {/* Play Button Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-14 h-14 bg-red-600 rounded-full flex items-center justify-center shadow-lg"
+              >
+                <span className="text-white text-xl ml-1">▶</span>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Video Info */}
+      <div className="p-3">
+        <h4 className="font-medium text-gray-800 text-sm line-clamp-2">{video.title}</h4>
+        <p className="text-xs text-gray-500 mt-1">
+          {video.channelName} • {formatDuration(video.durationSeconds)}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ============ Main Modal Component ============
 interface ConceptIntroModalProps {
   show: boolean
   concepts: string[]
@@ -44,185 +158,130 @@ interface ConceptIntroModalProps {
 export default function ConceptIntroModal({
   show,
   concepts,
-  level: _level,
+  level,
   worksheet: _worksheet,
   onComplete,
   childId,
   childAge = 7,
 }: ConceptIntroModalProps) {
-  // Note: _level and _worksheet are available for future enhancements (e.g., showing level info)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [canContinue, setCanContinue] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(0)
-  const [isReady, setIsReady] = useState(false)
-  const [animationKey, setAnimationKey] = useState(0)
-  const [hasPlayedOnce, setHasPlayedOnce] = useState(false)
-  // For optional concepts: track if user chose to watch animation
-  const [showingOptionalAnimation, setShowingOptionalAnimation] = useState(false)
+  // Step-based flow state
+  type ModalStep = 'intro' | 'videos' | 'animation'
+  const [currentStep, setCurrentStep] = useState<ModalStep>('intro')
 
-  // Video integration state
-  const [showVideoSection, setShowVideoSection] = useState(false)
-  const [conceptHasVideo, setConceptHasVideo] = useState(false)
-  const [showVideoPlayer, setShowVideoPlayer] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  // Multi-concept tracking
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  // Video watching state
+  const [videosWatched, setVideosWatched] = useState({ video1: false, video2: false })
+  const [shortVideo, setShortVideo] = useState<Video | null>(null)
+  const [detailedVideo, setDetailedVideo] = useState<Video | null>(null)
+  const [hasVideos, setHasVideos] = useState(false)
+  const [videosLoading, setVideosLoading] = useState(true)
+
+  // Animation state
+  const [animationKey, setAnimationKey] = useState(0)
+  const [isReady, setIsReady] = useState(false)
+
+  // Close button state (functional after 3 seconds)
+  const [canClose, setCanClose] = useState(false)
 
   // Get current concept config
   const currentConcept = concepts[currentIndex]
   const config = currentConcept ? getConceptAnimation(currentConcept) : undefined
   const totalConcepts = concepts.length
 
-  // Check if current concept is optional (can be skipped)
-  const isOptionalConcept = config?.showMode === 'optional'
-  // Should we show the animation? (mandatory always, optional only if user chose to watch)
-  const shouldShowAnimation = !isOptionalConcept || showingOptionalAnimation
+  // Compute video progress
+  const videoCount = (shortVideo ? 1 : 0) + (detailedVideo ? 1 : 0)
+  const watchedCount = (videosWatched.video1 ? 1 : 0) + (videosWatched.video2 ? 1 : 0)
+  const allVideosWatched = videoCount > 0 ? watchedCount >= videoCount : true
 
   // Reset state when modal opens or concepts change
   useEffect(() => {
     if (show && concepts.length > 0) {
       setCurrentIndex(0)
-      setCanContinue(false)
-      setIsReady(false)
+      setCurrentStep('intro')
+      setVideosWatched({ video1: false, video2: false })
+      setShortVideo(null)
+      setDetailedVideo(null)
+      setHasVideos(false)
+      setVideosLoading(true)
       setAnimationKey(0)
-      setHasPlayedOnce(false)
-      setShowingOptionalAnimation(false)
-      const initialTime = config?.minViewTime || 15
-      setTimeRemaining(initialTime)
+      setIsReady(false)
+      setCanClose(false)
     }
   }, [show, concepts])
 
-  // Track when animation has played at least once (timer completed)
+  // Enable close button after 3 seconds
   useEffect(() => {
-    if (canContinue && !hasPlayedOnce) {
-      setHasPlayedOnce(true)
-    }
-  }, [canContinue, hasPlayedOnce])
+    if (!show) return
 
-  // Check if video exists for current concept when animation completes
-  useEffect(() => {
-    if (canContinue && currentConcept && childId) {
-      hasVideoForConcept(currentConcept).then((hasVideo) => {
-        setConceptHasVideo(hasVideo)
-        if (hasVideo) {
-          setShowVideoSection(true)
-        }
-      })
-    }
-  }, [canContinue, currentConcept, childId])
+    const closeTimer = setTimeout(() => {
+      setCanClose(true)
+    }, 3000)
 
-  // Ready state countdown (3 seconds before animation starts)
-  // Only runs for mandatory concepts OR if user chose to watch optional animation
+    return () => clearTimeout(closeTimer)
+  }, [show, currentIndex])
+
+  // Load videos for current concept
   useEffect(() => {
-    if (!show || !config || !shouldShowAnimation) return
+    if (show && currentConcept) {
+      setVideosLoading(true)
+      console.log('[ConceptIntro] Loading videos for concept:', currentConcept, 'childAge:', childAge, 'level:', level)
+
+      getVideosForConcept(currentConcept, childAge, level)
+        .then(({ short, detailed }) => {
+          console.log('[ConceptIntro] Videos result:', {
+            short: !!short,
+            detailed: !!detailed,
+            shortTitle: short?.title,
+            detailedTitle: detailed?.title
+          })
+          setShortVideo(short)
+          setDetailedVideo(detailed)
+          setHasVideos(short !== null || detailed !== null)
+          setVideosLoading(false)
+        })
+        .catch((err) => {
+          console.error('[ConceptIntro] Video loading error:', err)
+          setShortVideo(null)
+          setDetailedVideo(null)
+          setHasVideos(false)
+          setVideosLoading(false)
+        })
+    }
+  }, [show, currentConcept, childAge, level])
+
+  // Auto-skip to animation if no videos available
+  useEffect(() => {
+    console.log('[ConceptIntro] Auto-skip check:', { currentStep, videosLoading, hasVideos })
+    if (currentStep === 'videos' && !videosLoading && !hasVideos) {
+      console.log('[ConceptIntro] AUTO-SKIPPING to animation (no videos)')
+      setCurrentStep('animation')
+    }
+  }, [currentStep, videosLoading, hasVideos])
+
+  // Start animation after entering animation step
+  useEffect(() => {
+    if (currentStep !== 'animation') return
 
     setIsReady(false)
     const readyTimer = setTimeout(() => {
       setIsReady(true)
-    }, 3000) // 3 seconds "Get Ready!" phase
+    }, 2000) // 2 seconds "Get Ready" phase
 
     return () => clearTimeout(readyTimer)
-  }, [show, currentIndex, config, animationKey, shouldShowAnimation])
+  }, [currentStep, animationKey])
 
-  // Timer for minimum view time (starts after ready phase)
-  useEffect(() => {
-    if (!show || !config || !isReady) return
-
-    setCanContinue(false)
-    setTimeRemaining(config.minViewTime)
-
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          setCanContinue(true)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [show, currentIndex, config, isReady, animationKey])
-
-  // Handle replay button
-  const handleReplay = useCallback(() => {
-    setIsReady(false)
-    setCanContinue(false)
-    setAnimationKey((prev) => prev + 1)
-    setTimeRemaining(config?.minViewTime || 15)
-  }, [config])
-
-  // Handle continue button (also used for close button)
-  const handleContinue = useCallback(() => {
-    // Allow continue if timer is done OR if user has played at least once (for close button)
-    if (!canContinue && !hasPlayedOnce) return
-
-    if (currentIndex < totalConcepts - 1) {
-      // Move to next concept
-      setCurrentIndex((prev) => prev + 1)
-      setCanContinue(false)
-      setShowingOptionalAnimation(false) // Reset for next concept
-      setShowVideoSection(false) // Reset video section for next concept
-      setConceptHasVideo(false)
-    } else {
-      // All concepts viewed
-      onComplete()
-    }
-  }, [canContinue, hasPlayedOnce, currentIndex, totalConcepts, onComplete])
-
-  // Handle video watch from concept intro
-  const handleWatchVideo = useCallback((video: Video) => {
-    setSelectedVideo(video)
-    setShowVideoPlayer(true)
-
-    // Record video view start
-    if (childId && currentConcept) {
-      recordVideoViewStart(
-        childId,
-        video.id,
-        currentConcept,
-        'concept_intro'
-      )
-    }
-  }, [childId, currentConcept])
-
-  // Handle skip video (continue without watching)
-  const handleSkipVideo = useCallback(() => {
-    setShowVideoSection(false)
-    // Proceed to continue or next concept
-  }, [])
-
-  // Handle close button (always close when hasPlayedOnce, regardless of current concept)
+  // Handle close button
   const handleClose = useCallback(() => {
-    if (!hasPlayedOnce) return
+    if (!canClose) return
     onComplete()
-  }, [hasPlayedOnce, onComplete])
+  }, [canClose, onComplete])
 
-  // Handle "Watch Animation" button for optional concepts
-  const handleWatchAnimation = useCallback(() => {
-    setShowingOptionalAnimation(true)
-  }, [])
-
-  // Handle "I'm Ready!" button for optional concepts (skip animation)
-  const handleSkipAnimation = useCallback(() => {
-    // Mark as played (allows close button) and enable continue
-    setHasPlayedOnce(true)
-    setCanContinue(true)
-
-    if (currentIndex < totalConcepts - 1) {
-      // Move to next concept
-      setCurrentIndex((prev) => prev + 1)
-      setShowingOptionalAnimation(false)
-      setCanContinue(false)
-    } else {
-      // All concepts viewed
-      onComplete()
-    }
-  }, [currentIndex, totalConcepts, onComplete])
-
-  // Handle escape key (allow escape after first play)
+  // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && (canContinue || hasPlayedOnce)) {
+      if (e.key === 'Escape' && canClose) {
         handleClose()
       }
     }
@@ -231,10 +290,48 @@ export default function ConceptIntroModal({
       document.addEventListener('keydown', handleKeyDown)
       return () => document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [show, canContinue, hasPlayedOnce, handleClose])
+  }, [show, canClose, handleClose])
+
+  // Handle step navigation
+  const handleStartClick = useCallback(() => {
+    console.log('[ConceptIntro] Start button clicked:', { hasVideos, videosLoading, shortVideo: !!shortVideo, detailedVideo: !!detailedVideo })
+    if (hasVideos) {
+      console.log('[ConceptIntro] Going to videos step')
+      setCurrentStep('videos')
+    } else {
+      console.log('[ConceptIntro] Skipping to animation step (no videos)')
+      setCurrentStep('animation')
+    }
+  }, [hasVideos, videosLoading, shortVideo, detailedVideo])
+
+  const handleNextToAnimation = useCallback(() => {
+    setCurrentStep('animation')
+  }, [])
+
+  const handleReplay = useCallback(() => {
+    setIsReady(false)
+    setAnimationKey((prev) => prev + 1)
+  }, [])
+
+  const handleComplete = useCallback(() => {
+    if (currentIndex < totalConcepts - 1) {
+      // Move to next concept
+      setCurrentIndex((prev) => prev + 1)
+      setCurrentStep('intro')
+      setVideosWatched({ video1: false, video2: false })
+      setShortVideo(null)
+      setDetailedVideo(null)
+      setHasVideos(false)
+      setVideosLoading(true)
+      setAnimationKey(0)
+      setIsReady(false)
+    } else {
+      // All concepts viewed
+      onComplete()
+    }
+  }, [currentIndex, totalConcepts, onComplete])
 
   // Render the appropriate animation based on type
-  // The key prop forces re-render on replay
   const renderAnimation = (config: ConceptIntroConfig, key: number) => {
     const problemData = { operands: config.demoOperands }
 
@@ -301,7 +398,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level C: Multiplication - Array Groups
       case 'array-groups':
         return (
           <ArrayGroupsAnimation
@@ -312,7 +408,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level C: Division - Fair Sharing
       case 'fair-sharing':
         return (
           <FairSharingAnimation
@@ -323,7 +418,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level C-D: Long Division Steps
       case 'long-division-steps':
         return (
           <LongDivisionStepsAnimation
@@ -334,7 +428,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level D: Fractions - Bar Visualization
       case 'fraction-bar':
         return (
           <FractionBarAnimation
@@ -345,7 +438,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level D: Equivalent Fractions - Bar Comparison
       case 'equivalent-fractions':
         return (
           <FractionBarAnimation
@@ -357,7 +449,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level E: Fraction Operations (add/subtract/multiply/divide)
       case 'fraction-operation':
         return (
           <FractionOperationAnimation
@@ -368,7 +459,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level G: Algebra Tiles (integers, polynomials)
       case 'algebra-tiles':
         return (
           <AlgebraTilesAnimation
@@ -379,7 +469,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level G: Balance Scale (equation solving)
       case 'balance-scale':
         return (
           <BalanceScaleAnimation
@@ -390,7 +479,6 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level H: Coordinate Plotting (functions, systems)
       case 'coordinate-plot':
         return (
           <CoordinatePlotAnimation
@@ -402,13 +490,10 @@ export default function ConceptIntroModal({
           />
         )
 
-      // Level I: Placeholder animations (FOIL, factoring, parabolas)
-      // These fall through to default for now - components to be created
       case 'foil-visual':
       case 'factoring-visual':
       case 'parabola-graph':
       case 'quadratic-formula':
-        // Fallback to algebra tiles visualization for polynomial concepts
         return (
           <AlgebraTilesAnimation
             key={`placeholder-${key}`}
@@ -426,7 +511,6 @@ export default function ConceptIntroModal({
   if (!show || concepts.length === 0) return null
 
   return (
-    <>
     <AnimatePresence>
       {show && (
         <motion.div
@@ -449,7 +533,7 @@ export default function ConceptIntroModal({
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute text-2xl sm:text-3xl"
+                className="absolute text-2xl"
                 style={{
                   left: `${15 + i * 15}%`,
                   top: `${10 + (i % 3) * 25}%`,
@@ -470,9 +554,13 @@ export default function ConceptIntroModal({
             ))}
           </div>
 
-          {/* Modal Content */}
+          {/* Modal Content - Responsive with constrained height */}
           <motion.div
-            className="relative z-10 bg-white rounded-3xl shadow-2xl overflow-hidden max-w-lg w-full mx-4"
+            className={cn(
+              'relative z-10 bg-white rounded-2xl shadow-2xl overflow-hidden',
+              'w-full max-w-lg mx-4',
+              'max-h-[85vh] flex flex-col'
+            )}
             initial={{ scale: 0.5, y: 50, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.8, y: 20, opacity: 0 }}
@@ -482,250 +570,285 @@ export default function ConceptIntroModal({
               damping: 25,
             }}
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-accent px-4 py-3 sm:px-6 sm:py-4 relative">
-              <div className="flex items-center justify-between">
+            {/* Header - Fixed */}
+            <div className="flex-shrink-0 bg-gradient-to-r from-primary to-accent px-4 py-3 relative">
+              <div className="flex items-center justify-between pr-10">
                 <motion.div
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.2 }}
                   className="flex items-center gap-2"
                 >
-                  <span className="text-2xl sm:text-3xl">🎓</span>
-                  <span className="text-lg sm:text-xl font-bold text-white">New Concept!</span>
+                  <span className="text-2xl">🎓</span>
+                  <span className="text-lg font-bold text-white">New Concept!</span>
                 </motion.div>
 
-                {/* Progress dots */}
-                {totalConcepts > 1 && (
-                  <div className="flex gap-1.5 mr-8">
-                    {[...Array(totalConcepts)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className={cn(
-                          'w-2 h-2 rounded-full transition-colors',
-                          i === currentIndex ? 'bg-white' : 'bg-white/40'
-                        )}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.3 + i * 0.1 }}
-                      />
-                    ))}
-                  </div>
-                )}
+                {/* Step indicator */}
+                <div className="flex gap-1.5">
+                  {['intro', 'videos', 'animation'].map((step, i) => (
+                    <div
+                      key={step}
+                      className={cn(
+                        'w-2 h-2 rounded-full transition-colors',
+                        currentStep === step ? 'bg-white' :
+                        (['intro', 'videos', 'animation'].indexOf(currentStep) > i) ? 'bg-white/80' : 'bg-white/30'
+                      )}
+                    />
+                  ))}
+                </div>
               </div>
 
-              {/* Close button (visible after first play) */}
-              <AnimatePresence>
-                {hasPlayedOnce && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={handleClose}
-                    className="absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                    aria-label="Close"
-                  >
-                    <span className="text-white text-xl leading-none">×</span>
-                  </motion.button>
+              {/* Close button - Always visible */}
+              <button
+                onClick={handleClose}
+                disabled={!canClose}
+                className={cn(
+                  'absolute top-2 right-2 w-9 h-9 flex items-center justify-center rounded-full transition-all z-10',
+                  canClose
+                    ? 'bg-white/20 hover:bg-white/30 cursor-pointer'
+                    : 'bg-white/10 cursor-not-allowed opacity-50'
                 )}
-              </AnimatePresence>
+                aria-label={canClose ? 'Close' : 'Close (available in a moment)'}
+              >
+                <span className="text-white text-2xl leading-none">&times;</span>
+              </button>
             </div>
 
-            {/* Content */}
-            <div className="p-4 sm:p-6">
-              {config ? (
-                <AnimatePresence mode="wait">
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <AnimatePresence mode="wait">
+                {/* ============ INTRO STEP ============ */}
+                {currentStep === 'intro' && (
                   <motion.div
-                    key={`${currentIndex}-${showingOptionalAnimation}`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
+                    key="intro-step"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="text-center py-4"
                   >
-                    {/* Title */}
-                    <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-2">
-                      {config.title}
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-6xl mb-4"
+                    >
+                      📚
+                    </motion.div>
+
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">
+                      {config?.title || currentConcept?.replace(/_/g, ' ')}
                     </h2>
 
-                    {/* Description */}
-                    <p className="text-sm sm:text-base text-gray-600 text-center mb-4 sm:mb-6">
-                      {config.description}
+                    <p className="text-gray-600 mb-6 leading-relaxed">
+                      You will be learning about{' '}
+                      <strong className="text-primary">{config?.title || currentConcept?.replace(/_/g, ' ')}</strong>.
+                      <br />
+                      Please review the videos and the animation.
                     </p>
 
-                    {/* Optional Concept: Choice UI (before user chooses) */}
-                    {isOptionalConcept && !showingOptionalAnimation ? (
-                      <div className="text-center py-6">
-                        <motion.div
-                          animate={{ scale: [1, 1.05, 1] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="text-6xl mb-6"
-                        >
-                          📚
-                        </motion.div>
-                        <p className="text-gray-600 mb-6">
-                          You've seen this type of animation before.
-                          <br />
-                          Would you like to watch it again?
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                          <button
-                            onClick={handleWatchAnimation}
-                            className="px-6 py-3 rounded-full font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                          >
-                            <span className="mr-2">🎬</span>
-                            Watch Animation
-                          </button>
-                          <button
-                            onClick={handleSkipAnimation}
-                            className="px-6 py-3 rounded-full font-semibold text-white bg-primary hover:bg-primary/90 shadow-lg transition-all"
-                          >
-                            <span className="mr-2">✨</span>
-                            I'm Ready!
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Animation Container with Get Ready overlay */}
-                        <div className="bg-gray-50 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 relative min-h-[200px]">
-                          {/* Get Ready Overlay */}
-                          <AnimatePresence>
-                            {!isReady && (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="absolute inset-0 bg-gray-50 rounded-xl z-10 flex flex-col items-center justify-center"
-                              >
-                                <motion.div
-                                  animate={{
-                                    scale: [1, 1.1, 1],
-                                  }}
-                                  transition={{
-                                    duration: 1,
-                                    repeat: Infinity,
-                                  }}
-                                  className="text-4xl sm:text-5xl mb-4"
-                                >
-                                  👀
-                                </motion.div>
-                                <motion.p
-                                  animate={{
-                                    opacity: [0.5, 1, 0.5],
-                                  }}
-                                  transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                  }}
-                                  className="text-xl sm:text-2xl font-bold text-primary"
-                                >
-                                  Get Ready!
-                                </motion.p>
-                                <p className="text-sm text-gray-500 mt-2">
-                                  Watch carefully...
-                                </p>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                    {config?.description && (
+                      <p className="text-sm text-gray-500 mb-6 italic">
+                        {config.description}
+                      </p>
+                    )}
 
-                          {/* Animation Content */}
-                          <AnimationPlayer showControls={false} autoPlay={isReady}>
-                            {renderAnimation(config, animationKey)}
-                          </AnimationPlayer>
-                        </div>
+                    <motion.button
+                      whileHover={!videosLoading ? { scale: 1.02 } : {}}
+                      whileTap={!videosLoading ? { scale: 0.98 } : {}}
+                      onClick={handleStartClick}
+                      disabled={videosLoading}
+                      className={cn(
+                        'px-8 py-3 font-semibold rounded-full shadow-lg transition-colors',
+                        videosLoading
+                          ? 'bg-gray-300 text-gray-500 cursor-wait'
+                          : 'bg-primary text-white hover:bg-primary/90'
+                      )}
+                    >
+                      {videosLoading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="animate-spin">⏳</span>
+                          Loading videos...
+                        </span>
+                      ) : (
+                        "Let's Start! →"
+                      )}
+                    </motion.button>
 
-                        {/* Replay Button */}
-                        <div className="flex justify-center mb-4">
-                          <button
-                            onClick={handleReplay}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                          >
-                            <span className="text-lg">🔄</span>
-                            Watch Again
-                          </button>
-                        </div>
-
-                        {/* Optional Video Section - shows after animation completes */}
-                        {canContinue && conceptHasVideo && showVideoSection && childId && (
-                          <ConceptVideoSection
-                            conceptId={currentConcept}
-                            childAge={childAge}
-                            onWatch={handleWatchVideo}
-                            onSkip={handleSkipVideo}
-                          />
-                        )}
-                      </>
+                    {/* Multi-concept indicator */}
+                    {totalConcepts > 1 && (
+                      <p className="text-xs text-gray-400 mt-4">
+                        Concept {currentIndex + 1} of {totalConcepts}
+                      </p>
                     )}
                   </motion.div>
-                </AnimatePresence>
-              ) : (
-                // Fallback for unmapped concepts
-                <div className="text-center py-8">
-                  <span className="text-4xl mb-4 block">📚</span>
-                  <h2 className="text-xl font-bold text-gray-800 mb-2">
-                    New Topic: {currentConcept?.replace(/_/g, ' ')}
-                  </h2>
-                  <p className="text-gray-600">
-                    Let's learn something new!
-                  </p>
-                </div>
-              )}
-
-              {/* Continue Button - only show for mandatory concepts or when watching optional animation */}
-              {(!isOptionalConcept || showingOptionalAnimation) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <button
-                    onClick={handleContinue}
-                    disabled={!canContinue}
-                    className={cn(
-                      'w-full sm:w-auto px-8 py-3 rounded-full font-semibold text-lg transition-all',
-                      canContinue
-                        ? 'bg-primary text-white hover:bg-primary/90 shadow-lg hover:shadow-xl'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    )}
-                  >
-                    {canContinue ? (
-                      currentIndex < totalConcepts - 1 ? 'Next' : "Let's Practice!"
-                    ) : (
-                      `Wait ${timeRemaining}s...`
-                    )}
-                  </button>
-
-                {/* Skip hint for multiple concepts */}
-                {totalConcepts > 1 && (
-                  <p className="text-xs text-gray-400">
-                    {currentIndex + 1} of {totalConcepts} concepts
-                  </p>
                 )}
-              </motion.div>
-              )}
+
+                {/* ============ VIDEOS STEP ============ */}
+                {currentStep === 'videos' && (
+                  <motion.div
+                    key="videos-step"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <h3 className="text-lg font-semibold text-center mb-1">
+                      Step 1: Watch the Videos
+                    </h3>
+                    <p className="text-sm text-gray-500 text-center mb-4">
+                      {watchedCount}/{videoCount} videos completed
+                    </p>
+
+                    {/* Progress bar */}
+                    <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
+                      <motion.div
+                        className="h-full bg-green-500 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${videoCount > 0 ? (watchedCount / videoCount) * 100 : 0}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+
+                    {videosLoading ? (
+                      <div className="text-center py-8">
+                        <div className="text-4xl animate-pulse mb-2">📹</div>
+                        <p className="text-gray-500">Loading videos...</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Video 1 - Short/Quick intro video */}
+                        {shortVideo && (
+                          <VideoCard
+                            video={shortVideo}
+                            label="Video 1: Quick Introduction"
+                            isWatched={videosWatched.video1}
+                            onWatchComplete={() => setVideosWatched(prev => ({ ...prev, video1: true }))}
+                            childId={childId}
+                            conceptId={currentConcept}
+                          />
+                        )}
+
+                        {/* Video 2 - Detailed explanation video */}
+                        {detailedVideo && (
+                          <VideoCard
+                            video={detailedVideo}
+                            label="Video 2: Detailed Explanation"
+                            isWatched={videosWatched.video2}
+                            onWatchComplete={() => setVideosWatched(prev => ({ ...prev, video2: true }))}
+                            childId={childId}
+                            conceptId={currentConcept}
+                          />
+                        )}
+
+                        {/* Only one video available */}
+                        {!shortVideo && !detailedVideo && (
+                          <div className="text-center py-6">
+                            <p className="text-gray-500">No videos available for this concept.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Next button */}
+                    <div className="mt-6 flex justify-center">
+                      <motion.button
+                        whileHover={allVideosWatched ? { scale: 1.02 } : {}}
+                        whileTap={allVideosWatched ? { scale: 0.98 } : {}}
+                        onClick={handleNextToAnimation}
+                        disabled={!allVideosWatched}
+                        className={cn(
+                          'px-8 py-3 rounded-full font-semibold transition-all',
+                          allVideosWatched
+                            ? 'bg-primary text-white shadow-lg hover:bg-primary/90'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        )}
+                      >
+                        {allVideosWatched ? 'Next: Watch Animation →' : `Watch ${videoCount - watchedCount} more video${videoCount - watchedCount > 1 ? 's' : ''}`}
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ============ ANIMATION STEP ============ */}
+                {currentStep === 'animation' && (
+                  <motion.div
+                    key="animation-step"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <h3 className="text-lg font-semibold text-center mb-1">
+                      Step 2: Watch the Animation
+                    </h3>
+                    <p className="text-sm text-gray-500 text-center mb-4">
+                      {config?.title || currentConcept?.replace(/_/g, ' ')}
+                    </p>
+
+                    {/* Animation Container - constrained height */}
+                    <div className="bg-gray-50 rounded-xl p-3 mb-4 relative" style={{ minHeight: '200px', maxHeight: '45vh', overflow: 'auto' }}>
+                      {/* Get Ready Overlay */}
+                      <AnimatePresence>
+                        {!isReady && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-gray-50 rounded-xl z-10 flex flex-col items-center justify-center"
+                          >
+                            <motion.div
+                              animate={{ scale: [1, 1.1, 1] }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                              className="text-5xl mb-4"
+                            >
+                              👀
+                            </motion.div>
+                            <motion.p
+                              animate={{ opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                              className="text-2xl font-bold text-primary"
+                            >
+                              Get Ready!
+                            </motion.p>
+                            <p className="text-sm text-gray-500 mt-2">
+                              Watch carefully...
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Animation Content */}
+                      {config && (
+                        <AnimationPlayer showControls={true} autoPlay={isReady}>
+                          {renderAnimation(config, animationKey)}
+                        </AnimationPlayer>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row justify-center gap-3">
+                      <button
+                        onClick={handleReplay}
+                        className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                      >
+                        <span>🔄</span>
+                        Watch Again
+                      </button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleComplete}
+                        className="flex items-center justify-center gap-2 px-8 py-3 bg-green-500 text-white font-semibold rounded-full shadow-lg hover:bg-green-600 transition-colors"
+                      >
+                        <span>✨</span>
+                        {currentIndex < totalConcepts - 1 ? 'Next Concept' : "Let's Practice!"}
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
-
-    {/* Video Player Modal for concept intro videos */}
-    {selectedVideo && childId && (
-      <VideoPlayerModal
-        show={showVideoPlayer}
-        video={selectedVideo}
-        conceptId={currentConcept}
-        conceptName={config?.title}
-        triggerType="concept_intro"
-        childId={childId}
-        onClose={() => {
-          setShowVideoPlayer(false)
-          setSelectedVideo(null)
-          setShowVideoSection(false) // Hide video section after watching
-        }}
-      />
-    )}
-    </>
   )
 }

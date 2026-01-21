@@ -20,6 +20,7 @@ import type {
   VideoFeedback,
   TeachingStyle,
 } from '@/types'
+import { isAtOrPastLevel } from './progressService'
 
 // ============================================
 // Type Converters (DB → Application)
@@ -164,13 +165,27 @@ export async function getVideosForAge(childAge: number): Promise<Video[]> {
  * Get concept-video mapping for a concept
  */
 export async function getConceptVideoMapping(conceptId: string): Promise<ConceptVideo | null> {
+  console.log('[VideoService] getConceptVideoMapping called for:', conceptId)
+
   const { data, error } = await supabase
     .from('concept_videos')
     .select('*')
     .eq('concept_id', conceptId)
     .single()
 
-  if (error || !data) return null
+  if (error) {
+    console.log('[VideoService] getConceptVideoMapping error:', error.message)
+    return null
+  }
+  if (!data) {
+    console.log('[VideoService] getConceptVideoMapping no data found')
+    return null
+  }
+
+  console.log('[VideoService] getConceptVideoMapping found:', {
+    shortVideoId: data.short_video_id,
+    detailedVideoId: data.detailed_video_id
+  })
   return dbToConceptVideo(data)
 }
 
@@ -184,14 +199,49 @@ export async function hasVideoForConcept(conceptId: string): Promise<boolean> {
 
 /**
  * Get videos for a concept (both short and detailed if available)
+ * Videos are accessible if child's age is appropriate OR child's level is at/past the video's level
  */
 export async function getVideosForConcept(
   conceptId: string,
   childAge?: number,
+  childLevel?: string,  // NEW: child's current Kumon level for progression-based access
   tier?: VideoTier
 ): Promise<{ short: Video | null; detailed: Video | null }> {
+  console.log('[VideoService] getVideosForConcept called:', { conceptId, childAge, childLevel, tier })
+
   const mapping = await getConceptVideoMapping(conceptId)
-  if (!mapping) return { short: null, detailed: null }
+  console.log('[VideoService] Mapping found:', mapping)
+
+  if (!mapping) {
+    console.log('[VideoService] No mapping found for concept:', conceptId)
+    return { short: null, detailed: null }
+  }
+
+  // Check if a video is accessible based on age OR level progression
+  function isVideoAccessible(video: Video): boolean {
+    // Option 1: Age-appropriate (child's age within video's age range)
+    if (childAge !== undefined) {
+      if (childAge >= video.minAge && childAge <= video.maxAge) {
+        console.log('[VideoService] Video accessible by age:', video.title,
+                    'childAge:', childAge, 'videoRange:', video.minAge, '-', video.maxAge)
+        return true
+      }
+    }
+
+    // Option 2: Level-based access (child is at or past the video's Kumon level)
+    if (childLevel && video.kumonLevel) {
+      if (isAtOrPastLevel(childLevel, video.kumonLevel)) {
+        console.log('[VideoService] Video accessible by level progression:', video.title,
+                    'childLevel:', childLevel, 'videoLevel:', video.kumonLevel)
+        return true
+      }
+    }
+
+    console.log('[VideoService] Video NOT accessible:', video.title,
+                'childAge:', childAge, 'childLevel:', childLevel,
+                'videoAgeRange:', video.minAge, '-', video.maxAge, 'videoLevel:', video.kumonLevel)
+    return false
+  }
 
   let shortVideo: Video | null = null
   let detailedVideo: Video | null = null
@@ -199,25 +249,24 @@ export async function getVideosForConcept(
   // Get short video
   if (mapping.shortVideoId && (!tier || tier === 'short')) {
     shortVideo = await getVideoById(mapping.shortVideoId)
-    // Check age appropriateness
-    if (shortVideo && childAge !== undefined) {
-      if (childAge < shortVideo.minAge || childAge > shortVideo.maxAge) {
-        shortVideo = null
-      }
+    console.log('[VideoService] Short video fetched:', shortVideo?.title || 'null')
+    // Apply combined age/level access check
+    if (shortVideo && !isVideoAccessible(shortVideo)) {
+      shortVideo = null
     }
   }
 
   // Get detailed video
   if (mapping.detailedVideoId && (!tier || tier === 'detailed')) {
     detailedVideo = await getVideoById(mapping.detailedVideoId)
-    // Check age appropriateness
-    if (detailedVideo && childAge !== undefined) {
-      if (childAge < detailedVideo.minAge || childAge > detailedVideo.maxAge) {
-        detailedVideo = null
-      }
+    console.log('[VideoService] Detailed video fetched:', detailedVideo?.title || 'null')
+    // Apply combined age/level access check
+    if (detailedVideo && !isVideoAccessible(detailedVideo)) {
+      detailedVideo = null
     }
   }
 
+  console.log('[VideoService] Returning:', { short: !!shortVideo, detailed: !!detailedVideo })
   return { short: shortVideo, detailed: detailedVideo }
 }
 

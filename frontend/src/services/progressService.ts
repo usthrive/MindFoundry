@@ -1,8 +1,27 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
+import { LEVEL_ORDER } from './generators/types'
 
 type Child = Database['public']['Tables']['children']['Row']
+
+// ============================================
+// Level Comparison Utilities
+// ============================================
+
+/**
+ * Check if a child's current level is at or past a target level
+ * Used for progression-based video unlocking
+ */
+export function isAtOrPastLevel(
+  currentLevel: string,
+  targetLevel: string
+): boolean {
+  const currentIndex = LEVEL_ORDER.indexOf(currentLevel as KumonLevel)
+  const targetIndex = LEVEL_ORDER.indexOf(targetLevel as KumonLevel)
+  if (currentIndex === -1 || targetIndex === -1) return false
+  return currentIndex >= targetIndex
+}
 type WorksheetProgress = Database['public']['Tables']['worksheet_progress']['Row']
 type PracticeSession = Database['public']['Tables']['practice_sessions']['Row']
 
