@@ -3,17 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserProfile, getParentPin } from '@/services/userService'
 import type { Database } from '@/lib/supabase'
-import Button from '@/components/ui/Button'
 import ChildSelector from '@/components/children/ChildSelector'
 import AddChildModal from '@/components/children/AddChildModal'
 import EditChildModal from '@/components/children/EditChildModal'
 import PinEntryModal from '@/components/auth/PinEntryModal'
-import ParentModeChallenge from '@/components/auth/ParentModeChallenge'
 
 type Child = Database['public']['Tables']['children']['Row']
 
 export default function ChildSelectPage() {
-  const { user, children, selectChild, currentChild, logout, loading } = useAuth()
+  const { user, children, selectChild, currentChild, loading } = useAuth()
   const navigate = useNavigate()
   const [showAddChildModal, setShowAddChildModal] = useState(false)
   const [showEditChildModal, setShowEditChildModal] = useState(false)
@@ -21,10 +19,6 @@ export default function ChildSelectPage() {
   const [showPinModal, setShowPinModal] = useState(false)
   const [parentPin, setParentPin] = useState<string | null>(null)
   const [pendingChildId, setPendingChildId] = useState<string | null>(null)
-  // Parent Settings state
-  const [showParentVerification, setShowParentVerification] = useState(false)
-  const [parentModeActive, setParentModeActive] = useState(false)
-  const [selectedChildToEdit, setSelectedChildToEdit] = useState<string>('')
 
   // Redirect to login if not authenticated or to onboarding if user_type not set
   useEffect(() => {
@@ -76,11 +70,6 @@ export default function ChildSelectPage() {
     setPendingChildId(null)
   }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
-
   const handleAddChild = () => {
     setShowAddChildModal(true)
   }
@@ -94,34 +83,6 @@ export default function ChildSelectPage() {
     console.log('Child profile created successfully!')
   }
 
-  // Parent Settings - click to show verification challenge
-  const handleParentSettingsClick = () => {
-    setShowParentVerification(true)
-  }
-
-  // After verification success, show child dropdown for editing
-  const handleParentVerificationSuccess = () => {
-    setShowParentVerification(false)
-    setParentModeActive(true)
-    // Default to first child if available
-    if (children.length > 0) {
-      setSelectedChildToEdit(children[0].id)
-    }
-  }
-
-  const handleParentVerificationCancel = () => {
-    setShowParentVerification(false)
-  }
-
-  // Edit selected child from dropdown
-  const handleEditSelectedChild = () => {
-    const child = children.find(c => c.id === selectedChildToEdit)
-    if (child) {
-      setEditingChild(child)
-      setShowEditChildModal(true)
-    }
-  }
-
   const handleCloseEditModal = () => {
     setShowEditChildModal(false)
     setEditingChild(null)
@@ -129,12 +90,6 @@ export default function ChildSelectPage() {
 
   const handleChildUpdated = () => {
     console.log('Child profile updated successfully!')
-  }
-
-  // Close parent mode panel
-  const handleCloseParentMode = () => {
-    setParentModeActive(false)
-    setSelectedChildToEdit('')
   }
 
   if (loading) {
@@ -160,71 +115,6 @@ export default function ChildSelectPage() {
           />
           <p className="text-lg sm:text-xl text-text-secondary">Welcome back! Ready to learn?</p>
         </div>
-
-        {/* Parent Settings and Sign Out buttons */}
-        <div className="flex justify-end gap-2 mb-6">
-          <Button
-            variant="ghost"
-            onClick={handleParentSettingsClick}
-            size="sm"
-            className="text-text-muted hover:text-text-primary"
-          >
-            ⚙️ Parent Settings
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            size="sm"
-            className="text-text-muted hover:text-text-primary"
-          >
-            Sign Out
-          </Button>
-        </div>
-
-        {/* Parent Mode Active - Edit Panel */}
-        {parentModeActive && children.length > 0 && (
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 mb-6">
-            {/* Close button at top right */}
-            <div className="flex justify-end mb-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCloseParentMode}
-                className="text-orange-600 hover:text-orange-800 -mt-1 -mr-1"
-              >
-                ✕ Close
-              </Button>
-            </div>
-
-            {/* Label */}
-            <p className="text-orange-600 font-medium text-center mb-3">
-              Edit Child Profile
-            </p>
-
-            {/* Dropdown and Button - stack on mobile */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
-              <select
-                value={selectedChildToEdit}
-                onChange={(e) => setSelectedChildToEdit(e.target.value)}
-                className="w-full sm:w-auto px-4 py-3 border border-orange-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
-              >
-                {children.map((child) => (
-                  <option key={child.id} value={child.id}>
-                    {child.avatar} {child.name} (Level {child.current_level})
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleEditSelectedChild}
-                className="w-full sm:w-auto"
-              >
-                Edit Profile
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Child Selector Card with gradient border */}
         <div className="bg-white rounded-3xl shadow-lg p-1 bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20">
@@ -265,13 +155,6 @@ export default function ChildSelectPage() {
             description="Enter your parent PIN to switch to a different child"
           />
         )}
-
-        {/* Parent Settings Verification Modal */}
-        <ParentModeChallenge
-          isOpen={showParentVerification}
-          onSuccess={handleParentVerificationSuccess}
-          onCancel={handleParentVerificationCancel}
-        />
       </div>
     </div>
   )

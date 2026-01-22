@@ -2,7 +2,7 @@
  * Video Unlock System
  * Progressive unlock logic for the Video Library
  *
- * Children can see videos for their current level and up to 3 levels ahead.
+ * Children can see videos for their current level and 1 level ahead.
  * Videos beyond that appear locked, creating a game-like sense of progression.
  */
 
@@ -16,7 +16,7 @@ export const LEVEL_ORDER: KumonLevel[] = [
 ]
 
 // Number of levels ahead a child can preview (unlock buffer)
-const UNLOCK_BUFFER = 3
+const UNLOCK_BUFFER = 1
 
 /**
  * Get the index of a level in the progression order
@@ -28,7 +28,7 @@ export function getLevelIndex(level: KumonLevel): number {
 
 /**
  * Get all levels that are unlocked for a child at the given level
- * Includes current level and up to UNLOCK_BUFFER levels ahead
+ * Includes current level and 1 level ahead
  */
 export function getUnlockedLevels(currentLevel: KumonLevel): KumonLevel[] {
   const currentIndex = getLevelIndex(currentLevel)
@@ -109,6 +109,32 @@ export function getLevelsUntilUnlock(videoLevel: KumonLevel, childLevel: KumonLe
   }
 
   return Math.max(0, videoIndex - childIndex - UNLOCK_BUFFER)
+}
+
+// ============================================
+// Parent View Helpers
+// ============================================
+
+/**
+ * Get the highest level among all children (for parent view unlocking)
+ * In parent view, content should be unlocked based on the most advanced child
+ */
+export function getHighestChildLevel(
+  children: Array<{ current_level: string }>
+): KumonLevel {
+  if (!children || children.length === 0) {
+    return '7A' // Default to lowest level
+  }
+
+  let highestIndex = 0
+  for (const child of children) {
+    const index = LEVEL_ORDER.indexOf(child.current_level as KumonLevel)
+    if (index > highestIndex) {
+      highestIndex = index
+    }
+  }
+
+  return LEVEL_ORDER[highestIndex]
 }
 
 // ============================================

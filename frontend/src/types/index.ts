@@ -166,6 +166,9 @@ export type TeachingStyle =
   | 'demonstration'
   | 'drill';
 
+// Video language codes (ISO 639-1)
+export type VideoLanguage = 'en' | 'hi' | 'es' | 'fr' | 'de' | 'ar' | 'zh' | 'ja' | 'ko' | 'pt';
+
 // Video metadata from video_library table
 export interface Video {
   id: string;
@@ -181,6 +184,7 @@ export interface Video {
   scoreOverall: number | null;
   teachingStyle: TeachingStyle | null;
   isActive: boolean;
+  language?: VideoLanguage; // ISO 639-1 language code (default: 'en')
 }
 
 // Concept-to-video mapping from concept_videos table

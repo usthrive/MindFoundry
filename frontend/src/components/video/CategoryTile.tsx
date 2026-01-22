@@ -5,6 +5,7 @@
 
 import { motion } from 'framer-motion'
 import type { KumonLevel } from '@/types'
+import type { CategoryStatus, ChildCategoryStatus } from '@/services/videoLibraryService'
 import { getFriendlyLevelName } from '@/utils/videoUnlockSystem'
 
 interface CategoryTileProps {
@@ -12,27 +13,45 @@ interface CategoryTileProps {
   icon: string
   label: string
   color: string
+  levelRange?: string  // Display string for level range (e.g., "7A-5A")
   isUnlocked: boolean
   unlockLevel: KumonLevel | null
   isAlmostUnlocked: boolean
   watchedCount: number
   totalCount: number
   onClick: () => void
+  status?: CategoryStatus  // Child's relationship to this category (single child)
+  childName?: string  // For parent view personalization (single child)
+  isParentView?: boolean  // Show parent-specific text
+  childrenStatus?: ChildCategoryStatus[]  // All children's status (parent view with multiple children)
 }
 
 export default function CategoryTile({
   icon,
   label,
   color,
+  levelRange,
   isUnlocked,
   unlockLevel,
   isAlmostUnlocked,
   watchedCount,
   totalCount,
   onClick,
+  status,
+  childName,
+  isParentView = false,
+  childrenStatus,
 }: CategoryTileProps) {
   // All videos watched state
   const allWatched = isUnlocked && totalCount > 0 && watchedCount >= totalCount
+
+  // Check if any child has a specific status (for multi-child view)
+  const hasChildWithStatus = (targetStatus: CategoryStatus) => {
+    if (childrenStatus && childrenStatus.length > 0) {
+      return childrenStatus.some(cs => cs.status === targetStatus)
+    }
+    return status === targetStatus
+  }
 
   // Background color based on state
   const getBackgroundStyle = () => {
@@ -43,14 +62,21 @@ export default function CategoryTile({
         boxShadow: isAlmostUnlocked ? `0 0 20px ${color}40` : 'none',
       }
     }
-    if (allWatched) {
-      // All watched - gold/yellow background
+    if (hasChildWithStatus('completed') || allWatched) {
+      // Completed - gold/yellow background
       return {
         backgroundColor: '#FEF3C7',
         boxShadow: '0 0 20px #F59E0B40',
       }
     }
-    // Normal unlocked state
+    if (hasChildWithStatus('current')) {
+      // Current level - add green glow
+      return {
+        backgroundColor: `${color}15`,
+        boxShadow: '0 0 20px #22C55E40',
+      }
+    }
+    // Normal unlocked state (upcoming)
     return {
       backgroundColor: `${color}15`,
     }
@@ -92,11 +118,46 @@ export default function CategoryTile({
         </div>
       )}
 
-      {/* Almost there glow indicator */}
-      {isAlmostUnlocked && (
+      {/* Almost there glow indicator (only show if not current/completed) */}
+      {isAlmostUnlocked && status !== 'current' && status !== 'completed' && (
         <div className="absolute top-2 left-2">
           <span className="text-sm animate-pulse">✨</span>
         </div>
+      )}
+
+      {/* Status Badges - Show all children's status (parent view) or single child status */}
+      {childrenStatus && childrenStatus.length > 0 ? (
+        // Multiple children view - show stacked badges for children with current/completed status
+        <div className="absolute top-1 left-1 flex flex-col gap-0.5 max-w-[90%]">
+          {childrenStatus
+            .filter(cs => cs.status === 'current' || cs.status === 'completed')
+            .map(cs => (
+              <div
+                key={cs.childId}
+                className={`text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow truncate ${
+                  cs.status === 'current' ? 'bg-green-500' : 'bg-yellow-500'
+                }`}
+              >
+                {cs.childAvatar} {cs.childName} {cs.status === 'current' ? 'is here' : 'completed'}
+              </div>
+            ))
+          }
+        </div>
+      ) : (
+        // Single child view - show single badge
+        <>
+          {status === 'current' && (
+            <div className="absolute top-2 left-2 bg-green-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
+              {isParentView && childName ? `${childName} is here` : "You're here!"}
+            </div>
+          )}
+
+          {status === 'completed' && (
+            <div className="absolute top-2 left-2 bg-yellow-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow">
+              {isParentView && childName ? `${childName} completed` : 'Completed!'}
+            </div>
+          )}
+        </>
       )}
 
       {/* Category Icon */}
@@ -114,6 +175,17 @@ export default function CategoryTile({
       >
         {label}
       </span>
+
+      {/* Level Range */}
+      {levelRange && (
+        <span
+          className={`text-[10px] ${
+            !isUnlocked ? 'text-gray-400' : 'text-gray-500'
+          }`}
+        >
+          Level{levelRange.includes('-') ? 's' : ''} {levelRange}
+        </span>
+      )}
 
       {/* Progress or Lock Status */}
       <span

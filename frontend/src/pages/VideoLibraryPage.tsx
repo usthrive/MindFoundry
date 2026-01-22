@@ -14,13 +14,16 @@ import LockedVideoModal from '@/components/video/LockedVideoModal'
 import {
   getCategoriesWithStats,
   getRecommendedVideos,
+  getCategoryStatusForChildren,
   type CategoryWithStats,
   type VideoWithUnlockStatus,
 } from '@/services/videoLibraryService'
+import { VIDEO_CATEGORIES } from '@/config/videoCategories'
+import { getHighestChildLevel, isCategoryUnlocked } from '@/utils/videoUnlockSystem'
 
 export default function VideoLibraryPage() {
   const navigate = useNavigate()
-  const { currentChild } = useAuth()
+  const { currentChild, children } = useAuth()
 
   // State
   const [categories, setCategories] = useState<CategoryWithStats[]>([])
@@ -33,6 +36,9 @@ export default function VideoLibraryPage() {
   const [lockedUnlockLevel, setLockedUnlockLevel] = useState<KumonLevel | null>(null)
   const [lockedIsAlmost, setLockedIsAlmost] = useState(false)
 
+  // Determine if we're in parent view (multiple children)
+  const isParentView = children && children.length > 1
+
   // Load data
   useEffect(() => {
     async function loadData() {
@@ -44,13 +50,36 @@ export default function VideoLibraryPage() {
       try {
         const childLevel = currentChild.current_level as KumonLevel
 
+        // For parent view, use the highest level among all children for unlocking
+        const effectiveLevel = isParentView && children
+          ? getHighestChildLevel(children.map(c => ({ current_level: c.current_level })))
+          : childLevel
+
         // Fetch categories and recommended videos in parallel
         const [categoriesData, recommendedData] = await Promise.all([
-          getCategoriesWithStats(currentChild.id, childLevel),
-          getRecommendedVideos(currentChild.id, childLevel, 6),
+          getCategoriesWithStats(currentChild.id, effectiveLevel),
+          getRecommendedVideos(currentChild.id, effectiveLevel, 6),
         ])
 
-        setCategories(categoriesData)
+        // For parent view, ensure categories are unlocked if ANY child can access them
+        let finalCategories = categoriesData
+        if (isParentView && children) {
+          finalCategories = categoriesData.map(category => {
+            // Check if any child has this category unlocked
+            const anyChildUnlocked = children.some(child =>
+              isCategoryUnlocked(
+                VIDEO_CATEGORIES.find(c => c.id === category.id) || category,
+                child.current_level as KumonLevel
+              )
+            )
+            return {
+              ...category,
+              isUnlocked: anyChildUnlocked || category.isUnlocked
+            }
+          })
+        }
+
+        setCategories(finalCategories)
         setRecommended(recommendedData)
       } catch (err) {
         console.error('Error loading video library:', err)
@@ -61,7 +90,7 @@ export default function VideoLibraryPage() {
     }
 
     loadData()
-  }, [currentChild])
+  }, [currentChild, children, isParentView])
 
   // Handle category click
   const handleCategoryClick = (category: CategoryWithStats) => {
@@ -154,44 +183,13 @@ export default function VideoLibraryPage() {
           </div>
         )}
 
-        {/* Category Grid */}
-        {!loading && !error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-2 gap-3 mb-8"
-          >
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <CategoryTile
-                  id={category.id}
-                  icon={category.icon}
-                  label={category.label}
-                  color={category.color}
-                  isUnlocked={category.isUnlocked}
-                  unlockLevel={category.unlockLevel}
-                  isAlmostUnlocked={category.isAlmostUnlocked}
-                  watchedCount={category.watchedCount}
-                  totalCount={category.totalCount}
-                  onClick={() => handleCategoryClick(category)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Recommended Videos Section */}
+        {/* Recommended Videos Section - NOW AT TOP */}
         {!loading && !error && recommended.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8"
           >
             <h2 className="text-lg font-semibold text-gray-800 mb-3">
               Recommended for You
@@ -203,7 +201,7 @@ export default function VideoLibraryPage() {
                   key={video.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.05 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
                   className="flex-shrink-0"
                 >
                   <VideoCard
@@ -218,6 +216,7 @@ export default function VideoLibraryPage() {
                     isAlmostUnlocked={video.isAlmostUnlocked}
                     isWatched={video.isWatched}
                     isRecommended={true}
+                    language={video.language}
                     onClick={() => handleVideoClick(video)}
                     onLockedClick={() => {
                       setLockedUnlockLevel(video.unlockLevel)
@@ -225,6 +224,59 @@ export default function VideoLibraryPage() {
                       setShowLockedModal(true)
                     }}
                     size="small"
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Category Grid - NOW BELOW RECOMMENDED */}
+        {!loading && !error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">
+              Browse by Topic
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              {categories.map((category, index) => (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05 }}
+                >
+                  <CategoryTile
+                    id={category.id}
+                    icon={category.icon}
+                    label={category.label}
+                    color={category.color}
+                    levelRange={category.levelRange}
+                    isUnlocked={category.isUnlocked}
+                    unlockLevel={category.unlockLevel}
+                    isAlmostUnlocked={category.isAlmostUnlocked}
+                    watchedCount={category.watchedCount}
+                    totalCount={category.totalCount}
+                    onClick={() => handleCategoryClick(category)}
+                    status={category.status}
+                    childName={currentChild?.name}
+                    childrenStatus={
+                      children && children.length > 0
+                        ? getCategoryStatusForChildren(
+                            VIDEO_CATEGORIES.find(c => c.id === category.id) || category,
+                            children.map(c => ({
+                              id: c.id,
+                              name: c.name,
+                              avatar: c.avatar,
+                              current_level: c.current_level
+                            }))
+                          )
+                        : undefined
+                    }
                   />
                 </motion.div>
               ))}

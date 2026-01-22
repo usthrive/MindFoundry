@@ -264,21 +264,6 @@ export default function VideoPlayerModal({
               )}
             </div>
 
-            {/* Progress Bar */}
-            <div className="h-1 bg-gray-200">
-              <motion.div
-                className={cn(
-                  'h-full transition-colors',
-                  watchProgress >= COMPLETION_THRESHOLD
-                    ? 'bg-green-500'
-                    : 'bg-red-500'
-                )}
-                initial={{ width: 0 }}
-                animate={{ width: `${watchProgress}%` }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-
             {/* Video Info */}
             <div className="p-4 bg-gray-50 border-t">
               <div className="flex items-center justify-between mb-3">

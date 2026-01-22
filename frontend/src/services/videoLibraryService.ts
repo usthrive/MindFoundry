@@ -16,11 +16,21 @@ import {
   getUnlockRequirement,
   isAlmostUnlocked,
   getUnlockedLevels,
+  LEVEL_ORDER,
 } from '@/utils/videoUnlockSystem'
 
 // ============================================
 // Types
 // ============================================
+
+/**
+ * Status of a category relative to the child's current level
+ * - 'locked': Child hasn't reached this category yet
+ * - 'upcoming': Child is close to unlocking (within unlock buffer)
+ * - 'current': Child's level is within this category's levels
+ * - 'completed': Child has passed all levels in this category
+ */
+export type CategoryStatus = 'locked' | 'upcoming' | 'current' | 'completed'
 
 export interface VideoWithUnlockStatus extends Video {
   isUnlocked: boolean
@@ -36,6 +46,17 @@ export interface CategoryWithStats extends VideoCategory {
   watchedCount: number
   totalCount: number
   videos: VideoWithUnlockStatus[]
+  status: CategoryStatus  // Child's relationship to this category
+}
+
+/**
+ * Status of a single child for a category (used for parent view showing all children)
+ */
+export interface ChildCategoryStatus {
+  childId: string
+  childName: string
+  childAvatar: string
+  status: CategoryStatus
 }
 
 // ============================================
@@ -57,7 +78,60 @@ function dbToVideo(row: any): Video {
     scoreOverall: row.score_overall,
     teachingStyle: row.teaching_style,
     isActive: row.is_active,
+    language: row.language || 'en',
   }
+}
+
+// ============================================
+// Category Status Logic
+// ============================================
+
+/**
+ * Determine the child's relationship to a category based on their current level
+ * @param category - The video category
+ * @param childLevel - The child's current Kumon level
+ * @returns CategoryStatus indicating the child's position relative to this category
+ */
+export function getCategoryStatus(category: VideoCategory, childLevel: KumonLevel): CategoryStatus {
+  const childLevelIndex = LEVEL_ORDER.indexOf(childLevel)
+  const categoryLevelIndices = category.levels.map(l => LEVEL_ORDER.indexOf(l as KumonLevel))
+  const minCategoryLevel = Math.min(...categoryLevelIndices)
+  const maxCategoryLevel = Math.max(...categoryLevelIndices)
+
+  // Child's level is within this category's levels - they're currently here
+  if (childLevelIndex >= minCategoryLevel && childLevelIndex <= maxCategoryLevel) {
+    return 'current'
+  }
+
+  // Child has passed all levels in this category
+  if (childLevelIndex > maxCategoryLevel) {
+    return 'completed'
+  }
+
+  // Check if category is unlocked (child is close enough based on unlock buffer)
+  const isCatUnlocked = isCategoryUnlocked(category, childLevel)
+  if (isCatUnlocked) {
+    return 'upcoming'
+  }
+
+  // Child hasn't reached this category yet
+  return 'locked'
+}
+
+/**
+ * Get category status for ALL children (used for parent view)
+ * Returns an array of status objects, one per child
+ */
+export function getCategoryStatusForChildren(
+  category: VideoCategory,
+  children: Array<{ id: string; name: string; avatar: string; current_level: string }>
+): ChildCategoryStatus[] {
+  return children.map(child => ({
+    childId: child.id,
+    childName: child.name,
+    childAvatar: child.avatar,
+    status: getCategoryStatus(category, child.current_level as KumonLevel)
+  }))
 }
 
 // ============================================
@@ -114,6 +188,9 @@ export async function getCategoriesWithStats(
     const unlockLevel = categoryUnlocked ? null : getUnlockRequirement(firstLevel, childLevel)
     const almostUnlocked = !categoryUnlocked && isAlmostUnlocked(firstLevel, childLevel)
 
+    // Get category status (current, completed, upcoming, locked)
+    const status = getCategoryStatus(category, childLevel)
+
     return {
       ...category,
       isUnlocked: categoryUnlocked,
@@ -122,6 +199,7 @@ export async function getCategoriesWithStats(
       watchedCount,
       totalCount: unlockedVideos.length,
       videos: videosWithStatus,
+      status,
     }
   })
 }
@@ -171,9 +249,35 @@ export async function getVideosForCategory(
     isWatched: watchedIds.has(video.id),
   }))
 
-  // Split by tier
-  const shortVideos = videosWithStatus.filter(v => v.tier === 'short')
-  const detailedVideos = videosWithStatus.filter(v => v.tier === 'detailed')
+  // Sort videos by level relevance (current level first, then by distance)
+  const sortByLevelRelevance = (videos: VideoWithUnlockStatus[]) => {
+    const childLevelIndex = LEVEL_ORDER.indexOf(childLevel)
+
+    return [...videos].sort((a, b) => {
+      const aIndex = LEVEL_ORDER.indexOf(a.kumonLevel as KumonLevel)
+      const bIndex = LEVEL_ORDER.indexOf(b.kumonLevel as KumonLevel)
+
+      // Current level videos come first
+      const aIsCurrentLevel = a.kumonLevel === childLevel
+      const bIsCurrentLevel = b.kumonLevel === childLevel
+
+      if (aIsCurrentLevel && !bIsCurrentLevel) return -1
+      if (bIsCurrentLevel && !aIsCurrentLevel) return 1
+
+      // Then by distance from current level
+      const aDistance = Math.abs(aIndex - childLevelIndex)
+      const bDistance = Math.abs(bIndex - childLevelIndex)
+
+      if (aDistance !== bDistance) return aDistance - bDistance
+
+      // Finally by score (higher first)
+      return (b.scoreOverall || 0) - (a.scoreOverall || 0)
+    })
+  }
+
+  // Split by tier and sort each by relevance
+  const shortVideos = sortByLevelRelevance(videosWithStatus.filter(v => v.tier === 'short'))
+  const detailedVideos = sortByLevelRelevance(videosWithStatus.filter(v => v.tier === 'detailed'))
 
   // Calculate stats (only count unlocked videos)
   const unlocked = videosWithStatus.filter(v => v.isUnlocked)

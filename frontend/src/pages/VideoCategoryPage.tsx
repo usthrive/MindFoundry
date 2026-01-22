@@ -248,6 +248,10 @@ export default function VideoCategoryPage() {
                     unlockLevel={video.unlockLevel}
                     isAlmostUnlocked={video.isAlmostUnlocked}
                     isWatched={video.isWatched}
+                    targetLevel={video.kumonLevel as KumonLevel}
+                    childLevel={currentChild?.current_level as KumonLevel}
+                    showLevelBadge={true}
+                    language={video.language}
                     onClick={() => handleVideoClick(video)}
                     onLockedClick={() => handleLockedClick(video)}
                     size="normal"
@@ -288,6 +292,10 @@ export default function VideoCategoryPage() {
                     unlockLevel={video.unlockLevel}
                     isAlmostUnlocked={video.isAlmostUnlocked}
                     isWatched={video.isWatched}
+                    targetLevel={video.kumonLevel as KumonLevel}
+                    childLevel={currentChild?.current_level as KumonLevel}
+                    showLevelBadge={true}
+                    language={video.language}
                     onClick={() => handleVideoClick(video)}
                     onLockedClick={() => handleLockedClick(video)}
                     size="normal"

@@ -227,23 +227,18 @@ export default function VideoWatchPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-10 bg-black/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between p-4">
-          <button
-            onClick={handleClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-          >
-            <span className="text-white text-xl">&times;</span>
-          </button>
-          <span className="text-white/70 text-sm">
-            {isComplete ? '✓ Completed' : `${Math.round(watchProgress)}% watched`}
-          </span>
-        </div>
+      {/* Header - Minimal, only X button for immersive viewing */}
+      <div className="fixed top-0 left-0 z-10 p-4">
+        <button
+          onClick={handleClose}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+        >
+          <span className="text-white text-xl">&times;</span>
+        </button>
       </div>
 
-      {/* Main Content */}
-      <div className="pt-16 pb-24">
+      {/* Main Content - reduced padding since no bottom bar */}
+      <div className="pt-4 pb-8">
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center h-64">
@@ -351,6 +346,7 @@ export default function VideoWatchPage() {
                         unlockLevel={relatedVideo.unlockLevel}
                         isAlmostUnlocked={relatedVideo.isAlmostUnlocked}
                         isWatched={relatedVideo.isWatched}
+                        language={relatedVideo.language}
                         onClick={() => handleRelatedVideoClick(relatedVideo)}
                         onLockedClick={() => {
                           setLockedUnlockLevel(relatedVideo.unlockLevel)
@@ -365,19 +361,6 @@ export default function VideoWatchPage() {
               </div>
             )}
 
-            {/* Done Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gray-900/90 backdrop-blur-sm">
-              <button
-                onClick={handleClose}
-                className={`w-full py-3 rounded-full font-semibold text-lg transition-colors ${
-                  isComplete
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gray-700 text-white hover:bg-gray-600'
-                }`}
-              >
-                {isComplete ? "Done! Let's Practice" : 'Close Video'}
-              </button>
-            </div>
           </>
         )}
       </div>
