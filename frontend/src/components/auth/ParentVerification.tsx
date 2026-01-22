@@ -298,8 +298,6 @@ export default function ParentVerification({
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-      onKeyUp={(e) => e.stopPropagation()}
     >
       <Card variant="elevated" padding="lg" className="w-full max-w-md">
         <div className="text-center mb-6">
