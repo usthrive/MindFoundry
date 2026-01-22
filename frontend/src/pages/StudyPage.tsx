@@ -310,9 +310,11 @@ export default function StudyPage() {
 
   // Keyboard input support - handles both single-problem and worksheet modes
   useEffect(() => {
+    // Don't attach keyboard handler when parent challenge modal is open
+    // This allows PIN/math inputs in the modal to receive keyboard events on iOS
+    if (showParentChallenge) return
+
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't capture keyboard events when parent challenge modal is open
-      if (showParentChallenge) return
       if (!sessionActive) return
 
       const worksheetModeActive = shouldUseWorksheetMode()
