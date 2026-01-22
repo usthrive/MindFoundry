@@ -62,6 +62,12 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
 
   // Navigate with optional verification protection
   const navigateWithGuard = useCallback(async (path: string) => {
+    // If already on the target page, no guard needed
+    const currentPath = window.location.pathname
+    if (currentPath === path) {
+      return // Already there, do nothing
+    }
+
     // Determine if we're in child view (currentChild is set)
     const isChildView = !!currentChild
     const isGoingToParentArea = isParentArea(path)

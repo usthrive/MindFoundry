@@ -36,8 +36,8 @@ export default function VideoLibraryPage() {
   const [lockedUnlockLevel, setLockedUnlockLevel] = useState<KumonLevel | null>(null)
   const [lockedIsAlmost, setLockedIsAlmost] = useState(false)
 
-  // Determine if we're in parent view (multiple children)
-  const isParentView = children && children.length > 1
+  // Parent view = no child selected AND multiple children exist
+  const isParentView = !currentChild && children && children.length > 1
 
   // Load data
   useEffect(() => {
