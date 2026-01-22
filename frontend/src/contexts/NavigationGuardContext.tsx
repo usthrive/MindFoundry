@@ -72,9 +72,13 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
     const isChildView = !!currentChild
     const isGoingToParentArea = isParentArea(path)
 
-    // If navigating from child view to parent area and PIN is set, require verification
-    if (isChildView && isGoingToParentArea && pinLoaded && hasPin) {
-      // PIN exists - show verification modal
+    // Only require PIN when exiting from study page to parent area
+    // Videos and Progress pages can navigate freely without PIN
+    const isLeavingStudy = currentPath === '/study' || currentPath.startsWith('/study/')
+
+    // If leaving study page to go to parent area and PIN is set, require verification
+    if (isChildView && isGoingToParentArea && isLeavingStudy && pinLoaded && hasPin) {
+      // PIN exists and leaving study - show verification modal
       setPendingPath(path)
       setShowVerificationModal(true)
       return
