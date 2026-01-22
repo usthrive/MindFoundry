@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
+import AnimationRenderer from './AnimationRenderer'
+import type { ProblemData } from '@/services/hintAnimationMapping'
 
 export interface FullTeachingProps {
   /** Teaching text/narration */
@@ -215,7 +217,14 @@ export default function FullTeaching({
                   className="min-h-[200px]"
                 >
                   {!showAnswer ? (
-                    <TeachingStep step={teachingSteps[currentStep]} />
+                    <TeachingStep
+                      step={teachingSteps[currentStep]}
+                      problemData={{
+                        operands: demoProblem.operands,
+                        operation: problemData?.operation as 'addition' | 'subtraction' | 'multiplication' | 'division' | undefined,
+                        correctAnswer: demoProblem.answer,
+                      }}
+                    />
                   ) : (
                     <NowTryYours
                       demoProblem={demoProblem}
@@ -323,6 +332,7 @@ function generateSimilarProblem(operands: number[], operation: string): SimilarP
 }
 
 // Helper function to generate teaching steps using the SIMILAR problem
+// Now includes animationIds for visual demonstrations
 function getTeachingSteps(
   demoProblem: SimilarProblem,
   operation?: string,
@@ -344,7 +354,7 @@ function getTeachingSteps(
         title: 'Step 2: Count up',
         content: `Now count up ${Math.min(...operands)} more`,
         visual: '🔢',
-        animation: 'counting',
+        animationId: 'number-line-addition', // Show counting on number line
       },
       {
         title: 'Step 3: Find the answer',
@@ -367,7 +377,7 @@ function getTeachingSteps(
         title: 'Step 2: Count down',
         content: `Now count down ${operands[1]}`,
         visual: '⬇️',
-        animation: 'counting-down',
+        animationId: 'number-line-subtraction', // Show counting back on number line
       },
       {
         title: 'Step 3: Find the answer',
@@ -389,7 +399,7 @@ function getTeachingSteps(
         title: 'Step 2: Count the groups',
         content: `Count: ${operands[1]}, ${operands[1] * 2}, ${operands[1] * 3}...`,
         visual: '🔢',
-        animation: 'groups',
+        animationId: 'array-groups', // Show array visualization
       },
       {
         title: 'Step 3: Find the total',
@@ -411,7 +421,7 @@ function getTeachingSteps(
         title: 'Step 2: Count the groups',
         content: `${operands[1]}, ${operands[1] * 2}, ${operands[1] * 3}... until we reach ${operands[0]}`,
         visual: '🔢',
-        animation: 'grouping',
+        animationId: 'fair-sharing', // Show fair sharing/grouping
       },
       {
         title: 'Step 3: Find the answer',
@@ -446,13 +456,38 @@ interface TeachingStepData {
   content: string
   visual: string
   highlight?: number
-  animation?: string
+  /** Animation ID to render instead of emoji (optional) */
+  animationId?: string
 }
 
-function TeachingStep({ step }: { step: TeachingStepData }) {
+interface TeachingStepProps {
+  step: TeachingStepData
+  /** Problem data for the animation */
+  problemData?: ProblemData
+}
+
+/**
+ * TeachingStep - Renders a single step in the teaching sequence
+ *
+ * PEDAGOGICAL: Shows animations with showSolution=true to demonstrate
+ * the full solution process (unlike visual hints which show setup only)
+ */
+function TeachingStep({ step, problemData }: TeachingStepProps) {
   return (
     <div className="text-center">
-      <span className="text-6xl block mb-4">{step.visual}</span>
+      {/* Render animation if available, otherwise show emoji */}
+      {step.animationId ? (
+        <div className="mb-4 min-h-[100px] flex items-center justify-center">
+          <AnimationRenderer
+            animationId={step.animationId}
+            problemData={problemData}
+            showSolution={true} // PEDAGOGICAL: Full solution in teaching mode
+            operation={problemData?.operation}
+          />
+        </div>
+      ) : (
+        <span className="text-6xl block mb-4">{step.visual}</span>
+      )}
       <h3 className="text-lg font-bold text-primary mb-2">{step.title}</h3>
       <p className="text-xl text-gray-800 font-medium">{step.content}</p>
       {step.highlight !== undefined && (

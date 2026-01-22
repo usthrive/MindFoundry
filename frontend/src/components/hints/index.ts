@@ -16,5 +16,8 @@ export type { VisualHintProps } from './VisualHint'
 export { default as FullTeaching } from './FullTeaching'
 export type { FullTeachingProps } from './FullTeaching'
 
+export { default as AnimationRenderer } from './AnimationRenderer'
+export type { AnimationRendererProps } from './AnimationRenderer'
+
 // Re-export types from generators/types.ts for convenience
 export type { HintLevel, HintData, ProblemHints } from '@/services/generators/types'
