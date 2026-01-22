@@ -1343,6 +1343,33 @@ export default function StudyPage() {
                 <Button size="sm" variant={currentLevel === 'F' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('F')}>
                   F
                 </Button>
+                <Button size="sm" variant={currentLevel === 'G' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('G')}>
+                  G
+                </Button>
+                <Button size="sm" variant={currentLevel === 'H' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('H')}>
+                  H
+                </Button>
+                <Button size="sm" variant={currentLevel === 'I' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('I')}>
+                  I
+                </Button>
+                <Button size="sm" variant={currentLevel === 'J' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('J')}>
+                  J
+                </Button>
+                <Button size="sm" variant={currentLevel === 'K' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('K')}>
+                  K
+                </Button>
+                <Button size="sm" variant={currentLevel === 'L' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('L')}>
+                  L
+                </Button>
+                <Button size="sm" variant={currentLevel === 'M' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('M')}>
+                  M
+                </Button>
+                <Button size="sm" variant={currentLevel === 'N' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('N')}>
+                  N
+                </Button>
+                <Button size="sm" variant={currentLevel === 'O' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('O')}>
+                  O
+                </Button>
               </div>
             </div>
           )}

@@ -342,6 +342,72 @@ export const HINT_ANIMATION_MAP: Record<string, AnimationMapping> = {
     component: FractionBarAnimation,
   },
 
+  // Fraction Addition - Same Denominator
+  'fraction-add-same-denom-setup': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'addition' },
+    isSetup: true,
+  },
+  'fraction-add-same-denom-demo': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'addition' },
+  },
+
+  // Fraction Addition - Different Denominators (LCD)
+  'fraction-find-common-denom-setup': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'addition' },
+    isSetup: true,
+  },
+  'fraction-add-diff-denom-demo': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'addition' },
+  },
+
+  // Fraction Subtraction - Same Denominator
+  'fraction-subtract-same-denom-setup': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'subtraction' },
+    isSetup: true,
+  },
+  'fraction-subtract-same-denom-demo': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'subtraction' },
+  },
+
+  // Fraction Subtraction - Different Denominators
+  'fraction-subtract-diff-denom-setup': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'subtraction' },
+    isSetup: true,
+  },
+  'fraction-subtract-diff-denom-demo': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'subtraction' },
+  },
+
+  // Fraction Multiplication
+  'fraction-multiply-area-model-setup': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'multiplication' },
+    isSetup: true,
+  },
+  'fraction-multiply-demo': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'multiplication' },
+  },
+
+  // Fraction Division
+  'fraction-divide-grouping-setup': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'division' },
+    isSetup: true,
+  },
+  'fraction-divide-demo': {
+    component: FractionOperationAnimation,
+    defaultProps: { operation: 'division' },
+  },
+
   // ============================================
   // ALGEBRA ANIMATIONS (Levels G-H)
   // ============================================

@@ -275,7 +275,7 @@ export default function FullTeaching({
 
 interface SimilarProblem {
   operands: number[]
-  answer: number
+  answer: number | string
   question: string
 }
 
@@ -317,6 +317,63 @@ function generateSimilarProblem(operands: number[], operation: string): SimilarP
         operands: [newDividend, newDivisor],
         answer: newDividend / newDivisor,
         question: `${newDividend} ÷ ${newDivisor}`,
+      }
+    }
+    case 'fraction':
+    case 'fraction_add':
+    case 'fraction_addition': {
+      // Generate similar fraction addition problem
+      const newNum1 = Math.max(1, num1 + (Math.random() > 0.5 ? 1 : -1))
+      const newNum2 = Math.max(1, num2 + (Math.random() > 0.5 ? 1 : -1))
+      const denominator = operands[2] || 8
+      const sum = newNum1 + newNum2
+      return {
+        operands: [newNum1, newNum2, denominator],
+        answer: `${sum}/${denominator}`,
+        question: `${newNum1}/${denominator} + ${newNum2}/${denominator}`,
+      }
+    }
+    case 'fraction_subtract':
+    case 'fraction_subtraction': {
+      // Generate similar fraction subtraction problem
+      const larger = Math.max(num1, num2)
+      const smaller = Math.min(num1, num2)
+      const newNum1 = Math.max(2, larger + (Math.random() > 0.5 ? 1 : 0))
+      const newNum2 = Math.max(1, Math.min(smaller, newNum1 - 1))
+      const denominator = operands[2] || 8
+      const diff = newNum1 - newNum2
+      return {
+        operands: [newNum1, newNum2, denominator],
+        answer: `${diff}/${denominator}`,
+        question: `${newNum1}/${denominator} - ${newNum2}/${denominator}`,
+      }
+    }
+    case 'fraction_multiply':
+    case 'fraction_multiplication': {
+      // Generate similar fraction multiplication problem
+      const newNum1 = Math.max(1, num1 + (Math.random() > 0.5 ? 1 : -1))
+      const newNum2 = Math.max(1, num2 + (Math.random() > 0.5 ? 1 : -1))
+      const den1 = operands[2] || 4
+      const den2 = operands[3] || 5
+      const product = newNum1 * newNum2
+      const productDen = den1 * den2
+      return {
+        operands: [newNum1, newNum2, den1, den2],
+        answer: `${product}/${productDen}`,
+        question: `${newNum1}/${den1} × ${newNum2}/${den2}`,
+      }
+    }
+    case 'fraction_divide':
+    case 'fraction_division': {
+      // Generate similar fraction division problem
+      const newNum1 = Math.max(1, num1 + (Math.random() > 0.5 ? 1 : -1))
+      const newNum2 = Math.max(1, num2 + (Math.random() > 0.5 ? 1 : -1))
+      const den1 = operands[2] || 4
+      const den2 = operands[3] || 3
+      return {
+        operands: [newNum1, newNum2, den1, den2],
+        answer: `${newNum1 * den2}/${den1 * newNum2}`,
+        question: `${newNum1}/${den1} ÷ ${newNum2}/${den2}`,
       }
     }
     default: {
@@ -426,6 +483,98 @@ function getTeachingSteps(
       {
         title: 'Step 3: Find the answer',
         content: `${demoProblem.question} = ${answer}`,
+        visual: '🎯',
+      },
+    ]
+  }
+
+  // Fraction teaching steps
+  if (operation === 'fraction' || operation?.startsWith('fraction_') || animationId?.includes('fraction')) {
+    const denominator = operands[2] || 8
+    // isAddition is the default case (falls through if none of the below match)
+    const isSubtraction = operation === 'fraction_subtract' || operation === 'fraction_subtraction' || animationId?.includes('subtract')
+    const isMultiplication = operation === 'fraction_multiply' || operation === 'fraction_multiplication' || animationId?.includes('multiply')
+    const isDivision = operation === 'fraction_divide' || operation === 'fraction_division' || animationId?.includes('divide')
+
+    if (isMultiplication) {
+      return [
+        {
+          title: 'Step 1: Multiply the numerators',
+          content: `Multiply the top numbers: ${operands[0]} × ${operands[1]} = ${operands[0] * operands[1]}`,
+          visual: '✖️',
+        },
+        {
+          title: 'Step 2: Multiply the denominators',
+          content: `Multiply the bottom numbers: ${operands[2] || 4} × ${operands[3] || 5} = ${(operands[2] || 4) * (operands[3] || 5)}`,
+          visual: '✖️',
+        },
+        {
+          title: 'Step 3: Write the answer',
+          content: `${demoProblem.question} = ${answer}`,
+          visual: '🎯',
+          animationId: 'fraction-multiply-demo',
+        },
+      ]
+    }
+
+    if (isDivision) {
+      return [
+        {
+          title: 'Step 1: Keep the first fraction',
+          content: `Keep ${operands[0]}/${operands[2] || 4} the same`,
+          visual: '👆',
+        },
+        {
+          title: 'Step 2: Flip the second fraction',
+          content: `Flip ${operands[1]}/${operands[3] || 3} to get ${operands[3] || 3}/${operands[1]}`,
+          visual: '🔄',
+        },
+        {
+          title: 'Step 3: Multiply',
+          content: `${demoProblem.question} = ${answer}`,
+          visual: '🎯',
+          animationId: 'fraction-divide-demo',
+        },
+      ]
+    }
+
+    if (isSubtraction) {
+      return [
+        {
+          title: 'Step 1: Check the denominators',
+          content: `Both fractions have ${denominator} as the denominator - they're the same!`,
+          visual: '👀',
+        },
+        {
+          title: 'Step 2: Subtract the numerators',
+          content: `Subtract the top numbers: ${operands[0]} - ${operands[1]} = ${operands[0] - operands[1]}`,
+          visual: '➖',
+          animationId: 'fraction-subtract-same-denom-demo',
+        },
+        {
+          title: 'Step 3: Keep the denominator',
+          content: `The answer is ${operands[0] - operands[1]}/${denominator}`,
+          visual: '🎯',
+        },
+      ]
+    }
+
+    // Default to addition for fractions
+    return [
+      {
+        title: 'Step 1: Check the denominators',
+        content: `Both fractions have ${denominator} as the denominator - they're the same!`,
+        visual: '👀',
+      },
+      {
+        title: 'Step 2: Add the numerators',
+        content: `Add the top numbers: ${operands[0]} + ${operands[1]} = ${operands[0] + operands[1]}`,
+        visual: '➕',
+        animationId: 'fraction-add-same-denom-demo',
+      },
+      {
+        title: 'Step 3: Keep the denominator',
+        content: `The answer is ${operands[0] + operands[1]}/${denominator}`,
         visual: '🎯',
       },
     ]

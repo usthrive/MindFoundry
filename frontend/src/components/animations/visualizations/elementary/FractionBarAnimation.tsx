@@ -134,7 +134,7 @@ export default function FractionBarAnimation({
           </p>
           {showCircle ? (
             <FractionCircle
-              numerator={showSolution ? filledSections : 0}
+              numerator={showSolution ? filledSections : numerator}
               denominator={denominator}
               size={150}
               fillColor={primaryColor}
@@ -142,7 +142,7 @@ export default function FractionBarAnimation({
             />
           ) : (
             <FractionBar
-              numerator={showSolution ? filledSections : 0}
+              numerator={showSolution ? filledSections : numerator}
               denominator={denominator}
               barSize={Math.min(280, denominator * 50)}
               fillColor={primaryColor}
