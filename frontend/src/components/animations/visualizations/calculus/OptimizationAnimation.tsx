@@ -29,7 +29,7 @@ export default function OptimizationAnimation({
   showSolution = false,
   onComplete,
   className,
-  problemType = 'area',
+  problemType: _problemType = 'area',
 }: OptimizationAnimationProps) {
   const [phase, setPhase] = useState<'setup' | 'equation' | 'derivative' | 'critical' | 'verify' | 'complete'>('setup')
   const [currentWidth, setCurrentWidth] = useState(20)

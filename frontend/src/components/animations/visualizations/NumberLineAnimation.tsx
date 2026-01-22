@@ -28,7 +28,7 @@ export default function NumberLineAnimation({
   className,
 }: NumberLineAnimationProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [_isAnimating, setIsAnimating] = useState(false)
   const { playWhoosh, playSuccess } = useSoundEffects()
 
   // Extract operands from problem data
@@ -39,7 +39,7 @@ export default function NumberLineAnimation({
   const end = start + hopCount * direction
 
   // Calculate number line range - limit to max 10 points for mobile responsiveness
-  const { min, max, points } = useMemo(() => {
+  const { points } = useMemo(() => {
     const maxVisiblePoints = 10 // Limit for mobile screens (10 × 28px = 280px fits in 320px)
 
     // Center the range around the problem's start and end points

@@ -23,7 +23,7 @@ import type { BaseAnimationProps } from '../../core/types'
 export interface RecurrenceInductionAnimationProps extends BaseAnimationProps {}
 
 export default function RecurrenceInductionAnimation({
-  problemData,
+  problemData: _problemData,
   showSolution = false,
   isPaused = false,
   onComplete,
@@ -314,8 +314,7 @@ export default function RecurrenceInductionAnimation({
       <div className="flex justify-center gap-2 mb-4">
         {['Intro', 'Base', 'Assume', 'Prove', 'QED'].map((step, i) => {
           const stepPhases = ['domino_analogy', 'base_verify', 'hypothesis', 'step', 'conclusion']
-          const currentStepIndex = stepPhases.indexOf(phase)
-          // Also consider phases that come after but aren't in the list
+          // Compare phase order to determine completion status
           const phaseOrder = ['setup', 'domino_analogy', 'base', 'base_verify', 'hypothesis', 'step', 'conclusion', 'complete']
           const currentPhaseOrder = phaseOrder.indexOf(phase)
           const stepPhaseOrder = phaseOrder.indexOf(stepPhases[i])

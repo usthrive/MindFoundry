@@ -30,7 +30,7 @@ export default function ExponentialLogAnimation({
   isPaused = false,
   onComplete,
   className,
-  showBoth = true,
+  showBoth: _showBoth = true,
 }: ExponentialLogAnimationProps) {
   const [phase, setPhase] = useState<
     | 'setup'              // Introduce exp & log relationship

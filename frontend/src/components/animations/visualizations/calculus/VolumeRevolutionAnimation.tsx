@@ -57,7 +57,6 @@ export default function VolumeRevolutionAnimation({
   // Refs for pause support
   const isPausedRef = useRef(isPaused)
   const tickRef = useRef(0)
-  const rotationTickRef = useRef(0)
 
   // Keep isPausedRef in sync
   useEffect(() => {
@@ -268,7 +267,6 @@ export default function VolumeRevolutionAnimation({
               {/* Ellipses at key points to show 3D shape */}
               {[1, 2, 3, 4].map(x => {
                 const r = getDiskRadius(x)
-                const ellipseRatio = Math.abs(Math.cos((rotationAngle * Math.PI) / 180)) * 0.3 + 0.1
                 return (
                   <ellipse
                     key={x}

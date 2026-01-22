@@ -30,7 +30,7 @@ export default function LimitAnimation({
   isPaused = false,
   onComplete,
   className,
-  limitType = 'finite',
+  limitType: _limitType = 'finite',
 }: LimitAnimationProps) {
   const [phase, setPhase] = useState<
     | 'setup'              // Introduce limit concept

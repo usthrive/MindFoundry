@@ -41,7 +41,7 @@ interface WorkLine {
 type SubPhase = 'divide' | 'multiply' | 'subtract' | 'bringdown'
 
 export default function PolynomialDivisionAnimation({
-  problemData,
+  problemData: _problemData,
   showSolution = false,
   isPaused = false,
   onComplete,

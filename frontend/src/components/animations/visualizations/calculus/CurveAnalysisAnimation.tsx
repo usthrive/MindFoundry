@@ -38,7 +38,7 @@ type Phase =
   | 'complete'
 
 export default function CurveAnalysisAnimation({
-  problemData,
+  problemData: _problemData,
   showSolution = false,
   isPaused = false,
   onComplete,
@@ -65,10 +65,9 @@ export default function CurveAnalysisAnimation({
   const height = 260
   const padding = 40
 
-  // Function definition
+  // Function definition: f(x) = x³ - 3x² - 9x + 5
+  // Derivatives: f'(x) = 3x² - 6x - 9, f''(x) = 6x - 6
   const f = (x: number) => x * x * x - 3 * x * x - 9 * x + 5
-  const fPrime = (x: number) => 3 * x * x - 6 * x - 9
-  const fDoublePrime = (x: number) => 6 * x - 6
 
   // Key points
   const criticalPoints = [

@@ -45,7 +45,7 @@ export default function FunctionTransformAnimation({
   isPaused = false,
   onComplete,
   className,
-  transformType = 'shift',
+  transformType: _transformType = 'shift',
 }: FunctionTransformAnimationProps) {
   const [phase, setPhase] = useState<Phase>('setup')
   const { playPop, playSuccess, playWhoosh } = useSoundEffects()

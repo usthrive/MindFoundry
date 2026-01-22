@@ -30,11 +30,11 @@ interface ProofStep {
 }
 
 export default function ProofStepsAnimation({
-  problemData,
+  problemData: _problemData,
   showSolution = false,
   onComplete,
   className,
-  proofType = 'algebraic',
+  proofType: _proofType = 'algebraic',
 }: ProofStepsAnimationProps) {
   const [phase, setPhase] = useState<'setup' | 'proving' | 'complete'>('setup')
   const [currentStep, setCurrentStep] = useState(-1)

@@ -30,7 +30,7 @@ export default function TriangleTrigAnimation({
   isPaused = false,
   onComplete,
   className,
-  showLaws = false,
+  showLaws: _showLaws = false,
 }: TriangleTrigAnimationProps) {
   const [phase, setPhase] = useState<
     | 'setup'
@@ -63,7 +63,7 @@ export default function TriangleTrigAnimation({
   // Default: 3-4-5 right triangle
   // operands: [opposite, adjacent, hypotenuse, angle in degrees]
   const operands = problemData?.operands || [3, 4, 5, 0]
-  const [opposite, adjacent, hypotenuse, angleIdx] = operands
+  const [opposite, adjacent, hypotenuse, _angleIdx] = operands
 
   // Validate triangle: hypotenuse must be positive (used in division for trig ratios)
   // Also, in a valid right triangle, hypotenuse should be the longest side
@@ -90,9 +90,8 @@ export default function TriangleTrigAnimation({
     )
   }
 
-  // Calculate angle from sides
+  // Calculate angle from sides (angleB = 90 - angleA)
   const angleA = Math.atan(opposite / adjacent) * (180 / Math.PI)
-  const angleB = 90 - angleA
 
   // Trig ratios
   const sinA = opposite / hypotenuse

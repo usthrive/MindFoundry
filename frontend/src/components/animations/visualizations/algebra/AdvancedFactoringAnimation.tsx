@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useSoundEffects } from '@/hooks/useSoundEffects'
 import type { BaseAnimationProps } from '../../core/types'
@@ -33,7 +33,7 @@ export default function AdvancedFactoringAnimation({
   isPaused = false,
   onComplete,
   className,
-  factoringType = 'sum_cubes',
+  factoringType: _factoringType = 'sum_cubes',
 }: AdvancedFactoringAnimationProps) {
   const [phase, setPhase] = useState<FactoringPhase>('setup')
   const { playPop, playSuccess, playWhoosh } = useSoundEffects()
@@ -55,7 +55,6 @@ export default function AdvancedFactoringAnimation({
   // Calculate values for sum of cubes
   const aCubed = a * a * a
   const bCubed = b * b * b
-  const sum = aCubed + bCubed
   const firstFactor = a + b
   const aSquared = a * a
   const ab = a * b

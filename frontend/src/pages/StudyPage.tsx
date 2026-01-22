@@ -142,7 +142,7 @@ export default function StudyPage() {
 
   // Check if current problem is a counting problem with visual assets
   const isCountingProblem = () => {
-    return currentProblem?.type === 'counting' && currentProblem?.visualAssets?.length > 0
+    return currentProblem?.type === 'counting' && (currentProblem?.visualAssets?.length ?? 0) > 0
   }
 
   // Parse visual assets to get count and emoji for counting problems

@@ -131,22 +131,6 @@ export default function ParabolaAnimation({
     return pts
   }, [a, b, c, graphRange])
 
-  // Key points to highlight
-  const keyPoints = useMemo(() => {
-    const kp = [
-      { x: vertexX, y: vertexY, label: 'Vertex', color: 'text-red-500' },
-    ]
-    if (hasRealRoots && root1 !== null && root2 !== null) {
-      if (Math.abs(root1 - root2) > 0.1) {
-        kp.push({ x: root1, y: 0, label: 'Root', color: 'text-blue-500' })
-        kp.push({ x: root2, y: 0, label: 'Root', color: 'text-blue-500' })
-      } else {
-        kp.push({ x: root1, y: 0, label: 'Root (double)', color: 'text-blue-500' })
-      }
-    }
-    return kp
-  }, [vertexX, vertexY, hasRealRoots, root1, root2])
-
   // SVG dimensions and scaling with dynamic range
   const width = 280
   const height = 280

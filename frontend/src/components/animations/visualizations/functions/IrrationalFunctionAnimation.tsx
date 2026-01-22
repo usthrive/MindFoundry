@@ -43,7 +43,7 @@ export default function IrrationalFunctionAnimation({
   isPaused = false,
   onComplete,
   className,
-  rootType = 'square',
+  rootType: _rootType = 'square',
 }: IrrationalFunctionAnimationProps) {
   const [phase, setPhase] = useState<Phase>('setup')
   const { playPop, playSuccess, playWhoosh } = useSoundEffects()

@@ -411,7 +411,7 @@ export default function AnimationTestPage() {
   // The UI only allows editing operand1 and operand2, so operand3+ use defaults
   const problemData: ProblemData = {
     operands: (() => {
-      const defaults = [...selectedAnimation.defaultOperands]
+      const defaults: number[] = [...selectedAnimation.defaultOperands]
       // Replace first two with user-edited values
       if (defaults.length >= 1) defaults[0] = operand1
       if (defaults.length >= 2) defaults[1] = operand2

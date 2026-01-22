@@ -62,7 +62,7 @@ export function useSoundEffects(options: UseSoundEffectsOptions = {}) {
 
   // Play a simple tone
   const playTone = useCallback(
-    (frequency: number, duration: number, type: OscillatorType = 'sine', attack = 0.01, decay = 0.1) => {
+    (frequency: number, duration: number, type: OscillatorType = 'sine', attack = 0.01, _decay = 0.1) => {
       if (!enabled) return
 
       try {

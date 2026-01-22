@@ -16,8 +16,8 @@
  * - Concept introductions for fractions
  */
 
-import { useState, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useSoundEffects } from '@/hooks/useSoundEffects'
 import AnimatedFraction, { FractionBar, FractionCircle } from '../../shared/AnimatedFraction'
@@ -36,7 +36,7 @@ export default function FractionBarAnimation({
   onComplete,
   className,
   showCircle = false,
-  showEquivalent = false,
+  showEquivalent: _showEquivalent = false,
 }: FractionBarAnimationProps) {
   const [filledSections, setFilledSections] = useState(0)
   const [currentSection, setCurrentSection] = useState(-1)

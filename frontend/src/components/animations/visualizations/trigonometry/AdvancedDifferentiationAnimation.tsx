@@ -39,7 +39,7 @@ type Phase =
   | 'complete'
 
 export default function AdvancedDifferentiationAnimation({
-  problemData,
+  problemData: _problemData,
   showSolution = false,
   isPaused = false,
   onComplete,

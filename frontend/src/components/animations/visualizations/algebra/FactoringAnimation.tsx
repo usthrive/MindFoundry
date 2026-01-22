@@ -30,7 +30,7 @@ export default function FactoringAnimation({
   isPaused = false,
   onComplete,
   className,
-  factoringType = 'trinomial',
+  factoringType: _factoringType = 'trinomial',
 }: FactoringAnimationProps) {
   const [phase, setPhase] = useState<'setup' | 'analyze' | 'find_factors' | 'verify' | 'complete'>('setup')
   const [foundPairs, setFoundPairs] = useState<[number, number][]>([])
@@ -106,15 +106,6 @@ export default function FactoringAnimation({
   const pairsToDisplay = factorPairs.length > 6
     ? [...factorPairs.filter(([p, q]) => p + q !== b).slice(0, 5), solution!].filter(Boolean) as [number, number][]
     : factorPairs
-
-  // Educational scripts for each step
-  const scripts = {
-    setup: `Let's factor ${a === 1 ? '' : a}x² ${b >= 0 ? '+' : ''} ${b}x ${c >= 0 ? '+' : ''} ${c}.`,
-    analyze: `We need two numbers that multiply to ${c} AND add to ${b}.`,
-    findFactors: `Testing factor pairs of ${c}...`,
-    verify: isFactorable ? `Let's verify: (x ${factor1 >= 0 ? '+' : ''} ${factor1})(x ${factor2 >= 0 ? '+' : ''} ${factor2}) using FOIL.` : '',
-    complete: isFactorable ? `The factors are (x ${factor1 >= 0 ? '+' : ''} ${factor1}) and (x ${factor2 >= 0 ? '+' : ''} ${factor2}).` : 'This trinomial cannot be factored using integers.',
-  }
 
   // Format coefficient for display
   const formatCoef = (coef: number, showX: boolean = false, power: number = 1): string => {
@@ -199,14 +190,6 @@ export default function FactoringAnimation({
 
     return () => clearInterval(timer)
   }, [showSolution, onComplete, playPop, playSuccess, playWhoosh, b, pairsToDisplay])
-
-  // Helper to format a term with proper sign handling
-  const formatTerm = (coef: number, isFirst: boolean = false): string => {
-    if (coef === 0) return ''
-    if (isFirst) return coef.toString()
-    if (coef > 0) return ` + ${coef}`
-    return ` - ${Math.abs(coef)}`  // Negative: show "- 3" not "+ -3"
-  }
 
   // Render the trinomial with proper spacing
   const renderTrinomial = () => (

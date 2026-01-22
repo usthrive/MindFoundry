@@ -10,23 +10,35 @@ import type { KumonLevel } from '@/types'
 /**
  * Get the number of problems to display per page for a given level
  *
- * - Pre-K (7A-6A): 1 problem per page - young children need focus
- * - Early (5A-4A): 2 problems per page - building attention span
- * - Elementary (3A-F): 5 problems per page - standard Kumon format
- * - Middle School+ (G+): 3 problems per page - complex problems need space
+ * Configuration based on Kumon requirements and problem complexity:
+ * - Pre-K (7A-4A): 5 problems per page - simple recognition/sequences
+ * - Basic arithmetic (3A-D): 10 problems per page - straightforward problems
+ * - Complex operations (E-F): 5 problems per page - long ×÷, fractions
+ * - Algebra (G-I): 3 problems per page - word problems, variables
+ * - Advanced algebra (J-K): 2 problems per page - complex expressions
+ * - Calculus (L-O): 1 problem per page - extensive work space needed
  */
 export function getProblemsPerPage(level: KumonLevel): number {
-  // Pre-K levels: 1 problem at a time for focus
-  if (['7A', '6A'].includes(level)) return 1
+  // Pre-K counting/recognition: 5 per page
+  if (['7A', '6A'].includes(level)) return 5
 
-  // Early Pre-K/K: 2 problems per page
-  if (['5A', '4A'].includes(level)) return 2
+  // Early sequences: 5 per page
+  if (['5A', '4A'].includes(level)) return 5
 
-  // Elementary levels: 5 problems per page (standard Kumon format)
-  if (['3A', '2A', 'A', 'B', 'C', 'D', 'E', 'F'].includes(level)) return 5
+  // Basic arithmetic (3A through D): 10 per page
+  if (['3A', '2A', 'A', 'B', 'C', 'D'].includes(level)) return 10
 
-  // Middle school and above: 3 problems per page (more complex)
-  return 3
+  // Long operations and fractions: 5 per page
+  if (['E', 'F'].includes(level)) return 5
+
+  // Algebra and word problems: 3 per page
+  if (['G', 'H', 'I'].includes(level)) return 3
+
+  // Advanced algebra: 2 per page
+  if (['J', 'K'].includes(level)) return 2
+
+  // Calculus: 1 per page (complex derivations)
+  return 1
 }
 
 /**
@@ -89,6 +101,8 @@ export function getGridLayout(level: KumonLevel): string {
       return 'grid-cols-1 sm:grid-cols-3' // 3 columns on larger screens
     case 5:
       return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' // Responsive 1-2-3 columns
+    case 10:
+      return 'grid-cols-2 sm:grid-cols-5' // 2 columns mobile, 5 columns desktop
     default:
       return 'grid-cols-1'
   }
