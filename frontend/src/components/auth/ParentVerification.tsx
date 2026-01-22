@@ -242,8 +242,10 @@ export default function ParentVerification({
               <input
                 key={index}
                 ref={(el) => { pinInputRefs.current[index] = el }}
-                type="text"
+                type="tel"
                 inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="one-time-code"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handlePinDigitInput(index, e.target.value)}
