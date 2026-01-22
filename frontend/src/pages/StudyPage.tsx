@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCelebration } from '@/contexts/CelebrationContext'
+import { useNavigationGuard } from '@/contexts/NavigationGuardContext'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Feedback from '@/components/feedback/Feedback'
@@ -14,7 +15,7 @@ import SequenceDisplay from '@/components/ui/SequenceDisplay'
 import Timer from '@/components/session/Timer'
 import SessionProgress from '@/components/session/SessionProgress'
 import WorksheetInfo from '@/components/session/WorksheetInfo'
-import ParentModeChallenge from '@/components/auth/ParentModeChallenge'
+import ParentVerification from '@/components/auth/ParentVerification'
 import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
@@ -28,7 +29,6 @@ import {
   getUnseenNewConceptsWithDB,
   markConceptsSeenWithDB,
   loadSeenConceptsFromDB,
-  clearSeenConceptsWithDB,
 } from '@/services/conceptIntroService'
 import { getProblemsPerPage, usesTapToSelect } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
@@ -51,6 +51,7 @@ import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
 export default function StudyPage() {
   const { user, currentChild, logout } = useAuth()
   const { triggerCelebration } = useCelebration()
+  const { navigateWithGuard } = useNavigationGuard()
   const navigate = useNavigate()
 
   const [inputValue, setInputValue] = useState('')
@@ -91,7 +92,6 @@ export default function StudyPage() {
   // Concept Introduction Modal state
   const [showConceptIntro, setShowConceptIntro] = useState(false)
   const [pendingConcepts, setPendingConcepts] = useState<string[]>([])
-  const [resettingConcepts, setResettingConcepts] = useState(false)
 
   // Video Integration - hooks for video player and suggestions
   const currentConceptId = currentProblem && currentProblem.operands
@@ -944,60 +944,14 @@ export default function StudyPage() {
     setShowParentChallenge(false)
   }
 
-  // Reset seen concepts (debug tool for parent mode)
-  const handleResetConcepts = async () => {
-    if (!currentChild || !parentMode) return
-
-    const confirmed = window.confirm(
-      'Reset all seen concept introductions? This will show concept intro modals again for all concepts.'
-    )
-    if (!confirmed) return
-
-    setResettingConcepts(true)
-    try {
-      await clearSeenConceptsWithDB(currentChild.id)
-      // Re-check for concepts at current worksheet
-      await checkForNewConcepts(currentLevel, currentWorksheet)
-      alert('Concept introductions have been reset. New concepts will show again.')
-    } catch (error) {
-      console.error('Failed to reset concepts:', error)
-      alert('Failed to reset concepts. Please try again.')
-    } finally {
-      setResettingConcepts(false)
-    }
-  }
-
-  // Jump directly to a specific level and worksheet (debug tool for testing concept intros)
-  const handleJumpToLevelWorksheet = async (level: KumonLevel, worksheet: number) => {
-    if (!currentChild || !parentMode) return
-
-    // Update state
-    setCurrentLevel(level)
-    setCurrentWorksheet(worksheet)
-    setSessionActive(true)
-    setCurrentProblem(generateProblem(level, worksheet))
-    setFeedback({ ...feedback, show: false })
-
-    // Update database
-    await updateCurrentPosition(currentChild.id, level, worksheet)
-
-    // Create new session
-    const newSessionId = await createPracticeSession(currentChild.id, level)
-    setSessionId(newSessionId)
-    setSessionStartTime(Date.now())
-
-    // Pre-load seen concepts and check for new concepts
-    await loadSeenConceptsFromDB(currentChild.id)
-    await checkForNewConcepts(level, worksheet)
-  }
-
   const handleLogout = async () => {
     await logout()
     navigate('/login')
   }
 
   const handleBackToChildSelect = () => {
-    navigate('/select-child')
+    // Use guarded navigation to require PIN when exiting child view
+    navigateWithGuard('/select-child')
   }
 
   if (loading) {
@@ -1016,11 +970,13 @@ export default function StudyPage() {
 
   return (
     <div className={`min-h-screen bg-background p-4 sm:p-8 max-w-full overflow-x-hidden ${needsFixedNumberpad ? 'pb-[180px] sm:pb-[200px]' : ''}`}>
-      {/* Parent Mode Challenge Modal */}
-      <ParentModeChallenge
+      {/* Parent Verification Modal */}
+      <ParentVerification
         isOpen={showParentChallenge}
         onSuccess={handleParentChallengeSuccess}
         onCancel={handleParentChallengeCancel}
+        title="Parent Mode"
+        description="Verify to access parent controls"
       />
 
       <div className="mx-auto max-w-6xl space-y-6 sm:space-y-12">
@@ -1374,80 +1330,6 @@ export default function StudyPage() {
             </div>
           )}
 
-          {/* Debug Tools - Only visible in Parent Mode */}
-          {parentMode && (
-            <div className="mt-4 border-t border-gray-200 pt-4">
-              <p className="mb-3 text-center text-sm font-medium text-gray-600">
-                Debug Tools:
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleResetConcepts}
-                  disabled={resettingConcepts}
-                >
-                  {resettingConcepts ? 'Resetting...' : 'Reset Concept Intros'}
-                </Button>
-              </div>
-              <p className="mt-2 text-center text-xs text-gray-400">
-                This will re-show concept introduction modals for all concepts.
-              </p>
-            </div>
-          )}
-
-          {/* Concept Intro Test Navigation - Only visible in Parent Mode */}
-          {parentMode && (
-            <div className="mt-4 border-t border-gray-200 pt-4">
-              <p className="mb-3 text-center text-sm font-medium text-gray-600">
-                Test Concept Intros (Jump to Worksheet):
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                {/* Level 3A Concepts */}
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('3A', 71)}>
-                  3A-71: Addition +1
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('3A', 131)}>
-                  3A-131: Addition +2
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('3A', 161)}>
-                  3A-161: Addition +3
-                </Button>
-                {/* Level 2A Concepts */}
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('2A', 11)}>
-                  2A-11: Addition +4
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('2A', 31)}>
-                  2A-31: Addition +5
-                </Button>
-                {/* Level A Concepts */}
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('A', 81)}>
-                  A-81: Subtraction
-                </Button>
-                {/* Level B Concepts */}
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('B', 11)}>
-                  B-11: Vertical Add
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('B', 41)}>
-                  B-41: Carrying
-                </Button>
-                {/* Level C Concepts */}
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('C', 11)}>
-                  C-11: Multiplication
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('C', 111)}>
-                  C-111: Division
-                </Button>
-                {/* Level D Concepts */}
-                <Button size="sm" variant="ghost" onClick={() => handleJumpToLevelWorksheet('D', 131)}>
-                  D-131: Fractions
-                </Button>
-              </div>
-              <p className="mt-2 text-center text-xs text-gray-400">
-                Click "Reset Concept Intros" first to see the modals again.
-              </p>
-            </div>
-          )}
         </Card>
 
         {/* Post-completion feedback prompt - subtle text link */}
