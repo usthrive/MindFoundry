@@ -11,7 +11,7 @@ import {
   generateContinuityHints,
   generateTrigDerivativeHints,
   generateHigherDerivativeHints,
-  generateGenericHints,
+  generateArithmeticSeriesHints,
 } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
@@ -101,7 +101,7 @@ function generateArithmeticSeries(): Problem {
       'Formula: Sₙ = n(a₁ + aₙ)/2',
       'First find aₙ, then use the formula',
     ],
-    graduatedHints: generateGenericHints('arithmetic_series', 'N'),
+    graduatedHints: generateArithmeticSeriesHints(n, a1, d, 'N'),
   }
 }
 

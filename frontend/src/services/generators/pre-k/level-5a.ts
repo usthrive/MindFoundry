@@ -1,6 +1,6 @@
 import type { Problem, Level5AProblemType, SequenceItem } from '../types'
 import { randomInt, randomChoice, generateId } from '../utils'
-import { generateCountingHints, generateGenericHints } from '../hintGenerator'
+import { generateGenericHints, generateSequenceHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: Level5AProblemType
@@ -138,7 +138,7 @@ function generateSequenceProblem(maxNumber: number): Problem {
       'Count forward from the first number',
       'Each number is 1 more than the one before',
     ],
-    graduatedHints: generateCountingHints(startNum + missingIndex, '5A'),
+    graduatedHints: generateSequenceHints(startNum, missingIndex, '5A'),
   }
 }
 

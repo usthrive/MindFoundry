@@ -1,6 +1,13 @@
 import type { Problem, LevelAProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
-import { generateAdditionHints, generateSubtractionHints } from '../hintGenerator'
+import {
+  generateAdditionHints,
+  generateSubtractionHints,
+  generateMissingAddendHints,
+  generateMissingFirstAddendHints,
+  generateMissingSubtrahendHints,
+  generateMissingMinuendHints,
+} from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelAProblemType
@@ -75,7 +82,7 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, wor
         operands: [first, second],
         missingPosition: 0,
         hints: [`What number plus ${second} equals ${sum}?`],
-        graduatedHints: generateAdditionHints([first, second], 'A'),
+        graduatedHints: generateMissingFirstAddendHints(second, sum, 'A'),
       }
     }
     return {
@@ -91,7 +98,7 @@ function generateAdditionProblem(maxSum: number, subtype: LevelAProblemType, wor
       operands: [first, second],
       missingPosition: 1,
       hints: [`What do you add to ${first} to get ${sum}?`],
-      graduatedHints: generateAdditionHints([first, second], 'A'),
+      graduatedHints: generateMissingAddendHints(first, sum, 'A'),
     }
   }
 
@@ -147,7 +154,7 @@ function generateSubtractionProblem(
         `What do you subtract from ${minuend} to get ${difference}?`,
         `Count from ${difference} to ${minuend}`,
       ],
-      graduatedHints: generateSubtractionHints([minuend, actualSubtrahend], 'A'),
+      graduatedHints: generateMissingSubtrahendHints(minuend, difference, 'A'),
     }
   }
 
@@ -169,7 +176,7 @@ function generateSubtractionProblem(
         `What number minus ${actualSubtrahend} equals ${difference}?`,
         `${difference} + ${actualSubtrahend} = ?`,
       ],
-      graduatedHints: generateSubtractionHints([minuend, actualSubtrahend], 'A'),
+      graduatedHints: generateMissingMinuendHints(actualSubtrahend, difference, 'A'),
     }
   }
 

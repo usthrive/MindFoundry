@@ -472,13 +472,25 @@ export function getAchievementDisplay(achievement: Achievement): AchievementDisp
 
     case 'speed_milestone': {
       const data = achievement.achievementData as SpeedMilestoneData;
+      // Rotating titles for variety - each speed milestone gets a fun, engaging message
+      const speedTitles = [
+        { title: 'Lightning Learner!', icon: 'bolt', quote: 'Fast and focused!' },
+        { title: 'Swift Scholar!', icon: 'star', quote: 'Quick thinking pays off!' },
+        { title: 'Turbo Thinker!', icon: 'rocket', quote: 'Zooming through math!' },
+        { title: 'Speed Star!', icon: 'star', quote: 'Shining bright and fast!' },
+        { title: 'Quick Calculator!', icon: 'calculator', quote: 'Numbers are your friends!' },
+        { title: 'Blazing Brain!', icon: 'brain', quote: 'Your mind is amazing!' },
+        { title: 'Rapid Genius!', icon: 'sparkles', quote: 'Brilliance at full speed!' },
+        { title: 'Flash Finisher!', icon: 'sparkle', quote: 'Done in a flash!' },
+      ];
+      const selection = speedTitles[data.problems_count % speedTitles.length];
       return {
         ...baseDisplay,
-        title: 'Speed Demon!',
+        title: selection.title,
         description: `Completed ${data.problems_count} problems in ${Math.round(data.actual_time / 60)} minutes!`,
-        icon: 'bolt',
+        icon: selection.icon,
         badgeColor: 'bg-cyan-500',
-        quote: 'Fast and accurate!',
+        quote: selection.quote,
       };
     }
 

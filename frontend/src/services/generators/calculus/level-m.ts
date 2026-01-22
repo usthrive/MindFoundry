@@ -6,6 +6,11 @@ import {
   generateUnitCircleHints,
   generateTrigIdentityHints,
   generateGenericHints,
+  generateCircleEquationHints,
+  generateTrigEquationHints,
+  generateTrigGraphHints,
+  generateLawOfSinesHints,
+  generateLawOfCosinesHints,
 } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
@@ -87,7 +92,7 @@ function generateEquationOfCircle(): Problem {
     question: `Write the equation of a circle with center (${h}, ${k}) and radius ${r}`,
     correctAnswer: `(x ${hStr})² + (y ${kStr})² = ${r * r}`,
     hints: ['Standard form: (x - h)² + (y - k)² = r²'],
-    graduatedHints: generateGenericHints('circle_equation', 'M'),
+    graduatedHints: generateCircleEquationHints(h, k, r, 'M'),
   }
 }
 
@@ -213,7 +218,7 @@ function generateTrigEquation(): Problem {
       'Find the reference angle',
       'Determine which quadrants have this value',
     ],
-    graduatedHints: generateGenericHints('trig_equation', 'M'),
+    graduatedHints: generateTrigEquationHints('M'),
   }
 }
 
@@ -238,7 +243,7 @@ function generateSineCosineGraph(): Problem {
       'Period = 2π/b',
       'Phase shift = c/b (to the right)',
     ],
-    graduatedHints: generateGenericHints('trig_graph', 'M'),
+    graduatedHints: generateTrigGraphHints(a as number, 2 * Math.PI / (b as number), c === 0 ? 0 : 1, 'M'),
   }
 }
 
@@ -331,7 +336,7 @@ function generateLawOfSines(): Problem {
     question: `In triangle ABC, angle A = ${A}°, angle B = ${B}°, and side a = ${a}. Find side b.`,
     correctAnswer: `b = ${a} × sin(${B}°)/sin(${A}°)`,
     hints: ['Law of Sines: a/sin(A) = b/sin(B) = c/sin(C)'],
-    graduatedHints: generateGenericHints('law_of_sines', 'M'),
+    graduatedHints: generateLawOfSinesHints('M'),
   }
 }
 
@@ -351,7 +356,7 @@ function generateLawOfCosines(): Problem {
     question: `In triangle ABC, a = ${a}, b = ${b}, and angle C = ${angleC}°. Find side c.`,
     correctAnswer: `c² = ${a}² + ${b}² - 2(${a})(${b})cos(${angleC}°)`,
     hints: ['Law of Cosines: c² = a² + b² - 2ab·cos(C)'],
-    graduatedHints: generateGenericHints('law_of_cosines', 'M'),
+    graduatedHints: generateLawOfCosinesHints('M'),
   }
 }
 

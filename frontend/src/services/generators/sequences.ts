@@ -1,4 +1,5 @@
 import type { Problem, KumonLevel } from '@/types'
+import { generateSequenceHints } from './hintGenerator'
 
 export function generateSequenceProblem(worksheetNumber: number = 100): Problem {
   const problemId = Math.random().toString(36).substring(2, 11)
@@ -30,7 +31,8 @@ export function generateSequenceProblem(worksheetNumber: number = 100): Problem 
     correctAnswer: answer,
     displayFormat: 'horizontal',
     difficulty: 1,
-    missingPosition
+    missingPosition,
+    graduatedHints: generateSequenceHints(startNum, missingPosition, '4A'),
   }
 }
 

@@ -1,6 +1,6 @@
 import type { Problem, KumonLevel } from '@/types'
 import { generateId } from '@/lib/utils'
-import { generateAdditionHints } from './hintGenerator'
+import { generateAdditionHints, generateMissingAddendHints } from './hintGenerator'
 
 /**
  * Addition Problem Generator
@@ -279,7 +279,7 @@ function generateLevelAProblem(sublevel?: number): Problem {
       displayFormat: 'horizontal',
       difficulty: 6,
       missingPosition: 1, // Second operand is missing
-      graduatedHints: generateAdditionHints([operand1, operand2], 'A'),
+      graduatedHints: generateMissingAddendHints(operand1, sum, 'A'),
     }
   } else {
     // Three-number addition (e.g., 3 + 5 + 2)

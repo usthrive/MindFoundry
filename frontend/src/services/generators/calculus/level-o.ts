@@ -11,7 +11,7 @@ import {
   generateAreaBetweenCurvesHints,
   generateVolumeHints,
   generateSeparableDEHints,
-  generateGenericHints,
+  generateLinearDEHints,
 } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
@@ -298,7 +298,7 @@ function generateFirstOrderLinear(): Problem {
       'Find integrating factor: μ = e^∫P dx = e^x',
       'Multiply through and integrate',
     ],
-    graduatedHints: generateGenericHints('first_order_linear_de', 'O'),
+    graduatedHints: generateLinearDEHints('O'),
   }
 }
 

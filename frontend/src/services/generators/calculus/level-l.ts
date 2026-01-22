@@ -6,7 +6,10 @@ import {
   generateProductRuleHints,
   generateChainRuleHints,
   generateIntegrationPowerRuleHints,
-  generateGenericHints,
+  generateLogarithmPropertyHints,
+  generateQuotientRuleHints,
+  generateTangentLineHints,
+  generateDefiniteIntegralHints,
 } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
@@ -48,7 +51,7 @@ function generateLogProperties(): Problem {
       question: `Expand: log(${a}${b === 1 ? '' : `^${b}`} × x)`,
       correctAnswer: `${b} log(${a}) + log(x)`,
       hints: ['log(ab) = log(a) + log(b)', 'log(a^n) = n log(a)'],
-      graduatedHints: generateGenericHints('log_expand', 'L'),
+      graduatedHints: generateLogarithmPropertyHints('expand', 'L'),
     }
   }
 
@@ -65,7 +68,7 @@ function generateLogProperties(): Problem {
       question: `Condense: ${a} log(x) + log(y)`,
       correctAnswer: `log(x^${a}y)`,
       hints: ['n log(a) = log(a^n)', 'log(a) + log(b) = log(ab)'],
-      graduatedHints: generateGenericHints('log_condense', 'L'),
+      graduatedHints: generateLogarithmPropertyHints('condense', 'L'),
     }
   }
 
@@ -82,7 +85,7 @@ function generateLogProperties(): Problem {
     question: `Evaluate: log_${base}(${Math.round(result)})`,
     correctAnswer: power,
     hints: [`${base}^? = ${Math.round(result)}`],
-    graduatedHints: generateGenericHints('log_evaluate', 'L'),
+    graduatedHints: generateLogarithmPropertyHints('evaluate', 'L'),
   }
 }
 
@@ -104,7 +107,7 @@ function generateLogEquation(): Problem {
     hints: [
       `Convert to exponential form: ${base}^${result} = x`,
     ],
-    graduatedHints: generateGenericHints('log_equation', 'L'),
+    graduatedHints: generateLogarithmPropertyHints('equation', 'L'),
   }
 }
 
@@ -224,7 +227,7 @@ function generateQuotientRule(): Problem {
       'Quotient rule: (f/g)\' = (f\'g - fg\')/g²',
       'f = x², g = x + 1',
     ],
-    graduatedHints: generateGenericHints('quotient_rule', 'L'),
+    graduatedHints: generateQuotientRuleHints('L'),
   }
 }
 
@@ -275,7 +278,7 @@ function generateTangentLine(): Problem {
       `Find the point: (${x0}, ${y0})`,
       'Use point-slope form',
     ],
-    graduatedHints: generateGenericHints('tangent_line', 'L'),
+    graduatedHints: generateTangentLineHints(x0, 'L'),
   }
 }
 
@@ -320,7 +323,7 @@ function generateDefiniteIntegral(): Problem {
       'Apply the Fundamental Theorem of Calculus',
       `F(${b}) - F(${a})`,
     ],
-    graduatedHints: generateGenericHints('definite_integral', 'L'),
+    graduatedHints: generateDefiniteIntegralHints(a, b, 'L'),
   }
 }
 

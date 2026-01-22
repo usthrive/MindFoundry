@@ -222,6 +222,165 @@ export function generateAdditionHints(
 }
 
 // ============================================
+// MISSING NUMBER HINTS (Socratic Approach)
+// ============================================
+// These hints are specifically designed for problems where part of the equation
+// is missing and the student must find it (e.g., 7 + ? = 15 or 15 - ? = 7)
+
+/**
+ * Hints for Missing Addend Problems (e.g., 7 + ? = 15)
+ * The student knows one addend and the sum, needs to find the missing addend
+ */
+export function generateMissingAddendHints(
+  knownAddend: number,
+  sum: number,
+  level: KumonLevel
+): ProblemHints {
+  // Level may be used for future age-appropriate hint variations
+  void level
+  // Generate a similar but different problem for teaching
+  const similarKnown = knownAddend <= 5 ? knownAddend + 2 : knownAddend - 1
+  const similarSum = sum <= 15 ? sum + 2 : sum - 1
+  const similarMissing = similarSum - similarKnown
+
+  return {
+    micro: {
+      level: 'micro',
+      // SOCRATIC - Ask the right question for missing addend
+      text: `You have ${knownAddend}. You need ${sum} total. How many more do you need to add?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      // SETUP ONLY - Show counting up without the answer
+      text: `Start at ${knownAddend} on the number line. Count up to ${sum}. How many jumps?`,
+      animationId: 'missing-addend-number-line',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Let me show you: ${similarKnown} + ? = ${similarSum}. Count from ${similarKnown} to ${similarSum}. That's ${similarMissing}! Now try yours!`,
+      animationId: 'missing-addend-demo',
+      duration: 40,
+    },
+  }
+}
+
+/**
+ * Hints for Missing First Addend Problems (e.g., ? + 8 = 15)
+ * Same concept as missing addend, slightly different phrasing
+ */
+export function generateMissingFirstAddendHints(
+  knownAddend: number,
+  sum: number,
+  level: KumonLevel
+): ProblemHints {
+  // Level may be used for future age-appropriate hint variations
+  void level
+  const similarKnown = knownAddend <= 5 ? knownAddend + 2 : knownAddend - 1
+  const similarSum = sum <= 15 ? sum + 2 : sum - 1
+  const similarMissing = similarSum - similarKnown
+
+  return {
+    micro: {
+      level: 'micro',
+      // SOCRATIC - Reframe as "what plus known equals sum"
+      text: `Something plus ${knownAddend} equals ${sum}. What could that something be?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      // SETUP ONLY - Show the relationship
+      text: `Think: ? + ${knownAddend} = ${sum}. What number is ${knownAddend} away from ${sum}?`,
+      animationId: 'missing-first-addend-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Let me show you: ? + ${similarKnown} = ${similarSum}. Count back from ${similarSum} by ${similarKnown}. That's ${similarMissing}! Now try yours!`,
+      animationId: 'missing-first-addend-demo',
+      duration: 40,
+    },
+  }
+}
+
+/**
+ * Hints for Missing Subtrahend Problems (e.g., 15 - ? = 7)
+ * The student knows the minuend and difference, needs to find what was subtracted
+ */
+export function generateMissingSubtrahendHints(
+  minuend: number,
+  difference: number,
+  level: KumonLevel
+): ProblemHints {
+  // Level may be used for future age-appropriate hint variations
+  void level
+  const similarMinuend = minuend <= 12 ? minuend + 2 : minuend - 1
+  const similarDiff = difference <= 5 ? difference + 1 : difference - 1
+  const similarSubtrahend = similarMinuend - similarDiff
+
+  return {
+    micro: {
+      level: 'micro',
+      // SOCRATIC - Frame as "how much was taken away"
+      text: `You start with ${minuend}. You end with ${difference}. How much was taken away?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      // SETUP ONLY - Show objects being removed
+      text: `Look: ${minuend} objects. Some go away. ${difference} are left. How many went away?`,
+      animationId: 'missing-subtrahend-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `${similarMinuend} - ? = ${similarDiff}. Count from ${similarDiff} up to ${similarMinuend}. That's ${similarSubtrahend}! Now try yours!`,
+      animationId: 'missing-subtrahend-demo',
+      duration: 40,
+    },
+  }
+}
+
+/**
+ * Hints for Missing Minuend Problems (e.g., ? - 8 = 7)
+ * The student knows what was subtracted and the result
+ */
+export function generateMissingMinuendHints(
+  subtrahend: number,
+  difference: number,
+  level: KumonLevel
+): ProblemHints {
+  // Level may be used for future age-appropriate hint variations
+  void level
+  const similarSub = subtrahend <= 5 ? subtrahend + 1 : subtrahend - 1
+  const similarDiff = difference <= 5 ? difference + 1 : difference - 1
+  const similarMinuend = similarSub + similarDiff
+
+  return {
+    micro: {
+      level: 'micro',
+      // SOCRATIC - Frame as "what did you start with"
+      text: `You took away ${subtrahend}. You have ${difference} left. What did you start with?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      // SETUP ONLY - Show the inverse relationship
+      text: `Think backwards! ${difference} + ${subtrahend} = what you started with!`,
+      animationId: 'missing-minuend-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `? - ${similarSub} = ${similarDiff}. Add them: ${similarDiff} + ${similarSub} = ${similarMinuend}! Now try yours!`,
+      animationId: 'missing-minuend-demo',
+      duration: 40,
+    },
+  }
+}
+
+// ============================================
 // SUBTRACTION HINTS (Socratic Approach)
 // ============================================
 
@@ -461,6 +620,69 @@ export function generateCountingHints(
       text: `Let me count ${similarCount} objects with you. Then you count yours!`,
       animationId: 'counting-demonstration',
       duration: 25,
+    },
+  }
+}
+
+/**
+ * Hints for Number Sequence Problems (e.g., 3, 4, ?, 6, 7)
+ * The student must identify the pattern and find the missing number
+ */
+export function generateSequenceHints(
+  startNum: number,
+  missingPosition: number,
+  level: KumonLevel
+): ProblemHints {
+  const similarStart = startNum <= 5 ? startNum + 2 : startNum - 1
+  const similarMissing = similarStart + missingPosition
+  // Note: The actual missing number is startNum + missingPosition, but we don't reveal it in hints
+
+  // Age-appropriate hints for very young children (Pre-K/K: 5A, 4A, 3A)
+  if (['5A', '4A', '3A'].includes(level)) {
+    return {
+      micro: {
+        level: 'micro',
+        // Simple, playful language for 5-6 year olds
+        text: `Count along with your finger! ${startNum}... what comes next?`,
+        duration: 5,
+      },
+      visual: {
+        level: 'visual',
+        // Concrete counting guidance
+        text: `Point to each number and count out loud: ${startNum}, ${startNum + 1}... Keep counting! The blank is where a number is hiding.`,
+        animationId: 'sequence-counting-setup',
+        duration: 12,
+      },
+      teaching: {
+        level: 'teaching',
+        // Show with similar problem, very simple language
+        text: `Let me count with you! ${similarStart}, ${similarStart + 1}, ${similarMissing}! See? Each number is one more. Now you try counting from ${startNum}!`,
+        animationId: 'sequence-counting-demo',
+        duration: 30,
+      },
+    }
+  }
+
+  // Standard hints for older students
+  return {
+    micro: {
+      level: 'micro',
+      // SOCRATIC - Ask about the pattern
+      text: `Look at the sequence. What's the pattern? Count from ${startNum} to find the missing number.`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      // SETUP ONLY - Show counting along the sequence
+      text: `Start at ${startNum} and count forward: ${startNum}, ${startNum + 1}, ${startNum + 2}... Which position is blank?`,
+      animationId: 'sequence-counting-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Watch: ${similarStart}, ${similarStart + 1}, ${similarMissing}... Each number is 1 more than the last. The missing number at position ${missingPosition + 1} is ${similarMissing}. Now try yours!`,
+      animationId: 'sequence-counting-demo',
+      duration: 30,
     },
   }
 }
@@ -986,27 +1208,35 @@ export function generateGenericHints(
   operation: string,
   level: KumonLevel
 ): ProblemHints {
-  // These are used as fallbacks
-  void operation
+  // Fallback hints - provide more actionable guidance than vague questions
   void level
+
+  // Try to provide operation-specific guidance when possible
+  const operationGuide = operation.includes('add') ? 'adding' :
+    operation.includes('sub') ? 'subtracting' :
+    operation.includes('mult') ? 'multiplying' :
+    operation.includes('div') ? 'dividing' :
+    'solving'
 
   return {
     micro: {
       level: 'micro',
-      // SOCRATIC: Prompt thinking
-      text: `What do you think the first step should be?`,
+      // More actionable than "what do you think?"
+      text: `What operation do you see? For ${operationGuide}, what's your first step? Look at the numbers carefully.`,
       duration: 5,
     },
     visual: {
       level: 'visual',
-      text: `Look at the problem carefully. What do you notice?`,
-      animationId: 'generic-problem-setup',
+      // More specific guidance
+      text: `Break it down: 1) What numbers do you have? 2) What operation? 3) Work step by step - don't skip ahead!`,
+      animationId: 'step-by-step-setup',
       duration: 15,
     },
     teaching: {
       level: 'teaching',
-      text: `Let me show you a similar problem. Then you try this one!`,
-      animationId: 'step-by-step-teaching',
+      // Provide general problem-solving strategy
+      text: `Problem-solving steps: Read the problem, identify what you know, choose your operation, work carefully, check your answer. Take your time!`,
+      animationId: 'problem-solving-strategy',
       duration: 30,
     },
   }
@@ -1023,26 +1253,27 @@ export function generateIntegerAdditionHints(
   level: KumonLevel
 ): ProblemHints {
   void level
-  const sign1 = num1 >= 0 ? 'positive' : 'negative'
-  const sign2 = num2 >= 0 ? 'positive' : 'negative'
+
+  // Use real-world context to make integers concrete
+  const microText = num1 * num2 >= 0
+    ? `Think of money: If you owe $${Math.abs(num1)} and owe $${Math.abs(num2)} more, you owe $${Math.abs(num1) + Math.abs(num2)} total. Same signs add up!`
+    : `Think of temperature: It's ${num1}°C. It changes by ${num2}°C. What's the new temperature?`
 
   return {
     micro: {
       level: 'micro',
-      text: num1 * num2 >= 0
-        ? `Same signs: add the numbers, keep the sign. What do you get?`
-        : `Different signs: subtract the smaller from larger. Which sign wins?`,
+      text: microText,
       duration: 5,
     },
     visual: {
       level: 'visual',
-      text: `Number line: Start at ${num1}. Move ${num2 >= 0 ? 'right' : 'left'} ${Math.abs(num2)} units.`,
+      text: `Number line: Start at ${num1}. Move ${num2 >= 0 ? 'right (positive)' : 'left (negative)'} ${Math.abs(num2)} steps. Where do you land?`,
       animationId: 'integer-add-number-line',
       duration: 15,
     },
     teaching: {
       level: 'teaching',
-      text: `${sign1} + ${sign2}: (-3) + (-5) = -8 (same signs, add). (-3) + 5 = 2 (different signs, subtract). Try yours!`,
+      text: `Money example: Owe $3, owe $5 more = owe $8 [(-3)+(-5)=-8]. Have $5, owe $3 = have $2 [5+(-3)=2]. Now try yours!`,
       animationId: 'integer-addition-demo',
       duration: 45,
     },
@@ -1059,18 +1290,19 @@ export function generateIntegerSubtractionHints(
   return {
     micro: {
       level: 'micro',
-      text: `Subtracting is "adding the opposite". What's the opposite of ${num2}?`,
+      // Real-world context: removing a debt is like gaining money
+      text: `Think: If someone takes away your debt, you gain money! Subtracting a negative is adding. What's the opposite of ${num2}?`,
       duration: 5,
     },
     visual: {
       level: 'visual',
-      text: `Rewrite: ${num1} - (${num2}) = ${num1} + ${-num2}. Now use addition rules!`,
+      text: `Elevator example: Start at floor ${num1}. Going down ${num2} floors means going ${num2 < 0 ? 'UP' : 'down'}. Rewrite: ${num1} - (${num2}) = ${num1} + ${-num2}`,
       animationId: 'integer-subtract-rewrite',
       duration: 15,
     },
     teaching: {
       level: 'teaching',
-      text: `Keep-Change-Change: 5 - (-3) → 5 + (+3) = 8. Change subtraction to addition, flip the sign! Try yours!`,
+      text: `Temperature: 5°C minus (-3°C of cooling) = 5°C + 3°C = 8°C. Keep-Change-Change! Subtracting negative = adding positive. Try yours!`,
       animationId: 'integer-subtraction-demo',
       duration: 45,
     },
@@ -1082,23 +1314,27 @@ export function generateIntegerMultiplicationHints(
   num2: number,
   level: KumonLevel
 ): ProblemHints {
+  // Parameters kept for API consistency; using conceptual examples
+  void num1
+  void num2
   void level
 
   return {
     micro: {
       level: 'micro',
-      text: `Multiply the numbers. Are the signs same or different? Same = positive, Different = negative!`,
+      // Real-world context: direction and speed, or gaining/losing money
+      text: `Think of direction: Walking backwards (negative) for 3 negative steps = 3 steps forward (positive)! Same signs = positive result.`,
       duration: 5,
     },
     visual: {
       level: 'visual',
-      text: `Sign rules: (+)(+)=+, (−)(−)=+, (+)(−)=−, (−)(+)=−. What signs do you have?`,
+      text: `Video analogy: Playing forward (+) or reverse (−) at speed (+) or (−). Reverse × Reverse = Forward! What are your signs?`,
       animationId: 'integer-multiply-signs',
       duration: 15,
     },
     teaching: {
       level: 'teaching',
-      text: `Pattern: (-2)×(-3)=6, (-2)×3=-6. Same signs = positive, different = negative. |${num1}|×|${num2}| = ${Math.abs(num1 * num2)}. What's the sign?`,
+      text: `Money: Lose $2/day × 3 days = lose $6 [(-2)×3=-6]. Remove $2 debt/day × 3 days = gain $6 [(-2)×(-3)=+6]. Same signs = positive! Try yours!`,
       animationId: 'integer-multiplication-demo',
       duration: 45,
     },
@@ -1115,18 +1351,19 @@ export function generateIntegerDivisionHints(
   return {
     micro: {
       level: 'micro',
-      text: `Same sign rules as multiplication! Divide the numbers, then determine the sign.`,
+      // Real-world context: sharing debts or profits
+      text: `Think: Sharing a $12 debt among 3 people = each owes $4 (negative). Same sign rules as multiplication!`,
       duration: 5,
     },
     visual: {
       level: 'visual',
-      text: `Sign rules for division: same signs = +, different signs = −. What's |${dividend}| ÷ |${divisor}|?`,
+      text: `Split fairly: ${dividend} ÷ ${divisor}. First find |${dividend}| ÷ |${divisor}| = ${Math.abs(Math.floor(dividend / divisor))}. Same signs = +, different = −.`,
       animationId: 'integer-divide-signs',
       duration: 15,
     },
     teaching: {
       level: 'teaching',
-      text: `(-12) ÷ (-3) = +4 (same signs). (-12) ÷ 3 = -4 (different signs). Divide, then sign! Try yours!`,
+      text: `Sharing: -$12 debt ÷ -3 parts = +$4 each (debt cancels!). -$12 profit ÷ 3 people = -$4 each. Sign rules same as × !`,
       animationId: 'integer-division-demo',
       duration: 45,
     },
@@ -3432,5 +3669,615 @@ export function generateHintsForProblem(
 
     default:
       return generateGenericHints(operation, level)
+  }
+}
+
+// ============================================
+// LEVEL J: ADVANCED POLYNOMIAL HINTS
+// ============================================
+
+export function generateSumCubesHints(
+  a: number,
+  b: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const simA = a === 2 ? 3 : 2
+  const simB = b === 1 ? 2 : 1
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Sum of Cubes pattern: a³ + b³. Can you identify what a and b are? What are the cube roots of each term?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Formula: a³ + b³ = (a + b)(a² - ab + b²). First factor: (a + b). Second factor: square, product, square - with alternating signs.`,
+      animationId: 'sum-of-cubes-pattern',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: ${simA}³ + ${simB}³ = ${Math.pow(simA, 3)} + ${Math.pow(simB, 3)}. Cube roots: a=${simA}, b=${simB}. Factor: (${simA}+${simB})(${simA}²-${simA}·${simB}+${simB}²) = (${simA + simB})(${simA * simA - simA * simB + simB * simB}). Now try yours!`,
+      animationId: 'sum-cubes-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateDifferenceCubesHints(
+  a: number,
+  b: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const simA = a === 2 ? 3 : 2
+  const simB = b === 1 ? 2 : 1
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Difference of Cubes pattern: a³ - b³. What are the cube roots? Remember: the second factor has a PLUS in the middle!`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Formula: a³ - b³ = (a - b)(a² + ab + b²). Note: (MINUS)(PLUS PLUS). The signs are opposite to sum of cubes!`,
+      animationId: 'diff-of-cubes-pattern',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: ${simA}³ - ${simB}³ = ${Math.pow(simA, 3)} - ${Math.pow(simB, 3)}. Factor: (${simA}-${simB})(${simA}²+${simA}·${simB}+${simB}²) = (${simA - simB})(${simA * simA + simA * simB + simB * simB}). Now try yours!`,
+      animationId: 'diff-cubes-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateFactorByGroupingHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Factor by Grouping: Split into TWO groups. What's the GCF of the first two terms? The last two?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) Group: (first two) + (last two). 2) Factor GCF from each group. 3) Look for common binomial factor!`,
+      animationId: 'factor-by-grouping-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: x³ + 2x² + 3x + 6. Group: (x³ + 2x²) + (3x + 6). Factor: x²(x + 2) + 3(x + 2). Common factor: (x + 2)(x² + 3). Now try yours!`,
+      animationId: 'factor-by-grouping-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateComplexMultiplicationHints(
+  a: number,
+  b: number,
+  c: number,
+  d: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  void a
+  void b
+  void c
+  void d
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Complex multiplication: (a + bi)(c + di). Use FOIL, but remember: i² = -1! What happens when you multiply the "L" terms?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `FOIL: First: ac, Outer: adi, Inner: bci, Last: bdi². Since i²=-1, Last becomes -bd (real!). Combine real parts and imaginary parts.`,
+      animationId: 'complex-multiplication-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: (2+3i)(4+i) = 8 + 2i + 12i + 3i² = 8 + 14i + 3(-1) = 8 + 14i - 3 = 5 + 14i. Now try yours!`,
+      animationId: 'complex-multiplication-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generatePowersOfIHints(
+  power: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const remainder = ((power % 4) + 4) % 4
+  const cycleValues = ['1', 'i', '-1', '-i']
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Powers of i cycle every 4! i¹=i, i²=-1, i³=-i, i⁴=1, then repeats. What's ${power} ÷ 4? What's the remainder?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `The cycle: i→-1→-i→1→i→... Divide the exponent by 4. Remainder 0→1, 1→i, 2→-1, 3→-i.`,
+      animationId: 'powers-of-i-cycle',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: i⁹⁹. 99÷4 = 24 R 3. Remainder 3 → -i. So i⁹⁹ = -i. Your power: ${power}÷4 has remainder ${remainder}, so answer is ${cycleValues[remainder]}. Now verify!`,
+      animationId: 'powers-of-i-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generatePolynomialDivisionHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Polynomial long division: Focus on the LEADING terms. Divide them first. What do you get?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) Divide leading terms. 2) Multiply divisor by result. 3) Subtract. 4) Bring down next term. 5) Repeat until done!`,
+      animationId: 'polynomial-division-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: (x³-2x²+x-3)÷(x-1). x³÷x=x². Multiply: x²(x-1)=x³-x². Subtract: -x²+x. Bring down: -x²+x-3. Continue! Quotient: x²-x, Remainder: -3.`,
+      animationId: 'polynomial-division-demo',
+      duration: 60,
+    },
+  }
+}
+
+export function generateRemainderTheoremHints(
+  c: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Remainder Theorem shortcut: To find remainder when f(x)÷(x-c), just calculate f(c)! No division needed. What's c here?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `If dividing by (x - c), plug in x = c. f(c) = remainder. If dividing by (x + c), plug in x = -c!`,
+      animationId: 'remainder-theorem-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: f(x)=x³-4x+2 divided by (x-2). Find f(2): 2³-4(2)+2 = 8-8+2 = 2. Remainder = 2! Now substitute ${c} into your polynomial.`,
+      animationId: 'remainder-theorem-demo',
+      duration: 45,
+    },
+  }
+}
+
+// ============================================
+// LEVEL L: DERIVATIVES & INTEGRALS HINTS
+// ============================================
+
+export function generateQuotientRuleHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Quotient Rule: "Low d high minus high d low, over low squared." Which is the numerator (high)? Which is the denominator (low)?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `d/dx[f/g] = (g·f' - f·g') / g². Remember: denominator derivative comes SECOND and gets SUBTRACTED!`,
+      animationId: 'quotient-rule-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: d/dx[x²/(x+1)]. f=x², g=x+1. f'=2x, g'=1. Answer: [(x+1)(2x) - (x²)(1)] / (x+1)² = (2x²+2x-x²)/(x+1)² = (x²+2x)/(x+1)². Now try yours!`,
+      animationId: 'quotient-rule-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateTangentLineHints(
+  x: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Tangent line at x=${x}: You need TWO things: the slope [use f'(${x})] and the point [use f(${x})]. What's the derivative?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) Find f'(x). 2) Slope m = f'(${x}). 3) Point = (${x}, f(${x})). 4) Use point-slope form: y - y₁ = m(x - x₁)`,
+      animationId: 'tangent-line-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: f(x)=x² at x=2. f'(x)=2x, so slope=f'(2)=4. Point: f(2)=4, so (2,4). Tangent: y-4=4(x-2), or y=4x-4. Now do yours at x=${x}!`,
+      animationId: 'tangent-line-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateDefiniteIntegralHints(
+  a: number,
+  b: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Definite integral from ${a} to ${b}: First find the antiderivative F(x). Then calculate F(${b}) - F(${a}). What's the antiderivative?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Fundamental Theorem: ∫[a to b] f(x)dx = F(b) - F(a). Integrate first (ignore bounds), then plug in upper minus lower!`,
+      animationId: 'definite-integral-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: ∫[1 to 3] x²dx. Antiderivative: x³/3. Evaluate: [3³/3] - [1³/3] = 9 - 1/3 = 26/3. Now integrate yours and evaluate at ${a} and ${b}!`,
+      animationId: 'definite-integral-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateLogarithmPropertyHints(
+  operation: 'expand' | 'condense' | 'evaluate' | 'equation',
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  const hints: Record<string, { micro: string; visual: string; teaching: string }> = {
+    expand: {
+      micro: `Log rules to expand: log(ab)=log(a)+log(b), log(a/b)=log(a)-log(b), log(aⁿ)=n·log(a). Which rule applies?`,
+      visual: `Think: Multiplication→Addition, Division→Subtraction, Exponent→Coefficient. Work from outside in!`,
+      teaching: `Example: log(x²y/z) = log(x²) + log(y) - log(z) = 2log(x) + log(y) - log(z). Now expand yours!`,
+    },
+    condense: {
+      micro: `Condensing is the reverse: log(a)+log(b)=log(ab), log(a)-log(b)=log(a/b), n·log(a)=log(aⁿ). Start with coefficients!`,
+      visual: `Steps: 1) Move coefficients to exponents. 2) Combine additions as multiplication. 3) Combine subtractions as division.`,
+      teaching: `Example: 2log(x) - log(y) + log(z) = log(x²) - log(y) + log(z) = log(x²z/y). Now condense yours!`,
+    },
+    evaluate: {
+      micro: `To evaluate log_b(x): Ask "b to what power equals x?" Convert to exponential form: b^? = x`,
+      visual: `log_b(x) = y means b^y = x. So log_2(8) = 3 because 2³ = 8. Look for powers!`,
+      teaching: `Example: log_3(81) = ? → 3^? = 81 → 3⁴ = 81 → Answer: 4. Now solve yours!`,
+    },
+    equation: {
+      micro: `Log equation: Isolate the log, then convert to exponential form. log_b(x) = y means b^y = x`,
+      visual: `If log_b(expression) = number, then b^number = expression. Solve for the variable inside!`,
+      teaching: `Example: log_2(x-3) = 4 → 2⁴ = x-3 → 16 = x-3 → x = 19. Now convert yours to exponential!`,
+    },
+  }
+
+  return {
+    micro: { level: 'micro', text: hints[operation].micro, duration: 5 },
+    visual: { level: 'visual', text: hints[operation].visual, animationId: `log-${operation}-setup`, duration: 15 },
+    teaching: { level: 'teaching', text: hints[operation].teaching, animationId: `log-${operation}-demo`, duration: 45 },
+  }
+}
+
+// ============================================
+// LEVEL M: TRIGONOMETRY HINTS
+// ============================================
+
+export function generateCircleEquationHints(
+  h: number,
+  k: number,
+  r: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Circle equation: (x-h)² + (y-k)² = r². Center is (h,k), radius is r. What's the center? What's the radius?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Standard form: (x-h)² + (y-k)² = r². Note: MINUS in the equation means POSITIVE coordinates! (x-3)² means h=+3.`,
+      animationId: 'circle-equation-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: Center (2,-3), radius 5. Equation: (x-2)² + (y-(-3))² = 5² → (x-2)² + (y+3)² = 25. For yours: center (${h},${k}), r=${r}.`,
+      animationId: 'circle-equation-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateTrigEquationHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Trig equation: First isolate the trig function. Then find the reference angle. Consider: which quadrants give this sign?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) Isolate sin/cos/tan. 2) Find reference angle from unit circle. 3) Determine quadrants based on sign. 4) Add 2πn for all solutions!`,
+      animationId: 'trig-equation-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: 2sin(x) = 1 → sin(x) = 1/2. Reference angle: π/6. Sin positive in Q1 and Q2. Solutions: x = π/6 + 2πn and x = 5π/6 + 2πn. Now try yours!`,
+      animationId: 'trig-equation-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateTrigGraphHints(
+  amplitude: number,
+  period: number,
+  phase: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  void phase
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Trig graph: y = A·sin(B(x-C)) + D. A=amplitude (height), B affects period (2π/B), C=phase shift, D=vertical shift. Identify each!`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Reading a graph: Amplitude = (max-min)/2. Period = distance between peaks. Phase = horizontal shift from origin. Midline = (max+min)/2.`,
+      animationId: 'trig-graph-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: y = 3sin(2(x-π/4)) + 1. Amplitude=3, Period=2π/2=π, Phase=π/4 right, Midline=1. Max=4, Min=-2. Now analyze yours with A=${amplitude}, Period=${period}!`,
+      animationId: 'trig-graph-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateLawOfSinesHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Law of Sines: a/sin(A) = b/sin(B) = c/sin(C). You need a side-angle PAIR. What pair do you know? What are you solving for?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Set up proportion: known_side/sin(known_angle) = unknown/sin(its_angle). Cross multiply and solve! Works for AAS, ASA, SSA cases.`,
+      animationId: 'law-of-sines-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: A=30°, a=5, B=45°, find b. 5/sin(30°) = b/sin(45°). 5/0.5 = b/0.707. 10 = b/0.707. b = 7.07. Now set up your proportion!`,
+      animationId: 'law-of-sines-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateLawOfCosinesHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Law of Cosines: c² = a² + b² - 2ab·cos(C). Use when you have SAS (two sides + included angle) or SSS (all three sides). Which case?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Finding a side (SAS): c² = a² + b² - 2ab·cos(C). Finding an angle (SSS): cos(C) = (a² + b² - c²)/(2ab). Which formula do you need?`,
+      animationId: 'law-of-cosines-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: a=3, b=5, C=60°. c² = 9 + 25 - 2(3)(5)cos(60°) = 34 - 30(0.5) = 34 - 15 = 19. c = √19 ≈ 4.36. Now plug in your values!`,
+      animationId: 'law-of-cosines-demo',
+      duration: 45,
+    },
+  }
+}
+
+// ============================================
+// LEVEL N: SEQUENCES & CALCULUS HINTS
+// ============================================
+
+export function generateArithmeticSeriesHints(
+  n: number,
+  a1: number,
+  d: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const an = a1 + (n - 1) * d
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Arithmetic series sum: Sₙ = n(a₁ + aₙ)/2 or Sₙ = n(2a₁ + (n-1)d)/2. Do you know the last term? How many terms?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Two formulas: If you know last term: S = n(first + last)/2. If you know common difference: S = n(2·first + (n-1)d)/2. Pick the easier one!`,
+      animationId: 'arithmetic-series-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: Sum of 1+3+5+...+19. a₁=1, d=2, n=10, aₙ=19. S = 10(1+19)/2 = 10(20)/2 = 100. For yours: a₁=${a1}, d=${d}, n=${n}, aₙ=${an}.`,
+      animationId: 'arithmetic-series-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateImplicitDifferentiationHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Implicit differentiation: Treat y as a function of x. When you differentiate a y term, multiply by dy/dx. Then solve for dy/dx!`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) Differentiate both sides with respect to x. 2) For y terms, use chain rule: d/dx[y²] = 2y·(dy/dx). 3) Collect dy/dx terms. 4) Solve!`,
+      animationId: 'implicit-diff-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: x² + y² = 25. Differentiate: 2x + 2y(dy/dx) = 0. Solve: 2y(dy/dx) = -2x → dy/dx = -x/y. Now differentiate each term in yours!`,
+      animationId: 'implicit-diff-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateLogarithmicDifferentiationHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Logarithmic differentiation: Take ln of both sides FIRST. Then differentiate. Great for products, quotients, or variable exponents!`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) y = f(x) → ln(y) = ln(f(x)). 2) Simplify using log rules. 3) Differentiate: (1/y)(dy/dx) = ... 4) Solve: dy/dx = y·(...)`,
+      animationId: 'log-diff-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: y = xˣ. ln(y) = x·ln(x). Differentiate: (1/y)(dy/dx) = ln(x) + x·(1/x) = ln(x) + 1. dy/dx = xˣ(ln(x) + 1). Now try yours!`,
+      animationId: 'log-diff-demo',
+      duration: 45,
+    },
+  }
+}
+
+export function generateExpLogDerivativeHints(
+  type: 'ln' | 'exp',
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  const hints: Record<string, { micro: string; visual: string; teaching: string }> = {
+    ln: {
+      micro: `Derivative of ln: d/dx[ln(u)] = u'/u. What's inside the ln? That's u. Find u' and divide by u.`,
+      visual: `Chain rule with ln: d/dx[ln(g(x))] = g'(x)/g(x). Derivative of inside over the inside!`,
+      teaching: `Example: d/dx[ln(x²+1)] = (2x)/(x²+1). Inside: u=x²+1, u'=2x. Answer: u'/u = 2x/(x²+1). Now find your inside!`,
+    },
+    exp: {
+      micro: `Derivative of eᵘ: d/dx[eᵘ] = eᵘ · u'. The exponential stays the same, multiply by derivative of exponent!`,
+      visual: `Chain rule with e: d/dx[e^(g(x))] = e^(g(x)) · g'(x). e to the power stays, multiply by exponent's derivative!`,
+      teaching: `Example: d/dx[e^(3x²)] = e^(3x²) · 6x. Exponent: u=3x², u'=6x. Answer: e^(3x²) · 6x. Now find your exponent's derivative!`,
+    },
+  }
+
+  return {
+    micro: { level: 'micro', text: hints[type].micro, duration: 5 },
+    visual: { level: 'visual', text: hints[type].visual, animationId: `${type}-derivative-setup`, duration: 15 },
+    teaching: { level: 'teaching', text: hints[type].teaching, animationId: `${type}-derivative-demo`, duration: 45 },
+  }
+}
+
+// ============================================
+// LEVEL O: DIFFERENTIAL EQUATIONS HINTS
+// ============================================
+
+export function generateLinearDEHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `First-order linear DE: dy/dx + P(x)y = Q(x). Find the integrating factor: μ = e^(∫P(x)dx). What's P(x) in your equation?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Steps: 1) Get in standard form: y' + P(x)y = Q(x). 2) Find μ = e^(∫P dx). 3) Multiply through by μ. 4) Left side = d/dx[μy]. 5) Integrate both sides!`,
+      animationId: 'linear-de-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Example: y' + 2y = e^x. P(x)=2, so μ=e^(2x). Multiply: e^(2x)y' + 2e^(2x)y = e^(3x). Left = d/dx[e^(2x)y]. Integrate: e^(2x)y = e^(3x)/3 + C. Solve for y!`,
+      animationId: 'linear-de-demo',
+      duration: 60,
+    },
   }
 }

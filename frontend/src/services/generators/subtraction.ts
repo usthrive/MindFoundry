@@ -1,5 +1,6 @@
 import type { Problem, KumonLevel } from '@/types'
 import { generateId } from '@/lib/utils'
+import { generateMissingSubtrahendHints, generateSubtractionHints } from './hintGenerator'
 
 /**
  * Subtraction Problem Generator
@@ -144,6 +145,7 @@ function generate3ASubtractionProblem(sublevel?: number): Problem {
     correctAnswer: operand1 - operand2,
     displayFormat: 'horizontal',
     difficulty: calculateDifficulty(operand1, operand2, '3A'),
+    graduatedHints: generateSubtractionHints([operand1, operand2], '3A'),
   }
 }
 
@@ -185,6 +187,7 @@ function generate2ASubtractionProblem(sublevel?: number): Problem {
     correctAnswer: operand1 - operand2,
     displayFormat: 'horizontal',
     difficulty: calculateDifficulty(operand1, operand2, '2A'),
+    graduatedHints: generateSubtractionHints([operand1, operand2], '2A'),
   }
 }
 
@@ -210,6 +213,7 @@ function generateLevelASubtractionProblem(sublevel?: number): Problem {
       correctAnswer: operand1 - operand2,
       displayFormat: 'horizontal',
       difficulty: calculateDifficulty(operand1, operand2, 'A'),
+      graduatedHints: generateSubtractionHints([operand1, operand2], 'A'),
     }
   } else if (sub <= 150) {
     // Missing subtrahend problems (e.g., 15 - __ = 7)
@@ -226,6 +230,7 @@ function generateLevelASubtractionProblem(sublevel?: number): Problem {
       displayFormat: 'horizontal',
       difficulty: 6,
       missingPosition: 1, // Second operand is missing
+      graduatedHints: generateMissingSubtrahendHints(operand1, difference, 'A'),
     }
   } else {
     // Mixed practice with standard subtraction
@@ -239,6 +244,7 @@ function generateLevelASubtractionProblem(sublevel?: number): Problem {
       correctAnswer: operand1 - operand2,
       displayFormat: 'horizontal',
       difficulty: 5,
+      graduatedHints: generateSubtractionHints([operand1, operand2], 'A'),
     }
   }
 }
@@ -305,6 +311,7 @@ export function generateSubtractionProblem(level: KumonLevel, sublevel?: number)
     correctAnswer,
     displayFormat,
     difficulty: calculateDifficulty(operand1, operand2, level),
+    graduatedHints: generateSubtractionHints([operand1, operand2], level),
   }
 }
 

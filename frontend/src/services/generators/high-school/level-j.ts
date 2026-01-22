@@ -4,6 +4,13 @@ import {
   generateFOILHints,
   generateQuadraticFormulaHints,
   generateGenericHints,
+  generateSumCubesHints,
+  generateDifferenceCubesHints,
+  generateFactorByGroupingHints,
+  generateComplexMultiplicationHints,
+  generatePowersOfIHints,
+  generatePolynomialDivisionHints,
+  generateRemainderTheoremHints,
 } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
@@ -90,7 +97,7 @@ function generateSumDifferenceCubes(): Problem {
         'Sum of cubes: a³ + b³ = (a + b)(a² - ab + b²)',
         `Here a = ${a === 1 ? '' : a}x and b = ${b}`,
       ],
-      graduatedHints: generateGenericHints('sum_cubes', 'J'),
+      graduatedHints: generateSumCubesHints(a, b, 'J'),
     }
   }
 
@@ -108,7 +115,7 @@ function generateSumDifferenceCubes(): Problem {
       'Difference of cubes: a³ - b³ = (a - b)(a² + ab + b²)',
       `Here a = ${a === 1 ? '' : a}x and b = ${b}`,
     ],
-    graduatedHints: generateGenericHints('difference_cubes', 'J'),
+    graduatedHints: generateDifferenceCubesHints(a, b, 'J'),
   }
 }
 
@@ -138,7 +145,7 @@ function generateFactorByGrouping(): Problem {
       'Factor out the GCF from each group',
       'Factor out the common binomial',
     ],
-    graduatedHints: generateGenericHints('factor_by_grouping', 'J'),
+    graduatedHints: generateFactorByGroupingHints('J'),
   }
 }
 
@@ -179,7 +186,7 @@ function generateComplexMultiplication(): Problem {
       'Use FOIL, remembering that i² = -1',
       'Combine real parts and imaginary parts',
     ],
-    graduatedHints: generateGenericHints('complex_multiplication', 'J'),
+    graduatedHints: generateComplexMultiplicationHints(a, b, c, d, 'J'),
   }
 }
 
@@ -207,7 +214,7 @@ function generatePowersOfI(): Problem {
       'Powers of i cycle: i¹ = i, i² = -1, i³ = -i, i⁴ = 1',
       `Find ${power} mod 4`,
     ],
-    graduatedHints: generateGenericHints('powers_of_i', 'J'),
+    graduatedHints: generatePowersOfIHints(power, 'J'),
   }
 }
 
@@ -336,7 +343,7 @@ function generatePolynomialDivision(): Problem {
       'Divide the leading terms first',
       `Divide by (x ${r >= 0 ? '- ' + r : '+ ' + Math.abs(r)})`,
     ],
-    graduatedHints: generateGenericHints('polynomial_division', 'J'),
+    graduatedHints: generatePolynomialDivisionHints('J'),
   }
 }
 
@@ -376,7 +383,7 @@ function generateRemainderTheorem(): Problem {
       `Substitute x = ${c} into the polynomial`,
       `f(${c}) = ${a}(${c})³ + ${b}(${c})² + ${d}(${c}) + ${e}`,
     ],
-    graduatedHints: generateGenericHints('remainder_theorem', 'J'),
+    graduatedHints: generateRemainderTheoremHints(c, 'J'),
   }
 }
 
