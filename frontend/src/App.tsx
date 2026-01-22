@@ -12,6 +12,9 @@ import StudyPage from '@/pages/StudyPage'
 import ProgressDashboard from '@/pages/ProgressDashboard'
 import TestLevelsPage from '@/pages/TestLevelsPage'
 import AnimationTestPage from '@/pages/AnimationTestPage'
+import VideoLibraryPage from '@/pages/VideoLibraryPage'
+import VideoCategoryPage from '@/pages/VideoCategoryPage'
+import VideoWatchPage from '@/pages/VideoWatchPage'
 
 function App() {
   return (
@@ -59,6 +62,31 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProgressDashboard />
+              </ProtectedRoute>
+            }
+          />
+          {/* Video Library Routes */}
+          <Route
+            path="/videos"
+            element={
+              <ProtectedRoute>
+                <VideoLibraryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/videos/category/:categoryId"
+            element={
+              <ProtectedRoute>
+                <VideoCategoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/videos/watch/:videoId"
+            element={
+              <ProtectedRoute>
+                <VideoWatchPage />
               </ProtectedRoute>
             }
           />

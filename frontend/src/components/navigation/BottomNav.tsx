@@ -33,6 +33,7 @@ export default function BottomNav() {
 
   const navItems: NavItem[] = [
     { icon: '🏠', label: 'Home', path: '/select-child', requiresAuth: true },
+    { icon: '📺', label: 'Videos', path: '/videos', requiresAuth: true },
     { icon: '📊', label: 'Progress', path: '/progress', requiresAuth: true }
   ]
 
