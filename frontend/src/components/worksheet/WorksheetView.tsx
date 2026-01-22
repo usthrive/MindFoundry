@@ -59,6 +59,20 @@ interface PageState {
 }
 
 /**
+ * Format answer for display - handles fraction objects and primitives
+ */
+const formatAnswer = (answer: unknown): string => {
+  if (answer === null || answer === undefined) return '?'
+  if (typeof answer === 'number') return answer.toString()
+  if (typeof answer === 'string') return answer
+  if (typeof answer === 'object' && 'numerator' in answer && 'denominator' in answer) {
+    const frac = answer as { numerator: number; denominator: number }
+    return `${frac.numerator}/${frac.denominator}`
+  }
+  return String(answer)
+}
+
+/**
  * WorksheetView - Multi-problem worksheet display
  *
  * Shows multiple problems per page based on level configuration.
@@ -578,7 +592,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
               {/* Show correct answer after 4th wrong attempt (after all 3 hints) */}
               {(currentPageState.attemptCounts[index] || 0) >= 4 && !isCorrect && (
                 <div className="text-center text-sm text-gray-500">
-                  Answer: <span className="font-bold text-green-600">{String(problem.correctAnswer)}</span>
+                  Answer: <span className="font-bold text-green-600">{formatAnswer(problem.correctAnswer)}</span>
                 </div>
               )}
             </div>
