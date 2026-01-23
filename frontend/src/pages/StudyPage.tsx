@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCelebration } from '@/contexts/CelebrationContext'
@@ -75,6 +75,8 @@ export default function StudyPage() {
   const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now())
   const [parentMode, setParentMode] = useState(false)
   const [showParentChallenge, setShowParentChallenge] = useState(false)
+  // Ref for synchronous modal state tracking (prevents race condition in keyboard handler)
+  const showParentChallengeRef = useRef(false)
   const [loading, setLoading] = useState(true)
   const [worksheetMode, setWorksheetMode] = useState(true) // Multi-problem view mode
   const [canSubmitWorksheet, setCanSubmitWorksheet] = useState(false) // All questions answered
@@ -313,6 +315,12 @@ export default function StudyPage() {
     loadProgress()
   }, [currentChild])
 
+  // Synchronously update ref when showParentChallenge changes
+  // This ensures the keyboard handler can check modal state without race conditions
+  useLayoutEffect(() => {
+    showParentChallengeRef.current = showParentChallenge
+  }, [showParentChallenge])
+
   // Keyboard input support - handles both single-problem and worksheet modes
   useEffect(() => {
     // Don't attach keyboard handler when parent challenge modal is open
@@ -320,7 +328,8 @@ export default function StudyPage() {
     if (showParentChallenge) return
 
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!sessionActive) return
+      // Double-check modal state via ref for race condition protection
+      if (!sessionActive || showParentChallengeRef.current) return
 
       const worksheetModeActive = shouldUseWorksheetMode()
 

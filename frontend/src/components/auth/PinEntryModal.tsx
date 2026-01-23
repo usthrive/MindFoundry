@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { getFocusDelay, detectPlatform } from '@/utils/platformDetection'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 
@@ -24,16 +25,25 @@ export default function PinEntryModal({
   const [attempts, setAttempts] = useState(0)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Reset state when modal opens
+  // Reset state when modal opens with platform-adaptive focus timing
   useEffect(() => {
     if (isOpen) {
       setPin(['', '', '', ''])
       setError(false)
       setAttempts(0)
-      // Focus first input after a short delay
-      setTimeout(() => {
-        inputRefs.current[0]?.focus()
-      }, 100)
+      // Focus first input with platform-adaptive delay
+      const delay = getFocusDelay()
+      const timer = setTimeout(() => {
+        const input = inputRefs.current[0]
+        if (input) {
+          input.focus()
+          // iOS may need click() to trigger virtual keyboard
+          if (detectPlatform() === 'ios') {
+            input.click()
+          }
+        }
+      }, delay)
+      return () => clearTimeout(timer)
     }
   }, [isOpen])
 
@@ -93,7 +103,13 @@ export default function PinEntryModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      onKeyUp={(e) => e.stopPropagation()}
+      onKeyPress={(e) => e.stopPropagation()}
+    >
       <Card variant="elevated" padding="lg" className="w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="text-5xl mb-4">🔐</div>

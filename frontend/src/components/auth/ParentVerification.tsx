@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getParentPin } from '@/services/userService'
+import { getFocusDelay, detectPlatform } from '@/utils/platformDetection'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 
@@ -103,21 +104,39 @@ export default function ParentVerification({
     }
   }, [isOpen])
 
-  // Focus management for PIN inputs
+  // Focus management for PIN inputs with platform-adaptive timing
   useEffect(() => {
     if (isOpen && mode === 'pin') {
-      setTimeout(() => {
-        pinInputRefs.current[0]?.focus()
-      }, 100)
+      const delay = getFocusDelay()
+      const timer = setTimeout(() => {
+        const input = pinInputRefs.current[0]
+        if (input) {
+          input.focus()
+          // iOS may need click() to trigger virtual keyboard
+          if (detectPlatform() === 'ios') {
+            input.click()
+          }
+        }
+      }, delay)
+      return () => clearTimeout(timer)
     }
   }, [isOpen, mode])
 
-  // Focus management for math input
+  // Focus management for math input with platform-adaptive timing
   useEffect(() => {
     if (isOpen && mode === 'math') {
-      setTimeout(() => {
-        mathInputRef.current?.focus()
-      }, 100)
+      const delay = getFocusDelay()
+      const timer = setTimeout(() => {
+        const input = mathInputRef.current
+        if (input) {
+          input.focus()
+          // iOS may need click() to trigger virtual keyboard
+          if (detectPlatform() === 'ios') {
+            input.click()
+          }
+        }
+      }, delay)
+      return () => clearTimeout(timer)
     }
   }, [isOpen, mode])
 
@@ -210,6 +229,9 @@ export default function ParentVerification({
       <div
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        onKeyUp={(e) => e.stopPropagation()}
+        onKeyPress={(e) => e.stopPropagation()}
       >
         <Card variant="elevated" padding="lg" className="w-full max-w-sm">
           <div className="text-center py-8">
@@ -227,6 +249,9 @@ export default function ParentVerification({
       <div
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        onKeyUp={(e) => e.stopPropagation()}
+        onKeyPress={(e) => e.stopPropagation()}
       >
         <Card variant="elevated" padding="lg" className="w-full max-w-sm">
           <div className="text-center mb-6">
@@ -300,6 +325,9 @@ export default function ParentVerification({
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      onKeyUp={(e) => e.stopPropagation()}
+      onKeyPress={(e) => e.stopPropagation()}
     >
       <Card variant="elevated" padding="lg" className="w-full max-w-md">
         <div className="text-center mb-6">
