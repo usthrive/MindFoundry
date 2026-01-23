@@ -55,6 +55,7 @@ export type Database = {
           avatar: string
           current_level: string
           current_worksheet: number
+          questions_per_page_mode: 'one' | 'standard' | 'half'
           tier: 'free' | 'basic' | 'plus' | 'premium'
           streak: number
           total_problems: number
@@ -71,11 +72,13 @@ export type Database = {
           avatar: string
           current_level?: string
           current_worksheet?: number
+          questions_per_page_mode?: 'one' | 'standard' | 'half'
         }
         Update: {
           name?: string
           current_level?: string
           current_worksheet?: number
+          questions_per_page_mode?: 'one' | 'standard' | 'half'
           total_problems?: number
           total_correct?: number
         }
