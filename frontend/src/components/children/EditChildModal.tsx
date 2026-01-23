@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { updateChildProfile, deleteChildProfile } from '@/services/progressService'
 import { getInitialLevelForGrade, getLevelDescription } from '@/utils/levelMapping'
+import { getStandardProblemsPerPage, type QuestionsPerPageMode } from '@/utils/worksheetConfig'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 import Button from '../ui/Button'
@@ -53,6 +54,9 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
   const [selectedAvatar, setSelectedAvatar] = useState(child.avatar)
   const [currentLevel, setCurrentLevel] = useState(child.current_level as KumonLevel)
   const [currentWorksheet, setCurrentWorksheet] = useState(child.current_worksheet)
+  const [questionsPerPageMode, setQuestionsPerPageMode] = useState<QuestionsPerPageMode>(
+    (child.questions_per_page_mode as QuestionsPerPageMode) || 'standard'
+  )
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -78,6 +82,7 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
         grade_level: gradeLevel,
         current_level: currentLevel,
         current_worksheet: currentWorksheet,
+        questions_per_page_mode: questionsPerPageMode,
       })
 
       if (!success) throw new Error('Failed to update child profile')
@@ -268,6 +273,29 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
                     max={200}
                   />
                 </div>
+              </div>
+
+              {/* Questions Per Page Mode */}
+              <div className="mt-4">
+                <label htmlFor="questionsPerPage" className="block text-sm font-medium text-gray-700 mb-2">
+                  Questions per page
+                </label>
+                <select
+                  id="questionsPerPage"
+                  value={questionsPerPageMode}
+                  onChange={(e) => setQuestionsPerPageMode(e.target.value as QuestionsPerPageMode)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="one">1 at a time (Quick feedback)</option>
+                  <option value="standard">Standard (Level default)</option>
+                  {/* Only show 'half' when standard is > 3 */}
+                  {getStandardProblemsPerPage(currentLevel) > 3 && (
+                    <option value="half">Half (Balanced)</option>
+                  )}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Quick feedback helps kids stay motivated with immediate results
+                </p>
               </div>
             </div>
 

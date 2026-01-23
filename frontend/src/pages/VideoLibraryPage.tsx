@@ -206,7 +206,7 @@ export default function VideoLibraryPage() {
       </div>
 
       {/* Main Content */}
-      <div className="p-4 pb-24">
+      <div className="p-4 pb-24 max-w-5xl mx-auto">
         {/* Greeting */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -220,7 +220,7 @@ export default function VideoLibraryPage() {
         {loading && (
           <div className="space-y-4">
             {/* Skeleton Category Grid */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
@@ -304,7 +304,7 @@ export default function VideoLibraryPage() {
               Browse by Topic
             </h2>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {categories.map((category, index) => (
                 <motion.div
                   key={category.id}

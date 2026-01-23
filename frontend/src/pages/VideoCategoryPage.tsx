@@ -166,14 +166,14 @@ export default function VideoCategoryPage() {
       )}
 
       {/* Main Content */}
-      <div className="p-4 pb-24">
+      <div className="p-4 pb-24 max-w-5xl mx-auto">
         {/* Loading State */}
         {loading && (
           <div className="space-y-6">
             {/* Skeleton Section */}
             <div>
               <div className="h-5 w-32 bg-gray-200 rounded animate-pulse mb-3" />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
@@ -229,7 +229,7 @@ export default function VideoCategoryPage() {
               Quick Videos <span className="text-gray-400 font-normal">(under 3 min)</span>
             </h2>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {shortVideos.map((video, index) => (
                 <motion.div
                   key={video.id}
@@ -273,7 +273,7 @@ export default function VideoCategoryPage() {
               Learn More <span className="text-gray-400 font-normal">(detailed lessons)</span>
             </h2>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
               {detailedVideos.map((video, index) => (
                 <motion.div
                   key={video.id}

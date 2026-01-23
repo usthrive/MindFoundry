@@ -8,6 +8,7 @@ import {
   getTotalPages,
   getGridLayout,
   getProblemSpacing,
+  type QuestionsPerPageMode,
 } from '@/utils/worksheetConfig'
 import { generateProblem } from '@/services/sessionManager'
 import type { Problem } from '@/services/generators/types'
@@ -28,6 +29,7 @@ export interface ProblemAttemptData {
 export interface WorksheetViewProps {
   level: KumonLevel
   worksheetNumber: number
+  questionsPerPageMode?: QuestionsPerPageMode
   onPageComplete: (results: {
     correct: number
     total: number
@@ -81,14 +83,15 @@ const formatAnswer = (answer: unknown): string => {
 const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   level,
   worksheetNumber,
+  questionsPerPageMode = 'standard',
   onPageComplete,
   onWorksheetComplete,
   onAnswerChange,
   onAllAnsweredChange,
   sessionActive,
 }, ref) => {
-  const problemsPerPage = getProblemsPerPage(level)
-  const totalPages = getTotalPages(level)
+  const problemsPerPage = getProblemsPerPage(level, questionsPerPageMode)
+  const totalPages = getTotalPages(level, questionsPerPageMode)
 
   const [currentPage, setCurrentPage] = useState(1)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -537,8 +540,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       {/* Problems grid */}
       <div className={cn(
         'grid',
-        getGridLayout(level),
-        getProblemSpacing(level)
+        getGridLayout(level, questionsPerPageMode),
+        getProblemSpacing(level, questionsPerPageMode)
       )}>
         {currentPageState.problems.map((problem, index) => {
           // Determine if this problem can be edited

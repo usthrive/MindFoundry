@@ -408,7 +408,7 @@ export async function saveProblemAttempt(
 }
 
 /**
- * Update child profile (name, age, grade, level, worksheet)
+ * Update child profile (name, age, grade, level, worksheet, questions per page mode)
  */
 export async function updateChildProfile(
   childId: string,
@@ -418,6 +418,7 @@ export async function updateChildProfile(
     grade_level?: number
     current_level?: string
     current_worksheet?: number
+    questions_per_page_mode?: 'one' | 'standard' | 'half'
   }
 ): Promise<boolean> {
   const { error } = await supabase

@@ -69,11 +69,11 @@ export default function VideoCard({
   // Get thumbnail URL (prefer stored, fallback to YouTube)
   const thumbnail = thumbnailUrl || getYouTubeThumbnailUrl(youtubeId, 'medium')
 
-  // Size classes
+  // Size classes - responsive for tablet/iPad
   const sizeClasses = {
-    small: 'min-w-[140px] max-w-[160px]',
-    normal: 'min-w-[160px] max-w-[280px]',
-    large: 'min-w-[200px] max-w-[400px]',
+    small: 'min-w-[140px] max-w-[160px] md:min-w-[160px] md:max-w-[200px]',
+    normal: 'min-w-[160px] max-w-[280px] md:min-w-[180px] md:max-w-full',
+    large: 'min-w-[200px] max-w-[400px] md:min-w-[220px] md:max-w-full',
   }
 
   // Handle click

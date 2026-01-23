@@ -99,7 +99,7 @@ export default function CategoryTile({
   return (
     <motion.button
       onClick={onClick}
-      className="relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all w-full aspect-square min-h-[100px]"
+      className="relative flex flex-col items-center justify-center p-3 rounded-2xl transition-all w-full aspect-square min-h-[80px] md:min-h-0"
       style={getBackgroundStyle()}
       whileTap={{ scale: 0.95 }}
       whileHover={{ scale: 1.02 }}

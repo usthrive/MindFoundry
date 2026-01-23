@@ -30,7 +30,7 @@ import {
   markConceptsSeenWithDB,
   loadSeenConceptsFromDB,
 } from '@/services/conceptIntroService'
-import { getProblemsPerPage, usesTapToSelect } from '@/utils/worksheetConfig'
+import { getProblemsPerPage, usesTapToSelect, type QuestionsPerPageMode } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
 import {
   getCurrentPosition,
@@ -172,12 +172,17 @@ export default function StudyPage() {
     return { count: isNaN(count) ? (currentProblem?.correctAnswer as number || 5) : count, emoji }
   }
 
+  // Get child's questions per page mode preference (default to 'standard')
+  const getQuestionsPerPageMode = (): QuestionsPerPageMode => {
+    return (currentChild?.questions_per_page_mode as QuestionsPerPageMode) || 'standard'
+  }
+
   // Check if level should use worksheet mode (multiple problems per page)
   const shouldUseWorksheetMode = () => {
     // Pre-K levels with TapToSelect don't use worksheet mode
     if (usesTapToSelect(currentLevel)) return false
-    // Levels with 1 problem per page don't need worksheet mode
-    if (getProblemsPerPage(currentLevel) === 1) return false
+    // Levels with 1 problem per page (considering mode preference) don't need worksheet mode
+    if (getProblemsPerPage(currentLevel, getQuestionsPerPageMode()) === 1) return false
     // Otherwise use worksheet mode if enabled
     return worksheetMode
   }
@@ -1042,6 +1047,7 @@ export default function StudyPage() {
                 ref={worksheetViewRef}
                 level={currentLevel}
                 worksheetNumber={currentWorksheet}
+                questionsPerPageMode={getQuestionsPerPageMode()}
                 onPageComplete={handleWorksheetPageComplete}
                 onWorksheetComplete={handleWorksheetComplete}
                 onAllAnsweredChange={setCanSubmitWorksheet}
