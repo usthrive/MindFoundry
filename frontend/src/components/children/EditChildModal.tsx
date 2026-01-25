@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { updateChildProfile, deleteChildProfile } from '@/services/progressService'
 import { getInitialLevelForGrade, getLevelDescription } from '@/utils/levelMapping'
 import { getStandardProblemsPerPage, type QuestionsPerPageMode } from '@/utils/worksheetConfig'
+import { GRADE_LEVELS, AGE_LIMITS, KUMON_LEVELS_DROPDOWN } from '@/constants/gradeConfig'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 import Button from '../ui/Button'
@@ -18,33 +19,6 @@ interface EditChildModalProps {
 }
 
 const AVATARS = ['👦', '👧', '🧒', '👶', '🦸‍♂️', '🦸‍♀️', '🧙‍♂️', '🧙‍♀️', '🧑‍🎓', '👨‍🎓', '👩‍🎓', '🧑‍🔬']
-
-const GRADE_LEVELS = [
-  { value: -2, label: 'Pre-K (Age 3-4)' },
-  { value: -1, label: 'Pre-K+ (Age 4-5)' },
-  { value: 0, label: 'Kindergarten' },
-  { value: 1, label: '1st Grade' },
-  { value: 2, label: '2nd Grade' },
-  { value: 3, label: '3rd Grade' },
-  { value: 4, label: '4th Grade' },
-  { value: 5, label: '5th Grade' },
-  { value: 6, label: '6th Grade' },
-]
-
-const KUMON_LEVELS: { value: KumonLevel; label: string }[] = [
-  { value: '7A', label: '7A - Counting to 10' },
-  { value: '6A', label: '6A - Number Recognition' },
-  { value: '5A', label: '5A - Number Sequences' },
-  { value: '4A', label: '4A - Writing Numbers' },
-  { value: '3A', label: '3A - Addition +1, +2, +3' },
-  { value: '2A', label: '2A - Addition +4 to +10' },
-  { value: 'A', label: 'A - Subtraction Basics' },
-  { value: 'B', label: 'B - 2-Digit Operations' },
-  { value: 'C', label: 'C - Multiplication & Division' },
-  { value: 'D', label: 'D - Long Division & Fractions' },
-  { value: 'E', label: 'E - Fraction Operations' },
-  { value: 'F', label: 'F - Decimals & Order of Ops' },
-]
 
 export default function EditChildModal({ isOpen, child, onClose, onSuccess }: EditChildModalProps) {
   const { refreshChildren } = useAuth()
@@ -172,8 +146,8 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
                   onChange={(e) => setAge(parseInt(e.target.value) || 5)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   required
-                  min={3}
-                  max={11}
+                  min={AGE_LIMITS.min}
+                  max={AGE_LIMITS.max}
                 />
               </div>
               <div>
@@ -252,7 +226,7 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
                     onChange={(e) => setCurrentLevel(e.target.value as KumonLevel)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
-                    {KUMON_LEVELS.map((level) => (
+                    {KUMON_LEVELS_DROPDOWN.map((level) => (
                       <option key={level.value} value={level.value}>
                         {level.label}
                       </option>

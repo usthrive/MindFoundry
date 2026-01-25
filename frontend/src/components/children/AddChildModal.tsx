@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getInitialLevelForGrade } from '@/utils/levelMapping'
+import { GRADE_LEVELS, AGE_LIMITS } from '@/constants/gradeConfig'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 
@@ -12,18 +13,6 @@ interface AddChildModalProps {
 }
 
 const AVATARS = ['👦', '👧', '🧒', '👶', '🦸‍♂️', '🦸‍♀️', '🧙‍♂️', '🧙‍♀️', '🧑‍🎓', '👨‍🎓', '👩‍🎓', '🧑‍🔬']
-
-const GRADE_LEVELS = [
-  { value: -2, label: 'Pre-K (Age 3-4)' },
-  { value: -1, label: 'Pre-K+ (Age 4-5)' },
-  { value: 0, label: 'Kindergarten' },
-  { value: 1, label: '1st Grade' },
-  { value: 2, label: '2nd Grade' },
-  { value: 3, label: '3rd Grade' },
-  { value: 4, label: '4th Grade' },
-  { value: 5, label: '5th Grade' },
-  { value: 6, label: '6th Grade' },
-]
 
 export default function AddChildModal({ isOpen, onClose, onSuccess }: AddChildModalProps) {
   const { user, refreshChildren } = useAuth()
@@ -127,8 +116,8 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: AddChildMo
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
-                min={3}
-                max={11}
+                min={AGE_LIMITS.min}
+                max={AGE_LIMITS.max}
               />
             </div>
 

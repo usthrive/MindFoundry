@@ -39,10 +39,27 @@ export function getInitialLevelForGrade(gradeLevel: number): KumonLevel {
     case 6: // 6th Grade
       return 'F'  // Decimals & order of operations (Ages 11-12)
 
+    case 7: // 7th Grade
+      return 'G'  // Positive & negative numbers (Ages 12-13)
+
+    case 8: // 8th Grade
+      return 'H'  // Introduction to algebra (Ages 13-14)
+
+    case 9: // 9th Grade
+      return 'I'  // Factorization & square roots (Ages 14-15)
+
+    case 10: // 10th Grade
+      return 'J'  // Advanced algebra (Ages 15-16)
+
+    case 11: // 11th Grade
+      return 'K'  // Functions (Ages 16-17)
+
+    case 12: // 12th Grade
+      return 'L'  // Logarithms / Pre-calculus (Ages 17-18)
+
     default:
-      // For grades above 6th or invalid inputs, default to level F
-      // Could extend to G, H, etc. for higher grades if needed
-      return gradeLevel > 6 ? 'F' : '7A'
+      // For grades above 12th, default to L; for invalid inputs, default to 7A
+      return gradeLevel > 12 ? 'L' : '7A'
   }
 }
 

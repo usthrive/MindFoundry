@@ -20,7 +20,9 @@ import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/Wor
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { ConceptIntroModal } from '@/components/concept-intro'
+import ConceptRoadmap from '@/components/parent/ConceptRoadmap'
 import { VideoPlayerModal, VideoSuggestionBanner } from '@/components/video'
+import { LEVEL_CONFIGS } from '@/data/levelConfig'
 import { useVideoPlayer } from '@/hooks/useVideoPlayer'
 import { useVideoSuggestion } from '@/hooks/useVideoSuggestion'
 import { getConceptFromProblem } from '@/services/videoSelectionService'
@@ -1292,58 +1294,33 @@ export default function StudyPage() {
                 Choose Level to Practice:
               </p>
               <div className="flex flex-wrap justify-center gap-2">
-                <Button size="sm" variant={currentLevel === '3A' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('3A')}>
-                  3A
-                </Button>
-                <Button size="sm" variant={currentLevel === '2A' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('2A')}>
-                  2A
-                </Button>
-                <Button size="sm" variant={currentLevel === 'A' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('A')}>
-                  A
-                </Button>
-                <Button size="sm" variant={currentLevel === 'B' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('B')}>
-                  B
-                </Button>
-                <Button size="sm" variant={currentLevel === 'C' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('C')}>
-                  C
-                </Button>
-                <Button size="sm" variant={currentLevel === 'D' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('D')}>
-                  D
-                </Button>
-                <Button size="sm" variant={currentLevel === 'E' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('E')}>
-                  E
-                </Button>
-                <Button size="sm" variant={currentLevel === 'F' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('F')}>
-                  F
-                </Button>
-                <Button size="sm" variant={currentLevel === 'G' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('G')}>
-                  G
-                </Button>
-                <Button size="sm" variant={currentLevel === 'H' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('H')}>
-                  H
-                </Button>
-                <Button size="sm" variant={currentLevel === 'I' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('I')}>
-                  I
-                </Button>
-                <Button size="sm" variant={currentLevel === 'J' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('J')}>
-                  J
-                </Button>
-                <Button size="sm" variant={currentLevel === 'K' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('K')}>
-                  K
-                </Button>
-                <Button size="sm" variant={currentLevel === 'L' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('L')}>
-                  L
-                </Button>
-                <Button size="sm" variant={currentLevel === 'M' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('M')}>
-                  M
-                </Button>
-                <Button size="sm" variant={currentLevel === 'N' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('N')}>
-                  N
-                </Button>
-                <Button size="sm" variant={currentLevel === 'O' ? 'primary' : 'secondary'} onClick={() => handleLevelChange('O')}>
-                  O
-                </Button>
+                {LEVEL_CONFIGS.map((config) => (
+                  <button
+                    key={config.level}
+                    onClick={() => handleLevelChange(config.level)}
+                    className={`flex flex-col items-center px-3 py-2 rounded-lg border transition-all min-w-[60px] ${
+                      currentLevel === config.level
+                        ? 'bg-primary text-white border-primary shadow-md'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5'
+                    }`}
+                    title={`${config.description} (${config.gradeRange})`}
+                  >
+                    <span className="font-bold text-sm">{config.level}</span>
+                    <span className={`text-[10px] leading-tight text-center ${
+                      currentLevel === config.level ? 'text-white/80' : 'text-gray-500'
+                    }`}>
+                      {config.description.split(' ').slice(0, 2).join(' ')}
+                    </span>
+                  </button>
+                ))}
               </div>
+
+              {/* Concept Roadmap - Collapsible panel showing concepts for current level */}
+              <ConceptRoadmap
+                level={currentLevel}
+                currentWorksheet={currentWorksheet}
+                onJumpToWorksheet={handleWorksheetJump}
+              />
             </div>
           )}
 

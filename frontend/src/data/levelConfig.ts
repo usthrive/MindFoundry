@@ -477,3 +477,19 @@ export function getLevelsByCategory() {
 
   return grouped
 }
+
+/**
+ * Get the configuration for a specific level
+ */
+export function getLevelConfig(level: KumonLevel): LevelConfig | undefined {
+  return LEVEL_CONFIGS.find(c => c.level === level)
+}
+
+/**
+ * Find which worksheet range contains the given worksheet number
+ */
+export function getCurrentConceptRange(level: KumonLevel, worksheet: number): WorksheetRange | undefined {
+  const config = getLevelConfig(level)
+  if (!config) return undefined
+  return config.worksheetRanges.find(range => worksheet >= range.start && worksheet <= range.end)
+}
