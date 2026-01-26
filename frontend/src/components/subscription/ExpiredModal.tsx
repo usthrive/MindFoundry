@@ -18,7 +18,7 @@ export default function ExpiredModal({
   totalProblems,
   onScholarshipRequest,
 }: ExpiredModalProps) {
-  const { subscriptionState, tiers, startCheckout, checkCoupon } = useSubscription()
+  const { subscriptionState, tiers, startCheckout, checkCoupon, childCount } = useSubscription()
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async (tierId: string, billingCycle: BillingCycle, couponCode?: string) => {
@@ -79,6 +79,7 @@ export default function ExpiredModal({
           {foundationTier && (
             <PricingCard
               tier={foundationTier}
+              childCount={childCount}
               onSelect={handleCheckout}
               loading={loading}
               showCouponInput={true}

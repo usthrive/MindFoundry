@@ -26,6 +26,7 @@ export default function SubscriptionSettings({ onBack }: SubscriptionSettingsPro
     startCheckout,
     openPortal,
     checkCoupon,
+    childCount,
   } = useSubscription()
 
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -202,6 +203,7 @@ export default function SubscriptionSettings({ onBack }: SubscriptionSettingsPro
 
             <PricingCard
               tier={foundationTier}
+              childCount={childCount}
               onSelect={handleCheckout}
               loading={checkoutLoading}
               showCouponInput={true}

@@ -20,7 +20,7 @@ export default function GracePeriodModal({
   totalProblems,
   onScholarshipRequest,
 }: GracePeriodModalProps) {
-  const { subscriptionState, tiers, startCheckout, checkCoupon, daysRemaining } = useSubscription()
+  const { subscriptionState, tiers, startCheckout, checkCoupon, daysRemaining, childCount } = useSubscription()
   const [canDismiss, setCanDismiss] = useState(false)
   const [countdown, setCountdown] = useState(3)
   const [loading, setLoading] = useState(false)
@@ -107,6 +107,7 @@ export default function GracePeriodModal({
           {foundationTier && (
             <PricingCard
               tier={foundationTier}
+              childCount={childCount}
               onSelect={handleCheckout}
               loading={loading}
               showCouponInput={true}

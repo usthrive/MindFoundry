@@ -1,14 +1,16 @@
 /**
  * Pricing Card Component
  * Displays subscription tier pricing with optional coupon support
+ * Supports family pricing with per-child breakdown
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { SubscriptionTier, BillingCycle } from '@/types'
-import { formatPrice, calculateAnnualSavings } from '@/services/subscriptionService'
+import { formatPrice, calculateAnnualSavings, calculateFamilyPrice } from '@/services/subscriptionService'
 
 interface PricingCardProps {
   tier: SubscriptionTier
+  childCount?: number // Number of children for family pricing
   onSelect: (tierId: string, billingCycle: BillingCycle, couponCode?: string) => void
   loading?: boolean
   showCouponInput?: boolean
@@ -19,6 +21,7 @@ interface PricingCardProps {
 
 export default function PricingCard({
   tier,
+  childCount = 1,
   onSelect,
   loading = false,
   showCouponInput = true,
@@ -33,10 +36,17 @@ export default function PricingCard({
   const [validatingCoupon, setValidatingCoupon] = useState(false)
   const [appliedDiscount, setAppliedDiscount] = useState(couponDiscount)
 
+  // Calculate family price based on number of children
+  const familyPrice = useMemo(
+    () => calculateFamilyPrice(childCount, billingCycle),
+    [childCount, billingCycle]
+  )
+
   const annualSavings = calculateAnnualSavings(tier.monthlyPriceCents, tier.annualPriceCents)
 
   const getPrice = () => {
-    const basePrice = billingCycle === 'annual' ? tier.annualPriceCents : tier.monthlyPriceCents
+    // Use family price instead of tier price
+    const basePrice = familyPrice.totalCents
     if (appliedDiscount > 0) {
       return Math.round(basePrice * (1 - appliedDiscount / 100))
     }
@@ -114,7 +124,7 @@ export default function PricingCard({
           <div className="flex items-baseline justify-center gap-1">
             {appliedDiscount > 0 && (
               <span className="text-2xl text-gray-400 line-through">
-                {formatPrice(billingCycle === 'annual' ? tier.annualPriceCents : tier.monthlyPriceCents)}
+                {formatPrice(familyPrice.totalCents)}
               </span>
             )}
             <span className="text-4xl font-bold text-gray-900">
@@ -129,7 +139,42 @@ export default function PricingCard({
               ({formatPrice(Math.round(getPrice() / 12))}/month when billed annually)
             </p>
           )}
+          {childCount > 1 && (
+            <p className="text-sm text-blue-600 mt-1">
+              Family pricing for {childCount} children
+            </p>
+          )}
         </div>
+
+        {/* Family pricing breakdown (show when multiple children) */}
+        {childCount > 1 && (
+          <div className="mb-6 bg-blue-50 rounded-xl p-4">
+            <p className="text-sm font-semibold text-blue-800 mb-3">Family Pricing Breakdown</p>
+            <div className="space-y-2">
+              {familyPrice.breakdown.map((item) => (
+                <div key={item.childNumber} className="flex justify-between text-sm">
+                  <span className="text-gray-700">
+                    Child {item.childNumber}
+                    {item.discountPercent > 0 && (
+                      <span className="ml-2 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                        {Math.round(item.discountPercent * 100)}% off
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    {formatPrice(item.priceCents)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-blue-200 mt-3 pt-3 flex justify-between">
+              <span className="font-semibold text-blue-800">Total</span>
+              <span className="font-bold text-blue-900">
+                {formatPrice(familyPrice.totalCents)}/{billingCycle === 'annual' ? 'year' : 'month'}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Coupon input */}
         {showCouponInput && onCouponValidate && (

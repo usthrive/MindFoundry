@@ -1,6 +1,7 @@
 /**
  * Create Checkout Session Edge Function
  * Creates a Stripe Checkout session for subscription signup
+ * Supports family pricing with progressive discounts
  */
 
 import Stripe from 'npm:stripe@14.14.0'
@@ -14,6 +15,39 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Family discount structure (progressive discounts per child)
+const FAMILY_DISCOUNTS = [
+  { child: 1, discount: 0 },      // 1st child: 0% off
+  { child: 2, discount: 0.10 },   // 2nd child: 10% off
+  { child: 3, discount: 0.20 },   // 3rd child: 20% off
+  { child: 4, discount: 0.30 },   // 4th child: 30% off
+  // 5+ children: 50% off each
+]
+
+/**
+ * Calculate family price based on number of children
+ * Returns total price in cents
+ */
+function calculateFamilyPrice(childCount: number, billingCycle: 'monthly' | 'annual'): {
+  totalCents: number
+  breakdown: Array<{ childNumber: number; priceCents: number; discountPercent: number }>
+} {
+  const basePrice = billingCycle === 'monthly' ? 799 : 6700 // cents
+  let totalCents = 0
+  const breakdown: Array<{ childNumber: number; priceCents: number; discountPercent: number }> = []
+
+  for (let i = 1; i <= childCount; i++) {
+    const discountEntry = FAMILY_DISCOUNTS.find(d => d.child === i)
+    const discountPercent = discountEntry?.discount ?? 0.50 // 5+ children get 50% off
+    const childPriceCents = Math.round(basePrice * (1 - discountPercent))
+
+    breakdown.push({ childNumber: i, priceCents: childPriceCents, discountPercent })
+    totalCents += childPriceCents
+  }
+
+  return { totalCents, breakdown }
 }
 
 Deno.serve(async (req) => {
@@ -74,17 +108,23 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get the Stripe price ID
-    const priceId = billingCycle === 'annual'
-      ? tier.stripe_annual_price_id
-      : tier.stripe_monthly_price_id
+    // Get children count for family pricing
+    const { count: childCount, error: childError } = await supabase
+      .from('children')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
 
-    if (!priceId) {
-      return new Response(
-        JSON.stringify({ error: 'Stripe price not configured for this tier' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (childError) {
+      console.error('Error counting children:', childError)
     }
+
+    // Default to 1 child if no children found or error
+    const numberOfChildren = childCount && childCount > 0 ? childCount : 1
+    console.log(`Family pricing: ${numberOfChildren} children for user ${user.id}`)
+
+    // Calculate family price
+    const familyPrice = calculateFamilyPrice(numberOfChildren, billingCycle as 'monthly' | 'annual')
+    console.log(`Family price calculation:`, familyPrice)
 
     // Get or create Stripe customer
     const { data: userData } = await supabase
@@ -113,13 +153,25 @@ Deno.serve(async (req) => {
         .eq('id', user.id)
     }
 
-    // Build checkout session params
+    // Build checkout session params with dynamic family pricing
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       mode: 'subscription',
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: 'usd',
+            unit_amount: familyPrice.totalCents,
+            recurring: {
+              interval: billingCycle === 'annual' ? 'year' : 'month',
+            },
+            product_data: {
+              name: `MathFoundry Foundation - ${numberOfChildren} ${numberOfChildren === 1 ? 'child' : 'children'}`,
+              description: numberOfChildren > 1
+                ? `Family subscription with ${numberOfChildren} children (includes multi-child discount)`
+                : 'Full Kumon-style math curriculum',
+            },
+          },
           quantity: 1,
         },
       ],
@@ -129,11 +181,14 @@ Deno.serve(async (req) => {
         user_id: user.id,
         tier_id: tierId,
         billing_cycle: billingCycle,
+        child_count: numberOfChildren.toString(),
+        price_cents: familyPrice.totalCents.toString(),
       },
       subscription_data: {
         metadata: {
           user_id: user.id,
           tier_id: tierId,
+          child_count: numberOfChildren.toString(),
         },
       },
       allow_promotion_codes: true,
@@ -150,15 +205,18 @@ Deno.serve(async (req) => {
     // Create checkout session
     const session = await stripe.checkout.sessions.create(sessionParams)
 
-    // Log the event
+    // Log the event with family pricing details
     await supabase.from('subscription_events').insert({
       user_id: user.id,
       event_type: 'checkout_started',
       tier: tierId,
       billing_cycle: billingCycle,
+      amount_cents: familyPrice.totalCents,
       metadata: {
         session_id: session.id,
         coupon_code: couponCode || null,
+        child_count: numberOfChildren,
+        price_breakdown: familyPrice.breakdown,
       },
     })
 

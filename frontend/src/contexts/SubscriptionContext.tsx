@@ -26,6 +26,7 @@ interface SubscriptionContextType {
   subscriptionState: SubscriptionState | null
   tiers: SubscriptionTier[]
   loading: boolean
+  childCount: number // Number of children for family pricing
 
   // Computed properties (convenience accessors)
   canAccessApp: boolean
@@ -67,6 +68,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscriptionState, setSubscriptionState] = useState<SubscriptionState | null>(null)
   const [tiers, setTiers] = useState<SubscriptionTier[]>([])
   const [loading, setLoading] = useState(true)
+  const [childCount, setChildCount] = useState(1) // Default to 1 child for family pricing
 
   // Load subscription state when user changes
   useEffect(() => {
@@ -93,18 +95,27 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       const createdAt = userData?.created_at || user.created_at || new Date().toISOString()
 
-      // Load subscription state and tiers in parallel
-      const [state, enabledTiers] = await Promise.all([
+      // Load subscription state, tiers, and children count in parallel
+      const [state, enabledTiers, childrenResult] = await Promise.all([
         getSubscriptionState(user.id, createdAt),
         getEnabledTiers(),
+        supabase
+          .from('children')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id),
       ])
 
       setSubscriptionState(state)
       setTiers(enabledTiers)
+
+      // Set child count (minimum 1 for pricing purposes)
+      const numChildren = childrenResult.count ?? 0
+      setChildCount(Math.max(1, numChildren))
     } catch (error) {
       console.error('Error loading subscription data:', error)
       // Set default state on error
       setSubscriptionState(defaultState)
+      setChildCount(1)
     } finally {
       setLoading(false)
     }
@@ -187,6 +198,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     subscriptionState,
     tiers,
     loading,
+    childCount, // For family pricing
 
     // Computed properties
     canAccessApp: state.canAccessApp,

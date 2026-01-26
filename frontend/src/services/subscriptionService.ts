@@ -416,6 +416,94 @@ export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`
 }
 
+// ============================================================================
+// FAMILY PRICING
+// ============================================================================
+
+/**
+ * Family discount structure (progressive discounts per child)
+ */
+const FAMILY_DISCOUNTS = [
+  { child: 1, discount: 0 },      // 1st child: 0% off
+  { child: 2, discount: 0.10 },   // 2nd child: 10% off
+  { child: 3, discount: 0.20 },   // 3rd child: 20% off
+  { child: 4, discount: 0.30 },   // 4th child: 30% off
+  // 5+ children: 50% off each
+]
+
+export interface FamilyPriceBreakdown {
+  childNumber: number
+  priceCents: number
+  discountPercent: number
+}
+
+export interface FamilyPrice {
+  totalCents: number
+  breakdown: FamilyPriceBreakdown[]
+  childCount: number
+  billingCycle: BillingCycle
+  perChildBasePrice: number
+}
+
+/**
+ * Calculate family price based on number of children
+ * Uses progressive discounts: 0%, 10%, 20%, 30%, 50%+ for each additional child
+ */
+export function calculateFamilyPrice(
+  childCount: number,
+  billingCycle: BillingCycle
+): FamilyPrice {
+  const basePrice = billingCycle === 'monthly' ? 799 : 6700 // cents
+  let totalCents = 0
+  const breakdown: FamilyPriceBreakdown[] = []
+
+  // Ensure at least 1 child
+  const numChildren = Math.max(1, childCount)
+
+  for (let i = 1; i <= numChildren; i++) {
+    const discountEntry = FAMILY_DISCOUNTS.find(d => d.child === i)
+    const discountPercent = discountEntry?.discount ?? 0.50 // 5+ children get 50% off
+    const childPriceCents = Math.round(basePrice * (1 - discountPercent))
+
+    breakdown.push({
+      childNumber: i,
+      priceCents: childPriceCents,
+      discountPercent,
+    })
+    totalCents += childPriceCents
+  }
+
+  return {
+    totalCents,
+    breakdown,
+    childCount: numChildren,
+    billingCycle,
+    perChildBasePrice: basePrice,
+  }
+}
+
+/**
+ * Get the discount percentage for a specific child number
+ */
+export function getChildDiscount(childNumber: number): number {
+  const entry = FAMILY_DISCOUNTS.find(d => d.child === childNumber)
+  return entry?.discount ?? 0.50 // 5+ children get 50% off
+}
+
+/**
+ * Format family price summary for display
+ */
+export function formatFamilyPriceSummary(familyPrice: FamilyPrice): string {
+  const { totalCents, childCount, billingCycle } = familyPrice
+  const period = billingCycle === 'annual' ? '/year' : '/month'
+
+  if (childCount === 1) {
+    return `${formatPrice(totalCents)}${period}`
+  }
+
+  return `${formatPrice(totalCents)}${period} for ${childCount} children`
+}
+
 /**
  * Calculate savings percentage for annual vs monthly
  */
