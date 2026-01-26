@@ -6,6 +6,7 @@ import { NavigationGuardProvider } from '@/contexts/NavigationGuardContext'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import BottomNav from '@/components/navigation/BottomNav'
 import { CelebrationModal } from '@/components/celebrations'
+import DevTierPanel from '@/components/dev/DevTierPanel'
 import AuthPage from '@/pages/AuthPage'
 import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import OnboardingPage from '@/pages/OnboardingPage'
@@ -103,6 +104,8 @@ function App() {
           <BottomNav />
           {/* Global celebration modal - renders on top of everything */}
           <CelebrationModal />
+          {/* Dev-only tier testing panel - only visible in development */}
+          <DevTierPanel />
         </div>
         </NavigationGuardProvider>
       </BrowserRouter>

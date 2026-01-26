@@ -352,3 +352,66 @@ export const NUDGE_SCHEDULE: NudgeConfig[] = [
   { day: 66, type: 'grace', showPricing: true, pricingType: 'both' },
   { day: 67, type: 'grace', showPricing: true, pricingType: 'both' },
 ];
+
+// ============================================
+// Feature Management Types
+// ============================================
+
+export type FeatureCategory = 'core' | 'ai' | 'premium' | 'support' | 'general';
+
+export type FeatureLimitPeriod = 'daily' | 'weekly' | 'monthly' | null;
+
+export interface Feature {
+  id: string;
+  name: string;
+  description: string | null;
+  category: FeatureCategory;
+  isActive: boolean;
+  previewAvailable: boolean;
+  displayOrder: number;
+  icon: string | null;
+}
+
+export interface FeatureTierMapping {
+  id: string;
+  featureId: string;
+  tierId: SubscriptionTierId;
+  isEnabled: boolean;
+  usageLimit: number | null;
+  limitPeriod: FeatureLimitPeriod;
+}
+
+export interface FeatureUsage {
+  id: string;
+  userId: string;
+  featureId: string;
+  usageCount: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+// Combined view for easier querying
+export interface TierFeature {
+  tierId: SubscriptionTierId;
+  tierName: string;
+  featureId: string;
+  featureName: string;
+  featureDescription: string | null;
+  category: FeatureCategory;
+  icon: string | null;
+  featureActive: boolean;
+  previewAvailable: boolean;
+  displayOrder: number;
+  isEnabled: boolean;
+  usageLimit: number | null;
+  limitPeriod: FeatureLimitPeriod;
+}
+
+// Feature access check result
+export interface FeatureAccessResult {
+  hasAccess: boolean;
+  reason: 'granted' | 'tier_required' | 'feature_disabled' | 'usage_exceeded' | 'not_authenticated';
+  requiredTier?: SubscriptionTierId;
+  previewAvailable?: boolean;
+  usageRemaining?: number;
+}
