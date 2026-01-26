@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 import { CelebrationProvider } from '@/contexts/CelebrationContext'
 import { NavigationGuardProvider } from '@/contexts/NavigationGuardContext'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
@@ -21,6 +22,7 @@ import VideoWatchPage from '@/pages/VideoWatchPage'
 function App() {
   return (
     <AuthProvider>
+      <SubscriptionProvider>
       <CelebrationProvider>
       <BrowserRouter>
         <NavigationGuardProvider>
@@ -105,6 +107,7 @@ function App() {
         </NavigationGuardProvider>
       </BrowserRouter>
       </CelebrationProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   )
 }

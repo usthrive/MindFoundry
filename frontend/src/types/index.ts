@@ -270,3 +270,85 @@ export interface VideoEffectiveness {
   improvement: number;
   wasHelpful: boolean;
 }
+
+// ============================================
+// Subscription System Types
+// ============================================
+
+export type SubscriptionStatus = 'free_period' | 'grace_period' | 'active' | 'expired' | 'cancelled';
+
+export type SubscriptionTierId = 'foundation' | 'foundation_ai' | 'vip';
+
+export type BillingCycle = 'monthly' | 'annual';
+
+export interface SubscriptionTier {
+  id: SubscriptionTierId;
+  name: string;
+  description: string;
+  enabled: boolean;
+  monthlyPriceCents: number;
+  annualPriceCents: number;
+  stripeMonthlyPriceId: string | null;
+  stripeAnnualPriceId: string | null;
+  features: string[];
+  displayOrder: number;
+}
+
+export interface UserSubscription {
+  status: SubscriptionStatus;
+  tier: SubscriptionTierId | null;
+  billingCycle: BillingCycle | null;
+  freePeriodEndsAt: string | null;
+  gracePeriodEndsAt: string | null;
+  currentPeriodEndsAt: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  isFoundingSupporter: boolean;
+  scholarshipCode: string | null;
+  nudgesSent: Record<string, { sent: boolean; sentAt: string }>;
+}
+
+export interface SubscriptionState {
+  status: SubscriptionStatus;
+  tier: SubscriptionTier | null;
+  daysRemaining: number;
+  daysSinceSignup: number;
+  isInFreePeriod: boolean;
+  isInGracePeriod: boolean;
+  isActive: boolean;
+  isExpired: boolean;
+  canAccessApp: boolean;
+  isFoundingSupporter: boolean;
+  currentNudgeDay: number | null;
+  shouldShowNudge: boolean;
+  nudgeType: 'progress' | 'story' | 'reflection' | 'pricing_annual' | 'pricing_full' | 'grace' | null;
+}
+
+export interface ScholarshipRequest {
+  id: string;
+  userId: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'denied';
+  couponCode: string | null;
+  createdAt: string;
+}
+
+// Nudge schedule configuration
+export interface NudgeConfig {
+  day: number;
+  type: 'progress' | 'story' | 'reflection' | 'pricing_annual' | 'pricing_full' | 'grace';
+  showPricing: boolean;
+  pricingType: 'none' | 'annual' | 'both';
+}
+
+export const NUDGE_SCHEDULE: NudgeConfig[] = [
+  { day: 45, type: 'progress', showPricing: false, pricingType: 'none' },
+  { day: 48, type: 'story', showPricing: false, pricingType: 'none' },
+  { day: 52, type: 'reflection', showPricing: false, pricingType: 'none' },
+  { day: 53, type: 'pricing_annual', showPricing: true, pricingType: 'annual' },
+  { day: 56, type: 'pricing_full', showPricing: true, pricingType: 'both' },
+  { day: 60, type: 'grace', showPricing: true, pricingType: 'both' },
+  { day: 63, type: 'grace', showPricing: true, pricingType: 'both' },
+  { day: 66, type: 'grace', showPricing: true, pricingType: 'both' },
+  { day: 67, type: 'grace', showPricing: true, pricingType: 'both' },
+];
