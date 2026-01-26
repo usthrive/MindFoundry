@@ -7,7 +7,9 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import BottomNav from '@/components/navigation/BottomNav'
 import { CelebrationModal } from '@/components/celebrations'
 import DevTierPanel from '@/components/dev/DevTierPanel'
+import AdminRoute from '@/components/auth/AdminRoute'
 import AuthPage from '@/pages/AuthPage'
+import AdminPage from '@/pages/AdminPage'
 import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import ChildSelectPage from '@/pages/ChildSelectPage'
@@ -94,6 +96,15 @@ function App() {
               <ProtectedRoute>
                 <VideoWatchPage />
               </ProtectedRoute>
+            }
+          />
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
             }
           />
           <Route path="/test-levels" element={<TestLevelsPage />} />
