@@ -38,6 +38,7 @@ const PerformanceTrendChart = ({
   const SINGLE_CHART_HEIGHT = 140
   const CHART_PADDING = 30
   const POINT_RADIUS = 5
+  const VIEWBOX_WIDTH = 1000  // Fixed viewBox width for SVG path coordinates
 
   // Calculate chart metrics
   const chartData = useMemo(() => {
@@ -94,7 +95,6 @@ const PerformanceTrendChart = ({
   }
 
   const { sessions: displaySessions, maxTimeEfficiency, avgAccuracy, avgTimeEfficiency, accuracyTrend, timeTrend } = chartData
-  const chartWidth = 100 // percentage
 
   // Convert value to Y position for accuracy chart (0-100%)
   const getAccuracyY = (value: number) => SINGLE_CHART_HEIGHT - (value / 100) * (SINGLE_CHART_HEIGHT - CHART_PADDING)
@@ -102,17 +102,23 @@ const PerformanceTrendChart = ({
   // Convert value to Y position for speed chart (0-maxTimeEfficiency%)
   const getSpeedY = (value: number) => SINGLE_CHART_HEIGHT - (value / maxTimeEfficiency) * (SINGLE_CHART_HEIGHT - CHART_PADDING)
 
-  // Get X position for each point
+  // Get X position for each point (returns absolute viewBox coordinate)
   const getX = (index: number) => {
-    const usableWidth = chartWidth - 10 // Leave some padding
+    const usableWidth = VIEWBOX_WIDTH * 0.9 // 90% of viewBox width, leaving padding
+    const padding = VIEWBOX_WIDTH * 0.05 // 5% padding on each side
+    return padding + (index / (displaySessions.length - 1 || 1)) * usableWidth
+  }
+
+  // Get X as percentage (for HTML positioning)
+  const getXPercent = (index: number) => {
+    const usableWidth = 90 // 90% of width
     return 5 + (index / (displaySessions.length - 1 || 1)) * usableWidth
   }
 
-  // Generate SVG path for a line
+  // Generate SVG path for a line (uses absolute viewBox coordinates)
   const generatePath = (values: number[], getY: (v: number) => number) => {
     if (values.length === 0) return ''
-
-    const points = values.map((v, i) => `${getX(i)}%,${getY(v)}`)
+    const points = values.map((v, i) => `${getX(i)},${getY(v)}`)
     return `M ${points.join(' L ')}`
   }
 
@@ -200,13 +206,19 @@ const PerformanceTrendChart = ({
 
             {/* Accuracy chart area */}
             <div className="ml-10 relative" style={{ height: SINGLE_CHART_HEIGHT }}>
-              <svg width="100%" height={SINGLE_CHART_HEIGHT} className="overflow-visible">
+              <svg
+                width="100%"
+                height={SINGLE_CHART_HEIGHT}
+                viewBox={`0 0 ${VIEWBOX_WIDTH} ${SINGLE_CHART_HEIGHT}`}
+                preserveAspectRatio="none"
+                className="overflow-visible"
+              >
                 {/* Grid lines */}
                 {[0, 20, 40, 60, 80, 100].map(pct => (
                   <line
                     key={pct}
-                    x1="0%"
-                    x2="100%"
+                    x1={0}
+                    x2={VIEWBOX_WIDTH}
                     y1={getAccuracyY(pct)}
                     y2={getAccuracyY(pct)}
                     stroke="#e5e7eb"
@@ -217,9 +229,9 @@ const PerformanceTrendChart = ({
 
                 {/* Target zone highlight (80%+) */}
                 <rect
-                  x="0%"
+                  x={0}
                   y={getAccuracyY(100)}
-                  width="100%"
+                  width={VIEWBOX_WIDTH}
                   height={getAccuracyY(80) - getAccuracyY(100)}
                   fill="#dcfce7"
                   opacity="0.3"
@@ -227,8 +239,8 @@ const PerformanceTrendChart = ({
 
                 {/* Target line at 80% */}
                 <line
-                  x1="0%"
-                  x2="100%"
+                  x1={0}
+                  x2={VIEWBOX_WIDTH}
                   y1={accuracyTargetY}
                   y2={accuracyTargetY}
                   stroke="#22c55e"
@@ -236,7 +248,7 @@ const PerformanceTrendChart = ({
                   strokeDasharray="6,4"
                 />
                 <text
-                  x="100%"
+                  x={VIEWBOX_WIDTH}
                   y={accuracyTargetY - 5}
                   textAnchor="end"
                   className="text-[10px] fill-green-600"
@@ -260,7 +272,7 @@ const PerformanceTrendChart = ({
                 {displaySessions.map((session, i) => (
                   <g key={`acc-${i}`}>
                     <circle
-                      cx={`${getX(i)}%`}
+                      cx={getX(i)}
                       cy={getAccuracyY(session.firstTryAccuracy)}
                       r={POINT_RADIUS}
                       fill="#22c55e"
@@ -296,13 +308,19 @@ const PerformanceTrendChart = ({
 
             {/* Speed chart area */}
             <div className="ml-10 relative" style={{ height: SINGLE_CHART_HEIGHT }}>
-              <svg width="100%" height={SINGLE_CHART_HEIGHT} className="overflow-visible">
+              <svg
+                width="100%"
+                height={SINGLE_CHART_HEIGHT}
+                viewBox={`0 0 ${VIEWBOX_WIDTH} ${SINGLE_CHART_HEIGHT}`}
+                preserveAspectRatio="none"
+                className="overflow-visible"
+              >
                 {/* Grid lines */}
                 {[0, 0.25, 0.5, 0.75, 1].map(pct => (
                   <line
                     key={pct}
-                    x1="0%"
-                    x2="100%"
+                    x1={0}
+                    x2={VIEWBOX_WIDTH}
                     y1={getSpeedY(pct * maxTimeEfficiency)}
                     y2={getSpeedY(pct * maxTimeEfficiency)}
                     stroke="#e5e7eb"
@@ -312,9 +330,9 @@ const PerformanceTrendChart = ({
 
                 {/* Target zone highlight (100%+) - fast zone */}
                 <rect
-                  x="0%"
+                  x={0}
                   y={getSpeedY(maxTimeEfficiency)}
-                  width="100%"
+                  width={VIEWBOX_WIDTH}
                   height={getSpeedY(100) - getSpeedY(maxTimeEfficiency)}
                   fill="#dbeafe"
                   opacity="0.3"
@@ -322,8 +340,8 @@ const PerformanceTrendChart = ({
 
                 {/* Target line at 100% (on-target speed) */}
                 <line
-                  x1="0%"
-                  x2="100%"
+                  x1={0}
+                  x2={VIEWBOX_WIDTH}
                   y1={speedTargetY}
                   y2={speedTargetY}
                   stroke="#3b82f6"
@@ -331,7 +349,7 @@ const PerformanceTrendChart = ({
                   strokeDasharray="6,4"
                 />
                 <text
-                  x="100%"
+                  x={VIEWBOX_WIDTH}
                   y={speedTargetY - 5}
                   textAnchor="end"
                   className="text-[10px] fill-blue-600"
@@ -355,7 +373,7 @@ const PerformanceTrendChart = ({
                 {displaySessions.map((session, i) => (
                   <g key={`speed-${i}`}>
                     <circle
-                      cx={`${getX(i)}%`}
+                      cx={getX(i)}
                       cy={getSpeedY(session.timeEfficiency)}
                       r={POINT_RADIUS}
                       fill="#3b82f6"
@@ -377,7 +395,7 @@ const PerformanceTrendChart = ({
                     {/* First date */}
                     <span
                       className="absolute text-center"
-                      style={{ left: `${getX(0)}%`, transform: 'translateX(-50%)' }}
+                      style={{ left: `${getXPercent(0)}%`, transform: 'translateX(-50%)' }}
                     >
                       {displaySessions[0].date}
                     </span>
@@ -385,7 +403,7 @@ const PerformanceTrendChart = ({
                     {displaySessions.length > 2 && (
                       <span
                         className="absolute text-center"
-                        style={{ left: `${getX(Math.floor(displaySessions.length / 2))}%`, transform: 'translateX(-50%)' }}
+                        style={{ left: `${getXPercent(Math.floor(displaySessions.length / 2))}%`, transform: 'translateX(-50%)' }}
                       >
                         {displaySessions[Math.floor(displaySessions.length / 2)].date}
                       </span>
@@ -394,7 +412,7 @@ const PerformanceTrendChart = ({
                     {displaySessions.length > 1 && (
                       <span
                         className="absolute text-center"
-                        style={{ left: `${getX(displaySessions.length - 1)}%`, transform: 'translateX(-50%)' }}
+                        style={{ left: `${getXPercent(displaySessions.length - 1)}%`, transform: 'translateX(-50%)' }}
                       >
                         {displaySessions[displaySessions.length - 1].date}
                       </span>

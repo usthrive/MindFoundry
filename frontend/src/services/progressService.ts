@@ -1187,3 +1187,41 @@ export async function getQuadrantData(
     timeEfficiency: d.timeEfficiency
   }))
 }
+
+// ============================================
+// Daily Save Limit Functions
+// ============================================
+
+/**
+ * Get remaining daily saves for a child
+ * Children can use "Save & Exit" up to 2 times per day
+ */
+export async function getRemainingDailySaves(childId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('get_remaining_daily_saves', {
+    p_child_id: childId
+  })
+
+  if (error) {
+    console.error('Error getting remaining saves:', error)
+    return 2 // Default to 2 if error (be permissive)
+  }
+
+  return data ?? 2
+}
+
+/**
+ * Use one of the child's daily saves
+ * Returns: remaining saves (0 or 1), or -1 if no saves remaining
+ */
+export async function useDailySave(childId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('use_daily_save', {
+    p_child_id: childId
+  })
+
+  if (error) {
+    console.error('Error using daily save:', error)
+    return -1 // Indicate failure
+  }
+
+  return data ?? -1
+}

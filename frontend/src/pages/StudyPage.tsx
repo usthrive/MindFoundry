@@ -16,7 +16,11 @@ import { useSessionPersistence, type PersistedSession, type DistractionRecord } 
 import { useEnhancedTimer } from '@/hooks/useEnhancedTimer'
 import EnhancedTimerDisplay from '@/components/session/EnhancedTimerDisplay'
 import SessionProgress from '@/components/session/SessionProgress'
+import SessionControls from '@/components/session/SessionControls'
+import TimeoutWarningModal from '@/components/session/TimeoutWarningModal'
 import WorksheetInfo from '@/components/session/WorksheetInfo'
+import { useIdleTimeout } from '@/hooks/useIdleTimeout'
+import { useDailySaveLimit } from '@/hooks/useDailySaveLimit'
 import ParentVerification from '@/components/auth/ParentVerification'
 import WorksheetView, { type WorksheetViewRef, type PageState } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
@@ -181,6 +185,95 @@ export default function StudyPage() {
     onVisibilityChange: handleVisibilityChange,
     autoStart: false  // We'll start it when the session is created
   })
+
+  // State for timeout warning modal
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+
+  // Handle session timeout (auto-terminate after 15 min of inactivity)
+  // Clears all progress (LOST) and navigates to child select page
+  const handleSessionTimeout = useCallback(() => {
+    // Clear localStorage (loses all progress)
+    clearSession()
+
+    // Stop timer
+    enhancedTimer.stop()
+
+    // Clear timeout warning
+    setShowTimeoutWarning(false)
+
+    // Navigate to child select page
+    navigate('/select-child')
+  }, [clearSession, enhancedTimer, navigate])
+
+  // Idle timeout hook - 15 minutes total, warning at 12 minutes
+  const idleTimeout = useIdleTimeout({
+    timeoutMs: 15 * 60 * 1000,      // 15 minutes
+    warningMs: 12 * 60 * 1000,      // Warning at 12 minutes (3 min before timeout)
+    onWarning: () => setShowTimeoutWarning(true),
+    onTimeout: handleSessionTimeout,
+    enabled: sessionActive && !loading  // Only track when session is active
+  })
+
+  // Daily save limit hook - 2 saves per day per child
+  const dailySaveLimit = useDailySaveLimit({
+    childId: currentChild?.id,
+    fetchOnMount: true
+  })
+
+  // Handle end session (user clicks End Session button)
+  // Clears all progress (LOST) and navigates to child select page
+  const handleEndSession = useCallback(() => {
+    // Clear localStorage (loses all progress)
+    clearSession()
+
+    // Stop timer
+    enhancedTimer.stop()
+
+    // Clear timeout warning if showing
+    setShowTimeoutWarning(false)
+
+    // Navigate to child select page
+    navigate('/select-child')
+  }, [clearSession, enhancedTimer, navigate])
+
+  // Handle save progress (user clicks Save & Exit)
+  // Saves current position to database and navigates to child select page
+  const handleSaveProgress = useCallback(async () => {
+    if (!currentChild?.id) return
+
+    // Try to use a daily save
+    const success = await dailySaveLimit.consumeSave()
+    if (!success) {
+      setFeedback({
+        type: 'incorrect',
+        message: 'No saves remaining today. Try again tomorrow!',
+        show: true
+      })
+      setTimeout(() => setFeedback(prev => ({ ...prev, show: false })), 3000)
+      return
+    }
+
+    // Save current position to database
+    await updateCurrentPosition(currentChild.id, currentLevel, currentWorksheet)
+
+    // DON'T clear localStorage - keep page state for resumption
+    // localStorage contains problems, answers, results that we need to restore
+
+    // Stop timer
+    enhancedTimer.stop()
+
+    // Clear timeout warning if showing
+    setShowTimeoutWarning(false)
+
+    // Navigate to child select page
+    navigate('/select-child')
+  }, [currentChild?.id, currentLevel, currentWorksheet, dailySaveLimit, enhancedTimer, navigate])
+
+  // Handle continue from timeout warning
+  const handleContinueFromWarning = useCallback(() => {
+    setShowTimeoutWarning(false)
+    idleTimeout.reset()
+  }, [idleTimeout])
 
   // Check if current problem supports decimals
   const supportsDecimals = () => {
@@ -1091,8 +1184,12 @@ export default function StudyPage() {
   // Handler for page state changes from WorksheetView (for persistence)
   const handlePageStateChange = useCallback((pageState: PageState) => {
     currentPageStateRef.current = pageState
-    // NOTE: Don't clear restoredPageState here - it's needed for view mode recovery
-    // restoredPageState will be cleared when navigating to a NEW worksheet
+
+    // CRITICAL: Also update restoredPageState so view mode toggles restore correctly
+    // When user switches from worksheet mode to single-problem mode and back,
+    // WorksheetView remounts and receives initialPageState={restoredPageState}
+    // Without this update, it would receive stale data from initial page load
+    setRestoredPageState(pageState)
 
     // Save to localStorage immediately when page state changes (for answer persistence)
     if (currentChild && sessionId && sessionActive && !loading) {
@@ -1337,7 +1434,7 @@ export default function StudyPage() {
             label={getWorksheetLabel(currentLevel, currentWorksheet)}
           />
 
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <EnhancedTimerDisplay
               focusedTime={enhancedTimer.focusedTime}
               awayTime={enhancedTimer.awayTime}
@@ -1346,6 +1443,16 @@ export default function StudyPage() {
               isPaused={enhancedTimer.isPaused}
               distractionCount={enhancedTimer.distractionCount}
             />
+
+            {/* Session Controls - End/Save buttons */}
+            <SessionControls
+              onEndSession={handleEndSession}
+              onSaveProgress={handleSaveProgress}
+              savesRemaining={dailySaveLimit.savesRemaining}
+              canSave={dailySaveLimit.canSave}
+              isLoading={dailySaveLimit.isLoading}
+            />
+
             <SessionProgress completed={problemsCompleted} total={10} correct={problemsCorrect} />
           </div>
 
@@ -1703,6 +1810,14 @@ export default function StudyPage() {
           currentWorksheet,
         }}
         childId={currentChild?.id}
+      />
+
+      {/* Timeout Warning Modal - Shows when user is idle for too long */}
+      <TimeoutWarningModal
+        isOpen={showTimeoutWarning}
+        remainingSeconds={idleTimeout.secondsUntilTimeout}
+        onContinue={handleContinueFromWarning}
+        onEnd={handleSessionTimeout}
       />
     </div>
   )

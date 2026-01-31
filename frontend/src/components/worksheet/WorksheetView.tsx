@@ -131,7 +131,32 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     }
 
     // Check if we should restore from initialPageState
-    if (initialPageState && !initialPageStateConsumed.current) {
+    // CRITICAL: Only restore if problems array has data - prevents overwriting
+    // freshly generated problems with stale/empty localStorage data
+    if (initialPageState && initialPageState.problems?.length > 0 && !initialPageStateConsumed.current) {
+      // Normalize restored state to handle corrupted/legacy localStorage data
+      // This ensures all required fields exist and problems is a valid array
+      const normalizedProblems = Array.isArray(initialPageState.problems) ? initialPageState.problems : []
+
+      // Only proceed if we have valid problems after normalization
+      if (normalizedProblems.length === 0) {
+        console.warn('⚠️ Restored state had no valid problems array, will generate fresh')
+        // Don't consume or set gates - let normal generation flow happen
+        return
+      }
+
+      const normalized: PageState = {
+        problems: normalizedProblems,
+        answers: initialPageState.answers ?? {},
+        submitted: !!initialPageState.submitted,
+        results: initialPageState.results ?? {},
+        attemptCounts: initialPageState.attemptCounts ?? {},
+        hintLevels: initialPageState.hintLevels ?? {},
+        lockedProblems: initialPageState.lockedProblems ?? {},
+        firstAttemptResults: initialPageState.firstAttemptResults ?? {},
+        correctedProblems: initialPageState.correctedProblems ?? {},
+      }
+
       // Mark as consumed so we don't re-use on subsequent renders
       initialPageStateConsumed.current = true
       initialStateFor.current = { level, worksheet: worksheetNumber }
@@ -141,16 +166,16 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       restoredForKeyRef.current = worksheetKey
       restoringRef.current = true
 
-      console.log('📂 WorksheetView: Restoring from initialPageState for', worksheetKey)
+      console.log('📂 WorksheetView: Restoring from initialPageState for', worksheetKey, 'with', normalized.problems.length, 'problems')
 
-      // Use the provided page state
-      setPageStates({ 1: initialPageState })
+      // Use the normalized page state
+      setPageStates({ 1: normalized })
       setCurrentPage(1)
       setActiveIndex(0)
 
       // Calculate progress from the restored state
-      const correct = Object.values(initialPageState.results).filter(Boolean).length
-      const answered = Object.keys(initialPageState.answers).length
+      const correct = Object.values(normalized.results).filter(Boolean).length
+      const answered = Object.keys(normalized.answers).length
       setTotalCorrect(correct)
       setTotalAnswered(answered)
 
@@ -212,9 +237,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       return
     }
 
-    // Gate 2: Don't initialize if we already restored for this worksheet
-    if (restoredForKeyRef.current === worksheetKey) {
-      console.log('📂 WorksheetView: Skipping init - already restored for', worksheetKey)
+    // Gate 2: Don't initialize if we already restored PAGE 1 for this worksheet
+    // (Allow page 2+ to generate new problems normally)
+    if (restoredForKeyRef.current === worksheetKey && currentPage === 1) {
+      console.log('📂 WorksheetView: Skipping init - page 1 already restored for', worksheetKey)
       return
     }
 
