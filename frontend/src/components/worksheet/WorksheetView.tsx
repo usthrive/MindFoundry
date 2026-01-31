@@ -120,6 +120,16 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   // Reset all state when worksheet or level changes (for next worksheet)
   // BUT use initialPageState if provided for session restoration
   useEffect(() => {
+    // FIX: If initialPageState is undefined but we have stale gates, clear them
+    // This handles the case where user toggles view modes (Single ↔ Multi-Problem)
+    if (!initialPageState && restoredForKeyRef.current === worksheetKey) {
+      console.log('📂 WorksheetView: Clearing stale gates for', worksheetKey)
+      restoredForKeyRef.current = null
+      initialStateFor.current = null
+      initialPageStateConsumed.current = false
+      // Continue to the reset logic below (don't return)
+    }
+
     // Check if we should restore from initialPageState
     if (initialPageState && !initialPageStateConsumed.current) {
       // Mark as consumed so we don't re-use on subsequent renders

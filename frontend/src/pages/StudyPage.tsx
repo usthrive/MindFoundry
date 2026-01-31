@@ -1091,10 +1091,8 @@ export default function StudyPage() {
   // Handler for page state changes from WorksheetView (for persistence)
   const handlePageStateChange = useCallback((pageState: PageState) => {
     currentPageStateRef.current = pageState
-    // Clear restoredPageState after first update (it's been consumed)
-    if (restoredPageState) {
-      setRestoredPageState(undefined)
-    }
+    // NOTE: Don't clear restoredPageState here - it's needed for view mode recovery
+    // restoredPageState will be cleared when navigating to a NEW worksheet
 
     // Save to localStorage immediately when page state changes (for answer persistence)
     if (currentChild && sessionId && sessionActive && !loading) {
@@ -1119,7 +1117,7 @@ export default function StudyPage() {
       }
       saveSession(sessionToSave)
     }
-  }, [restoredPageState, currentChild, sessionId, sessionActive, loading, currentLevel, currentWorksheet, problemsCompleted, currentProblem, enhancedTimer, distractions, problemsCorrect, firstTryCorrect, withHintsCorrect, totalIncorrect, sessionStartTime, saveSession])
+  }, [currentChild, sessionId, sessionActive, loading, currentLevel, currentWorksheet, problemsCompleted, currentProblem, enhancedTimer, distractions, problemsCorrect, firstTryCorrect, withHintsCorrect, totalIncorrect, sessionStartTime, saveSession])
 
   const handleLevelChange = async (level: KumonLevel) => {
     if (!parentMode) {
