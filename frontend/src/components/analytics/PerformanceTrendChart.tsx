@@ -38,7 +38,6 @@ const PerformanceTrendChart = ({
   const SINGLE_CHART_HEIGHT = 140
   const CHART_PADDING = 30
   const POINT_RADIUS = 5
-  const CHART_GAP = 20
 
   // Calculate chart metrics
   const chartData = useMemo(() => {

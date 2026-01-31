@@ -87,7 +87,7 @@ function DefaultUpgradePrompt({
  * Compact upgrade badge (for inline usage)
  */
 export function FeatureUpgradeBadge({
-  featureId,
+  featureId: _featureId,
   requiredTier,
   className = '',
 }: {

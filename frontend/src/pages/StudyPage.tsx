@@ -147,8 +147,6 @@ export default function StudyPage() {
     loadSession,
     clearSession,
     createNewSession: createPersistedSession,
-    recordAnswer,
-    recordDistraction,
   } = useSessionPersistence()
 
   // Handle visibility change callback for enhanced timer

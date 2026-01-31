@@ -25,7 +25,7 @@ const formatTime = (seconds: number): string => {
 }
 
 const EnhancedTimerDisplay = ({
-  focusedTime,
+  focusedTime: _focusedTime,
   awayTime,
   totalTime,
   focusScore,

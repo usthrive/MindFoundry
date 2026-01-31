@@ -28,7 +28,6 @@ import {
 import ConceptTimeChart from '@/components/analytics/ConceptTimeChart'
 import PerformanceTrendChart from '@/components/analytics/PerformanceTrendChart'
 import PerformanceQuadrantChart from '@/components/analytics/PerformanceQuadrantChart'
-import { LEVEL_CONFIGS } from '@/data/levelConfig'
 import { getChildBadges, type Badge } from '@/utils/badgeSystem'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
@@ -135,8 +134,6 @@ export default function ProgressDashboard() {
 
   const loadChildProgress = async (child: Child) => {
     setLoading(true)
-    // Get SCT for child's current level
-    const levelConfig = LEVEL_CONFIGS.find(c => c.level === child.current_level)
     const [progress, sessions, childBadges, lifetime, trend, levels, timeData, focus, perfTrend] = await Promise.all([
       getWorksheetProgress(child.id, child.current_level as KumonLevel),
       getPracticeSessions(child.id, 30),

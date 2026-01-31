@@ -122,8 +122,7 @@ const ConceptTimeChart = ({
 
         {/* Session Bars */}
         <div className="space-y-3 pt-6">
-          {sessions.slice(-10).map((session, index) => {
-            const totalWidth = (session.totalTime / maxTime) * 100
+          {sessions.slice(-10).map((session) => {
             const focusedWidth = (session.focusedTime / maxTime) * 100
             const awayWidth = (session.awayTime / maxTime) * 100
 
