@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCelebration } from '@/contexts/CelebrationContext'
 import { useNavigationGuard } from '@/contexts/NavigationGuardContext'
@@ -12,15 +12,18 @@ import InputDisplay from '@/components/input/InputDisplay'
 import TapToSelect from '@/components/input/TapToSelect'
 import ProblemDisplay from '@/components/problem/ProblemDisplay'
 import SequenceDisplay from '@/components/ui/SequenceDisplay'
-import Timer from '@/components/session/Timer'
+import { useSessionPersistence, type PersistedSession, type DistractionRecord } from '@/hooks/useSessionPersistence'
+import { useEnhancedTimer } from '@/hooks/useEnhancedTimer'
+import EnhancedTimerDisplay from '@/components/session/EnhancedTimerDisplay'
 import SessionProgress from '@/components/session/SessionProgress'
 import WorksheetInfo from '@/components/session/WorksheetInfo'
 import ParentVerification from '@/components/auth/ParentVerification'
-import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView'
+import WorksheetView, { type WorksheetViewRef, type PageState } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { ConceptIntroModal } from '@/components/concept-intro'
 import ConceptRoadmap from '@/components/parent/ConceptRoadmap'
+import FocusModeInstructions from '@/components/parent/FocusModeInstructions'
 import { VideoPlayerModal, VideoSuggestionBanner } from '@/components/video'
 import { LEVEL_CONFIGS } from '@/data/levelConfig'
 import { useVideoPlayer } from '@/hooks/useVideoPlayer'
@@ -42,7 +45,8 @@ import {
   completePracticeSession,
   saveProblemAttempt,
   updateChildStats,
-  getChildProfile
+  getChildProfile,
+  type FocusMetrics
 } from '@/services/progressService'
 import { checkAndAwardBadges } from '@/utils/badgeSystem'
 import { celebrationTrigger } from '@/services/achievements'
@@ -55,6 +59,7 @@ export default function StudyPage() {
   const { triggerCelebration } = useCelebration()
   const { navigateWithGuard } = useNavigationGuard()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [inputValue, setInputValue] = useState('')
   const [sequenceAnswers, setSequenceAnswers] = useState<Record<number, string>>({})
@@ -84,6 +89,11 @@ export default function StudyPage() {
   const [canSubmitWorksheet, setCanSubmitWorksheet] = useState(false) // All questions answered
   const worksheetViewRef = useRef<WorksheetViewRef>(null)
 
+  // Restored page state for WorksheetView (from localStorage persistence)
+  const [restoredPageState, setRestoredPageState] = useState<PageState | undefined>(undefined)
+  // Current page state from WorksheetView (for persistence)
+  const currentPageStateRef = useRef<PageState | null>(null)
+
   // Hint system state for single-problem mode
   const [attemptCount, setAttemptCount] = useState(0)  // Wrong attempts for current problem
   const [currentHintLevel, setCurrentHintLevel] = useState<HintLevel | null>(null)
@@ -92,6 +102,15 @@ export default function StudyPage() {
   // Post-completion feedback prompt
   const [showCompletionFeedback, setShowCompletionFeedback] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+
+  // Welcome back toast state (shows when user returns after being away)
+  const [welcomeBackToast, setWelcomeBackToast] = useState<{ show: boolean; duration: number } | null>(null)
+
+  // Distractions tracking for this session
+  const [distractions, setDistractions] = useState<DistractionRecord[]>([])
+
+  // Ref to track when user left (for distraction recording)
+  const leftAtRef = useRef<number | null>(null)
 
   // Concept Introduction Modal state
   const [showConceptIntro, setShowConceptIntro] = useState(false)
@@ -120,6 +139,49 @@ export default function StudyPage() {
     conceptId: currentConceptId,
     conceptName: currentConceptId.replace(/_/g, ' '),
     enabled: sessionActive && !!currentChild,
+  })
+
+  // Session persistence hook
+  const {
+    saveSession,
+    loadSession,
+    clearSession,
+    createNewSession: createPersistedSession,
+    recordAnswer,
+    recordDistraction,
+  } = useSessionPersistence()
+
+  // Handle visibility change callback for enhanced timer
+  const handleVisibilityChange = useCallback((isVisible: boolean, awayDurationSeconds?: number) => {
+    if (!isVisible) {
+      // User left - record the timestamp
+      leftAtRef.current = Date.now()
+    } else if (awayDurationSeconds !== undefined && awayDurationSeconds >= 5) {
+      // User returned after being away 5+ seconds - show welcome back toast
+      setWelcomeBackToast({ show: true, duration: awayDurationSeconds })
+
+      // Record the distraction
+      if (leftAtRef.current) {
+        const newDistraction: DistractionRecord = {
+          leftAt: leftAtRef.current,
+          returnedAt: Date.now(),
+          duration: awayDurationSeconds
+        }
+        setDistractions(prev => [...prev, newDistraction])
+        leftAtRef.current = null
+      }
+
+      // Auto-dismiss toast after 4 seconds
+      setTimeout(() => {
+        setWelcomeBackToast(null)
+      }, 4000)
+    }
+  }, [])
+
+  // Enhanced timer with focus tracking
+  const enhancedTimer = useEnhancedTimer({
+    onVisibilityChange: handleVisibilityChange,
+    autoStart: false  // We'll start it when the session is created
   })
 
   // Check if current problem supports decimals
@@ -239,13 +301,64 @@ export default function StudyPage() {
     }
   }, [user, currentChild, navigate])
 
-  // Load child's progress on mount
+  // Load child's progress on mount (with session restoration from localStorage)
   useEffect(() => {
     const loadProgress = async () => {
       if (!currentChild) return
 
       setLoading(true)
       try {
+        // First, check if there's a persisted session to restore
+        const persistedSession = loadSession(currentChild.id)
+
+        if (persistedSession) {
+          // Silently restore the session
+          console.log('📂 Restoring persisted session:', persistedSession.sessionId)
+
+          // IMPORTANT: Set restoredPageState FIRST, before level/worksheet
+          // This ensures WorksheetView receives it before processing the level/worksheet change
+          if (persistedSession.worksheetPageState) {
+            console.log('📂 Restoring full worksheet page state with problems and answers')
+            setRestoredPageState(persistedSession.worksheetPageState)
+          }
+
+          setCurrentLevel(persistedSession.level)
+          setCurrentWorksheet(persistedSession.worksheet)
+          setSessionId(persistedSession.sessionId)
+          setProblemsCompleted(persistedSession.problemsCompleted)
+          setProblemsCorrect(persistedSession.problemsCorrect)
+          setFirstTryCorrect(persistedSession.firstTryCorrect)
+          setWithHintsCorrect(persistedSession.withHintsCorrect)
+          setTotalIncorrect(persistedSession.totalIncorrect)
+          setDistractions(persistedSession.distractions)
+
+          // Restore timer state
+          enhancedTimer.restoreFromState(persistedSession.timer)
+          enhancedTimer.start()
+
+          // Restore the exact problem for single-problem mode (legacy, worksheetPageState is preferred)
+          try {
+            if (persistedSession.currentProblem) {
+              console.log('📂 Restoring persisted problem (legacy)')
+              setCurrentProblem(persistedSession.currentProblem)
+            } else if (!persistedSession.worksheetPageState) {
+              // Only generate new problem if we don't have worksheetPageState
+              console.log('📂 No persisted state, generating new problem')
+              setCurrentProblem(generateProblem(persistedSession.level, persistedSession.worksheet))
+            }
+          } catch (error) {
+            console.error('Error restoring/generating problem during restore:', error)
+            // Clear the corrupted session and start fresh
+            clearSession()
+          }
+
+          // Pre-load seen concepts
+          await loadSeenConceptsFromDB(currentChild.id)
+          setLoading(false)
+          return
+        }
+
+        // No persisted session - load from database as normal
         const position = await getCurrentPosition(currentChild.id)
 
         if (position) {
@@ -289,6 +402,21 @@ export default function StudyPage() {
         setSessionId(newSessionId)
         setSessionStartTime(Date.now())
 
+        // Start the enhanced timer for new sessions
+        enhancedTimer.reset()
+        enhancedTimer.start()
+
+        // Create persisted session for localStorage
+        if (newSessionId) {
+          const newPersistedSession = createPersistedSession(
+            currentChild.id,
+            newSessionId,
+            levelToUse,
+            worksheetToUse
+          )
+          saveSession(newPersistedSession)
+        }
+
         // Pre-load seen concepts from database and cache in localStorage
         await loadSeenConceptsFromDB(currentChild.id)
 
@@ -315,7 +443,48 @@ export default function StudyPage() {
     }
 
     loadProgress()
-  }, [currentChild])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChild, location.pathname]) // Re-run when navigating back to this page
+
+  // Persist session state to localStorage whenever relevant state changes
+  useEffect(() => {
+    if (!currentChild || !sessionId || !sessionActive || loading) return
+
+    const sessionToSave: PersistedSession = {
+      childId: currentChild.id,
+      sessionId,
+      level: currentLevel,
+      worksheet: currentWorksheet,
+      questionIndex: problemsCompleted,
+      currentProblem: currentProblem || undefined, // Legacy - keeping for backwards compatibility
+      worksheetPageState: currentPageStateRef.current || undefined, // Full page state for restoration
+      answers: {}, // We don't need to persist individual answers for restore
+      timer: enhancedTimer.getTimerState(),
+      distractions,
+      problemsCompleted,
+      problemsCorrect,
+      firstTryCorrect,
+      withHintsCorrect,
+      totalIncorrect,
+      createdAt: sessionStartTime,
+      lastSavedAt: Date.now()
+    }
+    saveSession(sessionToSave)
+  }, [
+    currentChild,
+    sessionId,
+    sessionActive,
+    loading,
+    currentLevel,
+    currentWorksheet,
+    problemsCompleted,
+    problemsCorrect,
+    firstTryCorrect,
+    withHintsCorrect,
+    totalIncorrect,
+    distractions,
+    currentProblem
+  ])
 
   // Synchronously update ref when showParentChallenge changes
   // This ensures the keyboard handler can check modal state without race conditions
@@ -702,11 +871,36 @@ export default function StudyPage() {
   const handleSessionComplete = async (score: number, totalProblems: number) => {
     if (!currentChild || !sessionId) return
 
-    const totalTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
+    // Stop the enhanced timer and get final metrics
+    enhancedTimer.stop()
+    const totalTimeSpent = enhancedTimer.totalTime
+
+    // Debug: Log timer values
+    console.log('[handleSessionComplete] Enhanced timer values:', {
+      focusedTime: enhancedTimer.focusedTime,
+      awayTime: enhancedTimer.awayTime,
+      totalTime: enhancedTimer.totalTime,
+      distractionCount: enhancedTimer.distractionCount,
+      focusScore: enhancedTimer.focusScore,
+      isRunning: enhancedTimer.isRunning
+    })
+
+    // Prepare focus metrics for database
+    const focusMetrics: FocusMetrics = {
+      focusedTime: enhancedTimer.focusedTime,
+      awayTime: enhancedTimer.awayTime,
+      distractionCount: enhancedTimer.distractionCount,
+      focusScore: enhancedTimer.focusScore,
+      distractions
+    }
+    console.log('[handleSessionComplete] Focus metrics to save:', focusMetrics)
+
+    // Clear the persisted session from localStorage
+    clearSession()
 
     // Run independent database operations in parallel for faster completion
     await Promise.all([
-      completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id),
+      completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id, focusMetrics),
       updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems),
       updateChildStats(currentChild.id, totalProblems, score),
     ])
@@ -780,6 +974,7 @@ export default function StudyPage() {
     setFirstTryCorrect(0)
     setWithHintsCorrect(0)
     setTotalIncorrect(0)
+    setDistractions([])
     setCurrentWorksheet(nextWorksheet)
     setSessionActive(true)
     setCurrentProblem(generateProblem(currentLevel, nextWorksheet))
@@ -788,6 +983,21 @@ export default function StudyPage() {
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+
+    // Reset and restart the enhanced timer for the new session
+    enhancedTimer.reset()
+    enhancedTimer.start()
+
+    // Create a new persisted session for localStorage
+    if (newSessionId) {
+      const newPersistedSession = createPersistedSession(
+        currentChild.id,
+        newSessionId,
+        currentLevel,
+        nextWorksheet
+      )
+      saveSession(newPersistedSession)
+    }
 
     // Check for new concepts to introduce at the next worksheet
     await checkForNewConcepts(currentLevel, nextWorksheet)
@@ -880,6 +1090,39 @@ export default function StudyPage() {
     worksheetViewRef.current?.handleInput(value)
   }
 
+  // Handler for page state changes from WorksheetView (for persistence)
+  const handlePageStateChange = useCallback((pageState: PageState) => {
+    currentPageStateRef.current = pageState
+    // Clear restoredPageState after first update (it's been consumed)
+    if (restoredPageState) {
+      setRestoredPageState(undefined)
+    }
+
+    // Save to localStorage immediately when page state changes (for answer persistence)
+    if (currentChild && sessionId && sessionActive && !loading) {
+      const sessionToSave: PersistedSession = {
+        childId: currentChild.id,
+        sessionId,
+        level: currentLevel,
+        worksheet: currentWorksheet,
+        questionIndex: problemsCompleted,
+        currentProblem: currentProblem || undefined,
+        worksheetPageState: pageState, // Use the new pageState directly
+        answers: {},
+        timer: enhancedTimer.getTimerState(),
+        distractions,
+        problemsCompleted,
+        problemsCorrect,
+        firstTryCorrect,
+        withHintsCorrect,
+        totalIncorrect,
+        createdAt: sessionStartTime,
+        lastSavedAt: Date.now()
+      }
+      saveSession(sessionToSave)
+    }
+  }, [restoredPageState, currentChild, sessionId, sessionActive, loading, currentLevel, currentWorksheet, problemsCompleted, currentProblem, enhancedTimer, distractions, problemsCorrect, firstTryCorrect, withHintsCorrect, totalIncorrect, sessionStartTime, saveSession])
+
   const handleLevelChange = async (level: KumonLevel) => {
     if (!parentMode) {
       alert('⚠️ Parent Mode required to change levels.\n\nClick "🔓 Parent Controls" to enable.')
@@ -887,6 +1130,9 @@ export default function StudyPage() {
     }
 
     if (!currentChild) return
+
+    // Clear any existing persisted session
+    clearSession()
 
     setCurrentLevel(level)
     setCurrentWorksheet(1)
@@ -898,6 +1144,7 @@ export default function StudyPage() {
     setFirstTryCorrect(0)
     setWithHintsCorrect(0)
     setTotalIncorrect(0)
+    setDistractions([])
     setSessionActive(true)
 
     // Update database
@@ -907,6 +1154,21 @@ export default function StudyPage() {
     const newSessionId = await createPracticeSession(currentChild.id, level)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+
+    // Reset and start enhanced timer
+    enhancedTimer.reset()
+    enhancedTimer.start()
+
+    // Create new persisted session
+    if (newSessionId) {
+      const newPersistedSession = createPersistedSession(
+        currentChild.id,
+        newSessionId,
+        level,
+        1
+      )
+      saveSession(newPersistedSession)
+    }
 
     // Check for new concepts to introduce at the start of the new level
     await checkForNewConcepts(level, 1)
@@ -920,6 +1182,9 @@ export default function StudyPage() {
 
     if (!currentChild) return
 
+    // Clear any existing persisted session
+    clearSession()
+
     setCurrentWorksheet(worksheetNum)
     setInputValue('')
     setCurrentProblem(generateProblem(currentLevel, worksheetNum))
@@ -929,6 +1194,7 @@ export default function StudyPage() {
     setFirstTryCorrect(0)
     setWithHintsCorrect(0)
     setTotalIncorrect(0)
+    setDistractions([])
     setSessionActive(true)
 
     // Update database
@@ -938,6 +1204,21 @@ export default function StudyPage() {
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
+
+    // Reset and start enhanced timer
+    enhancedTimer.reset()
+    enhancedTimer.start()
+
+    // Create new persisted session
+    if (newSessionId) {
+      const newPersistedSession = createPersistedSession(
+        currentChild.id,
+        newSessionId,
+        currentLevel,
+        worksheetNum
+      )
+      saveSession(newPersistedSession)
+    }
 
     // Check for new concepts to introduce at the jumped worksheet
     await checkForNewConcepts(currentLevel, worksheetNum)
@@ -1025,6 +1306,24 @@ export default function StudyPage() {
           </div>
         )}
 
+        {/* Welcome Back Toast */}
+        {welcomeBackToast?.show && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg px-6 py-3 shadow-lg flex items-center gap-3">
+              <span className="text-2xl">👋</span>
+              <div>
+                <p className="font-semibold text-blue-900">Welcome back!</p>
+                <p className="text-sm text-blue-700">
+                  You were away for {welcomeBackToast.duration < 60
+                    ? `${welcomeBackToast.duration} seconds`
+                    : `${Math.floor(welcomeBackToast.duration / 60)} minute${Math.floor(welcomeBackToast.duration / 60) !== 1 ? 's' : ''}`
+                  }. Let's keep going!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Feedback */}
         <Feedback
           type={feedback.type}
@@ -1043,7 +1342,14 @@ export default function StudyPage() {
           />
 
           <div className="mb-6 flex items-center justify-between">
-            <Timer isRunning={true} />
+            <EnhancedTimerDisplay
+              focusedTime={enhancedTimer.focusedTime}
+              awayTime={enhancedTimer.awayTime}
+              totalTime={enhancedTimer.totalTime}
+              focusScore={enhancedTimer.focusScore}
+              isPaused={enhancedTimer.isPaused}
+              distractionCount={enhancedTimer.distractionCount}
+            />
             <SessionProgress completed={problemsCompleted} total={10} correct={problemsCorrect} />
           </div>
 
@@ -1059,9 +1365,11 @@ export default function StudyPage() {
                 level={currentLevel}
                 worksheetNumber={currentWorksheet}
                 questionsPerPageMode={getQuestionsPerPageMode()}
+                initialPageState={restoredPageState}
                 onPageComplete={handleWorksheetPageComplete}
                 onWorksheetComplete={handleWorksheetComplete}
                 onAllAnsweredChange={setCanSubmitWorksheet}
+                onPageStateChange={handlePageStateChange}
                 sessionActive={sessionActive}
               />
 
@@ -1321,6 +1629,11 @@ export default function StudyPage() {
                 currentWorksheet={currentWorksheet}
                 onJumpToWorksheet={handleWorksheetJump}
               />
+
+              {/* Focus Mode Instructions - Help parents enable Guided Access / Screen Pinning */}
+              <div className="mt-4">
+                <FocusModeInstructions />
+              </div>
             </div>
           )}
 

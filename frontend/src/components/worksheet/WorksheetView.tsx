@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react'
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import WorksheetProblem from './WorksheetProblem'
@@ -30,6 +30,7 @@ export interface WorksheetViewProps {
   level: KumonLevel
   worksheetNumber: number
   questionsPerPageMode?: QuestionsPerPageMode
+  initialPageState?: PageState  // For session restoration - bypasses problem regeneration
   onPageComplete: (results: {
     correct: number
     total: number
@@ -39,6 +40,7 @@ export interface WorksheetViewProps {
   onWorksheetComplete: (totalCorrect: number, totalProblems: number) => void
   onAnswerChange?: (problemIndex: number, answer: string) => void
   onAllAnsweredChange?: (allAnswered: boolean) => void
+  onPageStateChange?: (pageState: PageState) => void  // Callback when page state changes (for persistence)
   sessionActive: boolean
 }
 
@@ -46,7 +48,8 @@ export interface WorksheetViewRef {
   handleInput: (value: number | string) => void
 }
 
-interface PageState {
+// Exported so it can be used for session persistence
+export interface PageState {
   problems: Problem[]
   answers: Record<number, string>
   submitted: boolean
@@ -84,10 +87,12 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   level,
   worksheetNumber,
   questionsPerPageMode = 'standard',
+  initialPageState,
   onPageComplete,
   onWorksheetComplete,
   onAnswerChange,
   onAllAnsweredChange,
+  onPageStateChange,
   sessionActive,
 }, ref) => {
   const problemsPerPage = getProblemsPerPage(level, questionsPerPageMode)
@@ -99,14 +104,81 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const [totalCorrect, setTotalCorrect] = useState(0)
   const [totalAnswered, setTotalAnswered] = useState(0)
 
+  // Stable key for this worksheet (used for restore gating)
+  const worksheetKey = `${level}:${worksheetNumber}`
+
+  // Track if we've consumed the initialPageState to avoid re-using it
+  const initialPageStateConsumed = useRef(false)
+  // Track the level/worksheet that initialPageState was for
+  const initialStateFor = useRef<{ level: string; worksheet: number } | null>(null)
+
+  // NEW: Refs to gate the page-init effect during/after restoration
+  // This prevents the init effect from generating problems when restore already set pageStates
+  const restoredForKeyRef = useRef<string | null>(null)
+  const restoringRef = useRef(false)
+
   // Reset all state when worksheet or level changes (for next worksheet)
+  // BUT use initialPageState if provided for session restoration
   useEffect(() => {
+    // Check if we should restore from initialPageState
+    if (initialPageState && !initialPageStateConsumed.current) {
+      // Mark as consumed so we don't re-use on subsequent renders
+      initialPageStateConsumed.current = true
+      initialStateFor.current = { level, worksheet: worksheetNumber }
+
+      // CRITICAL: Set restore gates BEFORE setting state
+      // This prevents the page-init effect from generating problems
+      restoredForKeyRef.current = worksheetKey
+      restoringRef.current = true
+
+      console.log('📂 WorksheetView: Restoring from initialPageState for', worksheetKey)
+
+      // Use the provided page state
+      setPageStates({ 1: initialPageState })
+      setCurrentPage(1)
+      setActiveIndex(0)
+
+      // Calculate progress from the restored state
+      const correct = Object.values(initialPageState.results).filter(Boolean).length
+      const answered = Object.keys(initialPageState.answers).length
+      setTotalCorrect(correct)
+      setTotalAnswered(answered)
+
+      // Clear restoring flag after this effect finishes (using microtask)
+      queueMicrotask(() => {
+        restoringRef.current = false
+      })
+      return
+    }
+
+    // CRITICAL FIX: If we already restored for THIS level/worksheet, don't reset!
+    // This prevents subsequent React renders (strict mode, state changes) from wiping the restored state
+    if (initialStateFor.current &&
+        initialStateFor.current.level === level &&
+        initialStateFor.current.worksheet === worksheetNumber) {
+      console.log('📂 WorksheetView: Skipping reset - already restored for this worksheet')
+      return
+    }
+
+    // If level/worksheet changed from what initialPageState was for, reset the consumed flag
+    // This allows a NEW initialPageState to be used if the user navigates to a different worksheet then back
+    if (initialStateFor.current &&
+        (initialStateFor.current.level !== level || initialStateFor.current.worksheet !== worksheetNumber)) {
+      initialPageStateConsumed.current = false
+      initialStateFor.current = null
+      // Clear restore gates for new worksheet
+      restoredForKeyRef.current = null
+      restoringRef.current = false
+    }
+
+    // Normal reset for new worksheets (only if no initialPageState to restore)
+    console.log('📂 WorksheetView: Resetting for new worksheet', worksheetKey)
     setCurrentPage(1)
     setActiveIndex(0)
     setPageStates({})
     setTotalCorrect(0)
     setTotalAnswered(0)
-  }, [worksheetNumber, level])
+  }, [worksheetNumber, level, initialPageState, worksheetKey])
 
   // Generate problems for a page
   const generatePageProblems = useCallback((pageNum: number): Problem[] => {
@@ -120,11 +192,34 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     return problems
   }, [level, worksheetNumber, problemsPerPage])
 
-  // Initialize or get page state
+  // Initialize page state if missing (for new worksheets, NOT for restored sessions)
+  // CRITICAL: Uses functional setState to avoid reading stale pageStates closure
+  // and gates on restore refs to prevent generation during/after restoration
   useEffect(() => {
-    if (!pageStates[currentPage]) {
+    // Gate 1: Don't initialize during active restoration
+    if (restoringRef.current) {
+      console.log('📂 WorksheetView: Skipping init - restoration in progress')
+      return
+    }
+
+    // Gate 2: Don't initialize if we already restored for this worksheet
+    if (restoredForKeyRef.current === worksheetKey) {
+      console.log('📂 WorksheetView: Skipping init - already restored for', worksheetKey)
+      return
+    }
+
+    // Use functional setState to check AND update atomically
+    // This avoids reading stale pageStates from closure
+    setPageStates(prev => {
+      // If page already exists, don't regenerate
+      if (prev[currentPage]) {
+        return prev
+      }
+
+      // Generate new problems for this page
+      console.log('📂 WorksheetView: Generating new problems for page', currentPage)
       const problems = generatePageProblems(currentPage)
-      setPageStates(prev => ({
+      return {
         ...prev,
         [currentPage]: {
           problems,
@@ -137,9 +232,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           firstAttemptResults: {},
           correctedProblems: {},
         }
-      }))
-    }
-  }, [currentPage, pageStates, generatePageProblems])
+      }
+    })
+  }, [currentPage, worksheetKey, generatePageProblems])  // NOTE: pageStates removed from deps!
 
   // Get current page state
   const currentPageState = pageStates[currentPage] || {
@@ -153,6 +248,13 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     firstAttemptResults: {},
     correctedProblems: {},
   }
+
+  // Notify parent when page state changes (for session persistence)
+  useEffect(() => {
+    if (onPageStateChange && pageStates[currentPage]) {
+      onPageStateChange(pageStates[currentPage])
+    }
+  }, [pageStates, currentPage, onPageStateChange])
 
   // State for showing full teaching modal
   const [showTeaching, setShowTeaching] = useState(false)

@@ -6,6 +6,71 @@ import { LEVEL_ORDER } from './generators/types'
 type Child = Database['public']['Tables']['children']['Row']
 
 // ============================================
+// SCT (Standard Completion Time) Configuration
+// ============================================
+
+/**
+ * Standard Completion Time (SCT) in seconds by Kumon level
+ *
+ * These are for a SINGLE PAGE (10 problems) - half of a full Kumon worksheet.
+ * Full Kumon worksheets have sides a and b (20 problems total).
+ * Times based on official Kumon SCT charts (halved for single page).
+ *
+ * See: /Requirements/KUMON-SCT-TIMING-REFERENCE.md
+ */
+export const SCT_BY_LEVEL: Record<string, { min: number; target: number; max: number }> = {
+  // Pre-K (not timed officially, set generous defaults)
+  '7A': { min: 60, target: 120, max: 300 },
+  '6A': { min: 60, target: 120, max: 300 },
+  '5A': { min: 60, target: 120, max: 300 },
+
+  // Early Elementary - very fast for basic counting/addition
+  '4A': { min: 15, target: 45, max: 60 },   // Number writing
+  '3A': { min: 30, target: 45, max: 60 },   // Adding +1, +2, +3
+  '2A': { min: 30, target: 45, max: 60 },   // Adding +4 to +10
+
+  // Elementary - Addition/Subtraction
+  'A':  { min: 30, target: 60, max: 90 },   // Subtraction intro
+  'B':  { min: 60, target: 90, max: 150 },  // Vertical, regrouping
+
+  // Elementary - Multiplication/Division/Fractions
+  'C':  { min: 60, target: 90, max: 150 },  // Times tables, division
+  'D':  { min: 90, target: 120, max: 180 }, // Long division, fractions intro
+  'E':  { min: 90, target: 120, max: 180 }, // Fraction operations
+  'F':  { min: 90, target: 150, max: 180 }, // Decimals, PEMDAS
+
+  // Middle School - Algebra
+  'G':  { min: 90, target: 150, max: 180 },  // Pre-algebra
+  'H':  { min: 120, target: 150, max: 180 }, // Algebra I
+  'I':  { min: 120, target: 150, max: 180 }, // Algebra I/II
+
+  // High School - Advanced Algebra
+  'J':  { min: 150, target: 240, max: 360 }, // Algebra II
+  'K':  { min: 180, target: 300, max: 480 }, // Pre-calculus
+
+  // Calculus (wide ranges)
+  'L':  { min: 180, target: 480, max: 900 },  // Calculus basics
+  'M':  { min: 180, target: 360, max: 720 },  // Trigonometry
+  'N':  { min: 240, target: 600, max: 900 },  // Sequences, Series
+  'O':  { min: 300, target: 600, max: 1200 }, // Advanced Calculus
+}
+
+/**
+ * Get the target SCT for a given level (in seconds)
+ * Returns 90 seconds as default for unknown levels (1.5 minutes)
+ */
+export function getSctForLevel(level: string): number {
+  return SCT_BY_LEVEL[level]?.target || 90
+}
+
+/**
+ * Get the full SCT config for a given level
+ */
+export function getSctConfigForLevel(level: string): { min: number; target: number; max: number } {
+  return SCT_BY_LEVEL[level] || { min: 60, target: 90, max: 150 }
+}
+
+// ============================================
 // Level Comparison Utilities
 // ============================================
 
@@ -327,6 +392,21 @@ async function updateDailyPractice(
 }
 
 /**
+ * Focus tracking metrics for session completion
+ */
+export interface FocusMetrics {
+  focusedTime: number           // Seconds when app was visible
+  awayTime: number              // Seconds when app was hidden
+  distractionCount: number      // Number of times user left the app
+  focusScore: number            // Percentage (0-100) of time focused
+  distractions: Array<{         // Detailed distraction records
+    leftAt: number
+    returnedAt: number
+    duration: number
+  }>
+}
+
+/**
  * Complete a practice session
  */
 export async function completePracticeSession(
@@ -334,17 +414,42 @@ export async function completePracticeSession(
   problemsCompleted: number,
   problemsCorrect: number,
   timeSpent: number,
-  childId?: string
+  childId?: string,
+  focusMetrics?: FocusMetrics
 ): Promise<boolean> {
+  // Debug: Log focus metrics
+  console.log('[completePracticeSession] Focus metrics received:', focusMetrics)
+  console.log('[completePracticeSession] Time spent:', timeSpent)
+
+  // Build update object with optional focus tracking fields
+  const updateData: Record<string, unknown> = {
+    completed_at: new Date().toISOString(),
+    problems_completed: problemsCompleted,
+    problems_correct: problemsCorrect,
+    time_spent: timeSpent,
+    status: 'completed'
+  }
+
+  // Add focus tracking metrics if provided
+  if (focusMetrics) {
+    console.log('[completePracticeSession] Adding focus metrics to update:', {
+      focused_time: focusMetrics.focusedTime,
+      away_time: focusMetrics.awayTime,
+      distraction_count: focusMetrics.distractionCount,
+      focus_score: focusMetrics.focusScore
+    })
+    updateData.focused_time = focusMetrics.focusedTime
+    updateData.away_time = focusMetrics.awayTime
+    updateData.distraction_count = focusMetrics.distractionCount
+    updateData.focus_score = focusMetrics.focusScore
+    updateData.distractions = focusMetrics.distractions
+  } else {
+    console.warn('[completePracticeSession] No focus metrics provided!')
+  }
+
   const { error } = await supabase
     .from('practice_sessions')
-    .update({
-      completed_at: new Date().toISOString(),
-      problems_completed: problemsCompleted,
-      problems_correct: problemsCorrect,
-      time_spent: timeSpent,
-      status: 'completed'
-    })
+    .update(updateData)
     .eq('id', sessionId)
 
   if (error) {
@@ -741,6 +846,112 @@ export async function getDailyTrendData(
 }
 
 /**
+ * Session time data for time analytics chart
+ */
+export interface SessionTimeData {
+  sessionId: string
+  date: string           // Display date (e.g., "Jan 15")
+  totalTime: number      // Total time in seconds
+  focusedTime: number    // Focused time in seconds
+  awayTime: number       // Away time in seconds
+  focusScore: number     // 0-100
+  distractionCount: number
+}
+
+/**
+ * Get session time analytics for a child
+ * Returns time tracking data for recent sessions
+ */
+export async function getSessionTimeAnalytics(
+  childId: string,
+  limit: number = 10
+): Promise<SessionTimeData[]> {
+  const { data, error } = await supabase
+    .from('practice_sessions')
+    .select('id, time_spent, focused_time, away_time, focus_score, distraction_count, completed_at')
+    .eq('child_id', childId)
+    .eq('status', 'completed')
+    .not('completed_at', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(limit)
+
+  if (error || !data) {
+    console.error('Error fetching session time analytics:', error)
+    return []
+  }
+
+  return data.map(session => {
+    const date = new Date(session.completed_at)
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+    return {
+      sessionId: session.id,
+      date: dateStr,
+      totalTime: session.time_spent || 0,
+      focusedTime: session.focused_time || session.time_spent || 0,
+      awayTime: session.away_time || 0,
+      focusScore: session.focus_score || 100,
+      distractionCount: session.distraction_count || 0
+    }
+  })
+}
+
+/**
+ * Get aggregate focus stats for a child
+ */
+export interface FocusStats {
+  avgFocusScore: number
+  avgTimeVsSct: number
+  totalDistractions: number
+  totalFocusedTime: number
+  totalAwayTime: number
+  sessionsWithTimeData: number
+}
+
+export async function getChildFocusStats(childId: string): Promise<FocusStats> {
+  // Get child's aggregate stats
+  const { data: child, error: childError } = await supabase
+    .from('children')
+    .select('total_focused_time, total_away_time, total_distractions')
+    .eq('id', childId)
+    .single()
+
+  // Get average focus score from sessions
+  const { data: sessions, error: sessionError } = await supabase
+    .from('practice_sessions')
+    .select('focus_score, time_spent, focused_time, away_time')
+    .eq('child_id', childId)
+    .eq('status', 'completed')
+    .not('focused_time', 'is', null)
+
+  if (childError || sessionError) {
+    console.error('Error fetching focus stats:', childError || sessionError)
+    return {
+      avgFocusScore: 0,
+      avgTimeVsSct: 0,
+      totalDistractions: 0,
+      totalFocusedTime: 0,
+      totalAwayTime: 0,
+      sessionsWithTimeData: 0
+    }
+  }
+
+  const sessionsWithData = sessions?.filter(s => s.focus_score !== null) || []
+  const avgFocusScore = sessionsWithData.length > 0
+    ? Math.round(sessionsWithData.reduce((acc, s) => acc + (s.focus_score || 0), 0) / sessionsWithData.length)
+    : 0
+
+  return {
+    avgFocusScore,
+    avgTimeVsSct: 100, // Would need SCT comparison logic
+    totalDistractions: child?.total_distractions || 0,
+    totalFocusedTime: child?.total_focused_time || 0,
+    totalAwayTime: child?.total_away_time || 0,
+    sessionsWithTimeData: sessionsWithData.length
+  }
+}
+
+/**
  * Per-level statistics
  */
 export interface LevelStats {
@@ -843,4 +1054,136 @@ export async function getLevelBreakdown(childId: string): Promise<LevelStats[]> 
       const bIndex = levelOrder.indexOf(b.level)
       return aIndex - bIndex
     })
+}
+
+/**
+ * Performance trend data point for charts
+ * Combines time efficiency and first-try accuracy per session
+ */
+export interface PerformanceTrendData {
+  sessionId: string
+  date: string              // Display date (e.g., "Jan 15")
+  firstTryAccuracy: number  // 0-100%
+  timeEfficiency: number    // % of SCT (100 = on target)
+  totalProblems: number
+  sctSeconds?: number       // Standard Completion Time for this level
+}
+
+/**
+ * Get performance trend data for visualization charts
+ * Fetches sessions with time and accuracy metrics
+ * Uses level-appropriate SCT values from SCT_BY_LEVEL
+ */
+export async function getPerformanceTrendData(
+  childId: string,
+  days: number = 30
+): Promise<PerformanceTrendData[]> {
+  // Calculate the start date
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+  const startDateStr = startDate.toISOString()
+
+  // Get completed sessions with time data
+  const { data: sessions, error: sessionError } = await supabase
+    .from('practice_sessions')
+    .select('id, time_spent, problems_completed, problems_correct, completed_at, level')
+    .eq('child_id', childId)
+    .eq('status', 'completed')
+    .gte('completed_at', startDateStr)
+    .gt('problems_completed', 0)
+    .order('completed_at', { ascending: true })
+
+  if (sessionError || !sessions || sessions.length === 0) {
+    console.error('Error fetching sessions for performance trend:', sessionError)
+    return []
+  }
+
+  // Get problem attempts for first-try accuracy calculation
+  const sessionIds = sessions.map(s => s.id)
+  const { data: attempts, error: attemptError } = await supabase
+    .from('problem_attempts')
+    .select('session_id, is_correct, hints_used')
+    .in('session_id', sessionIds)
+
+  if (attemptError) {
+    console.error('Error fetching attempts for performance trend:', attemptError)
+  }
+
+  // Group attempts by session
+  const sessionAttempts: Record<string, { firstTry: number; total: number }> = {}
+  for (const attempt of attempts || []) {
+    if (!sessionAttempts[attempt.session_id]) {
+      sessionAttempts[attempt.session_id] = { firstTry: 0, total: 0 }
+    }
+    sessionAttempts[attempt.session_id].total++
+
+    const hintsData = attempt.hints_used as { firstAttemptCorrect?: boolean } | null
+    // Count as first-try if correct AND (no hints data OR firstAttemptCorrect is true)
+    if (attempt.is_correct && hintsData?.firstAttemptCorrect !== false) {
+      sessionAttempts[attempt.session_id].firstTry++
+    }
+  }
+
+  // Build performance trend data
+  return sessions.map(session => {
+    const date = new Date(session.completed_at)
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+    // Calculate first-try accuracy from attempts
+    const attemptData = sessionAttempts[session.id] || { firstTry: 0, total: session.problems_completed || 0 }
+    const firstTryAccuracy = attemptData.total > 0
+      ? Math.round((attemptData.firstTry / attemptData.total) * 100)
+      : 0
+
+    // Get level-appropriate SCT for this session
+    const sctSeconds = getSctForLevel(session.level)
+
+    // Calculate time efficiency as speed score (higher = faster)
+    // 100% = exactly on target (took SCT seconds)
+    // >100% = faster than target (e.g., 150% = finished in 2/3 of SCT)
+    // <100% = slower than target (e.g., 50% = took twice as long)
+    const timeSpent = session.time_spent || 0
+    const timeEfficiency = sctSeconds > 0 && timeSpent > 0
+      ? Math.min(200, Math.round((sctSeconds / timeSpent) * 100))
+      : 100
+
+    return {
+      sessionId: session.id,
+      date: dateStr,
+      firstTryAccuracy,
+      timeEfficiency,
+      totalProblems: session.problems_completed || 0,
+      sctSeconds
+    }
+  })
+}
+
+/**
+ * Quadrant data for performance scatter plot
+ */
+export interface QuadrantSessionData {
+  sessionId: string
+  date: string
+  firstTryAccuracy: number  // 0-100
+  timeEfficiency: number    // % of SCT
+}
+
+/**
+ * Get quadrant analysis data for sessions
+ * Returns sessions categorized by accuracy and time performance
+ * Uses level-appropriate SCT values from SCT_BY_LEVEL
+ */
+export async function getQuadrantData(
+  childId: string,
+  days: number = 60
+): Promise<QuadrantSessionData[]> {
+  // Reuse performance trend data (now uses level-aware SCT)
+  const trendData = await getPerformanceTrendData(childId, days)
+
+  return trendData.map(d => ({
+    sessionId: d.sessionId,
+    date: d.date,
+    firstTryAccuracy: d.firstTryAccuracy,
+    timeEfficiency: d.timeEfficiency
+  }))
 }

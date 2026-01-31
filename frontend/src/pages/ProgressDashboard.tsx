@@ -14,11 +14,21 @@ import {
   getLifetimeStats,
   getDailyTrendData,
   getLevelBreakdown,
+  getSessionTimeAnalytics,
+  getChildFocusStats,
+  getPerformanceTrendData,
   type SessionAttemptStats,
   type LifetimeStats,
   type TrendDataPoint,
-  type LevelStats
+  type LevelStats,
+  type SessionTimeData,
+  type FocusStats,
+  type PerformanceTrendData
 } from '@/services/progressService'
+import ConceptTimeChart from '@/components/analytics/ConceptTimeChart'
+import PerformanceTrendChart from '@/components/analytics/PerformanceTrendChart'
+import PerformanceQuadrantChart from '@/components/analytics/PerformanceQuadrantChart'
+import { LEVEL_CONFIGS } from '@/data/levelConfig'
 import { getChildBadges, type Badge } from '@/utils/badgeSystem'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
@@ -110,6 +120,9 @@ export default function ProgressDashboard() {
   const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats | null>(null)
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([])
   const [levelBreakdown, setLevelBreakdown] = useState<LevelStats[]>([])
+  const [sessionTimeData, setSessionTimeData] = useState<SessionTimeData[]>([])
+  const [focusStats, setFocusStats] = useState<FocusStats | null>(null)
+  const [performanceTrend, setPerformanceTrend] = useState<PerformanceTrendData[]>([])
   const [loading, setLoading] = useState(true)
 
   // Helper to format date as YYYY-MM-DD in local timezone
@@ -122,13 +135,18 @@ export default function ProgressDashboard() {
 
   const loadChildProgress = async (child: Child) => {
     setLoading(true)
-    const [progress, sessions, childBadges, lifetime, trend, levels] = await Promise.all([
+    // Get SCT for child's current level
+    const levelConfig = LEVEL_CONFIGS.find(c => c.level === child.current_level)
+    const [progress, sessions, childBadges, lifetime, trend, levels, timeData, focus, perfTrend] = await Promise.all([
       getWorksheetProgress(child.id, child.current_level as KumonLevel),
       getPracticeSessions(child.id, 30),
       getChildBadges(child.id),
       getLifetimeStats(child.id),
       getDailyTrendData(child.id, 30),
-      getLevelBreakdown(child.id)
+      getLevelBreakdown(child.id),
+      getSessionTimeAnalytics(child.id, 10),
+      getChildFocusStats(child.id),
+      getPerformanceTrendData(child.id, 60) // Now uses level-aware SCT internally
     ])
 
     const dailyData = sessions.reduce((acc: any[], session: any) => {
@@ -167,6 +185,9 @@ export default function ProgressDashboard() {
     setLifetimeStats(lifetime)
     setTrendData(trend)
     setLevelBreakdown(levels)
+    setSessionTimeData(timeData)
+    setFocusStats(focus)
+    setPerformanceTrend(perfTrend)
     setLoading(false)
   }
 
@@ -371,6 +392,84 @@ export default function ProgressDashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Time Analysis Section */}
+        {focusStats && focusStats.sessionsWithTimeData > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">⏱️</span>
+              <h3 className="text-sm font-semibold text-gray-700">Time & Focus Analysis</h3>
+            </div>
+
+            {/* Focus Stats Summary */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className={cn(
+                  'text-2xl font-bold',
+                  focusStats.avgFocusScore >= 90 ? 'text-green-600' :
+                  focusStats.avgFocusScore >= 70 ? 'text-yellow-600' :
+                  'text-orange-600'
+                )}>
+                  {focusStats.avgFocusScore}%
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Avg Focus</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {Math.round(focusStats.totalFocusedTime / 60)}m
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Total Focus</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-gray-600">
+                  {focusStats.totalDistractions}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Breaks Taken</div>
+              </div>
+            </div>
+
+            {/* Time Chart - uses level-appropriate SCT from SCT_BY_LEVEL */}
+            {sessionTimeData.length > 0 && (
+              <ConceptTimeChart
+                level={selectedChild.current_level as KumonLevel}
+                sessions={sessionTimeData}
+              />
+            )}
+
+            {/* Focus Insights */}
+            {focusStats.avgFocusScore < 80 && focusStats.sessionsWithTimeData >= 3 && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>💡 Focus Tip:</strong> Your child's average focus score is {focusStats.avgFocusScore}%.
+                  Consider enabling Focus Lock (Guided Access or Screen Pinning) to minimize distractions during practice.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Performance Trends Section */}
+        {performanceTrend.length >= 3 && (
+          <div className="space-y-4">
+            {/* Trend Chart - Time Efficiency & Accuracy over time */}
+            <PerformanceTrendChart
+              sessions={performanceTrend}
+              className="shadow-lg shadow-blue-100/50"
+            />
+
+            {/* Quadrant Chart - Session Analysis */}
+            <PerformanceQuadrantChart
+              sessions={performanceTrend.map(p => ({
+                sessionId: p.sessionId,
+                date: p.date,
+                firstTryAccuracy: p.firstTryAccuracy,
+                timeEfficiency: p.timeEfficiency
+              }))}
+              recentCount={5}
+              className="shadow-lg shadow-blue-100/50"
+            />
           </div>
         )}
 
