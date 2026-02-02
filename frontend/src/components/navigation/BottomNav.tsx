@@ -19,7 +19,8 @@ export default function BottomNav() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const navItems: NavItem[] = [
-    { icon: '🏠', label: 'Home', path: '/select-child', requiresAuth: true },
+    { icon: '🏠', label: 'Home', path: '/dashboard', requiresAuth: true },
+    { icon: '📷', label: 'Homework', path: '/homework', requiresAuth: true },
     { icon: '📺', label: 'Videos', path: '/videos', requiresAuth: true },
     { icon: '📊', label: 'Progress', path: '/progress', requiresAuth: true }
   ]

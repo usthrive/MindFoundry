@@ -33,6 +33,11 @@ export const FEATURES = {
   PERSONALIZED_PATH: 'personalized_path',
   AI_PROBLEM_GENERATOR: 'ai_problem_generator',
 
+  // Homework Helper & Exam Prep (Foundation AI tier)
+  HOMEWORK_HELPER: 'homework_helper',
+  EXAM_PREP: 'exam_prep',
+  AI_AUDIO: 'ai_audio',
+
   // Premium Features (VIP tier)
   LIVE_TUTOR: 'live_tutor',
   PRIORITY_SUPPORT: 'priority_support',
@@ -110,6 +115,11 @@ export const DEFAULT_FEATURE_TIERS: Record<FeatureId, SubscriptionTierId> = {
   [FEATURES.VOICE_ASSISTANT]: 'foundation_ai',
   [FEATURES.PERSONALIZED_PATH]: 'foundation_ai',
   [FEATURES.AI_PROBLEM_GENERATOR]: 'foundation_ai',
+
+  // Homework Helper & Exam Prep - Foundation AI
+  [FEATURES.HOMEWORK_HELPER]: 'foundation_ai',
+  [FEATURES.EXAM_PREP]: 'foundation_ai',
+  [FEATURES.AI_AUDIO]: 'foundation_ai',
 
   // Premium features - VIP
   [FEATURES.LIVE_TUTOR]: 'vip',
@@ -211,6 +221,30 @@ export const FEATURE_METADATA: Record<FeatureId, FeatureMetadata> = {
     description: 'Generate custom practice problems',
     category: 'ai',
     icon: '✨',
+    previewAvailable: false,
+  },
+  [FEATURES.HOMEWORK_HELPER]: {
+    id: FEATURES.HOMEWORK_HELPER,
+    name: 'Homework Helper',
+    description: 'Upload homework photos and get step-by-step help from Ms. Guide',
+    category: 'ai',
+    icon: '📝',
+    previewAvailable: true,
+  },
+  [FEATURES.EXAM_PREP]: {
+    id: FEATURES.EXAM_PREP,
+    name: 'Exam Prep',
+    description: 'Generate practice tests from your homework and review with Ms. Guide',
+    category: 'ai',
+    icon: '📚',
+    previewAvailable: true,
+  },
+  [FEATURES.AI_AUDIO]: {
+    id: FEATURES.AI_AUDIO,
+    name: 'AI Audio',
+    description: 'Listen to explanations read aloud by Ms. Guide',
+    category: 'ai',
+    icon: '🔊',
     previewAvailable: false,
   },
   [FEATURES.LIVE_TUTOR]: {

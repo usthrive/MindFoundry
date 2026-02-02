@@ -3,6 +3,9 @@
 // Export achievement types
 export * from './achievements';
 
+// Export homework helper & exam prep types
+export * from './homework';
+
 export type KumonLevel = '7A' | '6A' | '5A' | '4A' | '3A' | '2A' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'XV' | 'XM' | 'XP' | 'XS';
 
 export type MathOperation = 'addition' | 'subtraction' | 'multiplication' | 'division';

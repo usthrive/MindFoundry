@@ -1,0 +1,6 @@
+# Generate Speech Function Configuration
+# Converts text to speech using Google Cloud TTS API.
+# Requires GOOGLE_CLOUD_API_KEY environment variable.
+
+[functions.generate-speech]
+verify_jwt = true  # Require authenticated users

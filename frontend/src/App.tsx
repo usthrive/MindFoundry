@@ -21,6 +21,10 @@ import TestConceptsPage from '@/pages/TestConceptsPage'
 import VideoLibraryPage from '@/pages/VideoLibraryPage'
 import VideoCategoryPage from '@/pages/VideoCategoryPage'
 import VideoWatchPage from '@/pages/VideoWatchPage'
+import HomeworkPage from '@/pages/HomeworkPage'
+import HomeworkHelperPage from '@/pages/HomeworkHelperPage'
+import ExamPrepPage from '@/pages/ExamPrepPage'
+import PracticeModulesPage from '@/pages/PracticeModulesPage'
 
 function App() {
   return (
@@ -66,6 +70,14 @@ function App() {
             }
           />
           <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <PracticeModulesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/progress"
             element={
               <ProtectedRoute>
@@ -95,6 +107,47 @@ function App() {
             element={
               <ProtectedRoute>
                 <VideoWatchPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Homework Helper & Exam Prep Routes */}
+          <Route
+            path="/homework"
+            element={
+              <ProtectedRoute>
+                <HomeworkPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/homework/helper"
+            element={
+              <ProtectedRoute>
+                <HomeworkHelperPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/homework/helper/:sessionId"
+            element={
+              <ProtectedRoute>
+                <HomeworkHelperPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/homework/exam-prep"
+            element={
+              <ProtectedRoute>
+                <ExamPrepPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/homework/exam-prep/:sessionId"
+            element={
+              <ProtectedRoute>
+                <ExamPrepPage />
               </ProtectedRoute>
             }
           />

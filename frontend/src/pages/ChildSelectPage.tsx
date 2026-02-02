@@ -53,7 +53,7 @@ export default function ChildSelectPage() {
 
     // No PIN or same child or first selection - proceed directly
     selectChild(childId)
-    navigate('/study')
+    navigate('/dashboard')
   }
 
   const handlePinSuccess = () => {
@@ -61,7 +61,7 @@ export default function ChildSelectPage() {
     if (pendingChildId) {
       selectChild(pendingChildId)
       setPendingChildId(null)
-      navigate('/study')
+      navigate('/dashboard')
     }
   }
 

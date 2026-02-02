@@ -13,6 +13,7 @@
     "qa:dry-run": "npx tsx src/qa/cli.ts --auto-fix --dry-run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.1",
     "@hookform/resolvers": "^3.9.0",
     "@stripe/stripe-js": "^8.6.4",
     "@supabase/supabase-js": "^2.49.4",

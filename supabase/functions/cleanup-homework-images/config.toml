@@ -1,0 +1,7 @@
+# Cleanup Homework Images Function Configuration
+# This function should be called periodically to clean up expired images.
+# Configure a cron job or scheduled function to call this endpoint.
+
+[functions.cleanup-homework-images]
+verify_jwt = false  # Allow unauthenticated calls from cron
+# Schedule this to run every hour via pg_cron or external scheduler
