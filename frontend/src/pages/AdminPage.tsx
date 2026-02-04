@@ -79,7 +79,7 @@ export default function AdminPage() {
       </nav>
 
       {/* Content */}
-      <main className="pb-24">
+      <main>
         {activeTab === 'features' && <FeatureManagement />}
         {activeTab === 'users' && (
           <div className="max-w-6xl mx-auto p-6">

@@ -23,6 +23,23 @@ interface NavigationGuardContextType {
    * Check if a path is a protected parent area
    */
   isParentArea: (path: string) => boolean
+
+  /**
+   * Whether parent mode is currently active (parent has verified)
+   * Used to show/hide parent-only UI elements like Settings
+   */
+  isParentMode: boolean
+
+  /**
+   * Request parent mode activation (shows verification if PIN is set)
+   * Used when parent wants to access Settings
+   */
+  requestParentMode: () => void
+
+  /**
+   * Exit parent mode (go back to child mode)
+   */
+  exitParentMode: () => void
 }
 
 const NavigationGuardContext = createContext<NavigationGuardContextType | null>(null)
@@ -39,6 +56,10 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
   const [pendingPath, setPendingPath] = useState<string | null>(null)
   const [hasPin, setHasPin] = useState(false)
   const [pinLoaded, setPinLoaded] = useState(false)
+
+  // Parent mode state - tracks if parent has verified in current session
+  const [isParentMode, setIsParentMode] = useState(false)
+  const [pendingParentModeRequest, setPendingParentModeRequest] = useState(false)
 
   // Check if parent has PIN on mount (to know if verification is needed)
   useEffect(() => {
@@ -91,20 +112,64 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
   // Handle successful verification
   const handleVerificationSuccess = useCallback(() => {
     setShowVerificationModal(false)
+
+    // Handle parent mode request
+    if (pendingParentModeRequest) {
+      setIsParentMode(true)
+      setPendingParentModeRequest(false)
+    }
+
+    // Handle navigation request
     if (pendingPath) {
       navigate(pendingPath)
       setPendingPath(null)
     }
-  }, [pendingPath, navigate])
+  }, [pendingPath, pendingParentModeRequest, navigate])
 
   // Handle verification modal cancel
   const handleVerificationCancel = useCallback(() => {
     setShowVerificationModal(false)
     setPendingPath(null)
+    setPendingParentModeRequest(false)
   }, [])
 
+  // Request parent mode activation
+  const requestParentMode = useCallback(() => {
+    // If no child is selected (no child mode), parent mode is automatic
+    if (!currentChild) {
+      setIsParentMode(true)
+      return
+    }
+
+    // If no PIN is set, allow parent mode directly
+    if (pinLoaded && !hasPin) {
+      setIsParentMode(true)
+      return
+    }
+
+    // PIN is set - require verification
+    setPendingParentModeRequest(true)
+    setShowVerificationModal(true)
+  }, [currentChild, pinLoaded, hasPin])
+
+  // Exit parent mode
+  const exitParentMode = useCallback(() => {
+    setIsParentMode(false)
+  }, [])
+
+  // Reset parent mode when child changes
+  useEffect(() => {
+    setIsParentMode(false)
+  }, [currentChild?.id])
+
   return (
-    <NavigationGuardContext.Provider value={{ navigateWithGuard, isParentArea }}>
+    <NavigationGuardContext.Provider value={{
+      navigateWithGuard,
+      isParentArea,
+      isParentMode,
+      requestParentMode,
+      exitParentMode,
+    }}>
       {children}
 
       {/* Parent Verification Modal */}
@@ -113,7 +178,7 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
         onSuccess={handleVerificationSuccess}
         onCancel={handleVerificationCancel}
         title="Parent Access"
-        description="Verify to exit child mode"
+        description={pendingParentModeRequest ? "Enter PIN to access parent settings" : "Verify to exit child mode"}
       />
     </NavigationGuardContext.Provider>
   )

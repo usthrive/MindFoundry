@@ -34,7 +34,7 @@ function App() {
       <CelebrationProvider>
       <BrowserRouter>
         <NavigationGuardProvider>
-        <div className="min-h-screen pb-20"> {/* Add padding for bottom nav */}
+        <div className="min-h-screen pb-24"> {/* Add padding for bottom nav (96px for nav + progress indicator) */}
           <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />

@@ -206,7 +206,7 @@ export default function VideoLibraryPage() {
       </div>
 
       {/* Main Content */}
-      <div className="p-4 pb-24 max-w-5xl mx-auto">
+      <div className="p-4 max-w-5xl mx-auto">
         {/* Greeting */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

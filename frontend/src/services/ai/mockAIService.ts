@@ -22,6 +22,7 @@ import type {
 import type {
   MsGuideServiceInterface,
   GenerateTestOptions,
+  ExtractedTemplateResult,
 } from './types';
 
 /**
@@ -637,6 +638,78 @@ export class MockAIService implements MsGuideServiceInterface {
     await delay(500);
     // Return a placeholder - in real app, this would be a base64 audio or URL
     return 'data:audio/mp3;base64,mock_audio_placeholder';
+  }
+
+  /**
+   * Extract a reusable template from a problem (mock implementation)
+   */
+  async extractProblemTemplate(
+    problemText: string,
+    gradeLevel: string
+  ): Promise<ExtractedTemplateResult | null> {
+    await delay(1000);
+
+    // Detect problem type from text
+    const lowerText = problemText.toLowerCase();
+    let problemType: string = 'addition';
+    let operators: string[] = ['+'];
+    let format: 'horizontal' | 'vertical' | 'expression' | 'word' = 'horizontal';
+
+    if (lowerText.includes('+') || lowerText.includes('add') || lowerText.includes('sum')) {
+      problemType = 'addition';
+      operators = ['+'];
+    } else if (lowerText.includes('-') || lowerText.includes('subtract') || lowerText.includes('minus')) {
+      problemType = 'subtraction';
+      operators = ['-'];
+    } else if (lowerText.includes('×') || lowerText.includes('*') || lowerText.includes('times') || lowerText.includes('multiply')) {
+      problemType = 'multiplication';
+      operators = ['*'];
+    } else if (lowerText.includes('÷') || lowerText.includes('/') || lowerText.includes('divide')) {
+      problemType = 'division';
+      operators = ['/'];
+    }
+
+    // Detect if word problem
+    const wordCount = problemText.split(/\s+/).length;
+    if (wordCount > 10) {
+      problemType = 'word_problem';
+      format = 'word';
+    }
+
+    // Extract numbers to determine ranges
+    const numbers = problemText.match(/\d+/g)?.map(Number) || [10, 20];
+    const minNum = Math.max(1, Math.min(...numbers) - 10);
+    const maxNum = Math.max(...numbers) + 10;
+
+    return {
+      problem_type: problemType,
+      subtype: null,
+      grade_level: gradeLevel,
+      template_pattern: {
+        format,
+        operand_ranges: [
+          { min: minNum, max: maxNum, type: 'integer' },
+          { min: minNum, max: maxNum, type: 'integer' },
+        ],
+        operators,
+        constraints: {
+          no_negative_results: true,
+        },
+        word_problem_template: format === 'word'
+          ? '{{name}} had {{num1}} items. They got {{num2}} more. How many total?'
+          : undefined,
+      },
+      hint_templates: [
+        'Look at the numbers carefully',
+        `Think about what operation to use`,
+        'Take it one step at a time',
+      ],
+      solution_step_templates: [
+        'First, identify the numbers: {{num1}} and {{num2}}',
+        `Apply the operation: {{num1}} ${operators[0]} {{num2}}`,
+        'The answer is {{answer}}',
+      ],
+    };
   }
 }
 

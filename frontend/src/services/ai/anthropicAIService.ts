@@ -29,6 +29,7 @@ import type {
   MsGuideServiceInterface,
   GenerateTestOptions,
   AIUsageData,
+  ExtractedTemplateResult,
 } from './types';
 
 import { MS_GUIDE_SYSTEM_PROMPT } from './prompts/msGuideSystemPrompt';
@@ -715,6 +716,91 @@ Return JSON:
     // Anthropic doesn't provide TTS
     // Use browser's built-in speech synthesis or Google Cloud TTS
     return '';
+  }
+
+  /**
+   * Extract a reusable template from a problem (ONE-TIME LLM cost)
+   */
+  async extractProblemTemplate(
+    problemText: string,
+    gradeLevel: string
+  ): Promise<ExtractedTemplateResult | null> {
+    const startTime = Date.now();
+
+    try {
+      const prompt = `Analyze this math problem and extract a template for generating similar problems.
+
+Problem: ${problemText}
+Grade Level: ${gradeLevel}
+
+Return a JSON object with the following structure:
+{
+  "problem_type": "addition" | "subtraction" | "multiplication" | "division" | "fractions" | "decimals" | "percentages" | "algebra" | "geometry" | "word_problem" | "order_of_operations",
+  "subtype": string or null (e.g., "two_digit_no_carry", "same_denominator", etc.),
+  "grade_level": "${gradeLevel}",
+  "template_pattern": {
+    "format": "horizontal" | "vertical" | "expression" | "word",
+    "operand_ranges": [
+      { "min": number, "max": number, "type": "integer" | "decimal" | "fraction" }
+    ],
+    "operators": ["+", "-", "*", "/"],
+    "constraints": {
+      "no_negative_results": boolean,
+      "no_remainders": boolean,
+      "same_denominator": boolean,
+      "common_denominators": [2, 4, 8] // example
+    },
+    "word_problem_template": "{{name}} had {{num1}} {{object}}. They got {{num2}} more. How many total?" // if word problem
+  },
+  "hint_templates": [
+    "Start with {{num1}}",
+    "Think about what operation to use"
+  ],
+  "solution_step_templates": [
+    "First, {{num1}} + {{num2}}",
+    "The answer is {{answer}}"
+  ]
+}
+
+IMPORTANT:
+- Analyze the numbers in the problem to determine appropriate min/max ranges
+- For word problems, create a template with {{name}}, {{num1}}, {{num2}}, {{object}} placeholders
+- Include 2-3 helpful hints appropriate for grade ${gradeLevel}
+- Include step-by-step solution templates with placeholders`;
+
+      const { content, inputTokens, outputTokens } = await this.callAPI(
+        MODELS.fast,
+        'You are an expert at analyzing math problems and extracting reusable patterns.',
+        prompt,
+        2048,
+        0
+      );
+
+      const result = parseAIResponse<ExtractedTemplateResult>(content);
+
+      this.trackUsage(
+        'extractProblemTemplate',
+        MODELS.fast,
+        inputTokens,
+        outputTokens,
+        Date.now() - startTime,
+        true
+      );
+
+      return result;
+    } catch (error) {
+      this.trackUsage(
+        'extractProblemTemplate',
+        MODELS.fast,
+        0,
+        0,
+        Date.now() - startTime,
+        false,
+        (error as Error).message
+      );
+      console.error('Error extracting problem template:', error);
+      return null;
+    }
   }
 }
 

@@ -38,6 +38,71 @@ let currentAudio: HTMLAudioElement | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let isUsingGoogleTTS = false;
 
+// Browser voices state
+let browserVoicesLoaded = false;
+let browserVoicesPromise: Promise<void> | null = null;
+
+// Last error for diagnostics
+let lastError: string | null = null;
+
+/**
+ * Preload browser voices (they may not be available immediately)
+ */
+function preloadBrowserVoices(): Promise<void> {
+  if (browserVoicesLoaded) {
+    return Promise.resolve();
+  }
+
+  if (browserVoicesPromise) {
+    return browserVoicesPromise;
+  }
+
+  browserVoicesPromise = new Promise((resolve) => {
+    if (!('speechSynthesis' in window)) {
+      browserVoicesLoaded = true;
+      resolve();
+      return;
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      browserVoicesLoaded = true;
+      console.log('[TTS] Browser voices loaded:', voices.length, 'voices available');
+      resolve();
+      return;
+    }
+
+    // Wait for voices to load
+    const handleVoicesChanged = () => {
+      const loadedVoices = window.speechSynthesis.getVoices();
+      if (loadedVoices.length > 0) {
+        browserVoicesLoaded = true;
+        console.log('[TTS] Browser voices loaded:', loadedVoices.length, 'voices available');
+        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+        resolve();
+      }
+    };
+
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+
+    // Timeout after 3 seconds
+    setTimeout(() => {
+      if (!browserVoicesLoaded) {
+        browserVoicesLoaded = true;
+        console.warn('[TTS] Browser voices did not load within timeout');
+        resolve();
+      }
+    }, 3000);
+  });
+
+  return browserVoicesPromise;
+}
+
+// Start preloading voices immediately
+if (typeof window !== 'undefined') {
+  preloadBrowserVoices();
+}
+
 /**
  * Generate a simple hash for cache keys
  */
@@ -87,12 +152,17 @@ async function generateGoogleTTS(text: string, config: TTSConfig): Promise<strin
   });
 
   if (error) {
-    throw new Error(`TTS function error: ${error.message}`);
+    lastError = `Google TTS error: ${error.message}`;
+    throw new Error(lastError);
   }
 
   if (!data?.success || !data?.audioContent) {
-    throw new Error(data?.error || 'Failed to generate speech');
+    lastError = data?.error || 'Failed to generate speech from Google TTS';
+    throw new Error(lastError);
   }
+
+  // Success - clear any previous error
+  lastError = null;
 
   // Convert base64 to blob URL
   const binaryString = atob(data.audioContent);
@@ -176,7 +246,8 @@ async function speakWithBrowser(
   onError?: (error: Error) => void
 ): Promise<void> {
   if (!('speechSynthesis' in window)) {
-    const error = new Error('Speech synthesis not supported');
+    const error = new Error('Speech synthesis not supported in this browser');
+    lastError = error.message;
     onError?.(error);
     return;
   }
@@ -184,36 +255,61 @@ async function speakWithBrowser(
   isUsingGoogleTTS = false;
   console.log('[TTS] Using browser speech synthesis');
 
+  // Wait for voices to be available
+  await preloadBrowserVoices();
+
+  // Cancel any ongoing speech to avoid queue buildup
+  window.speechSynthesis.cancel();
+
   return new Promise((resolve) => {
     currentUtterance = new SpeechSynthesisUtterance(text);
     currentUtterance.rate = config.speakingRate ?? DEFAULT_CONFIG.speakingRate;
     currentUtterance.pitch = 1 + ((config.pitch ?? DEFAULT_CONFIG.pitch) / 20);  // Normalize pitch
     currentUtterance.lang = config.languageCode ?? DEFAULT_CONFIG.languageCode;
 
-    // Try to find a good voice
+    // Try to find a good voice (prefer female voices for Ms. Guide)
     const voices = window.speechSynthesis.getVoices();
+    console.log('[TTS] Available browser voices:', voices.length);
+
+    // Priority order for voice selection
     const femaleVoice = voices.find(v =>
       v.lang.startsWith('en') &&
-      (v.name.toLowerCase().includes('female') ||
-       v.name.toLowerCase().includes('samantha') ||
-       v.name.toLowerCase().includes('victoria'))
-    );
+      (v.name.toLowerCase().includes('samantha') ||  // macOS
+       v.name.toLowerCase().includes('victoria') ||   // iOS
+       v.name.toLowerCase().includes('female') ||
+       v.name.toLowerCase().includes('zira') ||       // Windows
+       v.name.toLowerCase().includes('google us english'))
+    ) || voices.find(v => v.lang.startsWith('en'));  // Any English voice as fallback
+
     if (femaleVoice) {
       currentUtterance.voice = femaleVoice;
+      console.log('[TTS] Using voice:', femaleVoice.name);
+    } else if (voices.length === 0) {
+      console.warn('[TTS] No voices available');
+      lastError = 'No voices available in browser';
     }
 
     currentUtterance.onend = () => {
       currentUtterance = null;
+      lastError = null;
       onEnd?.();
       resolve();
     };
 
     currentUtterance.onerror = (e) => {
       currentUtterance = null;
-      const error = new Error(`Speech synthesis error: ${e.error}`);
+      const errorMsg = `Speech synthesis error: ${e.error || 'unknown'}`;
+      lastError = errorMsg;
+      const error = new Error(errorMsg);
+      console.error('[TTS] Browser synthesis error:', e);
       onError?.(error);
       resolve();
     };
+
+    // iOS Safari fix: Resume speechSynthesis if it's paused
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
 
     window.speechSynthesis.speak(currentUtterance);
   });
@@ -342,4 +438,52 @@ export function getAvailableVoices(): Array<{ id: string; name: string; descript
       description: 'Good quality at lower cost',
     },
   ];
+}
+
+/**
+ * Check TTS availability and get diagnostic info
+ */
+export async function checkTTSAvailability(): Promise<{
+  browserSupported: boolean;
+  browserVoicesAvailable: number;
+  googleTTSAvailable: boolean;
+  lastError: string | null;
+}> {
+  const browserSupported = 'speechSynthesis' in window;
+  let browserVoicesAvailable = 0;
+  let googleTTSAvailable = false;
+
+  if (browserSupported) {
+    await preloadBrowserVoices();
+    browserVoicesAvailable = window.speechSynthesis.getVoices().length;
+  }
+
+  // Test Google TTS availability with a short text
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-speech', {
+      body: { text: 'test', voice: DEFAULT_CONFIG.voice },
+    });
+
+    if (!error && data?.success) {
+      googleTTSAvailable = true;
+    } else {
+      console.log('[TTS] Google TTS not available:', error?.message || data?.error);
+    }
+  } catch (e) {
+    console.log('[TTS] Google TTS check failed:', e);
+  }
+
+  return {
+    browserSupported,
+    browserVoicesAvailable,
+    googleTTSAvailable,
+    lastError,
+  };
+}
+
+/**
+ * Get the last TTS error (for debugging)
+ */
+export function getLastError(): string | null {
+  return lastError;
 }

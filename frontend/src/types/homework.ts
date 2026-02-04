@@ -262,6 +262,12 @@ export interface ProblemContext {
   grade_level: string;
   /** Previous explanation given */
   previous_explanation?: MsGuideExplanation;
+  /** Kumon level (e.g., "A", "B", "C") - optional for Kumon practice */
+  kumon_level?: string;
+  /** Kumon skill set being practiced (e.g., "Addition Sums to 12") */
+  kumon_skill_set?: string;
+  /** Kumon worksheet number */
+  kumon_worksheet?: number;
 }
 
 // ============================================

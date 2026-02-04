@@ -105,7 +105,15 @@ export function AudioButton({
         // onError callback
         (err) => {
           console.error('Speech error:', err);
-          setError('Audio unavailable');
+          const lastError = ttsService.getLastError();
+          // Show user-friendly error message
+          if (lastError?.includes('not supported')) {
+            setError('Audio not supported');
+          } else if (lastError?.includes('No voices')) {
+            setError('No voices available');
+          } else {
+            setError('Tap to retry');
+          }
           setPlayState('idle');
         }
       );
@@ -116,7 +124,11 @@ export function AudioButton({
       }
     } catch (err) {
       console.error('Failed to start speech:', err);
-      setError('Audio unavailable');
+      const lastError = ttsService.getLastError();
+      if (lastError) {
+        console.log('[AudioButton] Last TTS error:', lastError);
+      }
+      setError('Tap to retry');
       setPlayState('idle');
     }
   };

@@ -11,6 +11,7 @@ import type {
   EvaluationResult,
   MsGuideExplanation,
   ChatMessage,
+  ProblemContext,
 } from '../../types/homework';
 import { MsGuideCard } from './MsGuideCard';
 import { ChatInterface } from './ChatInterface';
@@ -220,6 +221,15 @@ export function ReviewWithMsGuide({
   const currentWrongAnswer = wrongAnswers[currentIndex];
   const { problem, evaluation, studentAnswer } = currentWrongAnswer;
 
+  // Build problem context for chat
+  const problemContext: ProblemContext = {
+    problem_text: problem.problem_text,
+    student_answer: studentAnswer || '',
+    correct_answer: evaluation.correct_answer || problem.answer || '',
+    grade_level: problem.grade_level || '3',
+    previous_explanation: explanation || undefined,
+  };
+
   // Handle sending message - switch to chat tab if on explanation
   const handleSendMessage = useCallback(
     async (message: string) => {
@@ -363,6 +373,8 @@ export function ReviewWithMsGuide({
                 maxMessages={maxChatMessages}
                 onAudioPlayed={onAudioPlayed}
                 placeholder="Ask Ms. Guide about this problem..."
+                context={problemContext}
+                showContextBanner={false}
               />
             )}
           </div>

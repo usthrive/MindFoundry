@@ -25,24 +25,24 @@ interface MsGuideCardProps {
  */
 function StepCard({ step }: { step: ExplanationStep }) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-sm">
+    <div className="bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm">
+      <div className="flex items-start gap-2 sm:gap-3">
+        <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm">
           {step.step_number}
         </div>
-        <div className="flex-1">
-          <p className="text-gray-800">{step.instruction}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-gray-800 text-sm sm:text-base break-words">{step.instruction}</p>
 
           {step.visual && (
-            <pre className="mt-3 p-3 bg-gray-50 rounded-lg font-mono text-sm text-gray-700 overflow-x-auto">
+            <pre className="mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg font-mono text-xs sm:text-sm text-gray-700 overflow-x-auto whitespace-pre-wrap break-words">
               {step.visual}
             </pre>
           )}
 
           {step.tip && (
-            <div className="mt-2 flex items-start text-sm text-amber-700 bg-amber-50 p-2 rounded-lg">
-              <span className="mr-1">💡</span>
-              <span>{step.tip}</span>
+            <div className="mt-2 flex items-start text-xs sm:text-sm text-amber-700 bg-amber-50 p-2 rounded-lg">
+              <span className="mr-1 flex-shrink-0">💡</span>
+              <span className="break-words">{step.tip}</span>
             </div>
           )}
         </div>
@@ -56,10 +56,10 @@ function StepCard({ step }: { step: ExplanationStep }) {
  */
 function LoadingSkeleton() {
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 animate-pulse">
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 bg-gray-200 rounded-full" />
-        <div className="flex-1 space-y-3">
+    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-4 sm:p-6 animate-pulse">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex-shrink-0" />
+        <div className="flex-1 min-w-0 space-y-3">
           <div className="h-4 bg-gray-200 rounded w-3/4" />
           <div className="h-4 bg-gray-200 rounded w-1/2" />
         </div>
@@ -105,16 +105,16 @@ export function MsGuideCard({
   };
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 shadow-lg">
+    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-4 sm:p-6 shadow-lg overflow-hidden">
       {/* Header with Ms. Guide avatar */}
-      <div className="flex items-start gap-4 mb-4">
+      <div className="flex items-start gap-3 sm:gap-4 mb-4">
         <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-2xl">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-xl sm:text-2xl">
             👩‍🏫
           </div>
         </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
             <h3 className="font-bold text-gray-900">Ms. Guide</h3>
             {showAudio && (
               <AudioButton
@@ -124,30 +124,30 @@ export function MsGuideCard({
               />
             )}
           </div>
-          <p className="text-gray-700 mt-1">{explanation.greeting}</p>
+          <p className="text-gray-700 mt-1 text-sm sm:text-base break-words">{explanation.greeting}</p>
         </div>
       </div>
 
       {/* What they did right */}
       {explanation.what_they_did_right && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4 mb-4">
           <div className="flex items-start">
-            <span className="text-green-500 mr-2 text-xl">✓</span>
-            <div>
-              <p className="font-medium text-green-800">What you did well:</p>
-              <p className="text-green-700">{explanation.what_they_did_right}</p>
+            <span className="text-green-500 mr-2 text-lg sm:text-xl flex-shrink-0">✓</span>
+            <div className="min-w-0">
+              <p className="font-medium text-green-800 text-sm sm:text-base">What you did well:</p>
+              <p className="text-green-700 text-sm sm:text-base break-words">{explanation.what_they_did_right}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* The mistake */}
-      <div className="bg-white rounded-xl p-4 mb-4 border border-gray-100">
+      <div className="bg-white rounded-xl p-3 sm:p-4 mb-4 border border-gray-100">
         <div className="flex items-start">
-          <span className="text-blue-500 mr-2 text-xl">💭</span>
-          <div>
-            <p className="font-medium text-gray-900">Let's see what happened:</p>
-            <p className="text-gray-700 mt-1">{explanation.the_mistake}</p>
+          <span className="text-blue-500 mr-2 text-lg sm:text-xl flex-shrink-0">💭</span>
+          <div className="min-w-0">
+            <p className="font-medium text-gray-900 text-sm sm:text-base">Let's see what happened:</p>
+            <p className="text-gray-700 mt-1 text-sm sm:text-base break-words">{explanation.the_mistake}</p>
           </div>
         </div>
       </div>
@@ -157,11 +157,11 @@ export function MsGuideCard({
         onClick={() => setExpandedSteps(!expandedSteps)}
         className="w-full flex items-center justify-between py-2 text-left"
       >
-        <span className="font-semibold text-gray-900">
+        <span className="font-semibold text-gray-900 text-sm sm:text-base">
           Step-by-step solution ({explanation.steps.length} steps)
         </span>
         <svg
-          className={`w-5 h-5 text-gray-500 transition-transform ${
+          className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 ${
             expandedSteps ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -172,9 +172,9 @@ export function MsGuideCard({
         </svg>
       </button>
 
-      {/* Steps */}
+      {/* Steps - scrollable when many steps */}
       {expandedSteps && (
-        <div className="space-y-3 mt-2">
+        <div className="space-y-2 sm:space-y-3 mt-2 max-h-[50vh] overflow-y-auto pr-1">
           {explanation.steps.map((step) => (
             <StepCard key={step.step_number} step={step} />
           ))}
@@ -182,10 +182,10 @@ export function MsGuideCard({
       )}
 
       {/* Correct answer */}
-      <div className="mt-4 bg-blue-100 rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <span className="font-medium text-blue-900">Correct Answer:</span>
-          <span className="text-xl font-bold text-blue-700">
+      <div className="mt-4 bg-blue-100 rounded-xl p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium text-blue-900 text-sm sm:text-base">Correct Answer:</span>
+          <span className="text-lg sm:text-xl font-bold text-blue-700 break-all">
             {explanation.correct_answer}
           </span>
         </div>
@@ -193,8 +193,8 @@ export function MsGuideCard({
 
       {/* Encouragement */}
       <div className="mt-4 text-center">
-        <p className="text-gray-700 italic">"{explanation.encouragement}"</p>
-        <div className="mt-2 text-2xl">🌟</div>
+        <p className="text-gray-700 italic text-sm sm:text-base break-words">"{explanation.encouragement}"</p>
+        <div className="mt-2 text-xl sm:text-2xl">🌟</div>
       </div>
     </div>
   );

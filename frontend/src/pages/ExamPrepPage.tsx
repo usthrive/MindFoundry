@@ -726,6 +726,14 @@ export default function ExamPrepPage() {
                     isLoading={isChatting}
                     maxMessages={10}
                     placeholder="Ask about this problem..."
+                    context={reviewProblem ? {
+                      problem_text: reviewProblem.problem_text,
+                      student_answer: studentAnswer || '',
+                      correct_answer: reviewProblem.answer || '',
+                      grade_level: reviewProblem.grade_level || '3',
+                      previous_explanation: reviewExplanation,
+                    } : undefined}
+                    showContextBanner={false}
                   />
                 </div>
               </div>

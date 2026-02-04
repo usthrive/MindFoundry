@@ -123,6 +123,46 @@ export interface MsGuideServiceInterface {
    * @returns Audio URL or base64 data
    */
   generateAudio(text: string): Promise<string>;
+
+  /**
+   * Extract a reusable template from a problem (ONE-TIME LLM cost)
+   * Used for algorithmic problem generation
+   * @param problemText - The original problem text
+   * @param gradeLevel - Student's grade level
+   * @returns Template pattern for generating similar problems
+   */
+  extractProblemTemplate(
+    problemText: string,
+    gradeLevel: string
+  ): Promise<ExtractedTemplateResult | null>;
+}
+
+/**
+ * Result of template extraction for algorithmic problem generation
+ */
+export interface ExtractedTemplateResult {
+  problem_type: string;
+  subtype?: string;
+  grade_level: string;
+  template_pattern: {
+    format: 'horizontal' | 'vertical' | 'expression' | 'word';
+    operand_ranges: Array<{
+      min: number;
+      max: number;
+      type?: 'integer' | 'decimal' | 'fraction';
+    }>;
+    operators: string[];
+    constraints?: {
+      no_negative_results?: boolean;
+      no_remainders?: boolean;
+      same_denominator?: boolean;
+      common_denominators?: number[];
+    };
+    word_problem_template?: string;
+    variable_names?: string[];
+  };
+  hint_templates: string[];
+  solution_step_templates: string[];
 }
 
 /**

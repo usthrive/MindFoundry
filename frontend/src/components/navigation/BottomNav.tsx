@@ -15,15 +15,33 @@ export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, currentChild } = useAuth()
-  const { navigateWithGuard, isParentArea } = useNavigationGuard()
+  const { navigateWithGuard, isParentArea, isParentMode, requestParentMode } = useNavigationGuard()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
+  // Child mode: show Home, Help (School), Videos, Progress
+  // Parent mode: add Settings
   const navItems: NavItem[] = [
     { icon: '🏠', label: 'Home', path: '/dashboard', requiresAuth: true },
-    { icon: '🏫', label: 'School', path: '/school-help', requiresAuth: true },
+    { icon: '🆘', label: 'Help', path: '/school-help', requiresAuth: true },
     { icon: '📺', label: 'Videos', path: '/videos', requiresAuth: true },
     { icon: '📊', label: 'Progress', path: '/progress', requiresAuth: true }
   ]
+
+  // Determine if we're in child mode (a child is selected)
+  const isChildMode = !!currentChild
+
+  // Show Settings only when in parent mode or when no child is selected
+  const showSettings = !isChildMode || isParentMode
+
+  // Handle Settings button click
+  const handleSettingsClick = () => {
+    if (showSettings) {
+      setIsSettingsOpen(true)
+    } else {
+      // Request parent mode verification
+      requestParentMode()
+    }
+  }
 
   // Don't show nav on login/onboarding pages or video watch page (immersive mode)
   if (
@@ -63,6 +81,7 @@ export default function BottomNav() {
         <nav className="flex justify-around items-center py-2">
           {navItems.map((item) => {
             // Check if current path matches or is a sub-route
+            // Note: /school-help and /homework paths both map to the "Help" tab
             const isActive = location.pathname === item.path ||
               (item.path === '/school-help' && location.pathname.startsWith('/homework'))
 
@@ -97,16 +116,18 @@ export default function BottomNav() {
             )
           })}
 
-          {/* Settings Button */}
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-all ${
-              isSettingsOpen ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <span className="text-2xl mb-1">⚙️</span>
-            <span className="text-xs font-medium">Settings</span>
-          </button>
+          {/* Settings Button - only visible in parent mode or when no child selected */}
+          {showSettings && (
+            <button
+              onClick={handleSettingsClick}
+              className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-all ${
+                isSettingsOpen ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="text-2xl mb-1">⚙️</span>
+              <span className="text-xs font-medium">Settings</span>
+            </button>
+          )}
         </nav>
       </div>
 

@@ -343,28 +343,27 @@ export default function HomeworkHelperPage() {
         );
 
       case 'chat':
+        const chatProblem = extractedProblems[selectedIndices[currentProblemIndex]];
+        const chatContext = chatProblem ? {
+          problem_text: chatProblem.problem_text,
+          student_answer: '',
+          correct_answer: '',
+          grade_level: chatProblem.grade_level,
+          previous_explanation: explanations.get(selectedIndices[currentProblemIndex]),
+        } : undefined;
+
         return (
           <div className="flex flex-col h-[calc(100vh-5rem)]">
             <div className="p-4 border-b bg-white">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={handleBackToExplanation}
-                  className="flex items-center text-gray-600 hover:text-gray-800"
-                >
-                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to Explanation
-                </button>
-              </div>
-
-              {/* Problem context mini */}
-              <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500">Discussing:</p>
-                <p className="text-sm text-gray-900 truncate">
-                  {extractedProblems[selectedIndices[currentProblemIndex]]?.problem_text}
-                </p>
-              </div>
+              <button
+                onClick={handleBackToExplanation}
+                className="flex items-center text-gray-600 hover:text-gray-800"
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Explanation
+              </button>
             </div>
 
             <ChatInterface
@@ -373,6 +372,8 @@ export default function HomeworkHelperPage() {
               isLoading={isChatting}
               maxMessages={20}
               placeholder="Ask Ms. Guide anything about this problem..."
+              context={chatContext}
+              showContextBanner={true}
             />
           </div>
         );
