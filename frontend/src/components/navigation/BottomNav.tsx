@@ -18,17 +18,19 @@ export default function BottomNav() {
   const { navigateWithGuard, isParentArea, isParentMode, requestParentMode } = useNavigationGuard()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  // Child mode: show Home, Help (School), Videos, Progress
-  // Parent mode: add Settings
+  // Determine if we're in child mode (a child is selected)
+  const isChildMode = !!currentChild
+
+  // Child mode: show Home, School (homework help), Videos, Progress
+  // Parent mode (no child selected): show Home, Videos, Progress, Settings
+  // School button only makes sense when a child is selected
   const navItems: NavItem[] = [
     { icon: '🏠', label: 'Home', path: '/dashboard', requiresAuth: true },
-    { icon: '🆘', label: 'Help', path: '/school-help', requiresAuth: true },
+    // Only show School button when a child is selected
+    ...(isChildMode ? [{ icon: '👩‍🏫', label: 'School', path: '/school-help', requiresAuth: true }] : []),
     { icon: '📺', label: 'Videos', path: '/videos', requiresAuth: true },
     { icon: '📊', label: 'Progress', path: '/progress', requiresAuth: true }
   ]
-
-  // Determine if we're in child mode (a child is selected)
-  const isChildMode = !!currentChild
 
   // Show Settings only when in parent mode or when no child is selected
   const showSettings = !isChildMode || isParentMode
