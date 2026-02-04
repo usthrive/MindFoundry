@@ -45,16 +45,38 @@ export class EdgeFunctionAIService implements MsGuideServiceInterface {
 
     try {
       // Get current session for auth
+      console.log('[AI] Getting session...')
       const {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession()
 
-      if (sessionError || !session) {
-        throw new Error('Not authenticated')
+      console.log('[AI] Session result:', {
+        hasSession: !!session,
+        hasError: !!sessionError,
+        error: sessionError?.message,
+        hasAccessToken: !!session?.access_token,
+        tokenLength: session?.access_token?.length,
+        userId: session?.user?.id,
+      })
+
+      if (sessionError) {
+        console.error('[AI] Session error:', sessionError)
+        throw new Error('Session error: ' + sessionError.message)
+      }
+
+      if (!session) {
+        console.error('[AI] No session found')
+        throw new Error('Not authenticated - no session')
+      }
+
+      if (!session.access_token) {
+        console.error('[AI] No access token in session')
+        throw new Error('Not authenticated - no token')
       }
 
       // Call the Edge Function
+      console.log('[AI] Calling Edge Function:', operation)
       const response = await fetch(`${this.supabaseUrl}/functions/v1/ai-service`, {
         method: 'POST',
         headers: {
@@ -66,8 +88,15 @@ export class EdgeFunctionAIService implements MsGuideServiceInterface {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errorData.error || `AI service error: ${response.status}`)
+        const errorText = await response.text()
+        console.error('[AI] Error response:', response.status, errorText)
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText || 'Unknown error' }
+        }
+        throw new Error(errorData.error || errorData.details || `AI service error: ${response.status}`)
       }
 
       const data = (await response.json()) as T

@@ -1,12 +1,11 @@
 /**
  * Practice Modules Page
  *
- * Landing page after selecting a child, showing all available practice modules:
+ * Landing page after selecting a child, showing simplified practice modules:
  * - Kumon-Style Practice
- * - Homework Helper (AI)
- * - Exam Prep (AI)
- * - Video Library
- * - Progress Dashboard
+ * - School Help (Homework & Exam Prep)
+ * - Video Lessons
+ * - My Progress (with tabs for Kumon and School Help)
  */
 
 import { useNavigate } from 'react-router-dom'
@@ -72,7 +71,7 @@ function ModuleCard({
 
 function QuickStats({ streak, problemsToday }: { streak: number; problemsToday: number }) {
   return (
-    <div className="flex gap-4 justify-center mb-6">
+    <div className="flex gap-4 justify-center">
       <div className="flex items-center gap-2 px-4 py-2 bg-orange-100 rounded-full">
         <span className="text-xl">🔥</span>
         <span className="font-semibold text-orange-700">{streak} day streak</span>
@@ -82,6 +81,20 @@ function QuickStats({ streak, problemsToday }: { streak: number; problemsToday: 
         <span className="font-semibold text-green-700">{problemsToday} today</span>
       </div>
     </div>
+  )
+}
+
+function SwitchProfileButton() {
+  const navigate = useNavigate()
+
+  return (
+    <button
+      onClick={() => navigate('/select-child')}
+      className="flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:shadow-md transition-all text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-200"
+    >
+      <span>👤</span>
+      <span>Switch Profile</span>
+    </button>
   )
 }
 
@@ -96,6 +109,11 @@ export default function PracticeModulesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-purple-50 to-white p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
+        {/* Top Bar with Switch Profile */}
+        <div className="flex justify-end mb-4">
+          <SwitchProfileButton />
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -114,8 +132,8 @@ export default function PracticeModulesPage() {
           <QuickStats streak={streak} problemsToday={problemsToday} />
         </div>
 
-        {/* Module Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* Module Grid - 3 Main Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           {/* Kumon-Style Practice */}
           <ModuleCard
             icon="📚"
@@ -124,22 +142,12 @@ export default function PracticeModulesPage() {
             path="/study"
           />
 
-          {/* Homework Helper */}
+          {/* School Help - Combines Homework & Exam Prep */}
           <ModuleCard
-            icon="📷"
-            title="Homework Helper"
-            description="Take a photo of your homework and get step-by-step help from Ms. Guide"
-            path="/homework/helper"
-            badge="AI Powered"
-            badgeColor="bg-purple-100 text-purple-700"
-          />
-
-          {/* Exam Prep */}
-          <ModuleCard
-            icon="📝"
-            title="Exam Prep"
-            description="Upload your study materials and take practice tests"
-            path="/homework/exam-prep"
+            icon="🏫"
+            title="School Help"
+            description="Get help with homework and prepare for tests with Ms. Guide"
+            path="/school-help"
             badge="AI Powered"
             badgeColor="bg-purple-100 text-purple-700"
           />
@@ -151,21 +159,15 @@ export default function PracticeModulesPage() {
             description="Watch helpful math videos to learn new concepts"
             path="/videos"
           />
+        </div>
 
-          {/* Progress Dashboard */}
+        {/* Progress Card - Full Width */}
+        <div className="mb-6">
           <ModuleCard
             icon="📊"
             title="My Progress"
-            description="See how far you've come and track your achievements"
+            description="Track your achievements in Daily Practice and School Help"
             path="/progress"
-          />
-
-          {/* Switch Child */}
-          <ModuleCard
-            icon="👦"
-            title="Switch Profile"
-            description="Change to a different learner profile"
-            path="/select-child"
           />
         </div>
 

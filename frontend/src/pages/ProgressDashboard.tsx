@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
@@ -33,6 +33,35 @@ import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 
 type Child = Database['public']['Tables']['children']['Row']
+type ProgressTab = 'kumon' | 'school'
+
+function ProgressTabButton({
+  active,
+  onClick,
+  children,
+  icon
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+  icon: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        flex-1 flex items-center justify-center gap-2 py-3 px-4 font-semibold transition-all duration-200 rounded-t-xl
+        ${active
+          ? 'text-blue-700 bg-white shadow-sm'
+          : 'text-gray-500 bg-transparent hover:text-gray-700 hover:bg-gray-50'
+        }
+      `}
+    >
+      <span>{icon}</span>
+      <span>{children}</span>
+    </button>
+  )
+}
 
 function calculateEstimatedWeeks(
   remainingWorksheets: number,
@@ -109,6 +138,16 @@ function CircularProgress({ percentage, size = 120, strokeWidth = 8, color = 'bl
 export default function ProgressDashboard() {
   const { user, children, currentChild, selectChild } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Tab state - default to 'kumon' unless URL has ?tab=school
+  const initialTab = searchParams.get('tab') === 'school' ? 'school' : 'kumon'
+  const [activeTab, setActiveTab] = useState<ProgressTab>(initialTab)
+
+  const handleTabChange = (tab: ProgressTab) => {
+    setActiveTab(tab)
+    setSearchParams(tab === 'kumon' ? {} : { tab })
+  }
 
   const [selectedChild, setSelectedChild] = useState<Child | null>(null)
   const [, setWorksheetProgress] = useState<any[]>([])
@@ -256,6 +295,27 @@ export default function ProgressDashboard() {
           <p className="text-gray-500 text-sm">{getGradeString(selectedChild.grade_level)}</p>
         </div>
 
+        {/* Progress Tabs */}
+        <div className="bg-gray-100 rounded-xl p-1 flex gap-1">
+          <ProgressTabButton
+            active={activeTab === 'kumon'}
+            onClick={() => handleTabChange('kumon')}
+            icon="📚"
+          >
+            Daily Practice
+          </ProgressTabButton>
+          <ProgressTabButton
+            active={activeTab === 'school'}
+            onClick={() => handleTabChange('school')}
+            icon="🏫"
+          >
+            School Help
+          </ProgressTabButton>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'kumon' ? (
+          <>
         {/* Main Stats Card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
           <div className="flex items-center justify-between mb-4">
@@ -679,6 +739,69 @@ export default function ProgressDashboard() {
         >
           Continue Learning
         </Button>
+        </>
+        ) : (
+          /* School Help Tab Content */
+          <div className="space-y-5">
+            {/* Homework & Exam Stats Summary */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-purple-100/50 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">📊</span>
+                <h3 className="text-sm font-semibold text-gray-700">School Help Summary</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-purple-50 rounded-xl">
+                  <div className="text-3xl font-bold text-purple-600">—</div>
+                  <div className="text-xs text-gray-500 mt-1">Homework Sessions</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-xl">
+                  <div className="text-3xl font-bold text-blue-600">—</div>
+                  <div className="text-xs text-gray-500 mt-1">Practice Tests</div>
+                </div>
+              </div>
+
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Start using School Help to see your progress here!
+              </p>
+            </div>
+
+            {/* Topics Practiced */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-purple-100/50 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">📝</span>
+                <h3 className="text-sm font-semibold text-gray-700">Topics Practiced</h3>
+              </div>
+
+              <div className="text-center py-8 text-gray-400">
+                <div className="text-4xl mb-2">🏫</div>
+                <p className="text-sm">No homework sessions yet</p>
+                <p className="text-xs mt-1">Upload homework to see topic breakdown</p>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-purple-100/50 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">📅</span>
+                <h3 className="text-sm font-semibold text-gray-700">Recent Activity</h3>
+              </div>
+
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-sm">No recent homework or exam prep sessions</p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <Button
+              variant="primary"
+              onClick={() => navigate('/school-help')}
+              className="w-full py-4 text-lg font-semibold rounded-xl shadow-lg shadow-purple-200/50 bg-purple-600 hover:bg-purple-700"
+            >
+              Get School Help
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

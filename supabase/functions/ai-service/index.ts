@@ -172,15 +172,34 @@ async function handleExtractProblems(
   // Build content with images
   const content: Anthropic.MessageCreateParams['messages'][0]['content'] = []
 
-  // Add images
+  // Add images - handle both HTTP URLs and base64 data URLs
   for (const url of imageUrls) {
-    content.push({
-      type: 'image',
-      source: {
-        type: 'url',
-        url: url,
-      },
-    })
+    if (url.startsWith('data:')) {
+      // Parse base64 data URL: data:image/jpeg;base64,/9j/4AAQ...
+      const matches = url.match(/^data:([^;]+);base64,(.+)$/)
+      if (!matches) {
+        throw new Error('Invalid data URL format')
+      }
+      const [, mediaType, base64Data] = matches
+
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+          data: base64Data,
+        },
+      })
+    } else {
+      // Regular HTTP URL
+      content.push({
+        type: 'image',
+        source: {
+          type: 'url',
+          url: url,
+        },
+      })
+    }
   }
 
   // Add extraction prompt
@@ -229,6 +248,34 @@ async function handleAssessImageQuality(
     throw new Error('No image URL provided')
   }
 
+  // Build image content - handle both HTTP URLs and base64 data URLs
+  let imageContent: { type: 'image'; source: { type: 'url'; url: string } | { type: 'base64'; media_type: string; data: string } }
+
+  if (imageUrl.startsWith('data:')) {
+    // Parse base64 data URL
+    const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/)
+    if (!matches) {
+      throw new Error('Invalid data URL format')
+    }
+    const [, mediaType, base64Data] = matches
+    imageContent = {
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: mediaType,
+        data: base64Data,
+      },
+    }
+  } else {
+    imageContent = {
+      type: 'image',
+      source: {
+        type: 'url',
+        url: imageUrl,
+      },
+    }
+  }
+
   const response = await anthropic.messages.create({
     model: MODELS.haiku,
     max_tokens: 1024,
@@ -237,13 +284,7 @@ async function handleAssessImageQuality(
       {
         role: 'user',
         content: [
-          {
-            type: 'image',
-            source: {
-              type: 'url',
-              url: imageUrl,
-            },
-          },
+          imageContent,
           { type: 'text', text: IMAGE_QUALITY_PROMPT },
         ],
       },
@@ -720,7 +761,12 @@ Deno.serve(async (req) => {
 
     // Verify user auth
     const authHeader = req.headers.get('Authorization')
+    console.log('Auth header present:', !!authHeader)
+    console.log('Auth header length:', authHeader?.length)
+    console.log('Auth header starts with Bearer:', authHeader?.startsWith('Bearer '))
+
     if (!authHeader) {
+      console.error('Missing authorization header')
       return new Response(
         JSON.stringify({ error: 'Missing authorization' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -728,20 +774,32 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    })
+    console.log('Supabase URL available:', !!supabaseUrl)
+    console.log('Supabase service key available:', !!supabaseServiceKey)
 
+    // Extract token from Bearer header
+    const token = authHeader.replace('Bearer ', '')
+    console.log('Token length:', token.length)
+
+    // Create client with service role key (matches working create-checkout-session pattern)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Validate token explicitly (not via global headers)
+    console.log('Calling supabase.auth.getUser(token)...')
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser(token)
+
+    console.log('getUser result - user:', !!user)
+    console.log('getUser result - error:', authError ? JSON.stringify(authError) : 'none')
+
     if (authError || !user) {
-      console.error('Auth error:', authError)
+      console.error('Auth error details:', authError)
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: authError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

@@ -20,7 +20,7 @@ export default function BottomNav() {
 
   const navItems: NavItem[] = [
     { icon: '🏠', label: 'Home', path: '/dashboard', requiresAuth: true },
-    { icon: '📷', label: 'Homework', path: '/homework', requiresAuth: true },
+    { icon: '🏫', label: 'School', path: '/school-help', requiresAuth: true },
     { icon: '📺', label: 'Videos', path: '/videos', requiresAuth: true },
     { icon: '📊', label: 'Progress', path: '/progress', requiresAuth: true }
   ]
@@ -62,7 +62,9 @@ export default function BottomNav() {
         {/* Navigation items */}
         <nav className="flex justify-around items-center py-2">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path
+            // Check if current path matches or is a sub-route
+            const isActive = location.pathname === item.path ||
+              (item.path === '/school-help' && location.pathname.startsWith('/homework'))
 
             // Handle navigation click - use guarded navigation for parent areas
             const handleNavClick = () => {

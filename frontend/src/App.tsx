@@ -25,6 +25,7 @@ import HomeworkPage from '@/pages/HomeworkPage'
 import HomeworkHelperPage from '@/pages/HomeworkHelperPage'
 import ExamPrepPage from '@/pages/ExamPrepPage'
 import PracticeModulesPage from '@/pages/PracticeModulesPage'
+import SchoolHelpPage from '@/pages/SchoolHelpPage'
 
 function App() {
   return (
@@ -74,6 +75,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <PracticeModulesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/school-help"
+            element={
+              <ProtectedRoute>
+                <SchoolHelpPage />
               </ProtectedRoute>
             }
           />

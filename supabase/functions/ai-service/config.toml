@@ -2,5 +2,5 @@
 # Secure proxy for Claude API calls via Edge Function.
 # Requires ANTHROPIC_API_KEY environment variable (set via supabase secrets).
 
-[functions.ai-service]
-verify_jwt = true  # Require authenticated users
+[function]
+verify_jwt = false

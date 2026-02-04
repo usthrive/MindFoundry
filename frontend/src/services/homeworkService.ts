@@ -125,6 +125,170 @@ export async function getChildHomeworkSessions(
   return (data || []) as HomeworkSession[];
 }
 
+/**
+ * Summary of a past homework session for reuse in test prep
+ */
+export interface PastHomeworkSummary {
+  sessionId: string;
+  createdAt: string;
+  mode: HomeworkMode;
+  problemCount: number;
+  topics: string[];
+  extractedProblems: ExtractedProblem[];
+}
+
+/**
+ * Grouped homework sessions by topic for test prep selection
+ */
+export interface TopicGroup {
+  topic: string;
+  totalProblems: number;
+  sessionCount: number;
+  sessions: PastHomeworkSummary[];
+}
+
+/**
+ * Get past homework sessions with extracted problems for test prep reuse
+ * Returns sessions from the last 12 months grouped by topic
+ */
+export async function getPastHomeworkForTestPrep(
+  childId: string,
+  monthsBack = 12
+): Promise<{ sessions: PastHomeworkSummary[]; topicGroups: TopicGroup[]; error?: string }> {
+  try {
+    // Calculate date cutoff
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - monthsBack);
+
+    // Fetch sessions with extracted problems
+    const { data, error } = await supabase
+      .from('homework_sessions')
+      .select('id, created_at, mode, extracted_problems, topics_identified, status')
+      .eq('child_id', childId)
+      .gte('created_at', cutoffDate.toISOString())
+      .in('status', ['ready', 'completed'])
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching past homework:', error);
+      return { sessions: [], topicGroups: [], error: error.message };
+    }
+
+    // Filter sessions that have extracted problems
+    const validSessions = (data || []).filter(
+      (s) => s.extracted_problems && Array.isArray(s.extracted_problems) && s.extracted_problems.length > 0
+    );
+
+    // Convert to summary format
+    const sessions: PastHomeworkSummary[] = validSessions.map((s) => ({
+      sessionId: s.id,
+      createdAt: s.created_at,
+      mode: s.mode as HomeworkMode,
+      problemCount: (s.extracted_problems as ExtractedProblem[]).length,
+      topics: (s.topics_identified as string[]) || [],
+      extractedProblems: s.extracted_problems as ExtractedProblem[],
+    }));
+
+    // Group by topic
+    const topicMap = new Map<string, TopicGroup>();
+
+    for (const session of sessions) {
+      for (const topic of session.topics) {
+        if (!topicMap.has(topic)) {
+          topicMap.set(topic, {
+            topic,
+            totalProblems: 0,
+            sessionCount: 0,
+            sessions: [],
+          });
+        }
+
+        const group = topicMap.get(topic)!;
+        // Count problems of this topic in this session
+        const topicProblems = session.extractedProblems.filter(
+          (p) => p.problem_type === topic
+        ).length;
+        group.totalProblems += topicProblems > 0 ? topicProblems : session.problemCount / session.topics.length;
+        group.sessionCount += 1;
+        group.sessions.push(session);
+      }
+    }
+
+    // Convert to array and sort by total problems
+    const topicGroups = Array.from(topicMap.values()).sort(
+      (a, b) => b.totalProblems - a.totalProblems
+    );
+
+    return { sessions, topicGroups };
+  } catch (error) {
+    console.error('Error in getPastHomeworkForTestPrep:', error);
+    return { sessions: [], topicGroups: [], error: 'Failed to fetch past homework' };
+  }
+}
+
+/**
+ * Generate a practice test from selected past homework sessions
+ * This reuses extracted problems without re-processing images
+ */
+export async function generateTestFromPastHomework(
+  childId: string,
+  selectedSessionIds: string[],
+  config: TestConfiguration
+): Promise<{ test?: ExamPrepTest; error?: string }> {
+  try {
+    // Fetch all selected sessions
+    const { data: sessions, error: fetchError } = await supabase
+      .from('homework_sessions')
+      .select('id, extracted_problems, topics_identified')
+      .in('id', selectedSessionIds);
+
+    if (fetchError || !sessions || sessions.length === 0) {
+      return { error: 'Could not find selected sessions' };
+    }
+
+    // Combine all extracted problems
+    const allProblems: ExtractedProblem[] = [];
+    for (const session of sessions) {
+      const problems = session.extracted_problems as ExtractedProblem[];
+      if (problems && Array.isArray(problems)) {
+        allProblems.push(...problems);
+      }
+    }
+
+    if (allProblems.length === 0) {
+      return { error: 'No problems found in selected sessions' };
+    }
+
+    // Create a new session for this test (to track it)
+    const { session: newSession, error: sessionError } = await createHomeworkSession(
+      childId,
+      'exam_prep'
+    );
+
+    if (sessionError || !newSession) {
+      return { error: sessionError || 'Failed to create session' };
+    }
+
+    // Save the combined problems to the new session
+    const allTopics = [...new Set(sessions.flatMap((s) => s.topics_identified as string[]))];
+    await supabase
+      .from('homework_sessions')
+      .update({
+        extracted_problems: allProblems,
+        topics_identified: allTopics,
+        status: 'ready',
+        image_count: 0, // No new images - reusing past content
+      })
+      .eq('id', newSession.id);
+
+    // Generate the practice test using existing function
+    return await generatePracticeTest(newSession.id, config);
+  } catch (error) {
+    console.error('Error generating test from past homework:', error);
+    return { error: 'Failed to generate practice test from past homework' };
+  }
+}
+
 // ============================================================================
 // Image Upload & Extraction
 // ============================================================================

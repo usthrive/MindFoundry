@@ -44,6 +44,16 @@ export default function HomeworkHelperPage() {
     setUploadedImages(files);
   }, []);
 
+  // Convert File to base64 data URL
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Handle extraction start
   const handleStartExtraction = useCallback(async () => {
     if (uploadedImages.length === 0) return;
@@ -51,15 +61,15 @@ export default function HomeworkHelperPage() {
     setIsExtracting(true);
 
     try {
-      // Create temporary URLs for the AI service
-      const imageUrls = uploadedImages.map((file) => URL.createObjectURL(file));
+      // Convert images to base64 data URLs for the Edge Function
+      // (blob URLs don't work server-side)
+      const imageUrls = await Promise.all(
+        uploadedImages.map((file) => fileToBase64(file))
+      );
 
       // Extract problems from images
       const problems = await aiService.extractProblems(imageUrls);
       setExtractedProblems(problems);
-
-      // Clean up object URLs
-      imageUrls.forEach((url) => URL.revokeObjectURL(url));
 
       // Move to selection step
       setCurrentStep('select');
