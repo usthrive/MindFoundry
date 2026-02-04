@@ -683,7 +683,7 @@ export class MockAIService implements MsGuideServiceInterface {
 
     return {
       problem_type: problemType,
-      subtype: null,
+      subtype: undefined,
       grade_level: gradeLevel,
       template_pattern: {
         format,

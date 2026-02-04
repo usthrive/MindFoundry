@@ -27,10 +27,14 @@ export interface OperandRange {
  */
 export interface GenerationConstraints {
   no_negative_results?: boolean;
+  no_remainders?: boolean;
   max_digits_in_answer?: number;
   requires_carrying?: boolean;
   requires_borrowing?: boolean;
   denominator_range?: { min: number; max: number };
+  // For fractions
+  same_denominator?: boolean;
+  common_denominators?: number[];
   // For algebra
   variable_coefficient_max?: number;
   constant_max?: number;
@@ -42,10 +46,11 @@ export interface GenerationConstraints {
  * Template pattern stored in database
  */
 export interface TemplatePattern {
-  format: 'horizontal' | 'vertical' | 'word_problem' | 'expression';
+  format: 'horizontal' | 'vertical' | 'word_problem' | 'expression' | 'word';
   operand_ranges: OperandRange[];
   operators: string[];
   constraints?: GenerationConstraints;
+  word_problem_template?: string;
   word_problem_templates?: string[];
   variable_names?: string[];
 }
@@ -83,6 +88,8 @@ export interface GeneratedSchoolProblem {
     format: string;
     hints: string[];
     solution_steps: string[];
+    fractions?: { numerator: number; denominator: number }[];
+    word_problem_context?: { name: string; object: string };
   };
   difficulty: number;
 }

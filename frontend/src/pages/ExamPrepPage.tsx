@@ -730,7 +730,7 @@ export default function ExamPrepPage() {
                       problem_text: reviewProblem.problem_text,
                       student_answer: studentAnswer || '',
                       correct_answer: reviewProblem.answer || '',
-                      grade_level: reviewProblem.grade_level || '3',
+                      grade_level: '3',
                       previous_explanation: reviewExplanation,
                     } : undefined}
                     showContextBanner={false}

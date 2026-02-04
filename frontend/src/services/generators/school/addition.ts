@@ -6,7 +6,6 @@ import type { SchoolProblemTemplate, GeneratedSchoolProblem } from './types';
 import {
   generateId,
   generateOperands,
-  pickOperator,
   generateHints,
   formatProblemText,
   applyConstraints,

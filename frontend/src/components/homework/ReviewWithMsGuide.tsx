@@ -222,11 +222,12 @@ export function ReviewWithMsGuide({
   const { problem, evaluation, studentAnswer } = currentWrongAnswer;
 
   // Build problem context for chat
+  // Note: GeneratedProblem doesn't have grade_level, so we default to '3'
   const problemContext: ProblemContext = {
     problem_text: problem.problem_text,
     student_answer: studentAnswer || '',
     correct_answer: evaluation.correct_answer || problem.answer || '',
-    grade_level: problem.grade_level || '3',
+    grade_level: '3',
     previous_explanation: explanation || undefined,
   };
 

@@ -7,7 +7,7 @@
  * Supported browsers: Chrome, Edge, Safari (iOS 14.5+)
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 // TypeScript declarations for Web Speech API
 interface SpeechRecognitionEvent extends Event {

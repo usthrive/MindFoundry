@@ -157,8 +157,9 @@ async function generateGoogleTTS(text: string, config: TTSConfig): Promise<strin
   }
 
   if (!data?.success || !data?.audioContent) {
-    lastError = data?.error || 'Failed to generate speech from Google TTS';
-    throw new Error(lastError);
+    const errorMsg = data?.error || 'Failed to generate speech from Google TTS';
+    lastError = errorMsg;
+    throw new Error(errorMsg);
   }
 
   // Success - clear any previous error

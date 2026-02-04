@@ -5,7 +5,7 @@
  * Uses LLM ONCE to extract templates, then generates problems algorithmically.
  */
 
-import { supabase } from './supabase';
+import { supabase } from '../lib/supabase';
 import { getAIService } from './ai';
 import {
   generateFromTemplate,
@@ -14,6 +14,7 @@ import {
   type GeneratedSchoolProblem,
   type TemplatePattern,
 } from './generators/school';
+import type { HomeworkProblemType } from '../types/homework';
 
 /**
  * Template extraction result from AI
@@ -89,7 +90,7 @@ export async function generateSimilarProblems(
     const problems = generateFromTemplate({
       template: template as SchoolProblemTemplate,
       count,
-      difficulty,
+      difficulty: difficulty as 1 | 2 | 3 | 4 | 5 | undefined,
     });
 
     // Save generated problems for tracking
@@ -122,7 +123,7 @@ export async function generatePracticeProblems(
   return generateFromTemplate({
     template,
     count,
-    difficulty: template.difficulty_level,
+    difficulty: template.difficulty_level as 1 | 2 | 3 | 4 | 5 | undefined,
   });
 }
 
@@ -298,7 +299,33 @@ async function extractTemplateFromProblem(
 
     // Use AI to extract template pattern
     const response = await aiService.extractProblemTemplate(problemText, gradeLevel);
-    return response;
+
+    if (!response) return null;
+
+    // Convert AI response to our internal ExtractedTemplate format
+    const converted: ExtractedTemplate = {
+      problem_type: response.problem_type,
+      subtype: response.subtype,
+      grade_level: response.grade_level,
+      template_pattern: {
+        format: response.template_pattern.format === 'word'
+          ? 'word'
+          : response.template_pattern.format,
+        operand_ranges: response.template_pattern.operand_ranges.map(range => ({
+          min: range.min,
+          max: range.max,
+          type: range.type || 'integer',
+        })),
+        operators: response.template_pattern.operators,
+        constraints: response.template_pattern.constraints,
+        word_problem_template: response.template_pattern.word_problem_template,
+        variable_names: response.template_pattern.variable_names,
+      },
+      hint_templates: response.hint_templates,
+      solution_step_templates: response.solution_step_templates,
+    };
+
+    return converted;
   } catch (error) {
     console.error('Error extracting template:', error);
     return null;
@@ -316,7 +343,7 @@ async function saveTemplate(
   try {
     const template: Partial<SchoolProblemTemplate> = {
       child_id: childId || null,
-      problem_type: extracted.problem_type,
+      problem_type: extracted.problem_type as HomeworkProblemType,
       subtype: extracted.subtype || null,
       grade_level: extracted.grade_level,
       template_pattern: extracted.template_pattern,

@@ -177,7 +177,7 @@ function generateDifferentDenominatorFractions(denoms: number[]): Fraction[] {
   ];
 }
 
-function generateMultiplicationFractions(denoms: number[]): Fraction[] {
+function generateMultiplicationFractions(_denoms: number[]): Fraction[] {
   // Keep numbers small for multiplication
   return [
     { numerator: randomInt(1, 5), denominator: randomInt(2, 6) },
@@ -185,7 +185,7 @@ function generateMultiplicationFractions(denoms: number[]): Fraction[] {
   ];
 }
 
-function generateDivisionFractions(denoms: number[]): Fraction[] {
+function generateDivisionFractions(_denoms: number[]): Fraction[] {
   return [
     { numerator: randomInt(1, 6), denominator: randomInt(2, 6) },
     { numerator: randomInt(1, 4), denominator: randomInt(2, 5) },
@@ -354,7 +354,7 @@ function generateSimplificationSteps(original: Fraction, simplified: Fraction): 
   ];
 }
 
-function generateDefaultFractionHints(fractions: Fraction[], operator: string): string[] {
+function generateDefaultFractionHints(_fractions: Fraction[], operator: string): string[] {
   switch (operator) {
     case '+':
     case '-':

@@ -17,7 +17,7 @@ import { generateAdditionProblem } from './addition';
 import { generateSubtractionProblem } from './subtraction';
 import { generateMultiplicationProblem } from './multiplication';
 import { generateDivisionProblem } from './division';
-import { generateFractionProblem } from './fractions';
+import { generateFractionsProblem } from './fractions';
 import { generateWordProblem } from './word-problems';
 
 export * from './types';
@@ -63,7 +63,7 @@ function generateSingleProblem(
       return generateDivisionProblem(template, effectiveDifficulty);
 
     case 'fractions':
-      return generateFractionProblem(template, effectiveDifficulty);
+      return generateFractionsProblem(template, effectiveDifficulty);
 
     case 'word_problem':
       return generateWordProblem(template, effectiveDifficulty);

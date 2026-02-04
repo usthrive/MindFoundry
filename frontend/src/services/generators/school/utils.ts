@@ -185,7 +185,7 @@ export function calculateAnswer(operands: number[], operator: string): number {
 export function formatProblemText(
   operands: number[],
   operator: string,
-  format: 'horizontal' | 'vertical' | 'expression'
+  format: 'horizontal' | 'vertical' | 'expression' | 'word_problem' | 'word'
 ): string {
   const displayOp = operator === '*' ? '×' : operator === '/' ? '÷' : operator;
 
@@ -196,6 +196,11 @@ export function formatProblemText(
   if (format === 'vertical') {
     // Return in a format that can be displayed vertically
     return `  ${operands[0]}\n${displayOp} ${operands[1]}\n─────`;
+  }
+
+  // Word problems are formatted separately - return expression for fallback
+  if (format === 'word_problem' || format === 'word') {
+    return `${operands[0]} ${displayOp} ${operands[1]} = ?`;
   }
 
   // Expression format

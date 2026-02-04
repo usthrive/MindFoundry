@@ -93,9 +93,6 @@ function generateDefaultMultiplicationSteps(operands: number[], answer: number):
 
   // Two-digit by two-digit
   if (a > 10 && b > 10) {
-    const tensA = Math.floor(a / 10);
-    const onesA = a % 10;
-
     return [
       `Multiply ${a} × ${b} using place value`,
       `First, ${a} × ${b % 10} = ${a * (b % 10)} (ones)`,

@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@/lib/supabase'
-import type { MsGuideServiceInterface, GenerateTestOptions, AIUsageData } from './types'
+import type { MsGuideServiceInterface, GenerateTestOptions, AIUsageData, ExtractedTemplateResult } from './types'
 import type {
   ExtractedProblem,
   GeneratedProblem,
@@ -298,6 +298,25 @@ export class EdgeFunctionAIService implements MsGuideServiceInterface {
 
     // Return data URL for the audio
     return `data:audio/mp3;base64,${data.audioContent}`
+  }
+
+  /**
+   * Extract a reusable template from a problem (ONE-TIME LLM cost)
+   * Used for algorithmic problem generation
+   */
+  async extractProblemTemplate(
+    problemText: string,
+    gradeLevel: string
+  ): Promise<ExtractedTemplateResult | null> {
+    try {
+      return await this.callEdgeFunction<ExtractedTemplateResult>('extractProblemTemplate', {
+        problemText,
+        gradeLevel,
+      })
+    } catch (error) {
+      console.error('Error extracting problem template:', error)
+      return null
+    }
   }
 }
 
