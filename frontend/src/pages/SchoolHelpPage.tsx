@@ -134,7 +134,6 @@ function PastHomeworkSelector({
       {topicGroups.map((group) => {
         const isExpanded = expandedTopics.has(group.topic);
         const selectedCount = getSelectedCountForTopic(group);
-        const allSelected = selectedCount === group.sessions.length;
 
         return (
           <div key={group.topic} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -312,7 +311,7 @@ export default function SchoolHelpPage() {
 
     const config: TestConfiguration = {
       problemCount: Math.min(20, getTotalSelectedProblems()),
-      difficultyPreference: 'mixed',
+      difficultyPreference: 'balanced',
       timerEnabled: false,
       includeWarmups: true,
       includeChallenges: true,
