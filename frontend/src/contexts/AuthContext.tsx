@@ -16,6 +16,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: Error | null }>
   logout: () => Promise<void>
   selectChild: (childId: string) => void
+  clearCurrentChild: () => void
   refreshChildren: () => Promise<void>
 }
 
@@ -157,6 +158,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const clearCurrentChild = () => {
+    setCurrentChild(null)
+    localStorage.removeItem('selectedChildId')
+  }
+
   const value = {
     user,
     currentChild,
@@ -167,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     logout,
     selectChild,
+    clearCurrentChild,
     refreshChildren,
   }
 

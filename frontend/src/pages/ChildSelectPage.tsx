@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { getUserProfile, getParentPin } from '@/services/userService'
+import { getUserProfile } from '@/services/userService'
 import type { Database } from '@/lib/supabase'
 import ChildSelector from '@/components/children/ChildSelector'
 import AddChildModal from '@/components/children/AddChildModal'
 import EditChildModal from '@/components/children/EditChildModal'
-import PinEntryModal from '@/components/auth/PinEntryModal'
 
 type Child = Database['public']['Tables']['children']['Row']
 
 export default function ChildSelectPage() {
-  const { user, children, selectChild, currentChild, loading } = useAuth()
+  const { user, children, selectChild, clearCurrentChild, loading } = useAuth()
   const navigate = useNavigate()
   const [showAddChildModal, setShowAddChildModal] = useState(false)
   const [showEditChildModal, setShowEditChildModal] = useState(false)
   const [editingChild, setEditingChild] = useState<Child | null>(null)
-  const [showPinModal, setShowPinModal] = useState(false)
-  const [parentPin, setParentPin] = useState<string | null>(null)
-  const [pendingChildId, setPendingChildId] = useState<string | null>(null)
+
+  // Clear current child when entering selection page (parent mode)
+  useEffect(() => {
+    clearCurrentChild()
+  }, [clearCurrentChild])
 
   // Redirect to login if not authenticated or to onboarding if user_type not set
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function ChildSelectPage() {
       return
     }
 
-    // Check if user has selected their type and fetch parent PIN
+    // Check if user has selected their type
     if (user) {
       getUserProfile(user.id).then((profile) => {
         if (!profile || !profile.user_type) {
@@ -35,39 +36,14 @@ export default function ChildSelectPage() {
           navigate('/onboarding')
         }
       })
-
-      // Fetch parent PIN
-      getParentPin(user.id).then((pin) => {
-        setParentPin(pin)
-      })
     }
   }, [user, loading, navigate])
 
   const handleSelectChild = (childId: string) => {
-    // If there's a PIN set and we're switching to a different child, require PIN
-    if (parentPin && currentChild && currentChild.id !== childId) {
-      setPendingChildId(childId)
-      setShowPinModal(true)
-      return
-    }
-
-    // No PIN or same child or first selection - proceed directly
+    // PIN verification happens via NavigationGuard when accessing this page from child mode
+    // Once here, parent can freely select any child
     selectChild(childId)
     navigate('/dashboard')
-  }
-
-  const handlePinSuccess = () => {
-    setShowPinModal(false)
-    if (pendingChildId) {
-      selectChild(pendingChildId)
-      setPendingChildId(null)
-      navigate('/dashboard')
-    }
-  }
-
-  const handlePinCancel = () => {
-    setShowPinModal(false)
-    setPendingChildId(null)
   }
 
   const handleAddChild = () => {
@@ -141,18 +117,6 @@ export default function ChildSelectPage() {
             child={editingChild}
             onClose={handleCloseEditModal}
             onSuccess={handleChildUpdated}
-          />
-        )}
-
-        {/* PIN Entry Modal for switching children */}
-        {parentPin && (
-          <PinEntryModal
-            isOpen={showPinModal}
-            onSuccess={handlePinSuccess}
-            onCancel={handlePinCancel}
-            correctPin={parentPin}
-            title="Switch Child Profile"
-            description="Enter your parent PIN to switch to a different child"
           />
         )}
       </div>

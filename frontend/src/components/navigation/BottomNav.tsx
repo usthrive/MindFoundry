@@ -89,6 +89,12 @@ export default function BottomNav() {
 
             // Handle navigation click - use guarded navigation for parent areas
             const handleNavClick = () => {
+              // Home button is context-aware: go to /select-child when no child selected
+              if (item.path === '/dashboard' && !currentChild) {
+                navigate('/select-child')
+                return
+              }
+
               if (isParentArea(item.path)) {
                 // Parent areas require PIN protection when exiting child view
                 navigateWithGuard(item.path)
