@@ -21,6 +21,9 @@ export interface TTSConfig {
   languageCode?: string;   // BCP-47 code (default 'en-US')
 }
 
+// Voice type selection for A/B testing
+export type VoiceType = 'google' | 'browser' | 'auto';
+
 // Default configuration for Ms. Guide
 const DEFAULT_CONFIG: Required<TTSConfig> = {
   voice: 'en-US-Neural2-C',  // Child-friendly female voice
@@ -44,6 +47,15 @@ let browserVoicesPromise: Promise<void> | null = null;
 
 // Last error for diagnostics
 let lastError: string | null = null;
+
+/**
+ * Detect if running on mobile device
+ * Mobile browsers have stricter autoplay policies that can block audio.play()
+ */
+export function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
 
 /**
  * Preload browser voices (they may not be available immediately)
@@ -176,13 +188,15 @@ async function generateGoogleTTS(text: string, config: TTSConfig): Promise<strin
 }
 
 /**
- * Speak text using Google Cloud TTS with browser fallback
+ * Speak text using the specified voice type
+ * @param voiceType - 'google' for HD Neural2 voice, 'browser' for free browser TTS, 'auto' for smart selection
  */
 export async function speak(
   text: string,
   config: Partial<TTSConfig> = {},
   onEnd?: () => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
+  voiceType: VoiceType = 'auto'
 ): Promise<void> {
   // Stop any current playback
   stop();
@@ -192,6 +206,43 @@ export async function speak(
     return;
   }
 
+  // If explicitly browser, use browser TTS directly
+  if (voiceType === 'browser') {
+    console.log('[TTS] Using browser TTS (explicit)');
+    await speakWithBrowser(text, config, onEnd, onError);
+    return;
+  }
+
+  // If explicitly google, try Google TTS only (no auto-fallback to browser)
+  if (voiceType === 'google') {
+    console.log('[TTS] Using Google TTS (explicit)');
+    await speakWithGoogle(text, config, onEnd, onError, false);
+    return;
+  }
+
+  // 'auto' mode: Try Google first, fall back to browser if needed
+  // On mobile, prefer browser TTS first to avoid autoplay policy issues
+  if (isMobileDevice()) {
+    console.log('[TTS] Mobile device detected, using browser TTS (auto mode)');
+    await speakWithBrowser(text, config, onEnd, onError);
+    return;
+  }
+
+  // Desktop: try Google TTS with browser fallback
+  await speakWithGoogle(text, config, onEnd, onError, true);
+}
+
+/**
+ * Speak text using Google Cloud TTS
+ * @param allowFallback - If true, falls back to browser TTS on error
+ */
+async function speakWithGoogle(
+  text: string,
+  config: Partial<TTSConfig>,
+  onEnd?: () => void,
+  onError?: (error: Error) => void,
+  allowFallback: boolean = true
+): Promise<void> {
   const cacheKey = hashText(text, config);
 
   try {
@@ -207,13 +258,19 @@ export async function speak(
         isUsingGoogleTTS = true;
         console.log('[TTS] Using Google Cloud TTS');
       } catch (googleError) {
-        console.warn('[TTS] Google TTS failed, falling back to browser:', googleError);
-        // Fall back to browser TTS
-        await speakWithBrowser(text, config, onEnd, onError);
+        console.warn('[TTS] Google TTS failed:', googleError);
+        if (allowFallback) {
+          await speakWithBrowser(text, config, onEnd, onError);
+        } else {
+          const error = googleError instanceof Error ? googleError : new Error('Google TTS failed');
+          lastError = error.message;
+          onError?.(error);
+        }
         return;
       }
     } else {
-      console.log('[TTS] Using cached audio');
+      isUsingGoogleTTS = true;
+      console.log('[TTS] Using cached Google TTS audio');
     }
 
     // Play the audio
@@ -225,15 +282,45 @@ export async function speak(
     currentAudio.onerror = (e) => {
       console.error('[TTS] Audio playback error:', e);
       currentAudio = null;
-      // Fall back to browser TTS
-      speakWithBrowser(text, config, onEnd, onError);
+      if (allowFallback) {
+        speakWithBrowser(text, config, onEnd, onError);
+      } else {
+        const error = new Error('Audio playback failed');
+        lastError = error.message;
+        onError?.(error);
+      }
     };
 
-    await currentAudio.play();
+    // Handle play() promise rejection (can happen with autoplay policies)
+    try {
+      await currentAudio.play();
+    } catch (playError) {
+      console.error('[TTS] Audio play() failed:', playError);
+      currentAudio = null;
+
+      // Check if it's an autoplay policy error
+      if (playError instanceof Error && playError.name === 'NotAllowedError') {
+        console.warn('[TTS] Autoplay blocked');
+        lastError = 'Autoplay blocked - tap again to play';
+      }
+
+      if (allowFallback) {
+        await speakWithBrowser(text, config, onEnd, onError);
+      } else {
+        const error = playError instanceof Error ? playError : new Error('Playback failed');
+        lastError = error.message;
+        onError?.(error);
+      }
+    }
   } catch (error) {
     console.error('[TTS] Error:', error);
-    // Fall back to browser TTS
-    await speakWithBrowser(text, config, onEnd, onError);
+    if (allowFallback) {
+      await speakWithBrowser(text, config, onEnd, onError);
+    } else {
+      const err = error instanceof Error ? error : new Error('TTS failed');
+      lastError = err.message;
+      onError?.(err);
+    }
   }
 }
 
@@ -262,17 +349,39 @@ async function speakWithBrowser(
   // Cancel any ongoing speech to avoid queue buildup
   window.speechSynthesis.cancel();
 
+  // Check if voices are available after loading
+  const voices = window.speechSynthesis.getVoices();
+  console.log('[TTS] Available browser voices:', voices.length);
+
+  if (voices.length === 0) {
+    console.warn('[TTS] No voices available in browser');
+    const error = new Error('No voices available for speech synthesis');
+    lastError = error.message;
+    onError?.(error);
+    return;
+  }
+
   return new Promise((resolve) => {
+    // Timeout protection: ensure promise resolves even if speech events don't fire
+    // This prevents infinite loading state on some mobile browsers
+    const timeoutId = setTimeout(() => {
+      console.warn('[TTS] Speech timeout - events did not fire');
+      if (currentUtterance) {
+        window.speechSynthesis.cancel();
+        currentUtterance = null;
+      }
+      const error = new Error('Speech synthesis timed out');
+      lastError = error.message;
+      onError?.(error);
+      resolve();
+    }, 30000); // 30 second timeout for long text
+
     currentUtterance = new SpeechSynthesisUtterance(text);
     currentUtterance.rate = config.speakingRate ?? DEFAULT_CONFIG.speakingRate;
     currentUtterance.pitch = 1 + ((config.pitch ?? DEFAULT_CONFIG.pitch) / 20);  // Normalize pitch
     currentUtterance.lang = config.languageCode ?? DEFAULT_CONFIG.languageCode;
 
-    // Try to find a good voice (prefer female voices for Ms. Guide)
-    const voices = window.speechSynthesis.getVoices();
-    console.log('[TTS] Available browser voices:', voices.length);
-
-    // Priority order for voice selection
+    // Priority order for voice selection (prefer female voices for Ms. Guide)
     const femaleVoice = voices.find(v =>
       v.lang.startsWith('en') &&
       (v.name.toLowerCase().includes('samantha') ||  // macOS
@@ -285,12 +394,10 @@ async function speakWithBrowser(
     if (femaleVoice) {
       currentUtterance.voice = femaleVoice;
       console.log('[TTS] Using voice:', femaleVoice.name);
-    } else if (voices.length === 0) {
-      console.warn('[TTS] No voices available');
-      lastError = 'No voices available in browser';
     }
 
     currentUtterance.onend = () => {
+      clearTimeout(timeoutId);
       currentUtterance = null;
       lastError = null;
       onEnd?.();
@@ -298,6 +405,7 @@ async function speakWithBrowser(
     };
 
     currentUtterance.onerror = (e) => {
+      clearTimeout(timeoutId);
       currentUtterance = null;
       const errorMsg = `Speech synthesis error: ${e.error || 'unknown'}`;
       lastError = errorMsg;
@@ -379,6 +487,15 @@ export function isPaused(): boolean {
  */
 export function isUsingGoogleVoice(): boolean {
   return isUsingGoogleTTS;
+}
+
+/**
+ * Check if audio for given text is already cached
+ * Useful for determining if mobile playback will work immediately
+ */
+export function isCached(text: string, config: Partial<TTSConfig> = {}): boolean {
+  const cacheKey = hashText(text, config);
+  return audioCache.has(cacheKey);
 }
 
 /**

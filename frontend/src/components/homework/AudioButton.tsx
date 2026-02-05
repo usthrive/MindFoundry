@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import * as ttsService from '../../services/ttsService';
+import type { VoiceType } from '../../services/ttsService';
 
 interface AudioButtonProps {
   /** Text to convert to speech */
@@ -26,9 +27,11 @@ interface AudioButtonProps {
   label?: string;
   /** Preload audio when component mounts */
   preload?: boolean;
+  /** Voice type: 'google' for HD Neural2, 'browser' for free browser TTS, 'auto' for smart selection */
+  voiceType?: VoiceType;
 }
 
-type PlayState = 'idle' | 'loading' | 'playing' | 'paused';
+type PlayState = 'idle' | 'loading' | 'playing' | 'paused' | 'preparing';
 
 export function AudioButton({
   text,
@@ -39,19 +42,21 @@ export function AudioButton({
   disabled = false,
   label,
   preload = false,
+  voiceType = 'auto',
 }: AudioButtonProps) {
   const [playState, setPlayState] = useState<PlayState>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [isMobile] = useState(() => ttsService.isMobileDevice());
 
-  // Preload audio if requested
+  // Preload audio if requested (only for Google TTS)
   useEffect(() => {
-    if (preload && text) {
+    if (preload && text && voiceType !== 'browser') {
       const optimizedText = optimizeForSpeech(text);
       ttsService.preload(optimizedText).catch(() => {
         // Silently fail preload - will generate on demand
       });
     }
-  }, [preload, text]);
+  }, [preload, text, voiceType]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -59,6 +64,14 @@ export function AudioButton({
       ttsService.stop();
     };
   }, []);
+
+  // Check if we need the "prepare" flow on mobile for Google TTS
+  const needsMobilePrepare = useCallback(() => {
+    if (voiceType !== 'google') return false;
+    if (!isMobile) return false;
+    const optimizedText = optimizeForSpeech(text);
+    return !ttsService.isCached(optimizedText);
+  }, [voiceType, isMobile, text]);
 
   // Handle play/pause
   const handleClick = useCallback(async () => {
@@ -74,11 +87,40 @@ export function AudioButton({
       // Resume
       ttsService.resume();
       setPlayState('playing');
-    } else {
-      // Start new speech
+    } else if (playState === 'preparing') {
+      // Audio was prepared, now play it
       await startSpeech();
+    } else {
+      // Check if we need to prepare first (mobile + Google TTS + not cached)
+      if (needsMobilePrepare()) {
+        await prepareAudio();
+      } else {
+        // Start new speech directly
+        await startSpeech();
+      }
     }
-  }, [disabled, playState, text]);
+  }, [disabled, playState, text, needsMobilePrepare]);
+
+  // Prepare audio (preload for mobile Google TTS)
+  const prepareAudio = async () => {
+    setPlayState('loading');
+    const optimizedText = optimizeForSpeech(text);
+
+    try {
+      const success = await ttsService.preload(optimizedText);
+      if (success) {
+        setPlayState('preparing');
+        setError(null);
+      } else {
+        setError('Failed to prepare');
+        setPlayState('idle');
+      }
+    } catch (err) {
+      console.error('Failed to prepare audio:', err);
+      setError('Failed to prepare');
+      setPlayState('idle');
+    }
+  };
 
   // Start speech
   const startSpeech = async () => {
@@ -91,6 +133,9 @@ export function AudioButton({
     setPlayState('loading');
     onPlay?.();
 
+    // Track if speech has ended via callback (to prevent race conditions)
+    let speechEnded = false;
+
     try {
       await ttsService.speak(
         optimizedText,
@@ -99,11 +144,13 @@ export function AudioButton({
         },
         // onEnd callback
         () => {
+          speechEnded = true;
           setPlayState('idle');
           onEnd?.();
         },
         // onError callback
         (err) => {
+          speechEnded = true;
           console.error('Speech error:', err);
           const lastError = ttsService.getLastError();
           // Show user-friendly error message
@@ -111,15 +158,22 @@ export function AudioButton({
             setError('Audio not supported');
           } else if (lastError?.includes('No voices')) {
             setError('No voices available');
+          } else if (lastError?.includes('timed out')) {
+            setError('Audio timed out');
+          } else if (lastError?.includes('Autoplay') || lastError?.includes('tap again')) {
+            setError('Tap again to play');
           } else {
             setError('Tap to retry');
           }
           setPlayState('idle');
-        }
+        },
+        // voiceType parameter
+        voiceType
       );
 
-      // If speak returns without error, we're playing
-      if (ttsService.isPlaying()) {
+      // speak() returned successfully - if speech hasn't ended yet, we're playing
+      // (For Google TTS, speak returns quickly; for browser TTS, it returns after speech ends)
+      if (!speechEnded && ttsService.isPlaying()) {
         setPlayState('playing');
       }
     } catch (err) {
@@ -174,6 +228,8 @@ export function AudioButton({
             <LoadingSpinner />
           </span>
         );
+      case 'preparing':
+        return '▶️';
       case 'playing':
         return '⏸️';
       case 'paused':
@@ -188,6 +244,8 @@ export function AudioButton({
     switch (playState) {
       case 'loading':
         return 'Loading audio...';
+      case 'preparing':
+        return 'Audio ready - tap to play';
       case 'playing':
         return 'Pause audio';
       case 'paused':
@@ -196,6 +254,16 @@ export function AudioButton({
         return 'Play audio';
     }
   };
+
+  // Get dynamic label based on state
+  const getDynamicLabel = () => {
+    if (error) return null; // Error message takes precedence
+    if (playState === 'preparing') return 'Tap to play';
+    if (playState === 'loading' && voiceType === 'google' && isMobile) return 'Preparing HD...';
+    return label;
+  };
+
+  const dynamicLabel = getDynamicLabel();
 
   return (
     <div className={`inline-flex items-center gap-2 ${className}`}>
@@ -210,9 +278,11 @@ export function AudioButton({
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : playState === 'playing'
               ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-sm'
-              : playState === 'loading'
-                ? 'bg-blue-50 text-blue-400 cursor-wait'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : playState === 'preparing'
+                ? 'bg-green-100 text-green-600 hover:bg-green-200 shadow-sm animate-pulse'
+                : playState === 'loading'
+                  ? 'bg-blue-50 text-blue-400 cursor-wait'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }
         `}
         aria-label={getAriaLabel()}
@@ -231,9 +301,11 @@ export function AudioButton({
         </button>
       )}
 
-      {/* Label */}
-      {label && !error && (
-        <span className="text-sm text-gray-600">{label}</span>
+      {/* Dynamic label (includes "Tap to play" for preparing state) */}
+      {dynamicLabel && !error && (
+        <span className={`text-sm ${playState === 'preparing' ? 'text-green-600 font-medium' : 'text-gray-600'}`}>
+          {dynamicLabel}
+        </span>
       )}
 
       {/* Error message */}

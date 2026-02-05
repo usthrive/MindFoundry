@@ -50,6 +50,8 @@ interface ReviewWithMsGuideProps {
   onAudioPlayed?: () => void;
   /** Max chat messages allowed */
   maxChatMessages?: number;
+  /** Grade level for age-appropriate language (defaults to '3' if not provided) */
+  gradeLevel?: string;
 }
 
 /**
@@ -215,6 +217,7 @@ export function ReviewWithMsGuide({
   onDone,
   onAudioPlayed,
   maxChatMessages = 20,
+  gradeLevel = '3',
 }: ReviewWithMsGuideProps) {
   const [activeTab, setActiveTab] = useState<'explanation' | 'chat'>('explanation');
 
@@ -222,12 +225,12 @@ export function ReviewWithMsGuide({
   const { problem, evaluation, studentAnswer } = currentWrongAnswer;
 
   // Build problem context for chat
-  // Note: GeneratedProblem doesn't have grade_level, so we default to '3'
+  // Uses gradeLevel prop for age-appropriate language from Ms. Guide
   const problemContext: ProblemContext = {
     problem_text: problem.problem_text,
     student_answer: studentAnswer || '',
     correct_answer: evaluation.correct_answer || problem.answer || '',
-    grade_level: '3',
+    grade_level: gradeLevel,
     previous_explanation: explanation || undefined,
   };
 

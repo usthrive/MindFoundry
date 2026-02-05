@@ -130,15 +130,19 @@ export default function HomeworkHelperPage() {
 
     try {
       const currentProblem = extractedProblems[selectedIndices[currentProblemIndex]];
+      const currentExplanation = explanations.get(selectedIndices[currentProblemIndex]);
+
+      // Get student_answer from extracted problem (populated by verification if student wrote an answer)
+      // Get correct_answer from the explanation (Ms. Guide determined the answer)
       const response = await aiService.chat(
         [...chatHistory, userMessage],
         message,
         {
           problem_text: currentProblem.problem_text,
-          student_answer: '',
-          correct_answer: '',
+          student_answer: currentProblem.student_answer || '',
+          correct_answer: currentExplanation?.correct_answer || '',
           grade_level: currentProblem.grade_level,
-          previous_explanation: explanations.get(selectedIndices[currentProblemIndex]),
+          previous_explanation: currentExplanation,
         }
       );
 
@@ -344,12 +348,17 @@ export default function HomeworkHelperPage() {
 
       case 'chat':
         const chatProblem = extractedProblems[selectedIndices[currentProblemIndex]];
+        const chatExplanation = explanations.get(selectedIndices[currentProblemIndex]);
+        // Pass actual context values so Ms. Guide knows what problem is being discussed:
+        // - student_answer: from extracted problem (if student wrote an answer)
+        // - correct_answer: from Ms. Guide's explanation
+        // - previous_explanation: for continuity in follow-up questions
         const chatContext = chatProblem ? {
           problem_text: chatProblem.problem_text,
-          student_answer: '',
-          correct_answer: '',
+          student_answer: chatProblem.student_answer || '',
+          correct_answer: chatExplanation?.correct_answer || '',
           grade_level: chatProblem.grade_level,
-          previous_explanation: explanations.get(selectedIndices[currentProblemIndex]),
+          previous_explanation: chatExplanation,
         } : undefined;
 
         return (

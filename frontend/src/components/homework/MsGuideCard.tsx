@@ -116,12 +116,24 @@ export function MsGuideCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-bold text-gray-900">Ms. Guide</h3>
+            {/* Dual audio buttons for A/B testing voice quality */}
             {showAudio && (
-              <AudioButton
-                text={buildAudioText()}
-                onPlay={onAudioPlayed}
-                size="small"
-              />
+              <div className="flex items-center gap-1">
+                <AudioButton
+                  text={buildAudioText()}
+                  onPlay={onAudioPlayed}
+                  size="small"
+                  voiceType="google"
+                  label="HD"
+                />
+                <AudioButton
+                  text={buildAudioText()}
+                  onPlay={onAudioPlayed}
+                  size="small"
+                  voiceType="browser"
+                  label="Free"
+                />
+              </div>
             )}
           </div>
           <p className="text-gray-700 mt-1 text-sm sm:text-base break-words">{explanation.greeting}</p>
