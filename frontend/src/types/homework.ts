@@ -62,6 +62,8 @@ export interface ExtractedProblem {
   grade_level: string;
   /** Confidence in extraction accuracy (0.0 to 1.0) */
   confidence: number;
+  /** Student's handwritten answer if visible (null if blank) */
+  student_answer?: string | null;
 }
 
 /**
