@@ -30,6 +30,7 @@ import type {
   GenerateTestOptions,
   AIUsageData,
   ExtractedTemplateResult,
+  BatchVerificationResult,
 } from './types';
 
 import { MS_GUIDE_SYSTEM_PROMPT } from './prompts/msGuideSystemPrompt';
@@ -38,6 +39,7 @@ import { buildExplanationPrompt } from './prompts/explanationPrompt';
 import { buildChatPrompt } from './prompts/chatPrompt';
 import { buildBatchEvaluationPrompt } from './prompts/evaluationPrompt';
 import { buildSimilarProblemPrompt } from './prompts/generationPrompt';
+import { buildVerificationPrompt } from './prompts/verificationPrompt';
 import { parseAIResponse } from './utils/parseAIResponse';
 
 /**
@@ -251,6 +253,65 @@ export class AnthropicAIService implements MsGuideServiceInterface {
     } catch (error) {
       this.trackUsage(
         'extractProblems',
+        MODELS.fast,
+        0,
+        0,
+        Date.now() - startTime,
+        false,
+        (error as Error).message
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Verify extracted problems by re-examining images
+   * Applies mathematical reasoning to connect visual elements to questions
+   */
+  async verifyExtraction(
+    problems: ExtractedProblem[],
+    imageUrls: string[]
+  ): Promise<BatchVerificationResult> {
+    const startTime = Date.now();
+
+    try {
+      const problemsSummary = problems.map((p, i) => `Problem ${i}: ${JSON.stringify(p)}`).join('\n');
+      const prompt = `${buildVerificationPrompt(problems.length)}
+
+Here are the problems that were extracted from the image(s) above. Please verify each one:
+
+${problemsSummary}
+
+RE-EXAMINE THE IMAGE(S) and verify:
+1. Is the problem_text accurate and complete?
+2. Are there visual elements (blocks, arrays, etc.) that affect the meaning?
+3. Has the student written any handwritten answers?
+
+Return your verification results as JSON.`;
+
+      const { content, inputTokens, outputTokens } = await this.callVisionAPI(
+        MODELS.fast,
+        'You are a math teacher verifying extracted homework problems.',
+        prompt,
+        imageUrls,
+        4096
+      );
+
+      const result = parseAIResponse<BatchVerificationResult>(content);
+
+      this.trackUsage(
+        'verifyExtraction',
+        MODELS.fast,
+        inputTokens,
+        outputTokens,
+        Date.now() - startTime,
+        true
+      );
+
+      return result || { verifications: [], overall_notes: 'Verification failed' };
+    } catch (error) {
+      this.trackUsage(
+        'verifyExtraction',
         MODELS.fast,
         0,
         0,

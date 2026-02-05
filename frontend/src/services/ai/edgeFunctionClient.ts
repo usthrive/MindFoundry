@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@/lib/supabase'
-import type { MsGuideServiceInterface, GenerateTestOptions, AIUsageData, ExtractedTemplateResult } from './types'
+import type { MsGuideServiceInterface, GenerateTestOptions, AIUsageData, ExtractedTemplateResult, BatchVerificationResult } from './types'
 import type {
   ExtractedProblem,
   GeneratedProblem,
@@ -137,6 +137,20 @@ export class EdgeFunctionAIService implements MsGuideServiceInterface {
    */
   async extractProblems(imageUrls: string[]): Promise<ExtractedProblem[]> {
     return this.callEdgeFunction<ExtractedProblem[]>('extractProblems', { imageUrls })
+  }
+
+  /**
+   * Verify extracted problems by re-examining images
+   * Applies mathematical reasoning to connect visual elements to questions
+   */
+  async verifyExtraction(
+    problems: ExtractedProblem[],
+    imageUrls: string[]
+  ): Promise<BatchVerificationResult> {
+    return this.callEdgeFunction<BatchVerificationResult>('verifyExtraction', {
+      problems,
+      imageUrls,
+    })
   }
 
   /**

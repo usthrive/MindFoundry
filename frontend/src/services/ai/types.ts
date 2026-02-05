@@ -32,6 +32,18 @@ export interface MsGuideServiceInterface {
   extractProblems(imageUrls: string[]): Promise<ExtractedProblem[]>;
 
   /**
+   * Verify extracted problems by re-examining images
+   * Applies mathematical reasoning to connect visual elements to questions
+   * @param problems - Previously extracted problems
+   * @param imageUrls - Array of signed URLs to the original images
+   * @returns Verification results with corrections if needed
+   */
+  verifyExtraction(
+    problems: ExtractedProblem[],
+    imageUrls: string[]
+  ): Promise<BatchVerificationResult>;
+
+  /**
    * Assess image quality before extraction
    * @param imageUrl - Signed URL to image
    * @returns Quality assessment with recommendation
@@ -232,4 +244,55 @@ export const TEMPERATURE_SETTINGS = {
   explanation: 0.7, // Some creativity for engagement
   chat: 0.7, // Natural conversation
   generation: 0.5, // Some variety, but controlled
+  verification: 0.0, // Need accuracy for verification
 } as const;
+
+// ============================================
+// Verification System Types
+// ============================================
+
+/**
+ * Correction to an extracted problem when verification finds issues
+ */
+export interface ProblemCorrection {
+  problem_text: string;
+  problem_type?: string;
+  difficulty?: string;
+  grade_level?: string;
+}
+
+/**
+ * Result of verifying a single extracted problem
+ */
+export interface VerificationResult {
+  /** Index of the problem being verified */
+  problem_index: number;
+  /** Was the original extraction correct? */
+  original_extraction_correct: boolean;
+  /** Step-by-step reasoning explaining verification */
+  reasoning: string;
+  /** Visual elements found in the image */
+  visual_elements_found: string[];
+  /** Total value represented by visual manipulatives */
+  visual_total_value?: number;
+  /** Issues found with the extraction */
+  issues: string[];
+  /** Corrected problem fields (if extraction was wrong) */
+  corrected_problem: ProblemCorrection | null;
+  /** The correct answer based on visual analysis */
+  correct_answer?: string;
+  /** Student's handwritten answer if found */
+  student_answer_found: string | null;
+  /** Confidence in the verification (0.0 to 1.0) */
+  confidence: number;
+}
+
+/**
+ * Result of verifying all extracted problems from an image
+ */
+export interface BatchVerificationResult {
+  /** Verifications for each problem */
+  verifications: VerificationResult[];
+  /** Overall notes about the verification */
+  overall_notes?: string;
+}

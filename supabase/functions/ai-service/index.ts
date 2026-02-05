@@ -8,6 +8,7 @@
  *
  * Supported operations:
  * - extractProblems: Extract math problems from images (Haiku)
+ * - verifyExtraction: Verify extracted problems by re-examining images (Haiku)
  * - explainConcept: Generate Ms. Guide explanations (Sonnet)
  * - chat: Ms. Guide chat responses (Sonnet)
  * - evaluateAnswers: Batch answer evaluation (Haiku)
@@ -38,6 +39,7 @@ const TEMPERATURE = {
   explanation: 0.7,
   chat: 0.7,
   generation: 0.5,
+  verification: 0.0,
 } as const
 
 // ========== PROMPTS ==========
@@ -174,6 +176,91 @@ Recommendations:
 - "proceed": Good to extract
 - "retry": Ask user to take better photo
 - "not_math": This isn't math content`
+
+const VERIFICATION_PROMPT = `You are a math teacher verifying extracted homework problems.
+
+CRITICAL: The initial extraction may have captured TEXT but missed the VISUAL CONTEXT.
+You must RE-EXAMINE THE IMAGE to understand what the problem is actually asking.
+
+For each problem, apply MATHEMATICAL REASONING:
+
+## STEP 1: EXAMINE THE IMAGE (NOT JUST TEXT)
+- What VISUAL elements are shown? (blocks, counters, arrays, number lines)
+- Are there manipulatives that REPRESENT numbers?
+- Is there a visual that ACCOMPANIES the text question?
+- Example: If you see blocks/bars alongside "10, 20, __, __, __", those visuals tell you what the blanks should contain
+
+## STEP 2: COUNT THE VISUALS
+- For Base-10 blocks: flat=100, bar=10, cube=1
+  - Count ALL bars (tens) and ALL cubes (ones)
+  - Calculate TOTAL: (bars × 10) + (cubes × 1)
+- For arrays: Count rows × columns
+- For counters: Count total objects
+- For number lines: Identify the interval between marks/jumps
+- For tally marks: Each complete group = 5
+
+## STEP 3: CONNECT VISUAL TO QUESTION
+This is the most critical step. Ask yourself:
+- What is the relationship between the visual and the blanks?
+- How many blanks are there? Does this match the visual elements?
+
+Example reasoning:
+- If 2 tens + 3 ones are shown with "10, 20, __, __, __":
+  - The visual shows 23 total
+  - The sequence starts: 10, 20 (counting tens)
+  - There are 3 blanks after 20
+  - There are 3 ones shown in the visual
+  - The 3 blanks match the 3 ones!
+  - CONCLUSION: The blanks are counting the ONES → 21, 22, 23
+  - NOT "count by 10s" (which would give 30, 40, 50 - but only 23 is shown!)
+
+- If an array shows 3 rows × 4 columns with "3 × __ = __":
+  - Count columns: 4
+  - Calculate total: 12
+  - CONCLUSION: 3 × 4 = 12
+
+## STEP 4: VERIFY THE EXTRACTION
+Compare your analysis to the extracted problem_text:
+- Was the visual content captured in problem_text?
+- Does the extraction reflect the RELATIONSHIP between visual and question?
+- If extraction says "count by 10s", but you counted ONES → EXTRACTION IS WRONG
+
+If the extraction is wrong, provide a corrected version:
+- Update problem_text to reflect the actual problem
+- Example correction: "Count 2 tens and 3 ones: 10, 20, __, __, __" with correct_answer: "21, 22, 23"
+
+## STEP 5: CHECK HANDWRITING
+Look carefully for handwritten answers:
+- Check blanks, boxes, and answer lines
+- Children's handwriting may be messy - make your best interpretation
+- Common confusions: 1/7, 4/9, 5/6, 0/6 - use context clues
+- If multiple blanks have answers, list them comma-separated
+- Report what's written, even if it appears incorrect
+
+Return JSON with your verification for each problem:
+{
+  "verifications": [
+    {
+      "problem_index": 0,
+      "original_extraction_correct": true,
+      "reasoning": "Step-by-step reasoning explaining how you verified this problem...",
+      "visual_elements_found": ["2 ten-bars", "3 unit cubes"],
+      "visual_total_value": 23,
+      "issues": [],
+      "corrected_problem": null,
+      "correct_answer": "21, 22, 23",
+      "student_answer_found": "21, 22, 23",
+      "confidence": 0.95
+    }
+  ],
+  "overall_notes": "Optional notes about image quality or verification challenges"
+}
+
+IMPORTANT:
+- Your reasoning should be detailed enough that another teacher could follow your logic
+- Focus on CONNECTING visuals to questions - this is where extractions often fail
+- If no visual manipulatives are present, still verify the extraction makes sense
+- Always check for handwritten answers, even if the extraction didn't find any`
 
 // ========== TYPES ==========
 
@@ -718,6 +805,111 @@ Return JSON:
   }
 }
 
+/**
+ * Verify extracted problems by re-examining images
+ * Applies mathematical reasoning to connect visual elements to questions
+ */
+async function handleVerifyExtraction(
+  anthropic: Anthropic,
+  params: {
+    problems: Array<{
+      problem_number: string | null
+      problem_text: string
+      problem_type: string
+      difficulty: string
+      grade_level: string
+      confidence: number
+      student_answer?: string | null
+    }>
+    imageUrls: string[]
+  }
+): Promise<AIResult> {
+  const { problems, imageUrls } = params
+
+  if (!imageUrls || imageUrls.length === 0) {
+    throw new Error('No image URLs provided for verification')
+  }
+
+  if (!problems || problems.length === 0) {
+    throw new Error('No problems provided for verification')
+  }
+
+  // Build content with images
+  const content: Anthropic.MessageCreateParams['messages'][0]['content'] = []
+
+  // Add images - handle both HTTP URLs and base64 data URLs
+  for (const url of imageUrls) {
+    if (url.startsWith('data:')) {
+      const matches = url.match(/^data:([^;]+);base64,(.+)$/)
+      if (!matches) {
+        throw new Error('Invalid data URL format')
+      }
+      const [, mediaType, base64Data] = matches
+
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+          data: base64Data,
+        },
+      })
+    } else {
+      content.push({
+        type: 'image',
+        source: {
+          type: 'url',
+          url: url,
+        },
+      })
+    }
+  }
+
+  // Add verification prompt with the extracted problems
+  const problemsSummary = problems.map((p, i) => `Problem ${i}: ${JSON.stringify(p)}`).join('\n')
+
+  const prompt = `${VERIFICATION_PROMPT}
+
+Here are the problems that were extracted from the image(s) above. Please verify each one:
+
+${problemsSummary}
+
+RE-EXAMINE THE IMAGE(S) and verify:
+1. Is the problem_text accurate and complete?
+2. Are there visual elements (blocks, arrays, etc.) that affect the meaning?
+3. Has the student written any handwritten answers?
+
+Return your verification results as JSON.`
+
+  content.push({ type: 'text', text: prompt })
+
+  const response = await anthropic.messages.create({
+    model: MODELS.haiku,
+    max_tokens: 4096,
+    temperature: TEMPERATURE.verification,
+    messages: [{ role: 'user', content }],
+  })
+
+  const textContent = response.content.find((c) => c.type === 'text')
+  if (!textContent || textContent.type !== 'text') {
+    throw new Error('No text response from AI')
+  }
+
+  const parsed = parseJsonResponse(textContent.text)
+
+  return {
+    data: {
+      verifications: parsed.verifications || [],
+      overall_notes: parsed.overall_notes || null,
+    },
+    model: MODELS.haiku,
+    usage: {
+      input_tokens: response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens,
+    },
+  }
+}
+
 // ========== UTILITIES ==========
 
 /**
@@ -930,6 +1122,24 @@ Deno.serve(async (req) => {
               includeWarmups: boolean
               includeChallenges: boolean
             }
+          }
+        )
+        break
+
+      case 'verifyExtraction':
+        result = await handleVerifyExtraction(
+          anthropic,
+          params as {
+            problems: Array<{
+              problem_number: string | null
+              problem_text: string
+              problem_type: string
+              difficulty: string
+              grade_level: string
+              confidence: number
+              student_answer?: string | null
+            }>
+            imageUrls: string[]
           }
         )
         break

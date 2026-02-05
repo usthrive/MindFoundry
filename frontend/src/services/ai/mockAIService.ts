@@ -23,6 +23,7 @@ import type {
   MsGuideServiceInterface,
   GenerateTestOptions,
   ExtractedTemplateResult,
+  BatchVerificationResult,
 } from './types';
 
 /**
@@ -329,6 +330,34 @@ export class MockAIService implements MsGuideServiceInterface {
       ...p,
       problem_number: String(i + 1),
     }));
+  }
+
+  /**
+   * Verify extracted problems by re-examining images
+   * Mock implementation returns all problems as correctly extracted
+   */
+  async verifyExtraction(
+    problems: ExtractedProblem[],
+    _imageUrls: string[]
+  ): Promise<BatchVerificationResult> {
+    await delay(800);
+
+    // Mock verification - all problems pass
+    const verifications = problems.map((p, i) => ({
+      problem_index: i,
+      original_extraction_correct: true,
+      reasoning: `Problem ${i + 1} extraction verified - text matches visual content.`,
+      visual_elements_found: [],
+      issues: [],
+      corrected_problem: null,
+      student_answer_found: p.student_answer || null,
+      confidence: 0.95,
+    }));
+
+    return {
+      verifications,
+      overall_notes: 'Mock verification complete',
+    };
   }
 
   /**

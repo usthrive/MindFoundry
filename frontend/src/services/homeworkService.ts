@@ -335,12 +335,53 @@ export async function uploadAndExtract(
     }
 
     // Extract problems using AI
-    onProgress?.('Ms. Guide is analyzing your homework...', 60);
+    onProgress?.('Ms. Guide is analyzing your homework...', 50);
     const aiService = getAIService();
-    const problems = await aiService.extractProblems(urlList);
+    let problems = await aiService.extractProblems(urlList);
+
+    // Verify extraction by re-examining images
+    // This applies mathematical reasoning to connect visual elements to questions
+    onProgress?.('Verifying extraction...', 70);
+    try {
+      const verification = await aiService.verifyExtraction(problems, urlList);
+
+      // Apply corrections from verification
+      if (verification.verifications && verification.verifications.length > 0) {
+        problems = problems.map((problem, index) => {
+          const v = verification.verifications.find(vr => vr.problem_index === index);
+          if (!v) return problem;
+
+          // If verification found issues and has corrections, apply them
+          if (!v.original_extraction_correct && v.corrected_problem) {
+            console.log(`[Verification] Correcting problem ${index}:`, v.reasoning);
+            return {
+              ...problem,
+              problem_text: v.corrected_problem.problem_text || problem.problem_text,
+              problem_type: (v.corrected_problem.problem_type as ExtractedProblem['problem_type']) || problem.problem_type,
+              difficulty: (v.corrected_problem.difficulty as ExtractedProblem['difficulty']) || problem.difficulty,
+              grade_level: v.corrected_problem.grade_level || problem.grade_level,
+              student_answer: v.student_answer_found || problem.student_answer,
+            };
+          }
+
+          // Even if extraction was correct, update student_answer if found
+          if (v.student_answer_found && !problem.student_answer) {
+            return {
+              ...problem,
+              student_answer: v.student_answer_found,
+            };
+          }
+
+          return problem;
+        });
+      }
+    } catch (verifyError) {
+      // Log verification error but don't fail the extraction
+      console.warn('[Verification] Verification failed, using original extraction:', verifyError);
+    }
 
     // Classify problems to get topics
-    onProgress?.('Identifying topics...', 85);
+    onProgress?.('Identifying topics...', 90);
     const classification = await aiService.classifyProblems(problems);
 
     // Save extracted problems to session
