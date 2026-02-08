@@ -53,10 +53,17 @@ import {
   type FocusMetrics
 } from '@/services/progressService'
 import { checkAndAwardBadges } from '@/utils/badgeSystem'
+import { LEVEL_ORDER } from '@/utils/videoUnlockSystem'
 import { celebrationTrigger } from '@/services/achievements'
 import type { KumonLevel, HintLevel, MasteryStatus } from '@/types'
-import type { Problem } from '@/services/generators/types'
+import { type Problem, LEVEL_WORKSHEETS } from '@/services/generators/types'
 import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
+
+function getNextLevel(current: KumonLevel): KumonLevel | null {
+  const idx = LEVEL_ORDER.indexOf(current)
+  if (idx < 0 || idx >= LEVEL_ORDER.length - 1) return null
+  return LEVEL_ORDER[idx + 1]
+}
 
 export default function StudyPage() {
   const { user, currentChild, logout } = useAuth()
@@ -81,11 +88,13 @@ export default function StudyPage() {
   const [totalIncorrect, setTotalIncorrect] = useState(0)      // Never got correct
   const [currentLevel, setCurrentLevel] = useState<KumonLevel>('A')
   const [currentWorksheet, setCurrentWorksheet] = useState(1)
+  const [levelCompleted, setLevelCompleted] = useState(false)
   const [sessionActive, setSessionActive] = useState(true)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [sessionStartTime, setSessionStartTime] = useState<number>(Date.now())
   const [parentMode, setParentMode] = useState(false)
   const [showParentChallenge, setShowParentChallenge] = useState(false)
+  const [showAdvanceLevelChallenge, setShowAdvanceLevelChallenge] = useState(false)
   // Ref for synchronous modal state tracking (prevents race condition in keyboard handler)
   const showParentChallengeRef = useRef(false)
   const [loading, setLoading] = useState(true)
@@ -483,9 +492,18 @@ export default function StudyPage() {
           }
         }
 
-        // Create new practice session - use fresh level from position or child data
+        // Check if level is already completed (worksheet at max)
         const levelToUse = position?.level || (currentChild.current_level as KumonLevel)
         const worksheetToUse = position?.worksheet || currentChild.current_worksheet
+        const maxWorksheet = LEVEL_WORKSHEETS[levelToUse] || 200
+        if (worksheetToUse >= maxWorksheet) {
+          setLevelCompleted(true)
+          setSessionActive(false)
+          setLoading(false)
+          return
+        }
+
+        // Create new practice session
         const newSessionId = await createPracticeSession(
           currentChild.id,
           levelToUse
@@ -923,11 +941,30 @@ export default function StudyPage() {
   }
 
   // Handle completing full teaching (after 3rd wrong in single-problem mode)
-  const handleSingleProblemTeachingComplete = () => {
+  const handleSingleProblemTeachingComplete = async () => {
     setShowTeaching(false)
     setCurrentHintLevel(null)
     setAttemptCount(0)
     setFeedback({ ...feedback, show: false })
+
+    // After teaching completes, proactively suggest a video if available
+    if (currentConceptId && currentChild) {
+      try {
+        const { getBestVideoForConcept } = await import('@/services/videoService')
+        const video = await getBestVideoForConcept(currentConceptId, currentChild.age, 'short', currentLevel)
+        if (video) {
+          videoPlayer.openVideo({
+            video,
+            conceptId: currentConceptId,
+            conceptName: currentConceptId.replace(/_/g, ' '),
+            triggerType: 'struggle_detected',
+            sessionId: sessionId || undefined,
+          })
+        }
+      } catch (err) {
+        // Video fetch failed silently - continue without video
+      }
+    }
 
     // Check if session is complete
     if (problemsCompleted >= 10) {
@@ -1053,6 +1090,35 @@ export default function StudyPage() {
       } catch (error) {
         console.error('Error checking achievements:', error)
       }
+    }
+
+    // Check if the student has completed the final worksheet for this level
+    const maxWorksheet = LEVEL_WORKSHEETS[currentLevel] || 200
+    if (currentWorksheet >= maxWorksheet) {
+      // Level complete! Show celebration and stop - parent must advance manually
+      setLevelCompleted(true)
+      setSessionActive(false)
+
+      // Trigger a level completion celebration
+      triggerCelebration({
+        id: `level-complete-${currentLevel}-${Date.now()}`,
+        childId: currentChild.id,
+        achievementType: 'level_complete',
+        achievementData: {
+          level: currentLevel,
+          problems_completed: updatedChild?.total_problems || 0,
+          accuracy: updatedChild?.total_problems
+            ? Math.round(((updatedChild?.total_correct || 0) / updatedChild.total_problems) * 100)
+            : 0,
+        },
+        celebrationLevel: 'major',
+        earnedAt: new Date().toISOString(),
+        shared: false,
+        shareCount: 0,
+        createdAt: new Date().toISOString(),
+      })
+
+      return // Do NOT increment past the max worksheet
     }
 
     // Move to next worksheet
@@ -1336,6 +1402,47 @@ export default function StudyPage() {
     setShowParentChallenge(false)
   }
 
+  const handleAdvanceToNextLevel = async () => {
+    setShowAdvanceLevelChallenge(false)
+    const next = getNextLevel(currentLevel as KumonLevel)
+    if (!next || !currentChild) return
+
+    // Update child's position to worksheet 1 of the next level
+    await updateCurrentPosition(currentChild.id, next, 1)
+
+    // Reset local state
+    setCurrentLevel(next)
+    setCurrentWorksheet(1)
+    setLevelCompleted(false)
+    setProblemsCompleted(0)
+    setProblemsCorrect(0)
+    setFirstTryCorrect(0)
+    setWithHintsCorrect(0)
+    setTotalIncorrect(0)
+    setDistractions([])
+    setSessionActive(true)
+    setCurrentProblem(generateProblem(next, 1))
+    setFeedback({ ...feedback, show: false })
+
+    // Create new practice session
+    const newSessionId = await createPracticeSession(currentChild.id, next)
+    setSessionId(newSessionId)
+    setSessionStartTime(Date.now())
+
+    // Reset and restart timer
+    enhancedTimer.reset()
+    enhancedTimer.start()
+
+    // Persist session
+    if (newSessionId) {
+      const newPersistedSession = createPersistedSession(currentChild.id, newSessionId, next, 1)
+      saveSession(newPersistedSession)
+    }
+
+    // Check for concepts at worksheet 1 of new level
+    await checkForNewConcepts(next, 1)
+  }
+
   const handleLogout = async () => {
     await logout()
     navigate('/login')
@@ -1369,6 +1476,15 @@ export default function StudyPage() {
         onCancel={handleParentChallengeCancel}
         title="Parent Mode"
         description="Verify to access parent controls"
+      />
+
+      {/* Parent Verification Modal for Level Advancement */}
+      <ParentVerification
+        isOpen={showAdvanceLevelChallenge}
+        onSuccess={handleAdvanceToNextLevel}
+        onCancel={() => setShowAdvanceLevelChallenge(false)}
+        title="Advance to Next Level"
+        description={`Verify to advance your child to Level ${getNextLevel(currentLevel as KumonLevel) || ''}`}
       />
 
       <div className="mx-auto max-w-6xl space-y-6 sm:space-y-12">
@@ -1425,7 +1541,72 @@ export default function StudyPage() {
           onDismiss={() => setFeedback({ ...feedback, show: false })}
         />
 
+        {/* Level Completion Screen */}
+        {levelCompleted && (
+          <Card variant="elevated" padding="lg" className="bg-gradient-to-br from-yellow-50 to-orange-50 text-center">
+            <div className="py-8">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-3xl font-bold text-orange-800 mb-2">
+                Level {currentLevel} Complete!
+              </h2>
+              <p className="text-lg text-orange-700 mb-4">
+                Amazing work! You finished all {LEVEL_WORKSHEETS[currentLevel]} worksheets!
+              </p>
+
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+                {/* Share button */}
+                <button
+                  onClick={() => {
+                    triggerCelebration({
+                      id: `level-share-${currentLevel}-${Date.now()}`,
+                      childId: currentChild!.id,
+                      achievementType: 'level_complete',
+                      achievementData: {
+                        level: currentLevel,
+                        problems_completed: currentChild?.total_problems || 0,
+                        accuracy: currentChild?.total_problems
+                          ? Math.round(((currentChild?.total_correct || 0) / currentChild.total_problems) * 100)
+                          : 0,
+                      },
+                      celebrationLevel: 'major',
+                      earnedAt: new Date().toISOString(),
+                      shared: false,
+                      shareCount: 0,
+                      createdAt: new Date().toISOString(),
+                    })
+                  }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                    />
+                  </svg>
+                  Share Achievement
+                </button>
+
+                {/* Next Level button (requires parent PIN) */}
+                {getNextLevel(currentLevel as KumonLevel) && (
+                  <button
+                    onClick={() => setShowAdvanceLevelChallenge(true)}
+                    className="px-6 py-3 bg-orange-600 text-white rounded-full font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    🔒 Next Level ({getNextLevel(currentLevel as KumonLevel)})
+                  </button>
+                )}
+              </div>
+
+              {/* Hint for child */}
+              <p className="text-sm text-gray-500 mt-4">
+                A parent must verify to advance to the next level
+              </p>
+            </div>
+          </Card>
+        )}
+
         {/* Interactive Math Practice */}
+        {!levelCompleted && (
         <Card variant="elevated" padding="lg" className="bg-gradient-to-br from-blue-50 to-purple-50">
           {/* Worksheet Info */}
           <WorksheetInfo
@@ -1741,6 +1922,7 @@ export default function StudyPage() {
           )}
 
         </Card>
+        )}
 
         {/* Post-completion feedback prompt - subtle text link */}
         {showCompletionFeedback && (

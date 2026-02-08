@@ -1,11 +1,11 @@
 /**
  * Text-to-Speech Service
  *
- * Provides high-quality TTS using Google Cloud TTS API via Supabase Edge Function.
- * Falls back to browser Web Speech API if Google TTS is unavailable.
+ * Provides high-quality TTS using OpenAI TTS API (gpt-4o-mini-tts) via Supabase Edge Function.
+ * Falls back to browser Web Speech API if OpenAI TTS is unavailable.
  *
  * Features:
- * - Google Cloud TTS with child-friendly voices (primary)
+ * - OpenAI TTS with child-friendly 'nova' voice and custom instructions (primary)
  * - Browser speech synthesis fallback
  * - Audio caching to reduce API calls
  * - Play/pause/stop controls
@@ -15,10 +15,9 @@ import { supabase } from '../lib/supabase';
 
 // Voice configuration optimized for children
 export interface TTSConfig {
-  voice?: string;          // Google TTS voice name
+  voice?: string;          // OpenAI voice name: nova, shimmer, coral, alloy, echo, etc.
   speakingRate?: number;   // 0.25 to 4.0 (default 0.9 for children)
-  pitch?: number;          // -20.0 to 20.0 (default 0)
-  languageCode?: string;   // BCP-47 code (default 'en-US')
+  instructions?: string;   // Custom tone instructions for gpt-4o-mini-tts
 }
 
 // Voice type selection for A/B testing
@@ -26,10 +25,9 @@ export type VoiceType = 'google' | 'browser' | 'auto';
 
 // Default configuration for Ms. Guide
 const DEFAULT_CONFIG: Required<TTSConfig> = {
-  voice: 'en-US-Neural2-C',  // Child-friendly female voice
+  voice: 'nova',              // Warm, friendly female voice (OpenAI)
   speakingRate: 0.9,          // Slightly slower for clarity
-  pitch: 0,
-  languageCode: 'en-US',
+  instructions: 'Speak in a warm, encouraging, slightly playful tone for a young child learning math. Be clear and enunciate well.',
 };
 
 // Cache for generated audio (in-memory, keyed by text hash)
@@ -48,6 +46,43 @@ let browserVoicesPromise: Promise<void> | null = null;
 // Last error for diagnostics
 let lastError: string | null = null;
 
+// Stop generation counter — incremented on stop() to cancel in-flight requests
+let stopGeneration = 0;
+
+// Pending request deduplication — prevents duplicate calls for the same text
+const pendingRequests = new Map<string, Promise<string>>();
+
+// --- Client-side throttle to prevent burst traffic ---
+const THROTTLE_MIN_GAP_MS = 800;
+let lastEdgeInvocationTime = 0;
+
+// --- Retry configuration for 429 rate-limit recovery ---
+const RETRY_MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 800;
+const RETRY_JITTER_FACTOR = 0.2;
+
+/**
+ * Sleep helper with cancellation awareness.
+ * Returns true if the generation was cancelled during the wait.
+ */
+function retrySleep(ms: number, genSnapshot: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(genSnapshot !== stopGeneration);
+    }, ms);
+  });
+}
+
+/**
+ * Compute backoff delay with jitter.
+ * attempt is 0-indexed: 0 => ~800ms, 1 => ~1600ms, 2 => ~3200ms
+ */
+function computeBackoff(attempt: number): number {
+  const base = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+  const jitter = base * RETRY_JITTER_FACTOR * (Math.random() * 2 - 1);
+  return Math.round(base + jitter);
+}
+
 /**
  * Detect if running on mobile device
  * Mobile browsers have stricter autoplay policies that can block audio.play()
@@ -56,6 +91,23 @@ export function isMobileDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 }
+
+/**
+ * Detect if running on iOS (iPhone, iPad, iPod)
+ * iOS Safari has stricter audio policies than Android:
+ * - speechSynthesis.speak() and audio.play() must be called synchronously
+ *   within a user gesture (no awaits before the call)
+ * - The gesture context is lost after any async operation
+ */
+export function isIOSDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    // iPad with desktop Safari UA (iPadOS 13+)
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+// Pre-created Audio element for iOS to unlock audio context within user gesture
+let iosAudioElement: HTMLAudioElement | null = null;
 
 /**
  * Preload browser voices (they may not be available immediately)
@@ -148,30 +200,154 @@ function pruneCache(): void {
 }
 
 /**
- * Generate speech using Google Cloud TTS via Edge Function
+ * Generate speech using OpenAI TTS via Edge Function.
+ * Deduplicates concurrent requests for the same text to prevent 429 rate limiting.
  */
-async function generateGoogleTTS(text: string, config: TTSConfig): Promise<string> {
+async function generateTTS(text: string, config: TTSConfig): Promise<string> {
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  const dedupeKey = `${text}|${mergedConfig.voice}|${mergedConfig.speakingRate}`;
 
-  const { data, error } = await supabase.functions.invoke('generate-speech', {
-    body: {
-      text,
-      voice: mergedConfig.voice,
-      speakingRate: mergedConfig.speakingRate,
-      pitch: mergedConfig.pitch,
-      languageCode: mergedConfig.languageCode,
-    },
-  });
-
-  if (error) {
-    lastError = `Google TTS error: ${error.message}`;
-    throw new Error(lastError);
+  // Return existing in-flight request if same text is already being generated
+  const pending = pendingRequests.get(dedupeKey);
+  if (pending) {
+    console.log('[TTS] Reusing in-flight request (deduplication)');
+    return pending;
   }
 
-  if (!data?.success || !data?.audioContent) {
-    const errorMsg = data?.error || 'Failed to generate speech from Google TTS';
-    lastError = errorMsg;
-    throw new Error(errorMsg);
+  const request = generateTTSInternal(text, mergedConfig);
+  pendingRequests.set(dedupeKey, request);
+
+  try {
+    return await request;
+  } finally {
+    pendingRequests.delete(dedupeKey);
+  }
+}
+
+async function generateTTSInternal(text: string, mergedConfig: Required<TTSConfig>): Promise<string> {
+  // --- Session acquisition (no forced refresh) ---
+  // The Supabase client with autoRefreshToken: true handles token refresh
+  // automatically in the background, so a forced refreshSession() is redundant
+  // and doubles the request count to Supabase on every TTS call.
+  const { data: sessionData, error: getError } = await supabase.auth.getSession();
+  let session = sessionData.session;
+
+  if (getError || !session) {
+    // Only attempt refresh if getSession returned nothing — likely a cold start
+    // or localStorage was cleared.
+    console.warn('[TTS] No cached session, attempting one-time refresh');
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    session = refreshData.session;
+
+    if (refreshError || !session) {
+      console.error('[TTS] Session unavailable:', refreshError?.message ?? 'no session');
+      // DO NOT sign out — a transient network failure should not boot the user.
+      lastError = 'Unable to verify your session — please check your connection and try again';
+      throw new Error(lastError);
+    }
+  }
+  console.log('[TTS] Session acquired');
+
+  // --- Throttle: minimum gap between edge function calls ---
+  // Prevents bursts from preload + click sequences or rapid retaps.
+  const now = Date.now();
+  const elapsed = now - lastEdgeInvocationTime;
+  if (elapsed < THROTTLE_MIN_GAP_MS) {
+    const waitMs = THROTTLE_MIN_GAP_MS - elapsed;
+    console.log(`[TTS] Throttling: waiting ${waitMs}ms`);
+    const cancelled = await retrySleep(waitMs, stopGeneration);
+    if (cancelled) {
+      throw new Error('TTS generation cancelled');
+    }
+  }
+  lastEdgeInvocationTime = Date.now();
+
+  // --- Edge function invocation with retry on 429 ---
+  console.log('[TTS] Calling generate-speech edge function...');
+
+  let data: { success?: boolean; audioContent?: string; error?: string } | null = null;
+  let lastInvokeError: Error | null = null;
+  const gen = stopGeneration;
+
+  for (let attempt = 0; attempt < RETRY_MAX_ATTEMPTS; attempt++) {
+    if (gen !== stopGeneration) {
+      console.log('[TTS] Cancelled before attempt', attempt + 1);
+      throw new Error('TTS generation cancelled');
+    }
+
+    const result = await supabase.functions.invoke('generate-speech', {
+      body: {
+        text,
+        voice: mergedConfig.voice,
+        speed: mergedConfig.speakingRate,
+        instructions: mergedConfig.instructions,
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    // Get actual HTTP status from the Response object.
+    // supabase.functions.invoke() returns { data, error, response } where
+    // response is the raw Response. On non-2xx, error.message is always the
+    // generic "Edge Function returned a non-2xx status code" — useless for
+    // detecting specific status codes like 429.
+    const httpStatus = (result as { response?: Response }).response?.status;
+    const errMsg = result.error?.message || '';
+    const dataError = result.data?.error || '';
+
+    console.log('[TTS] Attempt', attempt + 1, ':', {
+      httpStatus,
+      success: result.data?.success,
+      hasAudio: !!result.data?.audioContent,
+      error: errMsg,
+      dataError,
+    });
+
+    // Success — break out of retry loop
+    if (!result.error && result.data?.success && result.data?.audioContent) {
+      data = result.data;
+      lastInvokeError = null;
+      break;
+    }
+
+    // Detect specific HTTP status codes from the actual response
+    const is429 = httpStatus === 429 || errMsg.includes('429') || errMsg.includes('Too Many');
+    const is401 = httpStatus === 401 || errMsg.includes('401') || errMsg.includes('Unauthorized') || errMsg.includes('JWT');
+
+    if (!is429) {
+      // Non-retryable error — fail immediately
+      if (is401) {
+        lastError = 'Your session needs refreshing — please try again or re-login';
+        throw new Error(lastError);
+      }
+      if (result.error) {
+        lastError = `TTS error (${httpStatus || 'unknown'}): ${dataError || errMsg}`;
+        throw new Error(lastError);
+      }
+      const errorMsg = dataError || 'Failed to generate speech';
+      lastError = errorMsg;
+      throw new Error(errorMsg);
+    }
+
+    // 429 — retryable
+    lastInvokeError = new Error(errMsg);
+
+    if (attempt < RETRY_MAX_ATTEMPTS - 1) {
+      const delay = computeBackoff(attempt);
+      console.log(`[TTS] 429 rate limited. Retry in ${delay}ms (${attempt + 2}/${RETRY_MAX_ATTEMPTS})`);
+      const cancelled = await retrySleep(delay, gen);
+      if (cancelled) {
+        console.log('[TTS] Cancelled during retry backoff');
+        throw new Error('TTS generation cancelled');
+      }
+    }
+  }
+
+  // All retries exhausted on 429
+  if (lastInvokeError || !data?.success || !data?.audioContent) {
+    lastError = 'HD audio is temporarily busy — please wait a moment and try again';
+    throw new Error(lastError);
   }
 
   // Success - clear any previous error
@@ -189,7 +365,7 @@ async function generateGoogleTTS(text: string, config: TTSConfig): Promise<strin
 
 /**
  * Speak text using the specified voice type
- * @param voiceType - 'google' for HD Neural2 voice, 'browser' for free browser TTS, 'auto' for smart selection
+ * @param voiceType - 'google' for HD OpenAI voice, 'browser' for free browser TTS, 'auto' for smart selection
  */
 export async function speak(
   text: string,
@@ -213,30 +389,34 @@ export async function speak(
     return;
   }
 
-  // If explicitly google, try Google TTS only (no auto-fallback to browser)
+  // If explicitly google, try OpenAI TTS only (no auto-fallback to browser)
   if (voiceType === 'google') {
-    console.log('[TTS] Using Google TTS (explicit)');
-    await speakWithGoogle(text, config, onEnd, onError, false);
+    console.log('[TTS] Using OpenAI TTS (explicit)');
+    await speakWithHD(text, config, onEnd, onError, false);
     return;
   }
 
-  // 'auto' mode: Try Google first, fall back to browser if needed
-  // On mobile, prefer browser TTS first to avoid autoplay policy issues
+  // 'auto' mode: Try HD first, fall back to browser if needed (all devices)
   if (isMobileDevice()) {
-    console.log('[TTS] Mobile device detected, using browser TTS (auto mode)');
-    await speakWithBrowser(text, config, onEnd, onError);
+    console.log('[TTS] Mobile auto mode: trying HD with browser fallback', isIOSDevice() ? '(iOS)' : '');
+    await speakWithHD(text, config, onEnd, onError, true);
     return;
   }
 
-  // Desktop: try Google TTS with browser fallback
-  await speakWithGoogle(text, config, onEnd, onError, true);
+  // Desktop: try OpenAI TTS with browser fallback
+  await speakWithHD(text, config, onEnd, onError, true);
 }
 
 /**
- * Speak text using Google Cloud TTS
+ * Speak text using OpenAI TTS (HD quality)
  * @param allowFallback - If true, falls back to browser TTS on error
+ *
+ * iOS Safari fix: On iOS, Audio.play() must be called within a user gesture.
+ * We pre-create the Audio element synchronously (within the gesture), then
+ * set its src after the async network call completes. This preserves the
+ * audio context that was unlocked by the initial user gesture.
  */
-async function speakWithGoogle(
+async function speakWithHD(
   text: string,
   config: Partial<TTSConfig>,
   onEnd?: () => void,
@@ -244,25 +424,48 @@ async function speakWithGoogle(
   allowFallback: boolean = true
 ): Promise<void> {
   const cacheKey = hashText(text, config);
+  const onIOS = isIOSDevice();
+  const gen = stopGeneration;  // Capture before async work
+
+  // iOS: Pre-create Audio element within user gesture to unlock audio context.
+  // IMPORTANT: Do NOT await play() — that breaks the gesture chain on iOS Safari.
+  // Fire-and-forget: the play() call itself unlocks the audio context.
+  if (onIOS && !audioCache.has(cacheKey)) {
+    iosAudioElement = new Audio();
+    iosAudioElement.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwSHAAAAAAD/+1DEAAAGAAGn9AAAIgAANP8AAABM//tQxBUAAADSAAAAAAAAANIAAAAA';
+    iosAudioElement.muted = true;
+    // Fire-and-forget — preserves gesture chain by not awaiting
+    iosAudioElement.play().catch(() => {
+      // Silent fail OK — still unlocks audio context
+    });
+    // Don't pause — keep playing to maintain unlocked context
+    console.log('[TTS] iOS: Audio context unlock initiated (no await)');
+  }
 
   try {
     // Check cache first
     let audioUrl = audioCache.get(cacheKey);
 
     if (!audioUrl) {
-      // Try Google Cloud TTS
+      // Try OpenAI TTS
       try {
-        audioUrl = await generateGoogleTTS(text, config);
+        audioUrl = await generateTTS(text, config);
+        // Check if stop() was called during the async generation
+        if (gen !== stopGeneration) {
+          console.log('[TTS] Playback cancelled during generation');
+          return;
+        }
         pruneCache();
         audioCache.set(cacheKey, audioUrl);
         isUsingGoogleTTS = true;
-        console.log('[TTS] Using Google Cloud TTS');
+        console.log('[TTS] Using OpenAI TTS (HD)');
       } catch (googleError) {
-        console.warn('[TTS] Google TTS failed:', googleError);
+        console.warn('[TTS] OpenAI TTS failed:', googleError);
+        if (gen !== stopGeneration) return;  // Cancelled
         if (allowFallback) {
           await speakWithBrowser(text, config, onEnd, onError);
         } else {
-          const error = googleError instanceof Error ? googleError : new Error('Google TTS failed');
+          const error = googleError instanceof Error ? googleError : new Error('OpenAI TTS failed');
           lastError = error.message;
           onError?.(error);
         }
@@ -270,11 +473,24 @@ async function speakWithGoogle(
       }
     } else {
       isUsingGoogleTTS = true;
-      console.log('[TTS] Using cached Google TTS audio');
+      console.log('[TTS] Using cached HD TTS audio');
     }
 
-    // Play the audio
-    currentAudio = new Audio(audioUrl);
+    // Check again before playing
+    if (gen !== stopGeneration) {
+      console.log('[TTS] Playback cancelled before audio play');
+      return;
+    }
+
+    // Play the audio - reuse iOS pre-created element if available
+    if (onIOS && iosAudioElement) {
+      currentAudio = iosAudioElement;
+      iosAudioElement = null;
+      currentAudio.src = audioUrl;
+    } else {
+      currentAudio = new Audio(audioUrl);
+    }
+
     currentAudio.onended = () => {
       currentAudio = null;
       onEnd?.();
@@ -300,7 +516,7 @@ async function speakWithGoogle(
 
       // Check if it's an autoplay policy error
       if (playError instanceof Error && playError.name === 'NotAllowedError') {
-        console.warn('[TTS] Autoplay blocked');
+        console.warn('[TTS] Autoplay blocked', onIOS ? '(iOS)' : '');
         lastError = 'Autoplay blocked - tap again to play';
       }
 
@@ -326,6 +542,11 @@ async function speakWithGoogle(
 
 /**
  * Speak text using browser Web Speech API (fallback)
+ *
+ * IMPORTANT iOS Safari fix: On iOS, speechSynthesis.speak() must be called
+ * synchronously within the user gesture call stack. Any `await` before the
+ * speak() call breaks the gesture chain and iOS silently ignores the request.
+ * We skip the async voice preload on iOS since voices are preloaded on import.
  */
 async function speakWithBrowser(
   text: string,
@@ -343,23 +564,48 @@ async function speakWithBrowser(
   isUsingGoogleTTS = false;
   console.log('[TTS] Using browser speech synthesis');
 
-  // Wait for voices to be available
-  await preloadBrowserVoices();
+  // On iOS, we MUST NOT await anything before calling speechSynthesis.speak()
+  // because it breaks the user gesture chain. Voices should already be loaded
+  // from the module-level preloadBrowserVoices() call.
+  const onIOS = isIOSDevice();
 
-  // Cancel any ongoing speech to avoid queue buildup
-  window.speechSynthesis.cancel();
+  const gen = stopGeneration;  // Capture before async work
 
-  // Check if voices are available after loading
+  if (!onIOS) {
+    // Non-iOS: safe to await voice loading
+    await preloadBrowserVoices();
+    if (gen !== stopGeneration) return;  // Cancelled during voice load
+  }
+
+  // Only cancel if actively speaking (prevents iOS cancel/speak race condition)
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+  }
+
+  // Get voices synchronously (critical for iOS gesture chain)
   const voices = window.speechSynthesis.getVoices();
-  console.log('[TTS] Available browser voices:', voices.length);
+  console.log('[TTS] Available browser voices:', voices.length, onIOS ? '(iOS)' : '');
 
   if (voices.length === 0) {
-    console.warn('[TTS] No voices available in browser');
-    const error = new Error('No voices available for speech synthesis');
-    lastError = error.message;
-    onError?.(error);
-    return;
+    if (onIOS) {
+      // iOS: voices may not be loaded on first use. Use warm-up pattern:
+      // speak a single space to wake up the engine, then immediately enqueue
+      // the real utterance in the same call stack (no cancel between them).
+      console.log('[TTS] iOS: No voices yet, using warm-up utterance');
+      const warmup = new SpeechSynthesisUtterance(' ');
+      window.speechSynthesis.speak(warmup);
+      // Don't cancel — let warm-up finish, real utterance queues behind it
+    } else {
+      console.warn('[TTS] No voices available in browser');
+      const error = new Error('No voices available for speech synthesis');
+      lastError = error.message;
+      onError?.(error);
+      return;
+    }
   }
+
+  // Re-fetch voices (may now be available after warm-up)
+  const availableVoices = window.speechSynthesis.getVoices();
 
   return new Promise((resolve) => {
     // Timeout protection: ensure promise resolves even if speech events don't fire
@@ -378,22 +624,27 @@ async function speakWithBrowser(
 
     currentUtterance = new SpeechSynthesisUtterance(text);
     currentUtterance.rate = config.speakingRate ?? DEFAULT_CONFIG.speakingRate;
-    currentUtterance.pitch = 1 + ((config.pitch ?? DEFAULT_CONFIG.pitch) / 20);  // Normalize pitch
-    currentUtterance.lang = config.languageCode ?? DEFAULT_CONFIG.languageCode;
+    currentUtterance.pitch = 1;  // Neutral pitch
+    currentUtterance.lang = 'en-US';
 
     // Priority order for voice selection (prefer female voices for Ms. Guide)
-    const femaleVoice = voices.find(v =>
-      v.lang.startsWith('en') &&
-      (v.name.toLowerCase().includes('samantha') ||  // macOS
-       v.name.toLowerCase().includes('victoria') ||   // iOS
-       v.name.toLowerCase().includes('female') ||
-       v.name.toLowerCase().includes('zira') ||       // Windows
-       v.name.toLowerCase().includes('google us english'))
-    ) || voices.find(v => v.lang.startsWith('en'));  // Any English voice as fallback
+    // On iOS first use, voices may be empty — skip voice assignment and let iOS use its default
+    if (availableVoices.length > 0) {
+      const femaleVoice = availableVoices.find(v =>
+        v.lang.startsWith('en') &&
+        (v.name.toLowerCase().includes('samantha') ||  // macOS
+         v.name.toLowerCase().includes('victoria') ||   // iOS
+         v.name.toLowerCase().includes('female') ||
+         v.name.toLowerCase().includes('zira') ||       // Windows
+         v.name.toLowerCase().includes('google us english'))
+      ) || availableVoices.find(v => v.lang.startsWith('en'));  // Any English voice as fallback
 
-    if (femaleVoice) {
-      currentUtterance.voice = femaleVoice;
-      console.log('[TTS] Using voice:', femaleVoice.name);
+      if (femaleVoice) {
+        currentUtterance.voice = femaleVoice;
+        console.log('[TTS] Using voice:', femaleVoice.name);
+      }
+    } else {
+      console.log('[TTS] No voices available, using system default', onIOS ? '(iOS)' : '');
     }
 
     currentUtterance.onend = () => {
@@ -421,6 +672,7 @@ async function speakWithBrowser(
     }
 
     window.speechSynthesis.speak(currentUtterance);
+    console.log('[TTS] speechSynthesis.speak() called', onIOS ? '(iOS synchronous path)' : '');
   });
 }
 
@@ -428,6 +680,8 @@ async function speakWithBrowser(
  * Stop any current speech playback
  */
 export function stop(): void {
+  stopGeneration++;  // Cancel any in-flight TTS generation
+
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
@@ -509,7 +763,7 @@ export async function preload(text: string, config: Partial<TTSConfig> = {}): Pr
   }
 
   try {
-    const audioUrl = await generateGoogleTTS(text, config);
+    const audioUrl = await generateTTS(text, config);
     pruneCache();
     audioCache.set(cacheKey, audioUrl);
     console.log('[TTS] Preloaded audio');
@@ -535,25 +789,30 @@ export function clearCache(): void {
 }
 
 /**
- * Get available Google TTS voices for Ms. Guide
+ * Get available OpenAI TTS voices for Ms. Guide
  * These are pre-selected child-friendly voices
  */
 export function getAvailableVoices(): Array<{ id: string; name: string; description: string }> {
   return [
     {
-      id: 'en-US-Neural2-C',
+      id: 'nova',
       name: 'Ms. Guide (Default)',
-      description: 'Warm, friendly female voice - best for younger children',
+      description: 'Warm, friendly voice - best for younger children',
     },
     {
-      id: 'en-US-Neural2-F',
-      name: 'Ms. Guide (Alternative)',
-      description: 'Clear, professional female voice',
+      id: 'shimmer',
+      name: 'Ms. Guide (Gentle)',
+      description: 'Soft, soothing voice',
     },
     {
-      id: 'en-US-Wavenet-C',
-      name: 'Ms. Guide (Economy)',
-      description: 'Good quality at lower cost',
+      id: 'coral',
+      name: 'Ms. Guide (Energetic)',
+      description: 'Lively, enthusiastic voice',
+    },
+    {
+      id: 'alloy',
+      name: 'Ms. Guide (Neutral)',
+      description: 'Clear, balanced voice',
     },
   ];
 }
@@ -576,19 +835,27 @@ export async function checkTTSAvailability(): Promise<{
     browserVoicesAvailable = window.speechSynthesis.getVoices().length;
   }
 
-  // Test Google TTS availability with a short text
+  // Test OpenAI TTS availability with a short text
   try {
-    const { data, error } = await supabase.functions.invoke('generate-speech', {
-      body: { text: 'test', voice: DEFAULT_CONFIG.voice },
-    });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data, error } = await supabase.functions.invoke('generate-speech', {
+        body: { text: 'test', voice: DEFAULT_CONFIG.voice },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-    if (!error && data?.success) {
-      googleTTSAvailable = true;
+      if (!error && data?.success) {
+        googleTTSAvailable = true;
+      } else {
+        console.log('[TTS] HD TTS not available:', error?.message || data?.error);
+      }
     } else {
-      console.log('[TTS] Google TTS not available:', error?.message || data?.error);
+      console.log('[TTS] HD TTS check skipped: no session');
     }
   } catch (e) {
-    console.log('[TTS] Google TTS check failed:', e);
+    console.log('[TTS] HD TTS check failed:', e);
   }
 
   return {

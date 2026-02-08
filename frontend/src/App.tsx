@@ -18,6 +18,7 @@ import ProgressDashboard from '@/pages/ProgressDashboard'
 import TestLevelsPage from '@/pages/TestLevelsPage'
 import AnimationTestPage from '@/pages/AnimationTestPage'
 import TestConceptsPage from '@/pages/TestConceptsPage'
+import TestTTSPage from '@/pages/TestTTSPage'
 import VideoLibraryPage from '@/pages/VideoLibraryPage'
 import VideoCategoryPage from '@/pages/VideoCategoryPage'
 import VideoWatchPage from '@/pages/VideoWatchPage'
@@ -172,6 +173,7 @@ function App() {
           <Route path="/test-levels" element={<TestLevelsPage />} />
           <Route path="/test-animations" element={<AnimationTestPage />} />
           <Route path="/test-concepts" element={<TestConceptsPage />} />
+          <Route path="/test-tts" element={<ProtectedRoute><TestTTSPage /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
           <BottomNav />

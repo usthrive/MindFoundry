@@ -1,11 +1,15 @@
 /**
  * Generate Speech Edge Function
  *
- * Converts text to speech using Google Cloud TTS API.
- * Returns audio as base64-encoded data.
+ * Converts text to speech using OpenAI TTS API (gpt-4o-mini-tts).
+ * Returns audio as base64-encoded MP3 data.
  *
- * This function keeps the Google Cloud API key secure on the server side.
+ * This function keeps the OpenAI API key secure on the server side.
+ * Auth: verify_jwt = false (gateway passes all requests), manual JWT
+ * validation inside function (same pattern as ai-service).
  */
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,9 +19,8 @@ const corsHeaders = {
 interface TTSRequest {
   text: string
   voice?: string
-  speakingRate?: number
-  pitch?: number
-  languageCode?: string
+  speed?: number
+  instructions?: string
 }
 
 interface TTSResponse {
@@ -28,10 +31,9 @@ interface TTSResponse {
 }
 
 // Default voice configuration for Ms. Guide (child-friendly female voice)
-const DEFAULT_VOICE = 'en-US-Neural2-C'
-const DEFAULT_SPEAKING_RATE = 0.9  // Slightly slower for clarity
-const DEFAULT_PITCH = 0  // Neutral pitch
-const DEFAULT_LANGUAGE = 'en-US'
+const DEFAULT_VOICE = 'nova'
+const DEFAULT_SPEED = 0.9  // Slightly slower for clarity
+const DEFAULT_INSTRUCTIONS = 'Speak in a warm, encouraging, slightly playful tone for a young child learning math. Be clear and enunciate well.'
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -40,10 +42,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const googleApiKey = Deno.env.get('GOOGLE_CLOUD_API_KEY')
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
 
-    if (!googleApiKey) {
-      console.error('Google Cloud API key not configured')
+    if (!openaiApiKey) {
+      console.error('OpenAI API key not configured')
       return new Response(
         JSON.stringify({
           success: false,
@@ -52,6 +54,31 @@ Deno.serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Manual JWT validation (verify_jwt = false at gateway, validated here)
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing authorization' } as TTSResponse),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) {
+      console.error('Auth failed:', authError?.message)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' } as TTSResponse),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log(`TTS request from user: ${user.id}`)
 
     // Parse request body
     const body: TTSRequest = await req.json()
@@ -66,49 +93,40 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Limit text length to prevent abuse (Google TTS has a 5000 byte limit per request)
-    const maxLength = 4500  // Leave some buffer
+    // Limit text length to prevent abuse (OpenAI TTS has a 4096 char limit)
+    const maxLength = 4000  // Leave some buffer
     let text = body.text.trim()
     if (text.length > maxLength) {
       text = text.substring(0, maxLength)
       console.warn(`Text truncated from ${body.text.length} to ${maxLength} characters`)
     }
 
-    // Build Google Cloud TTS request
-    const ttsRequest = {
-      input: {
-        text: text,
-      },
-      voice: {
-        languageCode: body.languageCode || DEFAULT_LANGUAGE,
-        name: body.voice || DEFAULT_VOICE,
-      },
-      audioConfig: {
-        audioEncoding: 'MP3',
-        speakingRate: body.speakingRate ?? DEFAULT_SPEAKING_RATE,
-        pitch: body.pitch ?? DEFAULT_PITCH,
-        // Enable effects for warmer, more natural sound
-        effectsProfileId: ['headphone-class-device'],
-      },
-    }
+    const voice = body.voice || DEFAULT_VOICE
+    const speed = body.speed ?? DEFAULT_SPEED
+    const instructions = body.instructions || DEFAULT_INSTRUCTIONS
 
-    console.log(`Generating speech for ${text.length} characters with voice ${ttsRequest.voice.name}`)
+    console.log(`Generating speech for ${text.length} characters with voice ${voice}`)
 
-    // Call Google Cloud TTS API
-    const response = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(ttsRequest),
-      }
-    )
+    // Call OpenAI TTS API
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini-tts',
+        input: text,
+        voice,
+        speed,
+        response_format: 'mp3',
+        instructions,
+      }),
+    })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Google TTS API error:', response.status, errorText)
+      console.error('OpenAI TTS API error:', response.status, errorText)
 
       // Parse error for better message
       let errorMessage = 'Failed to generate speech'
@@ -130,24 +148,25 @@ Deno.serve(async (req) => {
       )
     }
 
-    const data = await response.json()
+    // OpenAI returns binary MP3 — convert to base64 for JSON response
+    const arrayBuffer = await response.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
 
-    if (!data.audioContent) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'No audio content returned',
-        } as TTSResponse),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Encode to base64 in chunks to avoid stack overflow on large audio
+    let base64Audio = ''
+    const chunkSize = 8192
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize)
+      base64Audio += String.fromCharCode(...chunk)
     }
+    base64Audio = btoa(base64Audio)
 
     console.log('Speech generated successfully')
 
     return new Response(
       JSON.stringify({
         success: true,
-        audioContent: data.audioContent,
+        audioContent: base64Audio,
         audioFormat: 'mp3',
       } as TTSResponse),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

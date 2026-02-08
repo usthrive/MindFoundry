@@ -153,8 +153,14 @@ export function AudioButton({
           speechEnded = true;
           console.error('Speech error:', err);
           const lastError = ttsService.getLastError();
-          // Show user-friendly error message
-          if (lastError?.includes('not supported')) {
+          // Show user-friendly error messages for children
+          if (lastError?.includes('session') || lastError?.includes('re-login')) {
+            setError('Please ask a parent to re-login');
+          } else if (lastError?.includes('busy') || lastError?.includes('wait')) {
+            setError('Audio is busy — try again soon!');
+          } else if (lastError?.includes('connection')) {
+            setError('Check your internet and try again');
+          } else if (lastError?.includes('not supported')) {
             setError('Audio not supported');
           } else if (lastError?.includes('No voices')) {
             setError('No voices available');
