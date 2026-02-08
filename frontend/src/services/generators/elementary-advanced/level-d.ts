@@ -1,6 +1,6 @@
 import type { Problem, LevelDProblemType, Fraction } from '../types'
 import { randomInt, generateId, gcd } from '../utils'
-import { generateMultiplicationHints, generateDivisionHints, generateGenericHints } from '../hintGenerator'
+import { generateMultiplicationHints, generateDivisionHints, generateFractionIdentificationHints, generateEquivalentFractionHints, generateReduceFractionHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelDProblemType
@@ -136,7 +136,7 @@ function generateFractionIdentification(): Problem {
       'The denominator is the total number of parts',
       'The numerator is the number of shaded parts',
     ],
-    graduatedHints: generateGenericHints('fraction', 'D'),
+    graduatedHints: generateFractionIdentificationHints(numerator, denominator, 'D'),
   }
 }
 
@@ -160,7 +160,7 @@ function generateFractionShading(): Problem {
       `Divide the shape into ${denominator} equal parts`,
       `Shade ${numerator} of those parts`,
     ],
-    graduatedHints: generateGenericHints('fraction', 'D'),
+    graduatedHints: generateFractionIdentificationHints(numerator, denominator, 'D'),
   }
 }
 
@@ -190,7 +190,7 @@ function generateEquivalentFractions(): Problem {
         `What was ${originalDenom} multiplied by to get ${newDenom}?`,
         `Multiply both numerator and denominator by the same number`,
       ],
-      graduatedHints: generateGenericHints('fraction', 'D'),
+      graduatedHints: generateEquivalentFractionHints(originalNum, originalDenom, newDenom, true, 'D'),
     }
   }
 
@@ -209,7 +209,7 @@ function generateEquivalentFractions(): Problem {
       `What was ${originalNum} multiplied by to get ${newNum}?`,
       `Multiply both numerator and denominator by the same number`,
     ],
-    graduatedHints: generateGenericHints('fraction', 'D'),
+    graduatedHints: generateEquivalentFractionHints(originalNum, originalDenom, newNum, false, 'D'),
   }
 }
 
@@ -237,7 +237,7 @@ function generateReduceFraction(): Problem {
       'Find the greatest common factor of the numerator and denominator',
       'Divide both by that factor',
     ],
-    graduatedHints: generateGenericHints('fraction', 'D'),
+    graduatedHints: generateReduceFractionHints(num, denom, 'D'),
   }
 }
 

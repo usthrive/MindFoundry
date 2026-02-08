@@ -1,6 +1,6 @@
 import type { Problem, LevelCProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
-import { generateAdditionHints, generateSubtractionHints, generateMultiplicationHints, generateDivisionHints } from '../hintGenerator'
+import { generateAdditionHints, generateSubtractionHints, generateMultiplicationHints, generateDivisionHints, generateMissingFactorHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelCProblemType
@@ -114,10 +114,10 @@ function generateTimesTableProblem(tables: number[]): Problem {
       correctAnswer: multiplier,
       operands: [table, multiplier],
       hints: [`What times ${table} equals ${product}?`],
-      graduatedHints: generateMultiplicationHints([table, multiplier], 'C'),
+      graduatedHints: generateMissingFactorHints(table, product, 'C'),
     }
   }
-  
+
   return {
     id: generateId(),
     level: 'C',

@@ -188,6 +188,9 @@ export interface Video {
   teachingStyle: TeachingStyle | null;
   isActive: boolean;
   language?: VideoLanguage; // ISO 639-1 language code (default: 'en')
+  helpfulCount: number;
+  notHelpfulCount: number;
+  feedbackScore: number | null; // 0-100 percentage, null if no ratings
 }
 
 // Concept-to-video mapping from concept_videos table

@@ -79,6 +79,9 @@ function dbToVideo(row: any): Video {
     teachingStyle: row.teaching_style,
     isActive: row.is_active,
     language: row.language || 'en',
+    helpfulCount: row.helpful_count ?? 0,
+    notHelpfulCount: row.not_helpful_count ?? 0,
+    feedbackScore: row.feedback_score ?? null,
   }
 }
 
@@ -329,9 +332,13 @@ export async function getRecommendedVideos(
   // Prioritize:
   // 1. Unwatched videos from current level
   // 2. Unwatched videos from nearby levels
-  // 3. Watched videos (for re-watching)
+  // 3. Higher-rated videos (user feedback blended with curator score)
+  // 4. Watched videos (for re-watching)
 
   const childLevelIndex = unlockedLevels.indexOf(childLevel)
+
+  // Minimum ratings needed before feedback score is trusted
+  const MIN_RATINGS_FOR_FEEDBACK = 3
 
   const sortedVideos = videosWithStatus.sort((a, b) => {
     // Unwatched before watched
@@ -349,8 +356,17 @@ export async function getRecommendedVideos(
       return aDistance - bDistance
     }
 
-    // Higher score first
-    return (b.scoreOverall || 0) - (a.scoreOverall || 0)
+    // Blended score: 40% feedback + 60% curator (if enough ratings)
+    const aTotal = a.helpfulCount + a.notHelpfulCount
+    const bTotal = b.helpfulCount + b.notHelpfulCount
+    const aBlended = aTotal >= MIN_RATINGS_FOR_FEEDBACK && a.feedbackScore !== null
+      ? (a.feedbackScore / 100) * 4 + (a.scoreOverall || 0) * 0.6
+      : (a.scoreOverall || 0)
+    const bBlended = bTotal >= MIN_RATINGS_FOR_FEEDBACK && b.feedbackScore !== null
+      ? (b.feedbackScore / 100) * 4 + (b.scoreOverall || 0) * 0.6
+      : (b.scoreOverall || 0)
+
+    return bBlended - aBlended
   })
 
   return sortedVideos.slice(0, limit)

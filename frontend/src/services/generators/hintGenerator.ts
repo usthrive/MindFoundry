@@ -688,6 +688,181 @@ export function generateSequenceHints(
 }
 
 // ============================================
+// FRACTION IDENTIFICATION HINTS (Level D)
+// For visual fraction problems (shading, identification)
+// ============================================
+
+export function generateFractionIdentificationHints(
+  numerator: number,
+  denominator: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const similarDenom = denominator <= 4 ? denominator + 2 : denominator - 1
+  const similarNum = Math.min(numerator, similarDenom - 1) || 1
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `How many equal parts is the shape divided into? That's your denominator. How many parts are shaded?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Count all the parts (bottom number), then count the shaded parts (top number).`,
+      animationId: 'fraction-circle-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `A shape split into ${similarDenom} parts with ${similarNum} shaded = ${similarNum}/${similarDenom}. Now try yours!`,
+      animationId: 'fraction-identification-demo',
+      duration: 30,
+    },
+  }
+}
+
+// ============================================
+// EQUIVALENT FRACTION HINTS (Level D)
+// ============================================
+
+export function generateEquivalentFractionHints(
+  origNum: number,
+  origDenom: number,
+  targetValue: number,
+  findNumerator: boolean,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const multiplier = findNumerator
+    ? targetValue / origDenom
+    : targetValue / origNum
+
+  return {
+    micro: {
+      level: 'micro',
+      text: findNumerator
+        ? `What was ${origDenom} multiplied by to get ${targetValue}? Multiply the top number by the same amount!`
+        : `What was ${origNum} multiplied by to get ${targetValue}? Multiply the bottom number by the same amount!`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `To make equivalent fractions, multiply both top and bottom by the same number. What's the multiplier?`,
+      animationId: 'equivalent-fraction-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `${origNum}/${origDenom} = multiply both by ${Math.round(multiplier)}: ${origNum * Math.round(multiplier)}/${origDenom * Math.round(multiplier)}. Now try yours!`,
+      animationId: 'equivalent-fraction-demo',
+      duration: 30,
+    },
+  }
+}
+
+// ============================================
+// REDUCE FRACTION HINTS (Level D)
+// ============================================
+
+export function generateReduceFractionHints(
+  numerator: number,
+  denominator: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const similarNum = 4
+  const similarDenom = 8
+  const similarGCD = gcd(similarNum, similarDenom)
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Can you find a number that divides evenly into both ${numerator} and ${denominator}?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Find the greatest common factor (GCF) of ${numerator} and ${denominator}. Divide both by it.`,
+      animationId: 'reduce-fraction-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `${similarNum}/${similarDenom}: GCF is ${similarGCD}, so ${similarNum}÷${similarGCD}/${similarDenom}÷${similarGCD} = ${similarNum / similarGCD}/${similarDenom / similarGCD}. Now reduce yours!`,
+      animationId: 'reduce-fraction-demo',
+      duration: 30,
+    },
+  }
+}
+
+// ============================================
+// MISSING FACTOR HINTS (Level C)
+// For problems like: 6 × ___ = 42
+// ============================================
+
+export function generateMissingFactorHints(
+  knownFactor: number,
+  product: number,
+  level: KumonLevel
+): ProblemHints {
+  void level
+  const similarFactor = knownFactor <= 5 ? knownFactor + 1 : knownFactor - 1
+  const similarMissing = Math.floor(product / knownFactor) + 1
+  const similarProduct = similarFactor * similarMissing
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `What number times ${knownFactor} equals ${product}? Think about your ${knownFactor} times table!`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Division helps! ${product} ÷ ${knownFactor} = ? That's your missing number.`,
+      animationId: 'missing-factor-setup',
+      duration: 12,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `${similarFactor} × ___ = ${similarProduct}. Think: ${similarProduct} ÷ ${similarFactor} = ${similarMissing}. Now solve yours!`,
+      animationId: 'missing-factor-demo',
+      duration: 30,
+    },
+  }
+}
+
+// ============================================
+// WORD PROBLEM HINTS (Level F)
+// ============================================
+
+export function generateWordProblemHints(
+  level: KumonLevel
+): ProblemHints {
+  void level
+
+  return {
+    micro: {
+      level: 'micro',
+      text: `Read the problem again. What numbers are given? What is the question asking you to find?`,
+      duration: 5,
+    },
+    visual: {
+      level: 'visual',
+      text: `Step 1: Identify the key numbers. Step 2: Decide the operation (add, subtract, multiply, or divide). Step 3: Solve.`,
+      animationId: 'word-problem-setup',
+      duration: 15,
+    },
+    teaching: {
+      level: 'teaching',
+      text: `Look for clue words: "total" or "altogether" = add, "left" or "remaining" = subtract, "each" or "per" = multiply/divide.`,
+      animationId: 'word-problem-strategy',
+      duration: 30,
+    },
+  }
+}
+
+// ============================================
 // FRACTION HINTS (Socratic Approach)
 // For Levels E-F: Following CPA progression
 // ============================================

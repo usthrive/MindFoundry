@@ -41,6 +41,9 @@ function dbToVideo(row: any): Video {
     scoreOverall: row.score_overall,
     teachingStyle: row.teaching_style as TeachingStyle | null,
     isActive: row.is_active,
+    helpfulCount: row.helpful_count ?? 0,
+    notHelpfulCount: row.not_helpful_count ?? 0,
+    feedbackScore: row.feedback_score ?? null,
   }
 }
 
@@ -135,6 +138,7 @@ export async function getVideosForLevel(kumonLevel: string): Promise<Video[]> {
     .select('*')
     .eq('kumon_level', kumonLevel)
     .eq('is_active', true)
+    .order('feedback_score', { ascending: false, nullsFirst: false })
     .order('score_overall', { ascending: false })
 
   if (error || !data) return []
@@ -272,20 +276,40 @@ export async function getVideosForConcept(
 
 /**
  * Get the best video for a concept based on context
+ * Prefers the requested tier, but if both exist and one has significantly
+ * better user feedback (3+ ratings), prefer the higher-rated one.
  */
 export async function getBestVideoForConcept(
   conceptId: string,
   childAge: number,
-  preferredTier: VideoTier = 'short'
+  preferredTier: VideoTier = 'short',
+  childLevel?: string
 ): Promise<Video | null> {
-  const videos = await getVideosForConcept(conceptId, childAge)
+  const videos = await getVideosForConcept(conceptId, childAge, childLevel)
 
-  // Return preferred tier if available, otherwise the other
-  if (preferredTier === 'short') {
-    return videos.short || videos.detailed
-  } else {
-    return videos.detailed || videos.short
+  const { short: shortVideo, detailed: detailedVideo } = videos
+
+  // If only one exists, return it
+  if (!shortVideo) return detailedVideo
+  if (!detailedVideo) return shortVideo
+
+  // Both exist - check if one has significantly better feedback
+  const MIN_RATINGS = 3
+  const shortTotal = shortVideo.helpfulCount + shortVideo.notHelpfulCount
+  const detailedTotal = detailedVideo.helpfulCount + detailedVideo.notHelpfulCount
+
+  // If both have enough ratings, prefer the higher-rated one
+  if (shortTotal >= MIN_RATINGS && detailedTotal >= MIN_RATINGS) {
+    const shortScore = shortVideo.feedbackScore ?? 0
+    const detailedScore = detailedVideo.feedbackScore ?? 0
+    // Only override preference if the difference is significant (20+ points)
+    if (Math.abs(shortScore - detailedScore) >= 20) {
+      return shortScore >= detailedScore ? shortVideo : detailedVideo
+    }
   }
+
+  // Default: return preferred tier
+  return preferredTier === 'short' ? shortVideo : detailedVideo
 }
 
 /**

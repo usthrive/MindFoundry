@@ -7,7 +7,7 @@ import {
   generateFractionToDecimalHints,
   generateDecimalToFractionHints,
   generateDecimalHints,
-  generateGenericHints,
+  generateWordProblemHints,
 } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
@@ -269,7 +269,7 @@ function generateWordProblem(): Problem {
       'Set up the fraction problem',
       'Simplify your answer',
     ],
-    graduatedHints: generateGenericHints('word_problem', 'F'),
+    graduatedHints: generateWordProblemHints('F'),
   }
 }
 

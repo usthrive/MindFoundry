@@ -48,6 +48,7 @@ export default function VideoPlayerModal({
   const [watchProgress, setWatchProgress] = useState(0)
   const [showConfirmClose, setShowConfirmClose] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [feedbackGiven, setFeedbackGiven] = useState<'helpful' | 'not_helpful' | null>(null)
 
   // Refs for tracking
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -71,6 +72,7 @@ export default function VideoPlayerModal({
       setWatchProgress(0)
       setError(null)
       setShowConfirmClose(false)
+      setFeedbackGiven(null)
 
       // Record view start in database
       recordVideoViewStart(
@@ -169,6 +171,11 @@ export default function VideoPlayerModal({
 
   // Handle feedback submission
   const handleFeedback = async (feedback: 'helpful' | 'not_helpful' | 'skipped') => {
+    // Show visual feedback immediately regardless of save success
+    if (feedback !== 'skipped') {
+      setFeedbackGiven(feedback)
+    }
+
     if (viewId) {
       try {
         const { supabase } = await import('@/lib/supabase')
@@ -291,19 +298,27 @@ export default function VideoPlayerModal({
 
               {/* Feedback Buttons */}
               <div className="flex items-center justify-center gap-3">
-                <span className="text-sm text-gray-500">Was this helpful?</span>
-                <button
-                  onClick={() => handleFeedback('helpful')}
-                  className="px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-                >
-                  👍 Yes
-                </button>
-                <button
-                  onClick={() => handleFeedback('not_helpful')}
-                  className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                >
-                  👎 No
-                </button>
+                {feedbackGiven ? (
+                  <span className="text-sm font-medium text-green-600">
+                    Thanks for your feedback!
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-sm text-gray-500">Was this helpful?</span>
+                    <button
+                      onClick={() => handleFeedback('helpful')}
+                      className="px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                    >
+                      👍 Yes
+                    </button>
+                    <button
+                      onClick={() => handleFeedback('not_helpful')}
+                      className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                      👎 No
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 

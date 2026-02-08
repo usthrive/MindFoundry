@@ -47,6 +47,7 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
 
   const lastDismissalRef = useRef<number>(0)
   const fetchingRef = useRef<boolean>(false)
+  const mistakeCountRef = useRef<number>(0)
 
   // Load preferences on mount
   useEffect(() => {
@@ -59,6 +60,7 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
 
   // Reset consecutive mistakes when concept changes
   useEffect(() => {
+    mistakeCountRef.current = 0
     setState((prev) => ({
       ...prev,
       consecutiveMistakes: 0,
@@ -69,6 +71,7 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
 
   // Record correct answer (resets streak)
   const recordCorrectAnswer = useCallback(() => {
+    mistakeCountRef.current = 0
     setState((prev) => ({
       ...prev,
       consecutiveMistakes: 0,
@@ -80,17 +83,17 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
   const recordIncorrectAnswer = useCallback(async () => {
     if (!enabled || fetchingRef.current) return
 
-    setState((prev) => {
-      const newMistakes = prev.consecutiveMistakes + 1
-      return {
-        ...prev,
-        consecutiveMistakes: newMistakes,
-      }
-    })
+    // Use ref to track count synchronously (avoids stale closure issue)
+    mistakeCountRef.current += 1
+    const newMistakeCount = mistakeCountRef.current
+
+    setState((prev) => ({
+      ...prev,
+      consecutiveMistakes: newMistakeCount,
+    }))
 
     // Check if we should suggest a video
     const threshold = state.preferences?.suggestThreshold ?? DEFAULT_MISTAKE_THRESHOLD
-    const newMistakeCount = state.consecutiveMistakes + 1
 
     if (newMistakeCount >= threshold) {
       // Check cooldown
@@ -144,7 +147,6 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
     childAge,
     conceptId,
     conceptName,
-    state.consecutiveMistakes,
     state.preferences,
     state.dismissedConcepts,
   ])
@@ -162,6 +164,7 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
   // Accept suggestion (user wants to watch)
   const acceptSuggestion = useCallback((): Video | null => {
     const video = state.suggestion?.video || null
+    mistakeCountRef.current = 0
     setState((prev) => ({
       ...prev,
       showSuggestion: false,
@@ -172,6 +175,7 @@ export function useVideoSuggestion(options: UseVideoSuggestionOptions) {
 
   // Reset all state (e.g., when session ends)
   const reset = useCallback(() => {
+    mistakeCountRef.current = 0
     setState((prev) => ({
       ...prev,
       consecutiveMistakes: 0,
