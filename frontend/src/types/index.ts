@@ -10,7 +10,7 @@ export type KumonLevel = '7A' | '6A' | '5A' | '4A' | '3A' | '2A' | 'A' | 'B' | '
 
 export type MathOperation = 'addition' | 'subtraction' | 'multiplication' | 'division';
 
-export type ProblemFormat = 'horizontal' | 'vertical';
+export type ProblemFormat = 'horizontal' | 'vertical' | 'expression' | 'graph' | 'geometry' | 'table' | 'sequenceBoxes' | 'matching';
 
 export type AgeGroup = 'preK' | 'grade1_2' | 'grade3_5' | 'grade5_6' | 'middle_school';
 

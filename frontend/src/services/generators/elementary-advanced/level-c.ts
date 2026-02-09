@@ -46,7 +46,7 @@ function generateReviewProblem(): Problem {
       subtype: 'review_level_b',
       difficulty: 1,
       displayFormat: 'vertical',
-      question: `  ${a}\n+ ${b}\n-----`,
+      question: '',
       correctAnswer: a + b,
       operands: [a, b],
       hints: ['Add column by column from right to left'],
@@ -64,7 +64,7 @@ function generateReviewProblem(): Problem {
     subtype: 'review_level_b',
     difficulty: 1,
     displayFormat: 'vertical',
-    question: `  ${larger}\n- ${smaller}\n------`,
+    question: '',
     correctAnswer: larger - smaller,
     operands: [larger, smaller],
     hints: ['Subtract column by column from right to left'],
@@ -143,9 +143,6 @@ function generateMultiDigitMultiplication(maxMultiplicand: number, subtype: Leve
   const multiplier = randomInt(2, 9)
   const product = multiplicand * multiplier
   
-  const digits = multiplicand.toString().length
-  const padLen = Math.max(product.toString().length, digits) + 2
-  
   return {
     id: generateId(),
     level: 'C',
@@ -154,7 +151,7 @@ function generateMultiDigitMultiplication(maxMultiplicand: number, subtype: Leve
     subtype,
     difficulty: 2,
     displayFormat: 'vertical',
-    question: `${multiplicand.toString().padStart(padLen)}\n×${multiplier.toString().padStart(padLen - 1)}\n${'-'.repeat(padLen)}`,
+    question: '',
     correctAnswer: product,
     operands: [multiplicand, multiplier],
     hints: [

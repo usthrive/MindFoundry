@@ -93,44 +93,9 @@ function generateAdditionProblem(addends: number[], maxFirst: number, subtype: L
   }
 }
 
-function generateVerticalProblem(addends: number[], maxFirst: number, subtype: Level2AProblemType): Problem {
-  const addend = addends[randomInt(0, addends.length - 1)]
-  const first = randomInt(1, maxFirst)
-  const sum = first + addend
-  
-  const top = Math.max(first, addend)
-  const bottom = Math.min(first, addend)
-  
-  return {
-    id: generateId(),
-    level: '2A',
-    worksheetNumber: 1,
-    type: 'addition',
-    subtype,
-    difficulty: 1,
-    displayFormat: 'vertical',
-    question: `  ${top.toString().padStart(2)}\n+ ${bottom.toString().padStart(2)}\n----`,
-    correctAnswer: sum,
-    operands: [top, bottom],
-    hints: [
-      `Add ${top} + ${bottom}`,
-      `Start at ${top} and count up ${bottom}`,
-    ],
-    graduatedHints: generateAdditionHints([top, bottom], '2A'),
-  }
-}
-
 export function generate2AProblem(worksheet: number): Problem {
   const config = getWorksheetConfig(worksheet)
-  
-  const useVertical = worksheet > 100 && Math.random() < 0.3
-  
-  if (useVertical) {
-    const problem = generateVerticalProblem(config.addends, config.maxFirst, config.type)
-    problem.worksheetNumber = worksheet
-    return problem
-  }
-  
+
   const problem = generateAdditionProblem(config.addends, config.maxFirst, config.type)
   problem.worksheetNumber = worksheet
   return problem

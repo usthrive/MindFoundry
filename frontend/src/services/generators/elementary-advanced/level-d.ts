@@ -30,7 +30,7 @@ function generateReviewProblem(): Problem {
     subtype: 'review_level_c',
     difficulty: 1,
     displayFormat: 'vertical',
-    question: `${a.toString().padStart(5)}\n×${b.toString().padStart(4)}\n-----`,
+    question: '',
     correctAnswer: product,
     operands: [a, b],
     hints: ['Multiply each digit by the multiplier, starting from the right'],
@@ -51,7 +51,7 @@ function generateMultiplication2x2(): Problem {
     subtype: 'multiplication_2digit_by_2digit',
     difficulty: 2,
     displayFormat: 'vertical',
-    question: `${a.toString().padStart(5)}\n×${b.toString().padStart(4)}\n-----`,
+    question: '',
     correctAnswer: product,
     operands: [a, b],
     hints: [
@@ -76,7 +76,7 @@ function generateMultiplication3x2(): Problem {
     subtype: 'multiplication_3digit_by_2digit',
     difficulty: 3,
     displayFormat: 'vertical',
-    question: `${a.toString().padStart(6)}\n×${b.toString().padStart(5)}\n------`,
+    question: '',
     correctAnswer: product,
     operands: [a, b],
     hints: [
