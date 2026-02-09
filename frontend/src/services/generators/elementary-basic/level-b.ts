@@ -99,14 +99,6 @@ function generateSubtractionPair(digits: number, requireBorrow: boolean): [numbe
   return [a, b]
 }
 
-function formatVertical(a: number, b: number, operation: '+' | '-'): string {
-  const maxLen = Math.max(a.toString().length, b.toString().length)
-  const aStr = a.toString().padStart(maxLen + 2)
-  const bStr = b.toString().padStart(maxLen + 1)
-  const line = '-'.repeat(maxLen + 2)
-  return `${aStr}\n${operation} ${bStr}\n${line}`
-}
-
 function generateAdditionProblem(config: ReturnType<typeof getWorksheetConfig>): Problem {
   const [a, b] = generateAdditionPair(config.digits, config.allowCarry)
   const sum = a + b
@@ -129,6 +121,8 @@ function generateAdditionProblem(config: ReturnType<typeof getWorksheetConfig>):
     }
   }
   
+  const isHorizontal = config.digits === 1
+
   return {
     id: generateId(),
     level: 'B',
@@ -136,8 +130,8 @@ function generateAdditionProblem(config: ReturnType<typeof getWorksheetConfig>):
     type: 'addition',
     subtype,
     difficulty: config.allowCarry ? 2 : 1,
-    displayFormat: 'vertical',
-    question: formatVertical(a, b, '+'),
+    displayFormat: isHorizontal ? 'horizontal' : 'vertical',
+    question: isHorizontal ? `${a} + ${b} = ___` : '',
     correctAnswer: sum,
     operands: [a, b],
     hints,
@@ -168,6 +162,8 @@ function generateSubtractionProblem(config: ReturnType<typeof getWorksheetConfig
     }
   }
   
+  const isHorizontal = config.digits === 1
+
   return {
     id: generateId(),
     level: 'B',
@@ -175,8 +171,8 @@ function generateSubtractionProblem(config: ReturnType<typeof getWorksheetConfig
     type: 'subtraction',
     subtype,
     difficulty: config.allowBorrow ? 2 : 1,
-    displayFormat: 'vertical',
-    question: formatVertical(a, b, '-'),
+    displayFormat: isHorizontal ? 'horizontal' : 'vertical',
+    question: isHorizontal ? `${a} - ${b} = ___` : '',
     correctAnswer: difference,
     operands: [a, b],
     hints,
