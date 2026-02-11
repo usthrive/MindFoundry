@@ -55,14 +55,17 @@ function generateCountProblem(maxCount: number): Problem {
 }
 
 function generateNumberReadingProblem(maxCount: number): Problem {
-  const number = randomInt(1, maxCount)
+  // SAFETY CAP: Number reading should never exceed 10 for Pre-K students
+  // Per Kumon spec, Level 6A worksheets 101-150 are "Number Reading (Up to 10)"
+  const cappedMaxCount = Math.min(maxCount, 10)
+  const number = randomInt(1, cappedMaxCount)
   const numberWords: Record<number, string> = {
     1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five',
     6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten'
   }
 
   // Generate distractor options for tap-to-select UI
-  const options = generateDistractorNumbers(number, 1, maxCount, 3)
+  const options = generateDistractorNumbers(number, 1, cappedMaxCount, 3)
 
   const problemTypes = ['read_numeral', 'match_word', 'identify_number']
   const problemType = randomChoice(problemTypes)

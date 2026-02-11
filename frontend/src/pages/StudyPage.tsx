@@ -1293,6 +1293,9 @@ export default function StudyPage() {
     // Clear any existing persisted session
     clearSession()
 
+    // Clear stale problems from previous level to prevent cross-contamination
+    setRestoredPageState(undefined)
+
     setCurrentLevel(level)
     setCurrentWorksheet(1)
     setInputValue('')
@@ -1343,6 +1346,9 @@ export default function StudyPage() {
 
     // Clear any existing persisted session
     clearSession()
+
+    // Clear stale problems from previous worksheet to prevent cross-contamination
+    setRestoredPageState(undefined)
 
     setCurrentWorksheet(worksheetNum)
     setInputValue('')
@@ -1645,6 +1651,7 @@ export default function StudyPage() {
               </h2>
 
               <WorksheetView
+                key={`${currentLevel}-${currentWorksheet}`}
                 ref={worksheetViewRef}
                 level={currentLevel}
                 worksheetNumber={currentWorksheet}
