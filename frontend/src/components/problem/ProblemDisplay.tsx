@@ -95,8 +95,8 @@ const ProblemDisplay = ({
     )
   }
 
-  // For complex types, display the question string directly
-  if (isComplexType && getQuestionText()) {
+  // For complex types or any non-arithmetic type with a question, display the question string directly
+  if ((isComplexType || !operatorSymbols[problem.type]) && getQuestionText()) {
     const questionText = getQuestionText()!
     return (
       <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
