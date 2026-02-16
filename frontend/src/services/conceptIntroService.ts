@@ -9,7 +9,7 @@
  */
 
 import type { KumonLevel } from './generators/types'
-import { getNewConceptsAtWorksheet } from './generators/concept-availability'
+import { getNewConceptsAtWorksheet, CONCEPT_INTRODUCTION } from './generators/concept-availability'
 import { supabase } from '@/lib/supabase'
 
 const STORAGE_KEY = 'mindfoundry_seen_concepts'
@@ -181,6 +181,58 @@ export async function getUnseenNewConceptsWithDB(
   const newConcepts = getNewConceptsAtWorksheet(level, worksheet)
 
   return newConcepts.filter((concept) => !seenConcepts.includes(concept))
+}
+
+/**
+ * Clear concepts introduced at or after a given worksheet for a specific level.
+ * Called when a child's position moves backward (e.g., parent worksheet jump)
+ * so that concept intros re-fire when the child reaches them again.
+ */
+export async function clearConceptsFromWorksheet(
+  childId: string,
+  level: KumonLevel,
+  fromWorksheet: number
+): Promise<void> {
+  // Find all concepts introduced at this level at or after the target worksheet
+  const conceptsToClear: string[] = []
+  for (const [concept, intro] of Object.entries(CONCEPT_INTRODUCTION)) {
+    if (intro.level === level && intro.worksheet >= fromWorksheet) {
+      conceptsToClear.push(concept)
+    }
+  }
+
+  if (conceptsToClear.length === 0) return
+
+  // Clear from localStorage cache
+  try {
+    const data = localStorage.getItem(STORAGE_KEY)
+    if (data) {
+      const parsed: SeenConceptsData = JSON.parse(data)
+      if (parsed[childId]) {
+        parsed[childId] = parsed[childId].filter(
+          (c) => !conceptsToClear.includes(c)
+        )
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+      }
+    }
+  } catch (error) {
+    console.error('Error clearing concepts from localStorage:', error)
+  }
+
+  // Clear from database
+  try {
+    const { error } = await supabase
+      .from('concepts_seen')
+      .delete()
+      .eq('child_id', childId)
+      .in('concept_id', conceptsToClear)
+
+    if (error) {
+      console.error('Error clearing concepts from DB:', error)
+    }
+  } catch (error) {
+    console.error('Error clearing concepts from DB:', error)
+  }
 }
 
 /**

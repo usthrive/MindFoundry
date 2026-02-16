@@ -490,13 +490,125 @@ export default function ConceptIntroModal({
           />
         )
 
+      // Level I+ placeholders — algebraic concepts
       case 'foil-visual':
       case 'factoring-visual':
       case 'parabola-graph':
       case 'quadratic-formula':
+      case 'advanced-factoring':
+      case 'discriminant':
         return (
           <AlgebraTilesAnimation
-            key={`placeholder-${key}`}
+            key={`alg-placeholder-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      // Level J+ — complex plane and polynomial division
+      case 'complex-plane':
+        return (
+          <CoordinatePlotAnimation
+            key={`complex-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      case 'polynomial-division':
+        return (
+          <LongDivisionStepsAnimation
+            key={`polydiv-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      case 'proof-steps':
+        return (
+          <BalanceScaleAnimation
+            key={`proof-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      // Level K+ — function and graph types
+      case 'function-graph':
+      case 'function-transform':
+      case 'exponential-graph':
+      case 'exponential-log':
+      case 'rational-function':
+      case 'irrational-function':
+        return (
+          <CoordinatePlotAnimation
+            key={`func-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      // Level L+ — calculus types
+      case 'limit-approach':
+      case 'tangent-line':
+      case 'area-under-curve':
+      case 'optimization':
+        return (
+          <CoordinatePlotAnimation
+            key={`calc-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      // Level M+ — trigonometry types
+      case 'unit-circle':
+      case 'trig-graph':
+      case 'triangle-trig':
+        return (
+          <CoordinatePlotAnimation
+            key={`trig-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      // Level N+ — sequences and advanced differentiation
+      case 'sequence-series':
+      case 'recurrence-induction':
+        return (
+          <SequenceAnimation
+            key={`seq-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      case 'advanced-differentiation':
+        return (
+          <CoordinatePlotAnimation
+            key={`adv-diff-${key}`}
+            problemData={problemData}
+            showSolution={isReady}
+            className="mx-auto"
+          />
+        )
+
+      // Level O — advanced calculus types
+      case 'curve-analysis':
+      case 'integration-methods':
+      case 'volume-revolution':
+        return (
+          <CoordinatePlotAnimation
+            key={`adv-calc-${key}`}
             problemData={problemData}
             showSolution={isReady}
             className="mx-auto"

@@ -38,6 +38,7 @@ import {
   getUnseenNewConceptsWithDB,
   markConceptsSeenWithDB,
   loadSeenConceptsFromDB,
+  clearConceptsFromWorksheet,
 } from '@/services/conceptIntroService'
 import { getProblemsPerPage, usesTapToSelect, type QuestionsPerPageMode } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
@@ -1361,6 +1362,12 @@ export default function StudyPage() {
     setTotalIncorrect(0)
     setDistractions([])
     setSessionActive(true)
+
+    // If jumping backward, clear concept intros at or after the target worksheet
+    // so they re-fire when the child reaches those concept boundaries again
+    if (worksheetNum < currentWorksheet) {
+      await clearConceptsFromWorksheet(currentChild.id, currentLevel, worksheetNum)
+    }
 
     // Update database
     await updateCurrentPosition(currentChild.id, currentLevel, worksheetNum)

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "qa": "npx tsx src/qa/cli.ts",
     "qa:fix": "npx tsx src/qa/cli.ts --auto-fix",
-    "qa:dry-run": "npx tsx src/qa/cli.ts --auto-fix --dry-run"
+    "qa:dry-run": "npx tsx src/qa/cli.ts --auto-fix --dry-run",
+    "qa:concepts": "npx tsx src/qa/concept-intro-audit.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
