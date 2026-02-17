@@ -48,10 +48,12 @@ export interface WorksheetViewProps {
 
 export interface WorksheetViewRef {
   handleInput: (value: number | string) => void
-  getActiveProblem: () => { problem: Problem; index: number; pageIndex: number } | null
+  getActiveProblem: () => { problem: Problem; index: number; pageIndex: number; totalProblems: number } | null
   getScratchPadStrokes: (problemIndex: number) => Stroke[]
   setScratchPadStrokes: (problemIndex: number, strokes: Stroke[]) => void
   setAnswerFromScratchPad: (answer: string) => void
+  navigateToNextProblem: () => { problem: Problem; index: number; pageIndex: number } | null
+  navigateToPreviousProblem: () => { problem: Problem; index: number; pageIndex: number } | null
 }
 
 // Exported so it can be used for session persistence
@@ -144,6 +146,29 @@ function emptyColumnState() {
     carries: {} as Record<number, (string | null)[]>,
     scratchPadStrokes: {} as Record<number, Stroke[]>,
   }
+}
+
+/**
+ * Pre-initialize column state for all vertical problems on a page.
+ * Ensures column-aligned digit boxes render immediately, not just after first interaction.
+ */
+function initColumnStateForProblems(problems: Problem[]) {
+  const columnDigits: Record<number, (string | null)[]> = {}
+  const activeColumns: Record<number, number> = {}
+  const carries: Record<number, (string | null)[]> = {}
+
+  problems.forEach((problem, index) => {
+    if (problem.displayFormat === 'vertical') {
+      const colCount = getAnswerColumnCount(problem)
+      if (colCount > 0) {
+        columnDigits[index] = new Array(colCount).fill(null)
+        activeColumns[index] = 0
+        carries[index] = new Array(colCount).fill(null)
+      }
+    }
+  })
+
+  return { columnDigits, activeColumns, carries, scratchPadStrokes: {} as Record<number, Stroke[]> }
 }
 
 /**
@@ -275,6 +300,18 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         scratchPadStrokes: initialPageState.scratchPadStrokes ?? {},
       }
 
+      // Backfill column state for vertical problems missing it (legacy sessions)
+      normalizedProblems.forEach((problem, index) => {
+        if (problem.displayFormat === 'vertical' && !normalized.columnDigits[index]) {
+          const colCount = getAnswerColumnCount(problem)
+          if (colCount > 0) {
+            normalized.columnDigits[index] = new Array(colCount).fill(null)
+            normalized.activeColumns[index] = normalized.activeColumns[index] ?? 0
+            normalized.carries[index] = normalized.carries[index] ?? new Array(colCount).fill(null)
+          }
+        }
+      })
+
       // Mark as consumed so we don't re-use on subsequent renders
       initialPageStateConsumed.current = true
       initialStateFor.current = { level, worksheet: worksheetNumber }
@@ -385,7 +422,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           lockedProblems: {},
           firstAttemptResults: {},
           correctedProblems: {},
-          ...emptyColumnState(),
+          ...initColumnStateForProblems(problems),
         }
       }
     })
@@ -878,6 +915,31 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         problem,
         index: activeIndex,
         pageIndex: activeIndex + (currentPage - 1) * problemsPerPage,
+        totalProblems: currentPageState.problems.length,
+      }
+    },
+    navigateToNextProblem: () => {
+      const nextIndex = activeIndex + 1
+      if (nextIndex >= currentPageState.problems.length) return null
+      setActiveIndex(nextIndex)
+      const problem = currentPageState.problems[nextIndex]
+      if (!problem) return null
+      return {
+        problem,
+        index: nextIndex,
+        pageIndex: nextIndex + (currentPage - 1) * problemsPerPage,
+      }
+    },
+    navigateToPreviousProblem: () => {
+      const prevIndex = activeIndex - 1
+      if (prevIndex < 0) return null
+      setActiveIndex(prevIndex)
+      const problem = currentPageState.problems[prevIndex]
+      if (!problem) return null
+      return {
+        problem,
+        index: prevIndex,
+        pageIndex: prevIndex + (currentPage - 1) * problemsPerPage,
       }
     },
     getScratchPadStrokes: (problemIndex: number) => {

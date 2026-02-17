@@ -27,6 +27,14 @@ interface ScratchPadOverlayProps {
   backgroundStyle?: BackgroundStyle
   /** Whether background style can be toggled by the user */
   allowBackgroundToggle?: boolean
+  /** Navigate to next problem */
+  onNext?: () => void
+  /** Navigate to previous problem */
+  onPrevious?: () => void
+  /** Whether next button should be enabled */
+  canGoNext?: boolean
+  /** Whether previous button should be enabled */
+  canGoPrevious?: boolean
 }
 
 /**
@@ -48,6 +56,10 @@ export default function ScratchPadOverlay({
   onClose,
   backgroundStyle: initialBgStyle = 'grid',
   allowBackgroundToggle = false,
+  onNext,
+  onPrevious,
+  canGoNext = false,
+  canGoPrevious = false,
 }: ScratchPadOverlayProps) {
   const scratchPadRef = useRef<ScratchPadRef>(null)
   const [currentColor, setCurrentColor] = useState(COLORS[0])
@@ -129,9 +141,49 @@ export default function ScratchPadOverlay({
                 Back
               </button>
 
-              <span className="text-sm font-medium text-gray-500">
-                Scratch Pad - Question #{problemNumber}
-              </span>
+              <div className="flex items-center gap-2">
+                {onPrevious && (
+                  <button
+                    onClick={onPrevious}
+                    disabled={!canGoPrevious}
+                    className={cn(
+                      'w-8 h-8 flex items-center justify-center rounded-lg',
+                      'transition-colors touch-manipulation select-none',
+                      canGoPrevious
+                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        : 'text-gray-300 cursor-not-allowed'
+                    )}
+                    type="button"
+                    aria-label="Previous problem"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                )}
+                <span className="text-sm font-medium text-gray-500">
+                  Q #{problemNumber}
+                </span>
+                {onNext && (
+                  <button
+                    onClick={onNext}
+                    disabled={!canGoNext}
+                    className={cn(
+                      'w-8 h-8 flex items-center justify-center rounded-lg',
+                      'transition-colors touch-manipulation select-none',
+                      canGoNext
+                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                        : 'text-gray-300 cursor-not-allowed'
+                    )}
+                    type="button"
+                    aria-label="Next problem"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                )}
+              </div>
 
               {allowBackgroundToggle && (
                 <div className="flex items-center gap-1">

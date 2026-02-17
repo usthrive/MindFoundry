@@ -1262,12 +1262,25 @@ export default function StudyPage() {
   }
 
   // Scratch pad handlers
+  // Force re-render counter for scratch pad navigation (incremented to refresh overlay props)
+  const [scratchPadKey, setScratchPadKey] = useState(0)
+
   const handleScratchPadOpen = useCallback(() => {
     setShowScratchPad(true)
   }, [])
 
   const handleScratchPadClose = useCallback(() => {
     setShowScratchPad(false)
+  }, [])
+
+  const handleScratchPadNext = useCallback(() => {
+    const result = worksheetViewRef.current?.navigateToNextProblem()
+    if (result) setScratchPadKey(k => k + 1)
+  }, [])
+
+  const handleScratchPadPrevious = useCallback(() => {
+    const result = worksheetViewRef.current?.navigateToPreviousProblem()
+    if (result) setScratchPadKey(k => k + 1)
   }, [])
 
   const handleScratchPadStrokesChange = useCallback((strokes: Stroke[]) => {
@@ -1290,6 +1303,8 @@ export default function StudyPage() {
         problemNumber: 0,
         answer: '',
         initialStrokes: [] as Stroke[],
+        canGoNext: false,
+        canGoPrevious: false,
       }
     }
     return {
@@ -1297,8 +1312,11 @@ export default function StudyPage() {
       problemNumber: active.pageIndex + 1,
       answer: currentPageStateRef.current?.answers[active.index] || '',
       initialStrokes: worksheetViewRef.current?.getScratchPadStrokes(active.index) || [],
+      canGoNext: active.index < active.totalProblems - 1,
+      canGoPrevious: active.index > 0,
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scratchPadKey])
 
   // Handler for page state changes from WorksheetView (for persistence)
   const handlePageStateChange = useCallback((pageState: PageState) => {
@@ -1751,6 +1769,10 @@ export default function StudyPage() {
                     onClose={handleScratchPadClose}
                     backgroundStyle="grid"
                     allowBackgroundToggle={false}
+                    onNext={handleScratchPadNext}
+                    onPrevious={handleScratchPadPrevious}
+                    canGoNext={spProps.canGoNext}
+                    canGoPrevious={spProps.canGoPrevious}
                   />
                 )
               })()}

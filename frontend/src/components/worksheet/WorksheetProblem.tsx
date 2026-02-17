@@ -73,8 +73,8 @@ export default function WorksheetProblem({
   const smallFontSize = compact ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'
 
   // Column cell sizing for vertical problems
-  const cellSize = compact ? 'w-8 h-9 text-lg sm:w-9 sm:h-10 sm:text-xl' : 'w-10 h-11 text-xl sm:w-11 sm:h-12 sm:text-2xl'
-  const cellGap = compact ? 'gap-0.5' : 'gap-1'
+  const cellSize = compact ? 'w-10 h-11 text-xl sm:w-11 sm:h-12 sm:text-2xl' : 'w-12 h-14 text-2xl sm:w-14 sm:h-14 sm:text-3xl'
+  const cellGap = compact ? 'gap-1' : 'gap-1.5'
 
   // Render horizontal format problem
   const renderHorizontalProblem = () => {
@@ -268,7 +268,7 @@ export default function WorksheetProblem({
 
         {/* Divider line */}
         <div className={cn('my-1 h-0.5 bg-primary', cellGap)} style={{
-          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${maxDigits} * ${compact ? '2.25rem' : '2.75rem'} + ${(maxDigits - 1) * (compact ? 2 : 4)}px)`
+          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${maxDigits} * ${compact ? '2.75rem' : '3.5rem'} + ${(maxDigits - 1) * (compact ? 4 : 6)}px)`
         }} />
 
         {/* Answer row - individual digit boxes */}
