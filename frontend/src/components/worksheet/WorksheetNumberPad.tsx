@@ -20,6 +20,8 @@ export interface WorksheetNumberPadProps {
   collapsed?: boolean
   /** Callback when collapse state changes */
   onCollapsedChange?: (collapsed: boolean) => void
+  /** Callback to open scratch pad overlay */
+  onScratchPadToggle?: () => void
 }
 
 /**
@@ -45,6 +47,7 @@ export default function WorksheetNumberPad({
   collapsible = false,
   collapsed: controlledCollapsed,
   onCollapsedChange,
+  onScratchPadToggle,
 }: WorksheetNumberPadProps) {
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -239,8 +242,42 @@ export default function WorksheetNumberPad({
         )}
       </div>
 
-      {/* Action buttons: Clear, Backspace, and Submit */}
+      {/* Action buttons: Scratch Pad, Clear, Backspace, and Submit */}
       <div className={cn('mt-1.5 sm:mt-2 flex', gapClasses)}>
+        {/* Scratch Pad button */}
+        {onScratchPadToggle && (
+          <button
+            onClick={onScratchPadToggle}
+            disabled={disabled}
+            className={cn(
+              'flex flex-1 items-center justify-center gap-1 rounded-xl sm:rounded-2xl',
+              'bg-amber-50 font-semibold text-amber-700',
+              'shadow-md transition-all duration-150',
+              'hover:bg-amber-100 active:scale-95 active:shadow-sm',
+              'focus:outline-none focus:ring-2 focus:ring-amber-400 sm:focus:ring-4',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              'touch-manipulation select-none',
+              actionButtonSizeClasses
+            )}
+            type="button"
+            title="Open scratch pad"
+            aria-label="Open scratch pad for working out"
+          >
+            <svg
+              className={fixed ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+          </button>
+        )}
+
         {/* Clear button */}
         <button
           onClick={() => onInput('clear')}

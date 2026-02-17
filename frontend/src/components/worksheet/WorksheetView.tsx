@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import WorksheetProblem from './WorksheetProblem'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
+import CarryTransitionModal from './CarryTransitionModal'
 import {
   getProblemsPerPage,
   getTotalPages,
@@ -13,6 +14,7 @@ import {
 import { generateProblem } from '@/services/sessionManager'
 import type { Problem } from '@/services/generators/types'
 import type { KumonLevel, HintLevel } from '@/types'
+import type { Stroke } from '@/components/ui/ScratchPad'
 
 /**
  * Per-problem attempt data for tracking and saving
@@ -46,6 +48,10 @@ export interface WorksheetViewProps {
 
 export interface WorksheetViewRef {
   handleInput: (value: number | string) => void
+  getActiveProblem: () => { problem: Problem; index: number; pageIndex: number } | null
+  getScratchPadStrokes: (problemIndex: number) => Stroke[]
+  setScratchPadStrokes: (problemIndex: number, strokes: Stroke[]) => void
+  setAnswerFromScratchPad: (answer: string) => void
 }
 
 // Exported so it can be used for session persistence
@@ -61,6 +67,12 @@ export interface PageState {
   // First attempt tracking (for score display)
   firstAttemptResults: Record<number, boolean | null>  // null=not attempted, true/false=first result
   correctedProblems: Record<number, boolean>  // Problems fixed after hints
+  // Column-by-column input state for vertical problems
+  columnDigits: Record<number, (string | null)[]>  // per-problem array of column digits (index 0 = ones)
+  activeColumns: Record<number, number>             // per-problem active column index (0 = ones)
+  carries: Record<number, (string | null)[]>        // carry indicators per column
+  // Scratch pad state
+  scratchPadStrokes: Record<number, Stroke[]>
 }
 
 /**
@@ -76,6 +88,88 @@ const formatAnswer = (answer: unknown): string => {
   }
   return String(answer)
 }
+
+/**
+ * Get the digit at a specific place value (0 = ones, 1 = tens, 2 = hundreds, etc.)
+ */
+function getDigitAtPlace(num: number, place: number): number {
+  return Math.floor(Math.abs(num) / Math.pow(10, place)) % 10
+}
+
+/**
+ * Compute the number of answer columns needed for a vertical problem.
+ * Based on the correct answer length (handles cases like 99+99=198 where answer has more digits than operands).
+ */
+function getAnswerColumnCount(problem: Problem): number {
+  if (problem.displayFormat !== 'vertical' || !problem.operands?.length) return 0
+  const correctAnswer = typeof problem.correctAnswer === 'number' ? problem.correctAnswer : 0
+  return Math.max(
+    String(Math.abs(Math.round(correctAnswer))).length,
+    ...problem.operands.map(op => String(Math.abs(op)).length)
+  )
+}
+
+/**
+ * Compute carry values for addition based on entered column digits.
+ * Returns an array where index = column position, value = carry digit string or null.
+ * Only computes carries up to the last column the child has filled.
+ */
+function computeCarries(problem: Problem, columns: (string | null)[]): (string | null)[] {
+  if (!problem.operands || problem.type !== 'addition') return new Array(columns.length).fill(null)
+
+  const [num1, num2] = problem.operands
+  const carries: (string | null)[] = new Array(columns.length).fill(null)
+
+  let carry = 0
+  for (let col = 0; col < columns.length; col++) {
+    if (columns[col] === null) break // Stop computing past where child has entered
+    const d1 = getDigitAtPlace(num1, col)
+    const d2 = getDigitAtPlace(num2, col)
+    const sum = d1 + d2 + carry
+    carry = Math.floor(sum / 10)
+    if (carry > 0 && col + 1 < columns.length) {
+      carries[col + 1] = String(carry)
+    }
+  }
+  return carries
+}
+
+/**
+ * Create a default (empty) set of column fields for PageState initialization.
+ */
+function emptyColumnState() {
+  return {
+    columnDigits: {} as Record<number, (string | null)[]>,
+    activeColumns: {} as Record<number, number>,
+    carries: {} as Record<number, (string | null)[]>,
+    scratchPadStrokes: {} as Record<number, Stroke[]>,
+  }
+}
+
+/**
+ * Determine if manual carry mode should be active for a given worksheet.
+ * Auto-carries are used for the first ~20% of carry worksheets, then manual carries kick in.
+ *
+ * Level B: carry worksheets span 41-70 (30 worksheets), 20% = 6 worksheets
+ * So manual carry activates at worksheet 47+
+ */
+function isManualCarryMode(level: string, worksheetNumber: number): boolean {
+  // Level B: carry starts at worksheet 41, manual after 20% (≈ worksheet 47)
+  if (level === 'B') {
+    // 2-digit carry range: 41-70 → manual at 47+
+    if (worksheetNumber >= 47 && worksheetNumber <= 70) return true
+    // 3-digit range (71-100) always manual
+    if (worksheetNumber >= 71 && worksheetNumber <= 100) return true
+    return false
+  }
+  // For levels C+ with vertical problems, always use manual carry
+  const advancedLevels = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
+  if (advancedLevels.includes(level)) return true
+  return false
+}
+
+/** localStorage key for tracking whether the carry transition modal has been shown */
+const CARRY_MODAL_SHOWN_KEY = 'mindfoundry_carry_modal_shown'
 
 /**
  * WorksheetView - Multi-problem worksheet display
@@ -106,6 +200,26 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
   // Stable key for this worksheet (used for restore gating)
   const worksheetKey = `${level}:${worksheetNumber}`
+
+  // Manual carry mode
+  const manualCarry = isManualCarryMode(level, worksheetNumber)
+  const [showCarryTransitionModal, setShowCarryTransitionModal] = useState(false)
+  const [carryNudgeIndex, setCarryNudgeIndex] = useState<number | null>(null)
+
+  // Show carry transition modal on first encounter of manual carry mode
+  useEffect(() => {
+    if (manualCarry) {
+      try {
+        const shown = localStorage.getItem(CARRY_MODAL_SHOWN_KEY)
+        if (!shown) {
+          setShowCarryTransitionModal(true)
+          localStorage.setItem(CARRY_MODAL_SHOWN_KEY, 'true')
+        }
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, [manualCarry])
 
   // Track if we've consumed the initialPageState to avoid re-using it
   const initialPageStateConsumed = useRef(false)
@@ -155,6 +269,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         lockedProblems: initialPageState.lockedProblems ?? {},
         firstAttemptResults: initialPageState.firstAttemptResults ?? {},
         correctedProblems: initialPageState.correctedProblems ?? {},
+        columnDigits: initialPageState.columnDigits ?? {},
+        activeColumns: initialPageState.activeColumns ?? {},
+        carries: initialPageState.carries ?? {},
+        scratchPadStrokes: initialPageState.scratchPadStrokes ?? {},
       }
 
       // Mark as consumed so we don't re-use on subsequent renders
@@ -267,6 +385,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           lockedProblems: {},
           firstAttemptResults: {},
           correctedProblems: {},
+          ...emptyColumnState(),
         }
       }
     })
@@ -283,6 +402,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     lockedProblems: {},
     firstAttemptResults: {},
     correctedProblems: {},
+    ...emptyColumnState(),
   }
 
   // Notify parent when page state changes (for session persistence)
@@ -355,6 +475,42 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
   // Submit current page with graduated hint system
   const handleSubmitPage = useCallback(() => {
+    // In manual carry mode, check for missing carries before proceeding
+    if (manualCarry) {
+      for (let index = 0; index < currentPageState.problems.length; index++) {
+        const problem = currentPageState.problems[index]
+        // Only check addition problems in vertical format
+        if (problem.type !== 'addition' || problem.displayFormat !== 'vertical') continue
+        // Skip already-correct problems
+        if (currentPageState.results[index] === true) continue
+
+        const columns = currentPageState.columnDigits[index]
+        if (!columns) continue
+
+        // Compute what the carries should be
+        const expectedCarries = computeCarries(problem, columns)
+        // Check the current carries in state
+        const currentCarries = currentPageState.carries[index]
+
+        // Look for columns where a carry is expected but not entered
+        for (let col = 0; col < expectedCarries.length; col++) {
+          if (expectedCarries[col] && (!currentCarries || !currentCarries[col])) {
+            // The child has the answer digit for the column that produced this carry
+            // but hasn't entered the carry itself
+            if (columns[col] !== null) {
+              setCarryNudgeIndex(index)
+              // Auto-dismiss after 5 seconds
+              setTimeout(() => setCarryNudgeIndex(null), 5000)
+              return // Don't submit — let the child fix the carry first
+            }
+          }
+        }
+      }
+    }
+
+    // Clear any lingering nudge
+    setCarryNudgeIndex(null)
+
     const results: Record<number, boolean> = { ...currentPageState.results }
     const attemptCounts: Record<number, number> = { ...currentPageState.attemptCounts }
     const hintLevels: Record<number, HintLevel | null> = { ...currentPageState.hintLevels }
@@ -465,7 +621,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }, 1200)
       }
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer])
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer, manualCarry])
 
   // Handle completing full teaching (locks the problem and shows answer)
   const handleTeachingComplete = useCallback(() => {
@@ -558,6 +714,72 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       const currentState = prev[currentPage]
       if (!currentState) return prev
 
+      const activeProblem = currentState.problems[activeIndex]
+      const isVertical = activeProblem?.displayFormat === 'vertical'
+
+      // ── Vertical (column-by-column) input ──
+      if (isVertical && activeProblem) {
+        const columnCount = getAnswerColumnCount(activeProblem)
+        const currentColumns = currentState.columnDigits[activeIndex] || new Array(columnCount).fill(null)
+        const currentActiveCol = currentState.activeColumns[activeIndex] ?? 0
+        let newColumns = [...currentColumns]
+        // Ensure array length matches expected column count
+        while (newColumns.length < columnCount) newColumns.push(null)
+        let newActiveCol = currentActiveCol
+
+        if (num === 'backspace') {
+          if (newColumns[newActiveCol] !== null) {
+            newColumns[newActiveCol] = null
+          } else if (newActiveCol > 0) {
+            newActiveCol = newActiveCol - 1
+            newColumns[newActiveCol] = null
+          }
+        } else if (num === 'clear') {
+          newColumns = new Array(columnCount).fill(null)
+          newActiveCol = 0
+        } else if (typeof num === 'number' || (typeof num === 'string' && /^\d$/.test(num))) {
+          // Place digit in current column
+          newColumns[newActiveCol] = String(num)
+          // Auto-advance to next column (toward higher place values)
+          if (newActiveCol < columnCount - 1) {
+            newActiveCol = newActiveCol + 1
+          }
+        }
+        // Ignore 'negative', 'decimal', 'fraction' for vertical problems
+
+        // Compose answer string from columns (reverse: index 0=ones but string reads L→R)
+        const answerStr = newColumns
+          .slice()
+          .reverse()
+          .map(d => d ?? '')
+          .join('')
+          .replace(/^0+(?=\d)/, '') // strip leading zeros (keep "0" if only digit)
+
+        // Compute carries for auto-carry display
+        const newCarries = computeCarries(activeProblem, newColumns)
+
+        const newAnswers = { ...currentState.answers, [activeIndex]: answerStr }
+        const newColumnDigits = { ...currentState.columnDigits, [activeIndex]: newColumns }
+        const newActiveColumns = { ...currentState.activeColumns, [activeIndex]: newActiveCol }
+        const newCarriesState = { ...currentState.carries, [activeIndex]: newCarries }
+
+        if (onAnswerChange) {
+          onAnswerChange(activeIndex + (currentPage - 1) * problemsPerPage, answerStr)
+        }
+
+        return {
+          ...prev,
+          [currentPage]: {
+            ...currentState,
+            answers: newAnswers,
+            columnDigits: newColumnDigits,
+            activeColumns: newActiveColumns,
+            carries: newCarriesState,
+          }
+        }
+      }
+
+      // ── Horizontal (standard string) input ──
       const currentAnswer = currentState.answers[activeIndex] || ''
       let newAnswer = currentAnswer
 
@@ -646,10 +868,77 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     }
   }, [allAnswered, allResolved, onAllAnsweredChange])
 
-  // Expose handleInput method to parent via ref
+  // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     handleInput,
-  }), [handleInput])
+    getActiveProblem: () => {
+      const problem = currentPageState.problems[activeIndex]
+      if (!problem) return null
+      return {
+        problem,
+        index: activeIndex,
+        pageIndex: activeIndex + (currentPage - 1) * problemsPerPage,
+      }
+    },
+    getScratchPadStrokes: (problemIndex: number) => {
+      return currentPageState.scratchPadStrokes[problemIndex] || []
+    },
+    setScratchPadStrokes: (problemIndex: number, strokes: Stroke[]) => {
+      setPageStates(prev => ({
+        ...prev,
+        [currentPage]: {
+          ...prev[currentPage],
+          scratchPadStrokes: {
+            ...prev[currentPage]?.scratchPadStrokes,
+            [problemIndex]: strokes,
+          },
+        },
+      }))
+    },
+    setAnswerFromScratchPad: (answer: string) => {
+      // Set the answer for the currently active problem
+      const activeProblem = currentPageState.problems[activeIndex]
+      const isVertical = activeProblem?.displayFormat === 'vertical'
+
+      setPageStates(prev => {
+        const currentState = prev[currentPage]
+        if (!currentState) return prev
+
+        const newAnswers = { ...currentState.answers, [activeIndex]: answer }
+
+        // If vertical, also populate the column digits from the answer
+        if (isVertical && activeProblem) {
+          const columnCount = getAnswerColumnCount(activeProblem)
+          const digits = answer.split('').reverse() // "82" → ["2", "8"]
+          const newColumns = new Array(columnCount).fill(null).map((_, i) => digits[i] || null)
+          const newCarries = computeCarries(activeProblem, newColumns)
+
+          return {
+            ...prev,
+            [currentPage]: {
+              ...currentState,
+              answers: newAnswers,
+              columnDigits: { ...currentState.columnDigits, [activeIndex]: newColumns },
+              carries: { ...currentState.carries, [activeIndex]: newCarries },
+              activeColumns: { ...currentState.activeColumns, [activeIndex]: Math.min(digits.length, columnCount - 1) },
+            },
+          }
+        }
+
+        return {
+          ...prev,
+          [currentPage]: {
+            ...currentState,
+            answers: newAnswers,
+          },
+        }
+      })
+
+      if (onAnswerChange) {
+        onAnswerChange(activeIndex + (currentPage - 1) * problemsPerPage, answer)
+      }
+    },
+  }), [handleInput, currentPageState, activeIndex, currentPage, problemsPerPage, onAnswerChange])
 
   return (
     <div className="space-y-4">
@@ -703,6 +992,22 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 isCorrect={currentPageState.results[index]}
                 onClick={() => handleProblemClick(index)}
                 compact={problemsPerPage > 3}
+                columnDigits={problem.displayFormat === 'vertical' ? currentPageState.columnDigits[index] : undefined}
+                activeColumn={isActive && problem.displayFormat === 'vertical' ? (currentPageState.activeColumns[index] ?? 0) : undefined}
+                carries={problem.displayFormat === 'vertical' ? currentPageState.carries[index] : undefined}
+                onColumnClick={isActive && problem.displayFormat === 'vertical' ? (col: number) => {
+                  setPageStates(prev => ({
+                    ...prev,
+                    [currentPage]: {
+                      ...prev[currentPage],
+                      activeColumns: {
+                        ...prev[currentPage].activeColumns,
+                        [index]: col,
+                      },
+                    },
+                  }))
+                } : undefined}
+                manualCarryMode={manualCarry && problem.displayFormat === 'vertical' && problem.type === 'addition'}
               />
 
               {/* Micro hint - shown as inline toast below problem */}
@@ -846,6 +1151,21 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           />
         )
       })()}
+
+      {/* Carry Transition Modal - shown once when manual carry mode starts */}
+      <CarryTransitionModal
+        show={showCarryTransitionModal}
+        onDismiss={() => setShowCarryTransitionModal(false)}
+      />
+
+      {/* Carry Nudge Toast - shown when child skips carry entry in manual mode */}
+      {carryNudgeIndex !== null && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 animate-bounce">
+          <div className="bg-amber-100 border border-amber-300 text-amber-800 rounded-xl px-4 py-2 shadow-lg text-sm font-medium">
+            Did you forget to carry?
+          </div>
+        </div>
+      )}
     </div>
   )
 })

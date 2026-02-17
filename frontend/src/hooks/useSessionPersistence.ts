@@ -27,6 +27,12 @@ export interface PersistedPageState {
   lockedProblems: Record<number, boolean>
   firstAttemptResults: Record<number, boolean | null>
   correctedProblems: Record<number, boolean>
+  // Column-by-column input state for vertical problems
+  columnDigits?: Record<number, (string | null)[]>
+  activeColumns?: Record<number, number>
+  carries?: Record<number, (string | null)[]>
+  // Scratch pad state
+  scratchPadStrokes?: Record<number, { points: { x: number; y: number }[]; color: string; width: number }[]>
 }
 
 const STORAGE_KEY = 'mindfoundry_active_session'

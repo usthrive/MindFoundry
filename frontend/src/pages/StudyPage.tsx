@@ -24,6 +24,8 @@ import { useDailySaveLimit } from '@/hooks/useDailySaveLimit'
 import ParentVerification from '@/components/auth/ParentVerification'
 import WorksheetView, { type WorksheetViewRef, type PageState } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
+import ScratchPadOverlay from '@/components/worksheet/ScratchPadOverlay'
+import type { Stroke } from '@/components/ui/ScratchPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { ConceptIntroModal } from '@/components/concept-intro'
 import ConceptRoadmap from '@/components/parent/ConceptRoadmap'
@@ -107,6 +109,9 @@ export default function StudyPage() {
   const [restoredPageState, setRestoredPageState] = useState<PageState | undefined>(undefined)
   // Current page state from WorksheetView (for persistence)
   const currentPageStateRef = useRef<PageState | null>(null)
+
+  // Scratch pad overlay state
+  const [showScratchPad, setShowScratchPad] = useState(false)
 
   // Hint system state for single-problem mode
   const [attemptCount, setAttemptCount] = useState(0)  // Wrong attempts for current problem
@@ -420,7 +425,15 @@ export default function StudyPage() {
           // This ensures WorksheetView receives it before processing the level/worksheet change
           if (persistedSession.worksheetPageState) {
             console.log('📂 Restoring full worksheet page state with problems and answers')
-            setRestoredPageState(persistedSession.worksheetPageState)
+            // Normalize persisted state to ensure all required fields exist
+            const persisted = persistedSession.worksheetPageState
+            setRestoredPageState({
+              ...persisted,
+              columnDigits: persisted.columnDigits ?? {},
+              activeColumns: persisted.activeColumns ?? {},
+              carries: persisted.carries ?? {},
+              scratchPadStrokes: (persisted.scratchPadStrokes ?? {}) as Record<number, Stroke[]>,
+            })
           }
 
           setCurrentLevel(persistedSession.level)
@@ -1248,6 +1261,45 @@ export default function StudyPage() {
     worksheetViewRef.current?.handleInput(value)
   }
 
+  // Scratch pad handlers
+  const handleScratchPadOpen = useCallback(() => {
+    setShowScratchPad(true)
+  }, [])
+
+  const handleScratchPadClose = useCallback(() => {
+    setShowScratchPad(false)
+  }, [])
+
+  const handleScratchPadStrokesChange = useCallback((strokes: Stroke[]) => {
+    const active = worksheetViewRef.current?.getActiveProblem()
+    if (active) {
+      worksheetViewRef.current?.setScratchPadStrokes(active.index, strokes)
+    }
+  }, [])
+
+  const handleScratchPadAnswerChange = useCallback((answer: string) => {
+    worksheetViewRef.current?.setAnswerFromScratchPad(answer)
+  }, [])
+
+  // Get current scratch pad data for overlay
+  const getScratchPadProps = useCallback(() => {
+    const active = worksheetViewRef.current?.getActiveProblem()
+    if (!active) {
+      return {
+        problem: null,
+        problemNumber: 0,
+        answer: '',
+        initialStrokes: [] as Stroke[],
+      }
+    }
+    return {
+      problem: active.problem,
+      problemNumber: active.pageIndex + 1,
+      answer: currentPageStateRef.current?.answers[active.index] || '',
+      initialStrokes: worksheetViewRef.current?.getScratchPadStrokes(active.index) || [],
+    }
+  }, [])
+
   // Handler for page state changes from WorksheetView (for persistence)
   const handlePageStateChange = useCallback((pageState: PageState) => {
     currentPageStateRef.current = pageState
@@ -1681,7 +1733,27 @@ export default function StudyPage() {
                 submitDisabled={!canSubmitWorksheet}
                 fixed={true}
                 collapsible={true}
+                onScratchPadToggle={handleScratchPadOpen}
               />
+
+              {/* Scratch Pad Overlay */}
+              {(() => {
+                const spProps = getScratchPadProps()
+                return (
+                  <ScratchPadOverlay
+                    show={showScratchPad}
+                    problem={spProps.problem}
+                    problemNumber={spProps.problemNumber}
+                    answer={spProps.answer}
+                    initialStrokes={spProps.initialStrokes}
+                    onStrokesChange={handleScratchPadStrokesChange}
+                    onAnswerChange={handleScratchPadAnswerChange}
+                    onClose={handleScratchPadClose}
+                    backgroundStyle="grid"
+                    allowBackgroundToggle={false}
+                  />
+                )
+              })()}
             </>
           ) : (
             <>
