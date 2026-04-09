@@ -17,6 +17,8 @@ export interface WorksheetProblemProps {
   onColumnClick?: (column: number) => void  // Handler when a column box is tapped
   /** When true, carry boxes are tappable inputs (child enters carry manually) */
   manualCarryMode?: boolean
+  /** Total answer columns (to identify last column for 2-digit entry) */
+  answerColumnCount?: number
 }
 
 /**
@@ -41,6 +43,7 @@ export default function WorksheetProblem({
   carries,
   onColumnClick,
   manualCarryMode = false,
+  answerColumnCount,
 }: WorksheetProblemProps) {
   // Get operator symbol
   const operatorSymbols: Record<string, string> = {
@@ -279,6 +282,14 @@ export default function WorksheetProblem({
             const colIndex = maxDigits - 1 - visualIdx // Visual L→R to column index (ones=0)
             const digit = columnDigits[colIndex]
             const isActiveCol = activeColumn === colIndex && isActive
+            const isLastCol = colIndex === (answerColumnCount ?? maxDigits) - 1
+
+            // Last column uses wider box to fit 2-digit overflow
+            const answerCellSize = isLastCol
+              ? (compact
+                ? 'min-w-[2.75rem] h-11 text-xl sm:min-w-[3rem] sm:h-12 sm:text-2xl'
+                : 'min-w-[3.25rem] h-14 text-2xl sm:min-w-[3.5rem] sm:h-14 sm:text-3xl')
+              : cellSize
 
             return (
               <div
@@ -288,7 +299,7 @@ export default function WorksheetProblem({
                   onColumnClick?.(colIndex)
                 }}
                 className={cn(
-                  cellSize,
+                  answerCellSize,
                   'flex items-center justify-center',
                   'font-mono font-bold tabular-nums text-center',
                   'border-2 rounded-md cursor-pointer transition-all',

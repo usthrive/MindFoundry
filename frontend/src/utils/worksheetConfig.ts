@@ -22,7 +22,10 @@ export function getStandardProblemsPerPage(level: KumonLevel): number {
   if (['5A', '4A'].includes(level)) return 5
 
   // Basic arithmetic (3A through D): 10 per page
-  if (['3A', '2A', 'A', 'B', 'C', 'D'].includes(level)) return 10
+  if (['3A', '2A', 'A', 'C', 'D'].includes(level)) return 10
+
+  // Level B (2-digit addition with carry): 5 per page for clearer vertical layout
+  if (['B'].includes(level)) return 5
 
   // Long operations and fractions: 5 per page
   if (['E', 'F'].includes(level)) return 5

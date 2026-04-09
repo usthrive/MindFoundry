@@ -45,6 +45,19 @@ export interface Problem {
   graduatedHints?: ProblemHints; // 3-level graduated hint system
 }
 
+// Supplementary Practice (parent-configured extra topics per worksheet)
+export interface SupplementaryTopic {
+  level: KumonLevel;
+  rangeType: string;      // matches worksheetRanges.type in LEVEL_CONFIGS
+  label: string;          // display label like "Level B: Subtraction review"
+}
+
+export interface SupplementaryPractice {
+  enabled: boolean;
+  topic: SupplementaryTopic;
+  count: number;           // 1-3 supplementary problems per worksheet
+}
+
 // Child profile
 export interface Child {
   id: string;

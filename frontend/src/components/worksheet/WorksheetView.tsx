@@ -13,7 +13,9 @@ import {
 } from '@/utils/worksheetConfig'
 import { generateProblem } from '@/services/sessionManager'
 import type { Problem } from '@/services/generators/types'
-import type { KumonLevel, HintLevel } from '@/types'
+import { getLevelConfig } from '@/data/levelConfig'
+import { randomInt } from '@/services/generators/utils'
+import type { KumonLevel, HintLevel, SupplementaryPractice } from '@/types'
 import type { Stroke } from '@/components/ui/ScratchPad'
 
 /**
@@ -44,6 +46,7 @@ export interface WorksheetViewProps {
   onAllAnsweredChange?: (allAnswered: boolean) => void
   onPageStateChange?: (pageState: PageState) => void  // Callback when page state changes (for persistence)
   sessionActive: boolean
+  supplementaryPractice?: SupplementaryPractice
 }
 
 export interface WorksheetViewRef {
@@ -100,15 +103,13 @@ function getDigitAtPlace(num: number, place: number): number {
 
 /**
  * Compute the number of answer columns needed for a vertical problem.
- * Based on the correct answer length (handles cases like 99+99=198 where answer has more digits than operands).
+ * Uses max OPERAND digit count (not answer digit count).
+ * The last column (highest place value) allows 2-digit entry to capture overflow
+ * (e.g., 55+67=122 uses 2 columns: ones="2", tens="12").
  */
 function getAnswerColumnCount(problem: Problem): number {
   if (problem.displayFormat !== 'vertical' || !problem.operands?.length) return 0
-  const correctAnswer = typeof problem.correctAnswer === 'number' ? problem.correctAnswer : 0
-  return Math.max(
-    String(Math.abs(Math.round(correctAnswer))).length,
-    ...problem.operands.map(op => String(Math.abs(op)).length)
-  )
+  return Math.max(...problem.operands.map(op => String(Math.abs(op)).length))
 }
 
 /**
@@ -213,6 +214,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   onAllAnsweredChange,
   onPageStateChange,
   sessionActive,
+  supplementaryPractice,
 }, ref) => {
   const problemsPerPage = getProblemsPerPage(level, questionsPerPageMode)
   const totalPages = getTotalPages(level, questionsPerPageMode)
@@ -370,17 +372,48 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     setTotalAnswered(0)
   }, [worksheetNumber, level, initialPageState, worksheetKey])
 
-  // Generate problems for a page
+  // Generate problems for a page (with optional supplementary problems mixed in)
   const generatePageProblems = useCallback((pageNum: number): Problem[] => {
     const problems: Problem[] = []
     const startIndex = (pageNum - 1) * problemsPerPage
+    const totalForPage = Math.min(problemsPerPage, 10 - startIndex)
 
-    for (let i = 0; i < problemsPerPage && startIndex + i < 10; i++) {
+    // Determine supplementary problem count for this page
+    let suppCount = 0
+    let suppLevel: KumonLevel | null = null
+    let suppRangeStart = 0
+    let suppRangeEnd = 0
+
+    if (supplementaryPractice?.enabled && supplementaryPractice.topic) {
+      const config = getLevelConfig(supplementaryPractice.topic.level as KumonLevel)
+      const range = config?.worksheetRanges.find(
+        r => r.type === supplementaryPractice.topic.rangeType
+      )
+      if (range) {
+        suppLevel = supplementaryPractice.topic.level
+        suppRangeStart = range.start
+        suppRangeEnd = range.end
+        suppCount = Math.min(supplementaryPractice.count, totalForPage)
+      }
+    }
+
+    const mainCount = totalForPage - suppCount
+
+    // Generate main curriculum problems
+    for (let i = 0; i < mainCount; i++) {
       problems.push(generateProblem(level, worksheetNumber))
     }
 
+    // Generate supplementary problems at the end
+    if (suppLevel && suppCount > 0) {
+      for (let i = 0; i < suppCount; i++) {
+        const ws = randomInt(suppRangeStart, suppRangeEnd)
+        problems.push(generateProblem(suppLevel, ws))
+      }
+    }
+
     return problems
-  }, [level, worksheetNumber, problemsPerPage])
+  }, [level, worksheetNumber, problemsPerPage, supplementaryPractice])
 
   // Initialize page state if missing (for new worksheets, NOT for restored sessions)
   // CRITICAL: Uses functional setState to avoid reading stale pageStates closure
@@ -696,8 +729,29 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     }
   }, [currentPage, teachingProblemIndex, currentPageState])
 
-  // Handle Enter key - navigate to next question or submit if all answered
+  // Handle Enter key - advance column, navigate to next question, or submit if all answered
   const handleEnterKey = useCallback(() => {
+    // For vertical problems: advance column if current column has a digit but more columns remain
+    const activeProblem = currentPageState.problems[activeIndex]
+    if (activeProblem?.displayFormat === 'vertical') {
+      const columns = currentPageState.columnDigits[activeIndex]
+      const activeCol = currentPageState.activeColumns[activeIndex] ?? 0
+      if (columns && columns[activeCol] !== null) {
+        const columnCount = getAnswerColumnCount(activeProblem)
+        if (activeCol < columnCount - 1) {
+          // Advance to next column (child confirmed entry for this column)
+          setPageStates(prev => ({
+            ...prev,
+            [currentPage]: {
+              ...prev[currentPage],
+              activeColumns: { ...prev[currentPage].activeColumns, [activeIndex]: activeCol + 1 },
+            },
+          }))
+          return // Don't submit or change problem yet
+        }
+      }
+    }
+
     // Check if ALL problems have answers
     const allAnswered = Object.values(currentPageState.answers).every(a => a && a.trim() !== '') &&
       Object.keys(currentPageState.answers).length >= currentPageState.problems.length
@@ -722,7 +776,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }
       }
     }
-  }, [currentPageState, activeIndex, handleSubmitPage])
+  }, [currentPageState, activeIndex, currentPage, handleSubmitPage])
 
   // Handle number input (called from parent via ref)
   const handleInput = useCallback((num: number | string) => {
@@ -765,7 +819,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         let newActiveCol = currentActiveCol
 
         if (num === 'backspace') {
-          if (newColumns[newActiveCol] !== null) {
+          const currentDigit = newColumns[newActiveCol]
+          if (currentDigit !== null && currentDigit.length > 1) {
+            // Multi-digit in last column: remove last character
+            newColumns[newActiveCol] = currentDigit.slice(0, -1)
+          } else if (currentDigit !== null) {
             newColumns[newActiveCol] = null
           } else if (newActiveCol > 0) {
             newActiveCol = newActiveCol - 1
@@ -775,10 +833,21 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           newColumns = new Array(columnCount).fill(null)
           newActiveCol = 0
         } else if (typeof num === 'number' || (typeof num === 'string' && /^\d$/.test(num))) {
-          // Place digit in current column
-          newColumns[newActiveCol] = String(num)
-          // Auto-advance to next column (toward higher place values)
-          if (newActiveCol < columnCount - 1) {
+          const digit = String(num)
+          const isLastColumn = newActiveCol === columnCount - 1
+
+          if (isLastColumn) {
+            // Last column (highest place value): allow up to 2 digits (captures overflow)
+            const existing = newColumns[newActiveCol]
+            if (existing === null) {
+              newColumns[newActiveCol] = digit
+            } else if (existing.length < 2) {
+              newColumns[newActiveCol] = existing + digit
+            }
+            // No auto-advance — this is the last column
+          } else {
+            // Non-last columns: single digit, auto-advance immediately
+            newColumns[newActiveCol] = digit
             newActiveCol = newActiveCol + 1
           }
         }
@@ -1070,6 +1139,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                   }))
                 } : undefined}
                 manualCarryMode={manualCarry && problem.displayFormat === 'vertical' && problem.type === 'addition'}
+                answerColumnCount={problem.displayFormat === 'vertical' ? getAnswerColumnCount(problem) : undefined}
               />
 
               {/* Micro hint - shown as inline toast below problem */}

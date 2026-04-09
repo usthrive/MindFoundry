@@ -56,6 +56,7 @@ export type Database = {
           current_level: string
           current_worksheet: number
           questions_per_page_mode: 'one' | 'standard' | 'half'
+          supplementary_practice: Record<string, unknown> | null
           tier: 'free' | 'basic' | 'plus' | 'premium'
           streak: number
           total_problems: number
@@ -73,12 +74,14 @@ export type Database = {
           current_level?: string
           current_worksheet?: number
           questions_per_page_mode?: 'one' | 'standard' | 'half'
+          supplementary_practice?: Record<string, unknown> | null
         }
         Update: {
           name?: string
           current_level?: string
           current_worksheet?: number
           questions_per_page_mode?: 'one' | 'standard' | 'half'
+          supplementary_practice?: Record<string, unknown> | null
           total_problems?: number
           total_correct?: number
         }

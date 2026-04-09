@@ -53,12 +53,13 @@ import {
   saveProblemAttempt,
   updateChildStats,
   getChildProfile,
+  updateChildProfile,
   type FocusMetrics
 } from '@/services/progressService'
 import { checkAndAwardBadges } from '@/utils/badgeSystem'
 import { LEVEL_ORDER } from '@/utils/videoUnlockSystem'
 import { celebrationTrigger } from '@/services/achievements'
-import type { KumonLevel, HintLevel, MasteryStatus } from '@/types'
+import type { KumonLevel, HintLevel, MasteryStatus, SupplementaryPractice } from '@/types'
 import { type Problem, LEVEL_WORKSHEETS } from '@/services/generators/types'
 import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
 
@@ -69,7 +70,7 @@ function getNextLevel(current: KumonLevel): KumonLevel | null {
 }
 
 export default function StudyPage() {
-  const { user, currentChild, logout } = useAuth()
+  const { user, currentChild, logout, refreshChildren } = useAuth()
   const { triggerCelebration } = useCelebration()
   const { navigateWithGuard } = useNavigationGuard()
   const navigate = useNavigate()
@@ -347,6 +348,13 @@ export default function StudyPage() {
   // Get child's questions per page mode preference (default to 'standard')
   const getQuestionsPerPageMode = (): QuestionsPerPageMode => {
     return (currentChild?.questions_per_page_mode as QuestionsPerPageMode) || 'standard'
+  }
+
+  // Get child's supplementary practice config from DB
+  const getSupplementaryPractice = (): SupplementaryPractice | undefined => {
+    const raw = (currentChild as Record<string, unknown> | null)?.supplementary_practice
+    if (!raw || typeof raw !== 'object') return undefined
+    return raw as unknown as SupplementaryPractice
   }
 
   // Check if level should use worksheet mode (multiple problems per page)
@@ -1139,6 +1147,10 @@ export default function StudyPage() {
     const nextWorksheet = currentWorksheet + 1
     await updateCurrentPosition(currentChild.id, currentLevel, nextWorksheet)
 
+    // Clear stale page state to prevent ghost pages on remount
+    setRestoredPageState(undefined)
+    currentPageStateRef.current = null
+
     // Reset local state and create new session
     setProblemsCompleted(0)
     setProblemsCorrect(0)
@@ -1493,6 +1505,10 @@ export default function StudyPage() {
     // Update child's position to worksheet 1 of the next level
     await updateCurrentPosition(currentChild.id, next, 1)
 
+    // Clear stale page state to prevent ghost pages on remount
+    setRestoredPageState(undefined)
+    currentPageStateRef.current = null
+
     // Reset local state
     setCurrentLevel(next)
     setCurrentWorksheet(1)
@@ -1739,6 +1755,7 @@ export default function StudyPage() {
                 onAllAnsweredChange={setCanSubmitWorksheet}
                 onPageStateChange={handlePageStateChange}
                 sessionActive={sessionActive}
+                supplementaryPractice={getSupplementaryPractice()}
               />
 
               {/* Fixed Worksheet NumberPad at bottom of viewport */}
@@ -1958,6 +1975,140 @@ export default function StudyPage() {
                   Single Problem
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Supplementary Practice - Only visible in Parent Mode */}
+          {parentMode && (
+            <div className="mt-4 border-t border-gray-200 pt-4">
+              <p className="mb-2 text-center text-xs sm:text-sm font-medium text-gray-600">
+                Supplementary Practice:
+              </p>
+
+              {/* Toggle ON/OFF */}
+              <div className="flex justify-center mb-3">
+                <button
+                  onClick={async () => {
+                    if (!currentChild?.id) return
+                    const current = getSupplementaryPractice()
+                    if (current?.enabled) {
+                      // Disable
+                      await updateChildProfile(currentChild.id, {
+                        supplementary_practice: { ...current, enabled: false } as unknown as Record<string, unknown>,
+                      })
+                    } else {
+                      // Enable with defaults if no config exists
+                      const newConfig = current
+                        ? { ...current, enabled: true }
+                        : {
+                            enabled: true,
+                            topic: {
+                              level: currentLevel,
+                              rangeType: LEVEL_CONFIGS.find(c => c.level === currentLevel)?.worksheetRanges[0]?.type || '',
+                              label: `${currentLevel}: ${LEVEL_CONFIGS.find(c => c.level === currentLevel)?.worksheetRanges[0]?.description || ''}`,
+                            },
+                            count: 1,
+                          }
+                      await updateChildProfile(currentChild.id, {
+                        supplementary_practice: newConfig as unknown as Record<string, unknown>,
+                      })
+                    }
+                    await refreshChildren()
+                  }}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    getSupplementaryPractice()?.enabled
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {getSupplementaryPractice()?.enabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Topic and Count controls - only when enabled */}
+              {getSupplementaryPractice()?.enabled && (
+                <div className="space-y-3">
+                  {/* Topic selector */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1 text-center">Topic:</label>
+                    <select
+                      value={`${getSupplementaryPractice()?.topic?.level}:${getSupplementaryPractice()?.topic?.rangeType}`}
+                      onChange={async (e) => {
+                        if (!currentChild?.id) return
+                        const [selectedLevel, ...typeParts] = e.target.value.split(':')
+                        const selectedType = typeParts.join(':')
+                        const config = LEVEL_CONFIGS.find(c => c.level === selectedLevel)
+                        const range = config?.worksheetRanges.find(r => r.type === selectedType)
+                        if (!config || !range) return
+                        const current = getSupplementaryPractice()
+                        await updateChildProfile(currentChild.id, {
+                          supplementary_practice: {
+                            enabled: true,
+                            topic: {
+                              level: selectedLevel,
+                              rangeType: selectedType,
+                              label: `${selectedLevel}: ${range.description}`,
+                            },
+                            count: current?.count || 1,
+                          } as unknown as Record<string, unknown>,
+                        })
+                        await refreshChildren()
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                    >
+                      {(() => {
+                        const currentIdx = LEVEL_CONFIGS.findIndex(c => c.level === currentLevel)
+                        const nearbyLevels = LEVEL_CONFIGS.slice(
+                          Math.max(0, currentIdx - 1),
+                          Math.min(LEVEL_CONFIGS.length, currentIdx + 3)
+                        )
+                        return nearbyLevels.map(config => (
+                          <optgroup key={config.level} label={`Level ${config.level}: ${config.description}`}>
+                            {config.worksheetRanges.map(range => (
+                              <option key={`${config.level}:${range.type}`} value={`${config.level}:${range.type}`}>
+                                {config.level}: {range.description}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))
+                      })()}
+                    </select>
+                  </div>
+
+                  {/* Count selector */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1 text-center">Problems per worksheet:</label>
+                    <div className="flex justify-center gap-2">
+                      {[1, 2, 3].map(n => (
+                        <button
+                          key={n}
+                          onClick={async () => {
+                            if (!currentChild?.id) return
+                            const current = getSupplementaryPractice()
+                            if (!current) return
+                            await updateChildProfile(currentChild.id, {
+                              supplementary_practice: { ...current, count: n } as unknown as Record<string, unknown>,
+                            })
+                            await refreshChildren()
+                          }}
+                          className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                            getSupplementaryPractice()?.count === n
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Summary text */}
+                  <p className="text-xs text-center text-gray-500 italic">
+                    {getSupplementaryPractice()?.count || 1} {getSupplementaryPractice()?.topic?.label || 'extra'} problem{(getSupplementaryPractice()?.count || 1) > 1 ? 's' : ''} will be added to each worksheet
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

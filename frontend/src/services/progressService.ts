@@ -524,6 +524,7 @@ export async function updateChildProfile(
     current_level?: string
     current_worksheet?: number
     questions_per_page_mode?: 'one' | 'standard' | 'half'
+    supplementary_practice?: Record<string, unknown> | null
   }
 ): Promise<boolean> {
   const { error } = await supabase
