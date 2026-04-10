@@ -141,7 +141,7 @@ export function getGridLayout(
     case 3:
       return 'grid-cols-1 sm:grid-cols-3' // 3 columns on larger screens
     case 5:
-      return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' // Responsive 1-2-3 columns
+      return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' // 3 cols from md: (iPad) onward
     case 10:
       return 'grid-cols-2 sm:grid-cols-5' // 2 columns mobile, 5 columns desktop
     default:

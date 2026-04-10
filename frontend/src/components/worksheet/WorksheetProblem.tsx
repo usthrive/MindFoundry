@@ -71,11 +71,15 @@ export default function WorksheetProblem({
   }
 
   // Font size based on compact mode
-  const fontSize = compact ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
-  const smallFontSize = compact ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl'
+  // md: rolls back the sm: jump to prevent over-sizing on iPad and desktop (768px+)
+  const fontSize = compact ? 'text-xl sm:text-2xl md:text-xl' : 'text-2xl sm:text-3xl md:text-2xl'
+  const smallFontSize = compact ? 'text-lg sm:text-xl md:text-lg' : 'text-xl sm:text-2xl md:text-xl'
 
   // Column cell sizing for vertical problems
-  const cellSize = compact ? 'w-10 h-11 text-xl sm:w-11 sm:h-12 sm:text-2xl' : 'w-12 h-14 text-2xl sm:w-14 sm:h-14 sm:text-3xl'
+  // md: rolls back sm: cell width and font to mobile sizes on iPad+
+  const cellSize = compact
+    ? 'w-10 h-11 text-xl sm:w-11 sm:h-12 sm:text-2xl md:w-10 md:h-11 md:text-xl'
+    : 'w-12 h-14 text-2xl sm:w-14 sm:h-14 sm:text-3xl md:w-12 md:h-14 md:text-2xl'
   const cellGap = compact ? 'gap-1' : 'gap-1.5'
 
   // Render horizontal format problem
@@ -171,7 +175,7 @@ export default function WorksheetProblem({
                 <div
                   key={`label-${visualIdx}`}
                   className={cn(
-                    cellSize.split(' ').filter(c => c.startsWith('w-')).join(' '),
+                    cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
                     'text-center text-[10px] font-medium text-gray-400'
                   )}
                 >
@@ -196,7 +200,7 @@ export default function WorksheetProblem({
               <div
                 key={`carry-${visualIdx}`}
                 className={cn(
-                  cellSize.split(' ').filter(c => c.startsWith('w-')).join(' '),
+                  cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
                   'text-center flex items-center justify-center'
                 )}
               >
@@ -236,7 +240,7 @@ export default function WorksheetProblem({
             <div
               key={`op1-${visualIdx}`}
               className={cn(
-                cellSize.split(' ').filter(c => c.startsWith('w-')).join(' '),
+                cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
                 'text-center flex items-center justify-center',
                 smallFontSize
               )}
@@ -258,7 +262,7 @@ export default function WorksheetProblem({
             <div
               key={`op2-${visualIdx}`}
               className={cn(
-                cellSize.split(' ').filter(c => c.startsWith('w-')).join(' '),
+                cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
                 'text-center flex items-center justify-center',
                 smallFontSize
               )}
@@ -285,10 +289,11 @@ export default function WorksheetProblem({
 
             // Last column uses wider box with letter-spacing to fit 2-digit overflow
             // (e.g., 70+90=160 shows "16" in tens column with breathing room, "0" in ones)
+            // md: rolls back sm: to mobile sizing on iPad+ to avoid overflow in 3-col grid
             const answerCellSize = isLastCol
               ? (compact
-                ? 'min-w-[3.5rem] h-11 text-xl tracking-widest px-1 sm:min-w-[3.75rem] sm:h-12 sm:text-2xl'
-                : 'min-w-[4.75rem] h-14 text-2xl tracking-widest px-1.5 sm:min-w-[5rem] sm:h-14 sm:text-3xl')
+                ? 'min-w-[3.5rem] h-11 text-xl tracking-widest px-1 sm:min-w-[3.75rem] sm:h-12 sm:text-2xl md:min-w-[3.5rem] md:h-11 md:text-xl'
+                : 'min-w-[4.75rem] h-14 text-2xl tracking-widest px-1.5 sm:min-w-[5rem] sm:h-14 sm:text-3xl md:min-w-[4.75rem] md:h-14 md:text-2xl')
               : cellSize
 
             return (
