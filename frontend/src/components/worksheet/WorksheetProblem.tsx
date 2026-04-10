@@ -82,6 +82,18 @@ export default function WorksheetProblem({
     : 'w-12 h-14 text-2xl sm:w-14 sm:h-14 sm:text-3xl md:w-12 md:h-14 md:text-2xl'
   const cellGap = compact ? 'gap-1' : 'gap-1.5'
 
+  // Regular-column width (width classes only, no height/font)
+  const regularColWidth = compact
+    ? 'w-10 sm:w-11 md:w-10'
+    : 'w-12 sm:w-14 md:w-12'
+
+  // Wider "last column" width — used consistently across label/carry/operand/answer
+  // rows so every cell in the last column aligns vertically with the wider answer box.
+  // This prevents the 14px tens-digit-vs-answer-box misalignment that made iPad look bad.
+  const lastColWidth = compact
+    ? 'w-[3.5rem] sm:w-[3.75rem] md:w-[3.5rem]'
+    : 'w-[4.75rem] sm:w-[5rem] md:w-[4.75rem]'
+
   // Render horizontal format problem
   const renderHorizontalProblem = () => {
     // Handle missing addend format (e.g., 7 + ? = 15)
@@ -164,6 +176,14 @@ export default function WorksheetProblem({
     // Place value labels
     const placeLabels = ['O', 'T', 'H', 'Th', 'TTh']
 
+    // Determine which visual index is the "last column" (wider for 2-digit overflow)
+    const answerCols = answerColumnCount ?? maxDigits
+    const getColWidth = (visualIdx: number): string => {
+      const colIdx = maxDigits - 1 - visualIdx
+      const isLast = colIdx === answerCols - 1
+      return isLast ? lastColWidth : regularColWidth
+    }
+
     return (
       <div className="flex flex-col items-end">
         {/* Place value labels (only when active) */}
@@ -175,7 +195,7 @@ export default function WorksheetProblem({
                 <div
                   key={`label-${visualIdx}`}
                   className={cn(
-                    cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
+                    getColWidth(visualIdx),
                     'text-center text-[10px] font-medium text-gray-400'
                   )}
                 >
@@ -200,7 +220,7 @@ export default function WorksheetProblem({
               <div
                 key={`carry-${visualIdx}`}
                 className={cn(
-                  cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
+                  getColWidth(visualIdx),
                   'text-center flex items-center justify-center'
                 )}
               >
@@ -240,7 +260,7 @@ export default function WorksheetProblem({
             <div
               key={`op1-${visualIdx}`}
               className={cn(
-                cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
+                getColWidth(visualIdx),
                 'text-center flex items-center justify-center',
                 smallFontSize
               )}
@@ -262,7 +282,7 @@ export default function WorksheetProblem({
             <div
               key={`op2-${visualIdx}`}
               className={cn(
-                cellSize.split(' ').filter(c => c.startsWith('w-') || c.startsWith('sm:w-') || c.startsWith('md:w-')).join(' '),
+                getColWidth(visualIdx),
                 'text-center flex items-center justify-center',
                 smallFontSize
               )}
@@ -272,9 +292,12 @@ export default function WorksheetProblem({
           ))}
         </div>
 
-        {/* Divider line - sized to match the answer row (last col is wider) */}
+        {/* Divider line - sized to match the answer row (last col is wider)
+            All rows now use consistent column widths, so this formula is exact at
+            mobile (<640) and md: (≥768) breakpoints. The sm: breakpoint (640-767px,
+            phone landscape) has a small imperceptible mismatch. */}
         <div className={cn('my-1 h-0.5 bg-primary', cellGap)} style={{
-          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${compact ? '3.75rem' : '5rem'} + ${Math.max(0, maxDigits - 1)} * ${compact ? '2.5rem' : '3rem'} + ${Math.max(0, maxDigits - 1) * (compact ? 4 : 6)}px)`
+          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${compact ? '3.5rem' : '4.75rem'} + ${Math.max(0, maxDigits - 1)} * ${compact ? '2.5rem' : '3rem'} + ${maxDigits * (compact ? 4 : 6)}px)`
         }} />
 
         {/* Answer row - individual digit boxes */}
@@ -288,12 +311,16 @@ export default function WorksheetProblem({
             const isLastCol = colIndex === (answerColumnCount ?? maxDigits) - 1
 
             // Last column uses wider box with letter-spacing to fit 2-digit overflow
-            // (e.g., 70+90=160 shows "16" in tens column with breathing room, "0" in ones)
-            // md: rolls back sm: to mobile sizing on iPad+ to avoid overflow in 3-col grid
+            // (e.g., 70+90=160 shows "16" in tens column with breathing room, "0" in ones).
+            // The width classes come from lastColWidth (shared with all other rows above
+            // so every cell in this column aligns vertically).
             const answerCellSize = isLastCol
-              ? (compact
-                ? 'min-w-[3.5rem] h-11 text-xl tracking-widest px-1 sm:min-w-[3.75rem] sm:h-12 sm:text-2xl md:min-w-[3.5rem] md:h-11 md:text-xl'
-                : 'min-w-[4.75rem] h-14 text-2xl tracking-widest px-1.5 sm:min-w-[5rem] sm:h-14 sm:text-3xl md:min-w-[4.75rem] md:h-14 md:text-2xl')
+              ? cn(
+                  lastColWidth,
+                  compact
+                    ? 'h-11 text-xl tracking-widest px-1 sm:h-12 sm:text-2xl md:h-11 md:text-xl'
+                    : 'h-14 text-2xl tracking-widest px-1.5 sm:h-14 sm:text-3xl md:h-14 md:text-2xl'
+                )
               : cellSize
 
             return (
