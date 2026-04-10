@@ -268,9 +268,9 @@ export default function WorksheetProblem({
           ))}
         </div>
 
-        {/* Divider line */}
+        {/* Divider line - sized to match the answer row (last col is wider) */}
         <div className={cn('my-1 h-0.5 bg-primary', cellGap)} style={{
-          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${maxDigits} * ${compact ? '2.75rem' : '3.5rem'} + ${(maxDigits - 1) * (compact ? 4 : 6)}px)`
+          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${compact ? '3.75rem' : '5rem'} + ${Math.max(0, maxDigits - 1)} * ${compact ? '2.5rem' : '3rem'} + ${Math.max(0, maxDigits - 1) * (compact ? 4 : 6)}px)`
         }} />
 
         {/* Answer row - individual digit boxes */}
@@ -283,11 +283,12 @@ export default function WorksheetProblem({
             const isActiveCol = activeColumn === colIndex && isActive
             const isLastCol = colIndex === (answerColumnCount ?? maxDigits) - 1
 
-            // Last column uses wider box to fit 2-digit overflow
+            // Last column uses wider box with letter-spacing to fit 2-digit overflow
+            // (e.g., 70+90=160 shows "16" in tens column with breathing room, "0" in ones)
             const answerCellSize = isLastCol
               ? (compact
-                ? 'min-w-[2.75rem] h-11 text-xl sm:min-w-[3rem] sm:h-12 sm:text-2xl'
-                : 'min-w-[3.25rem] h-14 text-2xl sm:min-w-[3.5rem] sm:h-14 sm:text-3xl')
+                ? 'min-w-[3.5rem] h-11 text-xl tracking-widest px-1 sm:min-w-[3.75rem] sm:h-12 sm:text-2xl'
+                : 'min-w-[4.75rem] h-14 text-2xl tracking-widest px-1.5 sm:min-w-[5rem] sm:h-14 sm:text-3xl')
               : cellSize
 
             return (
@@ -295,7 +296,8 @@ export default function WorksheetProblem({
                 key={`ans-${visualIdx}`}
                 onClick={(e) => {
                   e.stopPropagation()
-                  onColumnClick?.(colIndex)
+                  onClick()                  // Activate this problem card
+                  onColumnClick?.(colIndex)  // Focus the tapped column
                 }}
                 className={cn(
                   answerCellSize,
