@@ -59,11 +59,10 @@ export default function WorksheetProblem({
   // Determine border/background color based on state
   const getContainerStyles = () => {
     if (isSubmitted) {
-      if (isCorrect) {
-        return 'border-green-500 bg-green-50'
-      } else {
-        return 'border-red-500 bg-red-50'
-      }
+      if (isCorrect) return 'border-green-500 bg-green-50'
+      // Wrong answer: show orange ring when active so child knows it's selected
+      if (isActive) return 'border-red-500 bg-red-50 ring-2 ring-orange-400 ring-opacity-70 shadow-sm'
+      return 'border-red-500 bg-red-50'
     }
     if (isActive) {
       return 'border-primary bg-blue-50 ring-2 ring-primary ring-opacity-50'
@@ -307,7 +306,9 @@ export default function WorksheetProblem({
                   isSubmitted
                     ? (isCorrect
                       ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-red-500 bg-red-50 text-red-700')
+                      : isActiveCol
+                        ? 'border-orange-500 bg-orange-100 text-red-700 ring-2 ring-orange-400/50 shadow-sm'
+                        : 'border-red-500 bg-red-50 text-red-700')
                     : isActiveCol
                       ? 'border-primary bg-blue-100 ring-2 ring-primary/50 text-gray-900 shadow-sm'
                       : digit !== null
@@ -388,13 +389,13 @@ export default function WorksheetProblem({
     <div
       onClick={onClick}
       className={cn(
-        'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
+        'relative rounded-lg border-2 p-4 cursor-pointer touch-manipulation transition-colors duration-100',
         getContainerStyles()
       )}
     >
       {/* Problem number badge */}
       <div className={cn(
-        'absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+        'absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold pointer-events-none',
         isSubmitted
           ? (isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white')
           : (isActive ? 'bg-primary text-white' : 'bg-gray-200 text-gray-600')
@@ -410,7 +411,7 @@ export default function WorksheetProblem({
       {/* Checkmark or X indicator */}
       {isSubmitted && (
         <div className={cn(
-          'absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm',
+          'absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm pointer-events-none',
           isCorrect ? 'bg-green-500' : 'bg-red-500'
         )}>
           {isCorrect ? '✓' : '✗'}
