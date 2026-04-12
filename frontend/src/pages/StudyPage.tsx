@@ -426,6 +426,19 @@ export default function StudyPage() {
         const persistedSession = loadSession(currentChild.id)
 
         if (persistedSession) {
+          // Cross-check against DB to catch stale sessions (e.g., level was changed
+          // on another device, or worksheet was advanced but session wasn't cleared)
+          const dbPosition = await getCurrentPosition(currentChild.id)
+          if (dbPosition && (
+            dbPosition.level !== persistedSession.level ||
+            dbPosition.worksheet !== persistedSession.worksheet
+          )) {
+            console.log('⚠️ Session level/worksheet mismatch with DB, discarding stale session',
+              { session: { level: persistedSession.level, ws: persistedSession.worksheet },
+                db: { level: dbPosition.level, ws: dbPosition.worksheet } })
+            clearSession()
+            // Fall through to normal DB-based loading below (don't return)
+          } else {
           // Silently restore the session
           console.log('📂 Restoring persisted session:', persistedSession.sessionId)
 
@@ -478,9 +491,10 @@ export default function StudyPage() {
           await loadSeenConceptsFromDB(currentChild.id)
           setLoading(false)
           return
+          } // end else (session matches DB)
         }
 
-        // No persisted session - load from database as normal
+        // No persisted session (or stale session was discarded) - load from database as normal
         const position = await getCurrentPosition(currentChild.id)
 
         if (position) {
@@ -1048,70 +1062,77 @@ export default function StudyPage() {
     // Clear the persisted session from localStorage
     clearSession()
 
-    // Run independent database operations in parallel for faster completion
-    await Promise.all([
-      completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id, focusMetrics),
-      updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems),
-      updateChildStats(currentChild.id, totalProblems, score),
-    ])
+    // Save progress and check badges/achievements — wrapped in try/catch so that
+    // network failures don't prevent worksheet advancement (child should never be stuck)
+    let updatedChild: Awaited<ReturnType<typeof getChildProfile>> = null
+    try {
+      // Run independent database operations in parallel for faster completion
+      await Promise.all([
+        completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id, focusMetrics),
+        updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems),
+        updateChildStats(currentChild.id, totalProblems, score),
+      ])
 
-    // Check and award any new badges (depends on stats being updated)
-    const updatedChild = await getChildProfile(currentChild.id)
-    if (updatedChild) {
-      const newBadges = await checkAndAwardBadges(currentChild.id, {
-        current_level: updatedChild.current_level,
-        total_problems: updatedChild.total_problems,
-        total_correct: updatedChild.total_correct,
-        streak: updatedChild.streak
-      })
-      if (newBadges.length > 0) {
-        console.log(`New badges earned: ${newBadges.map(b => b.display_name).join(', ')}`)
-      }
-
-      // Check for achievements and trigger celebrations
-      try {
-        const sessionResult = {
-          session: {
-            id: sessionId,
-            childId: currentChild.id,
-            sessionNumber: 1 as const,
-            startedAt: new Date(sessionStartTime).toISOString(),
-            completedAt: new Date().toISOString(),
-            problemsCompleted: totalProblems,
-            problemsCorrect: score,
-            timeSpent: totalTimeSpent,
-            status: 'completed' as const,
-          },
-          child: {
-            id: currentChild.id,
-            userId: currentChild.user_id,
-            name: currentChild.name,
-            age: currentChild.age,
-            gradeLevel: currentChild.grade_level,
-            avatar: currentChild.avatar,
-            currentLevel: updatedChild.current_level as KumonLevel,
-            tier: (currentChild.tier || 'free') as 'free' | 'basic' | 'plus' | 'premium',
-            streak: updatedChild.streak,
-            totalProblems: updatedChild.total_problems,
-            createdAt: currentChild.created_at,
-            updatedAt: currentChild.updated_at,
-          },
-          dailyStreak: updatedChild.streak,
-          masteryStatuses: [] as MasteryStatus[],
-          isFirstProblem: updatedChild.total_problems <= totalProblems,
-          levelCompleted: false,
-          previousLevel: undefined,
+      // Check and award any new badges (depends on stats being updated)
+      updatedChild = await getChildProfile(currentChild.id)
+      if (updatedChild) {
+        const newBadges = await checkAndAwardBadges(currentChild.id, {
+          current_level: updatedChild.current_level,
+          total_problems: updatedChild.total_problems,
+          total_correct: updatedChild.total_correct,
+          streak: updatedChild.streak
+        })
+        if (newBadges.length > 0) {
+          console.log(`New badges earned: ${newBadges.map(b => b.display_name).join(', ')}`)
         }
 
-        const achievements = await celebrationTrigger.checkForAchievements(sessionResult)
+        // Check for achievements and trigger celebrations
+        try {
+          const sessionResult = {
+            session: {
+              id: sessionId,
+              childId: currentChild.id,
+              sessionNumber: 1 as const,
+              startedAt: new Date(sessionStartTime).toISOString(),
+              completedAt: new Date().toISOString(),
+              problemsCompleted: totalProblems,
+              problemsCorrect: score,
+              timeSpent: totalTimeSpent,
+              status: 'completed' as const,
+            },
+            child: {
+              id: currentChild.id,
+              userId: currentChild.user_id,
+              name: currentChild.name,
+              age: currentChild.age,
+              gradeLevel: currentChild.grade_level,
+              avatar: currentChild.avatar,
+              currentLevel: updatedChild.current_level as KumonLevel,
+              tier: (currentChild.tier || 'free') as 'free' | 'basic' | 'plus' | 'premium',
+              streak: updatedChild.streak,
+              totalProblems: updatedChild.total_problems,
+              createdAt: currentChild.created_at,
+              updatedAt: currentChild.updated_at,
+            },
+            dailyStreak: updatedChild.streak,
+            masteryStatuses: [] as MasteryStatus[],
+            isFirstProblem: updatedChild.total_problems <= totalProblems,
+            levelCompleted: false,
+            previousLevel: undefined,
+          }
 
-        // Trigger celebration for each new achievement
-        for (const achievement of achievements) {
-          triggerCelebration(achievement)
+          const achievements = await celebrationTrigger.checkForAchievements(sessionResult)
+
+          // Trigger celebration for each new achievement
+          for (const achievement of achievements) {
+            triggerCelebration(achievement)
+          }
+        } catch (error) {
+          console.error('Error checking achievements:', error)
         }
-      } catch (error) {
-        console.error('Error checking achievements:', error)
       }
+    } catch (error) {
+      console.error('Error saving progress (worksheet will still advance):', error)
     }
 
     // Check if the student has completed the final worksheet for this level
@@ -1262,10 +1283,11 @@ export default function StudyPage() {
       setShowCompletionFeedback(false)
     }, 10000) // Hide after 10 seconds
 
-    // Wait briefly then handle session complete (reduced from 3000ms for faster transition)
-    setTimeout(() => {
-      handleSessionComplete(totalCorrect, totalProblems)
-    }, 1500)
+    // Run session completion immediately — the scorecard stays visible via feedback
+    // state while DB operations run in the background. Previously this used a 1500ms
+    // setTimeout which could be silently killed by iOS Safari when the iPad screen
+    // locks or the app goes to background, preventing worksheet advancement entirely.
+    handleSessionComplete(totalCorrect, totalProblems)
   }
 
   // Handler for worksheet number pad input

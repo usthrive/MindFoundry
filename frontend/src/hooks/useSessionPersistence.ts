@@ -128,7 +128,13 @@ export function useSessionPersistence() {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (!stored) return null
 
-      const session: PersistedSession = JSON.parse(stored)
+      let session: PersistedSession
+      try {
+        session = JSON.parse(stored)
+      } catch {
+        clearSession()
+        return null
+      }
 
       // If childId is provided, only return session if it matches
       if (childId && session.childId !== childId) {
@@ -138,6 +144,16 @@ export function useSessionPersistence() {
       // Check if session is stale (older than 24 hours)
       const staleThreshold = 24 * 60 * 60 * 1000 // 24 hours in ms
       if (Date.now() - session.lastSavedAt > staleThreshold) {
+        clearSession()
+        return null
+      }
+
+      // Detect "stuck completed" state: all 10 problems were answered but the
+      // completion flow (handleSessionComplete) was interrupted before it could
+      // clear this session and advance to the next worksheet. Discard the stale
+      // session so the caller falls through to a fresh DB-based load.
+      if (session.problemsCompleted >= 10) {
+        console.log('⚠️ Discarding stuck-completed session (problemsCompleted >= 10)')
         clearSession()
         return null
       }

@@ -974,6 +974,18 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     }
   }, [allAnswered, allResolved, onAllAnsweredChange])
 
+  // Recovery: if we're restored into a "last page, all resolved" state (e.g., the
+  // completion flow was interrupted by iPad sleep/background), auto-trigger completion.
+  // Without this, the UI shows "Loading next worksheet..." with no button and no timer.
+  useEffect(() => {
+    if (allResolved && currentPage >= totalPages && sessionActive) {
+      const timer = setTimeout(() => {
+        onWorksheetComplete(totalCorrect, totalAnswered)
+      }, 800)
+      return () => clearTimeout(timer)
+    }
+  }, [allResolved, currentPage, totalPages, sessionActive, onWorksheetComplete, totalCorrect, totalAnswered])
+
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     handleInput,
@@ -1210,9 +1222,17 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             Next Page →
           </Button>
         ) : allResolved ? (
-          // Last page, all resolved: auto-advances
-          <div className="text-lg font-medium text-primary animate-pulse">
-            Loading next worksheet...
+          // Last page, all resolved: auto-advances (recovery effect handles re-trigger)
+          <div className="flex flex-col items-center gap-2">
+            <div className="text-lg font-medium text-primary animate-pulse">
+              Loading next worksheet...
+            </div>
+            <button
+              className="text-sm text-gray-400 underline"
+              onClick={() => onWorksheetComplete(totalCorrect, totalAnswered)}
+            >
+              Tap here if stuck
+            </button>
           </div>
         ) : (
           // Waiting for teaching to complete
