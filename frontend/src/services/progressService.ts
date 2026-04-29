@@ -294,29 +294,34 @@ export async function updateStreak(childId: string): Promise<number> {
     return 0
   }
 
-  // Calculate streak - count consecutive days with at least one completed session
+  // Calculate streak - count consecutive days with at least one completed session.
+  // Compare YYYY-MM-DD strings in LOCAL time so timezone offsets can never shift
+  // the date by a day (the previous Date()-based comparison silently broke the
+  // streak for any user west of UTC).
+  const toLocalYmd = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
   let streak = 0
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const cursor = new Date()
+  cursor.setHours(0, 0, 0, 0)
 
   for (let i = 0; i < data.length; i++) {
-    const recordDate = new Date(data[i].date)
-    recordDate.setHours(0, 0, 0, 0)
+    const expectedYmd = toLocalYmd(cursor)
+    const recordYmd = String(data[i].date).slice(0, 10)
 
-    const expectedDate = new Date(today)
-    expectedDate.setDate(expectedDate.getDate() - i)
+    if (recordYmd !== expectedYmd) break
 
-    // Check if this is the expected consecutive day
-    if (recordDate.getTime() !== expectedDate.getTime()) {
-      break
-    }
-
-    // Check if at least one session was completed
     if (data[i].session1_completed || data[i].session2_completed) {
       streak++
     } else {
       break
     }
+
+    cursor.setDate(cursor.getDate() - 1)
   }
 
   // Update the streak in children table
@@ -457,13 +462,62 @@ export async function completePracticeSession(
     return false
   }
 
-  // If childId provided, update daily practice and streak
+  // If childId provided, update daily practice, streak, and Cohorts caches.
   if (childId) {
     await updateDailyPractice(childId, problemsCompleted, problemsCorrect, timeSpent)
     await updateStreak(childId)
+    // Cohorts: keep daily_effort_stars + cohort_energy_weekly fresh so the
+    // Show/Forward/Quality/Focus stars and the Team Energy bar update in
+    // near-real-time as the child practises. Fire-and-forget; never block
+    // the practice flow on these.
+    void refreshCohortCachesForChild(childId)
   }
 
   return true
+}
+
+/**
+ * Refresh derived Cohorts caches for a child: today's daily_effort_stars and,
+ * if they're a member of an active cohort, that cohort's weekly energy bar.
+ * Idempotent and safe to call repeatedly. Logs but never throws.
+ */
+async function refreshCohortCachesForChild(childId: string): Promise<void> {
+  const now = new Date()
+  const today = now.toISOString().slice(0, 10)
+  const dow = (now.getDay() + 6) % 7
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - dow)
+  const weekStart = monday.toISOString().slice(0, 10)
+
+  try {
+    const { error: starsErr } = await supabase.rpc('upsert_daily_effort_stars', {
+      p_child: childId,
+      p_date: today,
+    })
+    if (starsErr) console.error('refreshCohortCachesForChild: stars RPC error', starsErr)
+
+    const { data: cohortRows, error: memberErr } = await supabase
+      .from('cohort_members')
+      .select('cohort_id')
+      .eq('child_id', childId)
+      .is('removed_at', null)
+    if (memberErr) {
+      // Common case: child has no cohort. RLS may also legitimately return empty.
+      return
+    }
+
+    for (const row of cohortRows ?? []) {
+      const { error: energyErr } = await supabase.rpc('recompute_cohort_energy_weekly', {
+        p_cohort: row.cohort_id,
+        p_week_start: weekStart,
+      })
+      if (energyErr) {
+        console.error('refreshCohortCachesForChild: energy RPC error', energyErr)
+      }
+    }
+  } catch (err) {
+    console.error('refreshCohortCachesForChild: unexpected error', err)
+  }
 }
 
 /**

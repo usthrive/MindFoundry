@@ -50,6 +50,11 @@ export async function listStickers(): Promise<Sticker[]> {
  * RLS enforces that:
  *   - sender's parent is the caller
  *   - both children are active members of the cohort
+ *
+ * After a successful insert we refresh the sender's daily_effort_stars cache
+ * (so the Boost star lights up immediately) and the cohort's weekly energy
+ * cache (so the Team Energy bar reflects the new star). Both refreshes are
+ * fire-and-forget; failures don't roll back the send.
  */
 export async function sendSticker(params: {
   cohortId: string
@@ -69,6 +74,29 @@ export async function sendSticker(params: {
       console.error('Error sending sticker:', error)
       return false
     }
+
+    // Refresh derived caches so the UI sees the new Boost star and the
+    // Team Energy bar bumps without needing a manual recompute.
+    const today = new Date().toISOString().slice(0, 10)
+    const dow = (new Date().getDay() + 6) % 7
+    const monday = new Date()
+    monday.setDate(monday.getDate() - dow)
+    const weekStart = monday.toISOString().slice(0, 10)
+
+    void supabase
+      .rpc('upsert_daily_effort_stars', { p_child: params.fromChildId, p_date: today })
+      .then(({ error: e }) => {
+        if (e) console.error('Failed to refresh sender daily stars:', e)
+      })
+    void supabase
+      .rpc('recompute_cohort_energy_weekly', {
+        p_cohort: params.cohortId,
+        p_week_start: weekStart,
+      })
+      .then(({ error: e }) => {
+        if (e) console.error('Failed to refresh cohort weekly energy:', e)
+      })
+
     return true
   } catch (error) {
     console.error('Error in sendSticker:', error)

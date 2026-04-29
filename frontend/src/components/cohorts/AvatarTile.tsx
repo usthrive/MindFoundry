@@ -98,7 +98,12 @@ export default function AvatarTile({ member, ageBand, isMe = false, onTap }: Ava
       )}
       {showStreak && member.streak > 0 && <StreakFlame days={member.streak} />}
       {ageBand === '4-7' && (
-        <div className="mt-1 text-2xl">{member.todayStars > 0 ? '⭐' : '·'}</div>
+        <div className="mt-1 flex flex-col items-center gap-0.5">
+          <div className="text-2xl">{member.todayStars > 0 ? '⭐' : '🌱'}</div>
+          <div className="font-body text-[10px] font-bold text-text-secondary">
+            {member.todayStars > 0 ? 'Played today' : 'Not yet'}
+          </div>
+        </div>
       )}
     </motion.button>
   )

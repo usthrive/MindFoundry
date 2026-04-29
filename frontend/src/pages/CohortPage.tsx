@@ -8,6 +8,10 @@ import CohortHome from '@/components/cohorts/CohortHome'
 import { type Trophy } from '@/components/cohorts/TrophyShelf'
 import StickerPicker from '@/components/cohorts/StickerPicker'
 import SuggestedStickerPrompt from '@/components/cohorts/SuggestedStickerPrompt'
+import CohortHelpModal from '@/components/cohorts/CohortHelpModal'
+import CreateCohortFlow from '@/components/cohorts/CreateCohortFlow'
+import JoinByCodeFlow from '@/components/cohorts/JoinByCodeFlow'
+import OwnerControls from '@/components/cohorts/OwnerControls'
 import Feedback from '@/components/feedback/Feedback'
 import { getCohortForChild } from '@/services/cohorts/cohortService'
 import {
@@ -178,7 +182,7 @@ async function loadTrophies(childId: string): Promise<Trophy[]> {
 }
 
 export default function CohortPage() {
-  const { currentChild, loading: authLoading } = useAuth()
+  const { currentChild, user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [data, setData] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -195,6 +199,9 @@ export default function CohortPage() {
     reason: 'sleepy' | 'trend'
   } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [joinOpen, setJoinOpen] = useState(false)
 
   const childId = currentChild?.id
   const childName = currentChild?.name
@@ -328,6 +335,14 @@ export default function CohortPage() {
           {data?.cohort ? `${data.cohort.emoji} ${data.cohort.name}` : 'Teams'}
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => setHelpOpen(true)}
+        aria-label="What does this all mean?"
+        className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-primary-100 bg-white text-xl font-bold text-primary-700"
+      >
+        ?
+      </button>
     </div>
   )
 
@@ -414,18 +429,34 @@ export default function CohortPage() {
               create one for you, or join with a code.
             </div>
             <div className="mt-5 flex flex-col gap-2">
-              <Button variant="primary" disabled>
+              <Button variant="primary" onClick={() => setCreateOpen(true)}>
                 Create with a grown-up
               </Button>
-              <Button variant="secondary" disabled>
+              <Button variant="secondary" onClick={() => setJoinOpen(true)}>
                 Join with a code
               </Button>
             </div>
             <div className="mt-3 font-body text-[11px] text-text-muted">
-              Coming soon — parent flows arrive in the next update.
+              Both buttons are for the grown-up to tap.
             </div>
           </Card>
         </div>
+
+        <CreateCohortFlow
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => {
+            setCreateOpen(false)
+            setVersion((v) => v + 1)
+          }}
+        />
+        <JoinByCodeFlow
+          open={joinOpen}
+          onClose={() => setJoinOpen(false)}
+          onSubmitted={() => {
+            setVersion((v) => v + 1)
+          }}
+        />
       </div>
     )
   }
@@ -440,9 +471,20 @@ export default function CohortPage() {
   }
   const myStarsTotal = data.myStars?.stars ?? 0
 
+  const isOwner = !!user && data.cohort.ownerUserId === user.id
+
   return (
     <div className="min-h-screen bg-background">
       {pageHeader}
+      {isOwner && user && (
+        <div className="mx-auto w-full max-w-[480px] pt-2 pb-2">
+          <OwnerControls
+            cohort={data.cohort}
+            ownerUserId={user.id}
+            onChanged={() => setVersion((v) => v + 1)}
+          />
+        </div>
+      )}
       <CohortHome
         cohort={data.cohort}
         ageBand={ageBand}
@@ -552,6 +594,8 @@ export default function CohortPage() {
         autoDismiss
         dismissAfter={2200}
       />
+
+      <CohortHelpModal open={helpOpen} ageBand={ageBand} onClose={() => setHelpOpen(false)} />
     </div>
   )
 }
