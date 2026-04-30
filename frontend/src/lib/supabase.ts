@@ -321,6 +321,181 @@ export type Database = {
           videos_watched_today?: number
         }
       }
+      // ============================================================
+      // Cohorts feature (see migrations/20260428000001_cohorts_schema)
+      // ============================================================
+      cohorts: {
+        Row: {
+          id: string
+          name: string
+          emoji: string
+          code: string
+          owner_user_id: string
+          cohort_type: 'friends' | 'classroom'
+          age_band_lowest: '4-7' | '8-9' | '10-11'
+          ghost_cohort_id: string | null
+          archived_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          emoji?: string
+          code: string
+          owner_user_id: string
+          cohort_type?: 'friends' | 'classroom'
+          age_band_lowest?: '4-7' | '8-9' | '10-11'
+          ghost_cohort_id?: string | null
+        }
+        Update: {
+          name?: string
+          emoji?: string
+          age_band_lowest?: '4-7' | '8-9' | '10-11'
+          ghost_cohort_id?: string | null
+          archived_at?: string | null
+        }
+      }
+      cohort_members: {
+        Row: {
+          id: string
+          cohort_id: string
+          child_id: string
+          role: 'owner' | 'member'
+          joined_at: string
+          removed_at: string | null
+        }
+        Insert: {
+          id?: string
+          cohort_id: string
+          child_id: string
+          role?: 'owner' | 'member'
+        }
+        Update: {
+          role?: 'owner' | 'member'
+          removed_at?: string | null
+        }
+      }
+      cohort_join_requests: {
+        Row: {
+          id: string
+          cohort_id: string
+          requesting_user_id: string
+          child_id: string
+          status: 'pending' | 'approved' | 'declined' | 'cancelled'
+          created_at: string
+          decided_at: string | null
+        }
+        Insert: {
+          id?: string
+          cohort_id: string
+          requesting_user_id: string
+          child_id: string
+          status?: 'pending' | 'approved' | 'declined' | 'cancelled'
+        }
+        Update: {
+          status?: 'pending' | 'approved' | 'declined' | 'cancelled'
+          decided_at?: string | null
+        }
+      }
+      cohort_invite_requests: {
+        Row: {
+          id: string
+          cohort_id: string
+          child_id: string
+          card_emoji: string
+          status: 'pending' | 'approved' | 'declined' | 'cancelled'
+          created_at: string
+          decided_at: string | null
+        }
+        Insert: {
+          id?: string
+          cohort_id: string
+          child_id: string
+          card_emoji?: string
+          status?: 'pending' | 'approved' | 'declined' | 'cancelled'
+        }
+        Update: {
+          status?: 'pending' | 'approved' | 'declined' | 'cancelled'
+          decided_at?: string | null
+        }
+      }
+      stickers: {
+        Row: {
+          id: string
+          category: 'cheer' | 'fistbump' | 'gotthis' | 'celebrate' | 'sympathy' | 'math'
+          emoji: string
+          label: string
+          display_order: number
+          created_at: string
+        }
+        Insert: never
+        Update: never
+      }
+      sticker_sends: {
+        Row: {
+          id: string
+          cohort_id: string
+          from_child_id: string
+          to_child_id: string
+          sticker_id: string
+          sent_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          cohort_id: string
+          from_child_id: string
+          to_child_id: string
+          sticker_id: string
+        }
+        Update: {
+          read_at?: string | null
+        }
+      }
+      ghost_cohorts: {
+        Row: {
+          key: string
+          name: string
+          emoji: string
+          weekly_energy_target: number
+          description: string | null
+          display_order: number
+          created_at: string
+        }
+        Insert: never
+        Update: never
+      }
+      daily_effort_stars: {
+        Row: {
+          child_id: string
+          date: string
+          stars: number
+          breakdown: {
+            show: boolean
+            forward: boolean
+            quality: boolean
+            focus: boolean
+            boost: boolean
+            total: number
+          }
+          computed_at: string
+        }
+        Insert: never
+        Update: never
+      }
+      cohort_energy_weekly: {
+        Row: {
+          cohort_id: string
+          week_start_date: string
+          total_energy: number
+          synergy_bonus: number
+          perfect_week_bonus: number
+          computed_at: string
+        }
+        Insert: never
+        Update: never
+      }
     }
   }
 }

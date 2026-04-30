@@ -27,6 +27,7 @@ import HomeworkHelperPage from '@/pages/HomeworkHelperPage'
 import ExamPrepPage from '@/pages/ExamPrepPage'
 import PracticeModulesPage from '@/pages/PracticeModulesPage'
 import SchoolHelpPage from '@/pages/SchoolHelpPage'
+import CohortPage from '@/pages/CohortPage'
 
 function App() {
   return (
@@ -92,6 +93,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProgressDashboard />
+              </ProtectedRoute>
+            }
+          />
+          {/* Cohorts (Teams) */}
+          <Route
+            path="/cohort"
+            element={
+              <ProtectedRoute>
+                <CohortPage />
               </ProtectedRoute>
             }
           />

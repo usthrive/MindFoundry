@@ -1473,8 +1473,10 @@ export default function StudyPage() {
       await clearConceptsFromWorksheet(currentChild.id, currentLevel, worksheetNum)
     }
 
-    // Update database
-    await updateCurrentPosition(currentChild.id, currentLevel, worksheetNum)
+    // Update database. allowDecrease=true because this is the explicit
+    // "jump to a different worksheet" flow — moving backward is intentional
+    // here (kid wants to redo an earlier sheet).
+    await updateCurrentPosition(currentChild.id, currentLevel, worksheetNum, true)
 
     // Create new session
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)

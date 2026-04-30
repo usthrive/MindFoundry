@@ -8,8 +8,12 @@
  * - My Progress (with tabs for Kumon and School Help)
  */
 
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { getCohortForChild } from '@/services/cohorts/cohortService'
+import { countUnread } from '@/services/cohorts/stickerService'
+import type { Cohort } from '@/types/cohort'
 
 interface ModuleCardProps {
   title: string
@@ -98,12 +102,85 @@ function SwitchProfileButton() {
   )
 }
 
+function TeamsCard({
+  cohort,
+  unreadCount,
+  onClick,
+}: {
+  cohort: Cohort | null
+  unreadCount: number
+  onClick: () => void
+}) {
+  const inCohort = !!cohort
+  return (
+    <button
+      onClick={onClick}
+      className="relative w-full overflow-hidden rounded-2xl border-2 p-6 text-left shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      style={{
+        background: inCohort
+          ? 'linear-gradient(135deg, #FFFFFF, #FFF7ED)'
+          : 'linear-gradient(135deg, #FFFFFF, #F0FDFA)',
+        borderColor: inCohort ? '#F97316' : '#0D9488',
+      }}
+    >
+      {/* NEW badge */}
+      <span
+        className="absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-bold text-white"
+        style={{ background: inCohort && unreadCount > 0 ? '#F97316' : '#0D9488' }}
+      >
+        {inCohort && unreadCount > 0 ? `${unreadCount} NEW` : 'NEW'}
+      </span>
+
+      <div className="mb-4 text-5xl">{inCohort ? cohort!.emoji : '☄️'}</div>
+
+      <h3 className="mb-2 text-xl font-bold text-gray-900">
+        {inCohort ? `Teams · ${cohort!.name}` : 'Teams'}
+      </h3>
+      <p className="text-sm text-gray-600">
+        {inCohort
+          ? 'Practice with your cohort, send stickers, and beat the goal together'
+          : 'Join a small group of friends and practice together. Ask a grown-up!'}
+      </p>
+
+      <div className="absolute bottom-6 right-6 text-gray-400">
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+    </button>
+  )
+}
+
 export default function PracticeModulesPage() {
   const { currentChild } = useAuth()
+  const navigate = useNavigate()
+
+  const [cohort, setCohort] = useState<Cohort | null>(null)
+  const [unreadStickers, setUnreadStickers] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!currentChild?.id) {
+      setCohort(null)
+      setUnreadStickers(0)
+      return
+    }
+    Promise.all([getCohortForChild(currentChild.id), countUnread(currentChild.id)]).then(
+      ([c, n]) => {
+        if (!cancelled) {
+          setCohort(c)
+          setUnreadStickers(n)
+        }
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [currentChild?.id])
 
   // Default values if child data not available
   const childName = currentChild?.name || 'Learner'
-  const streak = 0 // TODO: Get from progress stats
+  const streak = currentChild?.streak ?? 0
   const problemsToday = 0 // TODO: Get from session/stats
 
   return (
@@ -158,6 +235,13 @@ export default function PracticeModulesPage() {
             title="Video Lessons"
             description="Watch helpful math videos to learn new concepts"
             path="/videos"
+          />
+
+          {/* Teams (Cohorts) */}
+          <TeamsCard
+            cohort={cohort}
+            unreadCount={unreadStickers}
+            onClick={() => navigate('/cohort')}
           />
         </div>
 
