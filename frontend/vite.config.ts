@@ -85,6 +85,10 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // Allow precaching of the main app bundle even after Cohorts feature
+        // pushed it past the default 2 MiB ceiling. Set to 4 MiB so we have
+        // headroom; revisit with manualChunks splitting in a follow-up.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // Cache strategies for the PWA
         runtimeCaching: [
           {
