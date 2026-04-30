@@ -225,13 +225,39 @@ export async function updateWorksheetProgress(
 }
 
 /**
- * Update child's current position
+ * Update child's current position.
+ *
+ * By default this REFUSES to write a lower worksheet_number when the level is
+ * unchanged — that's almost always a bug (stale React state writing back over
+ * a fresh advance, which has been observed to roll progress backward in the
+ * Save & Exit flow). Pass `allowDecrease: true` from the explicit jump-backward
+ * UI to opt out of the guard.
  */
 export async function updateCurrentPosition(
   childId: string,
   level: KumonLevel,
-  worksheetNumber: number
+  worksheetNumber: number,
+  allowDecrease = false
 ): Promise<boolean> {
+  if (!allowDecrease) {
+    const { data: current } = await supabase
+      .from('children')
+      .select('current_level, current_worksheet')
+      .eq('id', childId)
+      .single()
+    if (
+      current &&
+      current.current_level === level &&
+      current.current_worksheet > worksheetNumber
+    ) {
+      console.warn(
+        `[updateCurrentPosition] Refused regression on level ${level}: ${current.current_worksheet} -> ${worksheetNumber}. ` +
+          `Pass allowDecrease=true if this is intentional.`,
+      )
+      return true
+    }
+  }
+
   const { error } = await supabase
     .from('children')
     .update({
