@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { getCohortForChild } from '@/services/cohorts/cohortService'
 import { countUnread } from '@/services/cohorts/stickerService'
+import ParentInviteBanner from '@/components/cohorts/ParentInviteBanner'
 import type { Cohort } from '@/types/cohort'
 
 interface ModuleCardProps {
@@ -152,7 +153,7 @@ function TeamsCard({
 }
 
 export default function PracticeModulesPage() {
-  const { currentChild } = useAuth()
+  const { user, currentChild } = useAuth()
   const navigate = useNavigate()
 
   const [cohort, setCohort] = useState<Cohort | null>(null)
@@ -208,6 +209,9 @@ export default function PracticeModulesPage() {
           {/* Quick Stats */}
           <QuickStats streak={streak} problemsToday={problemsToday} />
         </div>
+
+        {/* Cohort invite-request banners (kid asked to invite a friend) */}
+        {user && <ParentInviteBanner parentUserId={user.id} />}
 
         {/* Module Grid - 3 Main Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">

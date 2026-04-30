@@ -11,6 +11,7 @@ import SuggestedStickerPrompt from '@/components/cohorts/SuggestedStickerPrompt'
 import CohortHelpModal from '@/components/cohorts/CohortHelpModal'
 import CreateCohortFlow from '@/components/cohorts/CreateCohortFlow'
 import JoinByCodeFlow from '@/components/cohorts/JoinByCodeFlow'
+import KidInviteFriend from '@/components/cohorts/KidInviteFriend'
 import OwnerControls from '@/components/cohorts/OwnerControls'
 import Feedback from '@/components/feedback/Feedback'
 import { getCohortForChild } from '@/services/cohorts/cohortService'
@@ -202,6 +203,7 @@ export default function CohortPage() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   const childId = currentChild?.id
   const childName = currentChild?.name
@@ -516,6 +518,15 @@ export default function CohortPage() {
           }
           setPicker({ member, suggestion: null })
         }}
+        onInviteFriend={() => setInviteOpen(true)}
+      />
+
+      <KidInviteFriend
+        open={inviteOpen}
+        cohort={data.cohort}
+        childId={childId!}
+        childFirstName={childName?.split(' ')[0] ?? 'You'}
+        onClose={() => setInviteOpen(false)}
       />
 
       <SuggestedStickerPrompt

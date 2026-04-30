@@ -36,6 +36,7 @@ import { useVideoPlayer } from '@/hooks/useVideoPlayer'
 import { useVideoSuggestion } from '@/hooks/useVideoSuggestion'
 import { getConceptFromProblem } from '@/services/videoSelectionService'
 import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
+import CohortScorecard from '@/components/cohorts/CohortScorecard'
 import {
   getUnseenNewConceptsWithDB,
   markConceptsSeenWithDB,
@@ -2283,6 +2284,15 @@ export default function StudyPage() {
         remainingSeconds={idleTimeout.secondsUntilTimeout}
         onContinue={handleContinueFromWarning}
         onEnd={handleSessionTimeout}
+      />
+
+      {/* Cohorts: pull-up scorecard. Hidden if the child is not in any
+          cohort. Tapping "Open cohort →" navigates to /cohort but the
+          practice session keeps running until the user explicitly chooses
+          to leave from there. */}
+      <CohortScorecard
+        childId={currentChild?.id ?? null}
+        childAge={currentChild?.age ?? null}
       />
     </div>
   )
