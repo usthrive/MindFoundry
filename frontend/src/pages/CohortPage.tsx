@@ -12,12 +12,14 @@ import CohortHelpModal from '@/components/cohorts/CohortHelpModal'
 import CreateCohortFlow from '@/components/cohorts/CreateCohortFlow'
 import JoinByCodeFlow from '@/components/cohorts/JoinByCodeFlow'
 import KidInviteFriend from '@/components/cohorts/KidInviteFriend'
+import GhostCohortSheet from '@/components/cohorts/GhostCohortSheet'
 import OwnerControls from '@/components/cohorts/OwnerControls'
 import Feedback from '@/components/feedback/Feedback'
 import { getCohortForChild } from '@/services/cohorts/cohortService'
 import {
   getCohortView,
   getWeeklyEnergy,
+  listGhostCohorts,
 } from '@/services/cohorts/cohortEnergyService'
 import {
   getMyWeekRibbon,
@@ -37,6 +39,7 @@ import {
   type CohortEnergyWeekly,
   type CohortViewMember,
   type DailyEffortStars,
+  type GhostCohort,
   type StickerCategory,
 } from '@/types/cohort'
 
@@ -204,6 +207,8 @@ export default function CohortPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [ghostOpen, setGhostOpen] = useState(false)
+  const [ghostCohort, setGhostCohort] = useState<GhostCohort | null>(null)
 
   const childId = currentChild?.id
   const childName = currentChild?.name
@@ -251,6 +256,16 @@ export default function CohortPage() {
           getInbox(childId, 12),
           loadCohortBoostWall(cohort.id, 12),
         ])
+
+        // Resolve ghost cohort from key, if any.
+        if (cohort.ghostCohortId) {
+          const ghosts = await listGhostCohorts()
+          if (!cancelled) {
+            setGhostCohort(ghosts.find((g) => g.key === cohort.ghostCohortId) ?? null)
+          }
+        } else if (!cancelled) {
+          setGhostCohort(null)
+        }
 
         // Adapt the pacer service shape to the UI's pacer prop.
         const pacerForUi = pacer
@@ -506,6 +521,7 @@ export default function CohortPage() {
         lastWeekWorksheets={data.lastWeekWorksheets}
         trophies={data.trophies}
         myBoostWall={data.myBoostWall}
+        ghostCohort={ghostCohort}
         onTapTeammate={(member) => {
           if (member.memberId === childId) return
           if (ageBand === '10-11' && member.sleepy) {
@@ -519,6 +535,17 @@ export default function CohortPage() {
           setPicker({ member, suggestion: null })
         }}
         onInviteFriend={() => setInviteOpen(true)}
+        onOpenGhost={() => setGhostOpen(true)}
+      />
+
+      <GhostCohortSheet
+        open={ghostOpen}
+        cohort={data.cohort}
+        onClose={() => setGhostOpen(false)}
+        onPicked={() => {
+          setGhostOpen(false)
+          setVersion((v) => v + 1)
+        }}
       />
 
       <KidInviteFriend

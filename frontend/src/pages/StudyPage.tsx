@@ -37,6 +37,7 @@ import { useVideoSuggestion } from '@/hooks/useVideoSuggestion'
 import { getConceptFromProblem } from '@/services/videoSelectionService'
 import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
 import CohortScorecard from '@/components/cohorts/CohortScorecard'
+import EndOfSessionRecap from '@/components/cohorts/EndOfSessionRecap'
 import {
   getUnseenNewConceptsWithDB,
   markConceptsSeenWithDB,
@@ -123,6 +124,7 @@ export default function StudyPage() {
   // Post-completion feedback prompt
   const [showCompletionFeedback, setShowCompletionFeedback] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const [recapOpen, setRecapOpen] = useState(false)
 
   // Welcome back toast state (shows when user returns after being away)
   const [welcomeBackToast, setWelcomeBackToast] = useState<{ show: boolean; duration: number } | null>(null)
@@ -923,6 +925,8 @@ export default function StudyPage() {
         // Save session completion and advance
         setTimeout(() => {
           handleSessionComplete(newCorrect, newCompleted)
+          // Open cohort recap shortly after so it layers over the feedback.
+          setTimeout(() => setRecapOpen(true), 1200)
         }, 3000)
         return
       }
@@ -1289,6 +1293,10 @@ export default function StudyPage() {
     // setTimeout which could be silently killed by iOS Safari when the iPad screen
     // locks or the app goes to background, preventing worksheet advancement entirely.
     handleSessionComplete(totalCorrect, totalProblems)
+
+    // Open the cohort end-of-session recap on a short delay so the existing
+    // celebration / scorecard renders first; the recap layers over after.
+    setTimeout(() => setRecapOpen(true), 1200)
   }
 
   // Handler for worksheet number pad input
@@ -2293,6 +2301,16 @@ export default function StudyPage() {
       <CohortScorecard
         childId={currentChild?.id ?? null}
         childAge={currentChild?.age ?? null}
+      />
+
+      {/* End-of-session 3-screen recap (cohort + Past-Me + team energy).
+          Triggered shortly after a practice session completes; renders only
+          after the existing scorecard / celebration UI. */}
+      <EndOfSessionRecap
+        open={recapOpen}
+        childId={currentChild?.id ?? null}
+        childAge={currentChild?.age ?? null}
+        onClose={() => setRecapOpen(false)}
       />
     </div>
   )

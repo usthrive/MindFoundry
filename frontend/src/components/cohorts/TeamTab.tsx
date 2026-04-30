@@ -7,6 +7,7 @@ import type {
   Cohort,
   CohortEnergyWeekly,
   CohortViewMember,
+  GhostCohort,
 } from '@/types/cohort'
 
 interface TeamTabProps {
@@ -18,6 +19,7 @@ interface TeamTabProps {
   energyLastWeek: CohortEnergyWeekly
   weeklyGoal: number
   boostWall: BoostWallEntry[]
+  ghostCohort?: GhostCohort | null
   onTapTeammate: (member: CohortViewMember) => void
   onOpenGhost?: () => void
   onInviteFriend?: () => void
@@ -43,6 +45,7 @@ export default function TeamTab({
   energyLastWeek,
   weeklyGoal,
   boostWall,
+  ghostCohort,
   onTapTeammate,
   onOpenGhost,
   onInviteFriend,
@@ -181,8 +184,8 @@ export default function TeamTab({
         )}
       </Card>
 
-      {/* Ghost cohort entry */}
-      {ageBand !== '4-7' && (
+      {/* Ghost cohort entry / active race */}
+      {ageBand !== '4-7' && !ghostCohort && (
         <button
           type="button"
           onClick={onOpenGhost}
@@ -204,6 +207,77 @@ export default function TeamTab({
               </div>
             </div>
             <span className="text-2xl text-secondary">›</span>
+          </div>
+        </button>
+      )}
+
+      {ageBand !== '4-7' && ghostCohort && (
+        <button
+          type="button"
+          onClick={onOpenGhost}
+          className="w-full rounded-3xl border-2 p-4 text-left transition-shadow"
+          style={{
+            background: 'linear-gradient(135deg, #F0FDFA, white)',
+            borderColor: '#0D9488',
+          }}
+        >
+          <div className="mb-3 flex items-center gap-3">
+            <div className="text-4xl">{ghostCohort.emoji}</div>
+            <div className="flex-1">
+              <div className="font-body text-[11px] font-bold uppercase tracking-wider text-secondary">
+                Racing
+              </div>
+              <div className="font-body text-[15px] font-extrabold text-text-primary">
+                {ghostCohort.name}
+              </div>
+              <div className="font-body text-xs text-text-secondary">
+                Target: {ghostCohort.weeklyEnergyTarget} ⭐ this week
+              </div>
+            </div>
+            <span className="text-xl text-secondary">›</span>
+          </div>
+          {/* Two stacked bars: us (primary) vs ghost target (muted) */}
+          <div className="space-y-1.5">
+            <div>
+              <div className="mb-1 flex justify-between font-body text-[10px] font-bold">
+                <span className="text-primary-700">Us {teamEnergy}</span>
+                <span className="text-text-muted">Ghost {ghostCohort.weeklyEnergyTarget}</span>
+              </div>
+              <div className="relative h-2 overflow-hidden rounded-full bg-[#F5F1EC]">
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full bg-text-muted/50"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (ghostCohort.weeklyEnergyTarget /
+                        Math.max(ghostCohort.weeklyEnergyTarget, teamEnergy, 1)) *
+                        100,
+                    )}%`,
+                  }}
+                />
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (teamEnergy /
+                        Math.max(ghostCohort.weeklyEnergyTarget, teamEnergy, 1)) *
+                        100,
+                    )}%`,
+                    background: 'linear-gradient(to right, #0D9488, #F97316)',
+                  }}
+                />
+              </div>
+            </div>
+            <div className="text-center font-body text-[11px] font-bold">
+              {teamEnergy >= ghostCohort.weeklyEnergyTarget ? (
+                <span className="text-success">🎉 Ahead of the ghost!</span>
+              ) : (
+                <span className="text-text-secondary">
+                  {ghostCohort.weeklyEnergyTarget - teamEnergy} ⭐ to catch up
+                </span>
+              )}
+            </div>
           </div>
         </button>
       )}

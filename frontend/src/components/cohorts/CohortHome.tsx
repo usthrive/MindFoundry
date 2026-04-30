@@ -11,6 +11,7 @@ import type {
   CohortEnergyWeekly,
   CohortViewMember,
   EffortStarsBreakdown,
+  GhostCohort,
 } from '@/types/cohort'
 
 const TAB_STORAGE_KEY = 'cohorts.lastTab'
@@ -27,6 +28,7 @@ interface CohortHomeProps {
   energyLastWeek: CohortEnergyWeekly
   weeklyGoal: number
   cohortBoostWall: BoostWallEntry[]
+  ghostCohort?: GhostCohort | null
 
   // Me tab data
   myTodayStars: number
@@ -106,6 +108,7 @@ export default function CohortHome(props: CohortHomeProps) {
                 energyLastWeek={props.energyLastWeek}
                 weeklyGoal={props.weeklyGoal}
                 boostWall={props.cohortBoostWall}
+                ghostCohort={props.ghostCohort}
                 onTapTeammate={props.onTapTeammate}
                 onOpenGhost={props.onOpenGhost}
                 onInviteFriend={props.onInviteFriend}

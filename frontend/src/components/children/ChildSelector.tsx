@@ -1,5 +1,6 @@
 import type { Database } from '@/lib/supabase'
 import Button from '../ui/Button'
+import ChildTileCohortPill from '@/components/cohorts/ChildTileCohortPill'
 import { getLevelBadgeColor, BADGE_COLORS } from '@/utils/badgeSystem'
 import type { KumonLevel } from '@/types'
 
@@ -72,6 +73,7 @@ export default function ChildSelector({ children, onSelectChild, onAddChild }: C
                     </p>
                   )}
                 </div>
+                <ChildTileCohortPill childId={child.id} />
               </button>
             </div>
           )
