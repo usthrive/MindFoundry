@@ -17,40 +17,46 @@ function getWorksheetConfig(worksheet: number): {
     return { type: 'sequence_to_120', maxFirst: 120 }
   }
 
-  // Worksheets 71-130: ONLY +1 addition
-  if (worksheet <= 130) {
-    if (worksheet <= 90) {
-      // Early +1: up to 12+1
-      return { type: 'add_1_small', addend: 1, maxFirst: 12 }
-    }
-    if (worksheet <= 120) {
-      // Medium +1: up to 100+1
-      return { type: 'add_1_medium', addend: 1, maxFirst: 100 }
-    }
-    // Late +1: up to 1000+1
-    return { type: 'add_1_large', addend: 1, maxFirst: 1000 }
-  }
+  // Worksheets 71-130: +1 only, with the spec ladder 12 → 18 → 24 → 30 → 60 → 1000
+  // (spec lines 181-186). Previously 91-120 jumped straight to maxFirst=100,
+  // skipping the gentle 24/30/60 steps — operand size doubled then 6×'d
+  // overnight from one block to the next.
+  if (worksheet <= 80) return { type: 'add_1_small', addend: 1, maxFirst: 12 }
+  if (worksheet <= 90) return { type: 'add_1_small', addend: 1, maxFirst: 18 }
+  if (worksheet <= 100) return { type: 'add_1_medium', addend: 1, maxFirst: 24 }
+  if (worksheet <= 110) return { type: 'add_1_medium', addend: 1, maxFirst: 30 }
+  if (worksheet <= 120) return { type: 'add_1_medium', addend: 1, maxFirst: 60 }
+  if (worksheet <= 130) return { type: 'add_1_large', addend: 1, maxFirst: 1000 }
 
-  // Worksheets 131-150: +2 addition begins
+  // Spec lines 187-193: +2 ends at worksheet 160, then +3 spans 161-180,
+  // then mixed +1/+2/+3 is 181-200. The previous boundaries had +2 lingering
+  // through 170 and pushed mixed-practice to a single 10-sheet block.
+
+  // Worksheets 131-150: +2 Part 1-2 (spec: max 14, then 18)
+  if (worksheet <= 140) {
+    return { type: 'add_2_small', addend: 2, maxFirst: 14 }
+  }
   if (worksheet <= 150) {
-    return { type: 'add_2_small', addend: 2, maxFirst: 12 }
+    return { type: 'add_2_small', addend: 2, maxFirst: 18 }
   }
 
-  // Worksheets 151-170: +2 addition continues
+  // Worksheets 151-160: +2 Part 3 (spec: max 32+2)
+  if (worksheet <= 160) {
+    return { type: 'add_2_medium', addend: 2, maxFirst: 32 }
+  }
+
+  // Worksheets 161-170: +3 Part 1 (spec: max 14+3)
   if (worksheet <= 170) {
-    return { type: 'add_2_medium', addend: 2, maxFirst: 100 }
+    return { type: 'add_3_small', addend: 3, maxFirst: 14 }
   }
 
-  // Worksheets 171-190: +3 addition
-  if (worksheet <= 190) {
-    if (worksheet <= 180) {
-      return { type: 'add_3_small', addend: 3, maxFirst: 12 }
-    }
-    return { type: 'add_3_medium', addend: 3, maxFirst: 100 }
+  // Worksheets 171-180: +3 Part 2 (spec: max 21+3)
+  if (worksheet <= 180) {
+    return { type: 'add_3_medium', addend: 3, maxFirst: 21 }
   }
 
-  // Worksheets 191-200: Mixed +1, +2, +3
-  return { type: 'add_mixed_1_2_3', maxFirst: 100 }
+  // Worksheets 181-200: Mixed +1, +2, +3 (Parts 1-2)
+  return { type: 'add_mixed_1_2_3', maxFirst: 32 }
 }
 
 function generateSequenceProblem(maxNumber: number): Problem {

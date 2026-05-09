@@ -1,18 +1,34 @@
 import type { Problem, LevelDProblemType, Fraction } from '../types'
 import { randomInt, generateId, gcd } from '../utils'
-import { generateMultiplicationHints, generateDivisionHints, generateFractionIdentificationHints, generateEquivalentFractionHints, generateReduceFractionHints } from '../hintGenerator'
+import { generateAdditionHints, generateSubtractionHints, generateMultiplicationHints, generateDivisionHints, generateFractionIdentificationHints, generateEquivalentFractionHints, generateReduceFractionHints } from '../hintGenerator'
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelDProblemType
+  divisionPart?: 1 | 2 | 3 | 4 | 5
 } {
+  // Spec table for Level D:
+  //   1-10  | review C
+  //   11-40 | 2-digit × 2-digit
+  //   41-50 | 3-digit × 2-digit
+  //   51-70 | add/sub & mult/div review (mixed)  ← previously consumed by 3x2 mult
+  //   71-130| long division by 2-digit
+  //   131-150| fractions intro
+  //   151-200| reducing/equivalent fractions
   if (worksheet <= 10) return { type: 'review_level_c' }
   if (worksheet <= 40) return { type: 'multiplication_2digit_by_2digit' }
-  if (worksheet <= 70) return { type: 'multiplication_3digit_by_2digit' }
-  if (worksheet <= 80) return { type: 'add_subtract_review' }
-  if (worksheet <= 90) return { type: 'mult_div_review' }
-  if (worksheet <= 130) return { type: 'long_division_by_2digit' }
+  if (worksheet <= 50) return { type: 'multiplication_3digit_by_2digit' }
+  if (worksheet <= 60) return { type: 'add_subtract_review' }
+  if (worksheet <= 70) return { type: 'mult_div_review' }
+  // Long division by 2-digit (Parts 1-5 per spec): operand difficulty ramps
+  // via divisor and quotient ranges. Previously a single config drove all 60
+  // worksheets — no progressive difficulty.
+  if (worksheet <= 82) return { type: 'long_division_by_2digit', divisionPart: 1 }
+  if (worksheet <= 94) return { type: 'long_division_by_2digit', divisionPart: 2 }
+  if (worksheet <= 106) return { type: 'long_division_by_2digit', divisionPart: 3 }
+  if (worksheet <= 118) return { type: 'long_division_by_2digit', divisionPart: 4 }
+  if (worksheet <= 130) return { type: 'long_division_by_2digit', divisionPart: 5 }
   if (worksheet <= 140) return { type: 'fraction_identification' }
-  if (worksheet <= 160) return { type: 'fraction_shading' }
+  if (worksheet <= 150) return { type: 'fraction_shading' }
   if (worksheet <= 180) return { type: 'equivalent_fractions' }
   return { type: 'reduce_fraction' }
 }
@@ -35,6 +51,83 @@ function generateReviewProblem(): Problem {
     operands: [a, b],
     hints: ['Multiply each digit by the multiplier, starting from the right'],
     graduatedHints: generateMultiplicationHints([a, b], 'D'),
+  }
+}
+
+function generateAddSubtractReview(): Problem {
+  const a = randomInt(100, 999)
+  const b = randomInt(100, 999)
+  if (Math.random() < 0.5) {
+    return {
+      id: generateId(),
+      level: 'D',
+      worksheetNumber: 1,
+      type: 'addition',
+      subtype: 'add_subtract_review',
+      difficulty: 1,
+      displayFormat: 'vertical',
+      question: '',
+      correctAnswer: a + b,
+      operands: [a, b],
+      hints: ['Add column by column from right to left, carrying as needed'],
+      graduatedHints: generateAdditionHints([a, b], 'D'),
+    }
+  }
+  const larger = Math.max(a, b)
+  const smaller = Math.min(a, b)
+  return {
+    id: generateId(),
+    level: 'D',
+    worksheetNumber: 1,
+    type: 'subtraction',
+    subtype: 'add_subtract_review',
+    difficulty: 1,
+    displayFormat: 'vertical',
+    question: '',
+    correctAnswer: larger - smaller,
+    operands: [larger, smaller],
+    hints: ['Subtract column by column from right to left, borrowing as needed'],
+    graduatedHints: generateSubtractionHints([larger, smaller], 'D'),
+  }
+}
+
+function generateMultDivReview(): Problem {
+  if (Math.random() < 0.5) {
+    const a = randomInt(100, 999)
+    const b = randomInt(2, 9)
+    return {
+      id: generateId(),
+      level: 'D',
+      worksheetNumber: 1,
+      type: 'multiplication',
+      subtype: 'mult_div_review',
+      difficulty: 1,
+      displayFormat: 'vertical',
+      question: '',
+      correctAnswer: a * b,
+      operands: [a, b],
+      hints: ['Multiply each digit by the multiplier, starting from the right'],
+      graduatedHints: generateMultiplicationHints([a, b], 'D'),
+    }
+  }
+  const divisor = randomInt(2, 9)
+  const quotient = randomInt(11, 99)
+  const remainder = randomInt(0, divisor - 1)
+  const dividend = divisor * quotient + remainder
+  const answer = remainder > 0 ? `${quotient} R${remainder}` : quotient
+  return {
+    id: generateId(),
+    level: 'D',
+    worksheetNumber: 1,
+    type: 'division',
+    subtype: 'mult_div_review',
+    difficulty: 1,
+    displayFormat: 'horizontal',
+    question: `${dividend} ÷ ${divisor} = ___`,
+    correctAnswer: answer,
+    operands: [dividend, divisor],
+    hints: ['How many times does the divisor go in?', 'Include remainder if any'],
+    graduatedHints: generateDivisionHints([dividend, divisor], 'D'),
   }
 }
 
@@ -88,9 +181,20 @@ function generateMultiplication3x2(): Problem {
   }
 }
 
-function generateLongDivision(): Problem {
-  const divisor = randomInt(11, 99)
-  const quotient = randomInt(10, 99)
+function generateLongDivision(part?: 1 | 2 | 3 | 4 | 5): Problem {
+  // Part 1: small divisor (11-25), small quotient (5-25) — gentle introduction.
+  // Part 2-4: progressively widen both ranges.
+  // Part 5: full range (any 2-digit divisor / quotient).
+  const ranges: Record<1 | 2 | 3 | 4 | 5, [number, number, number, number]> = {
+    1: [11, 25, 5, 25],
+    2: [11, 40, 10, 40],
+    3: [15, 60, 10, 60],
+    4: [20, 80, 15, 80],
+    5: [11, 99, 10, 99],
+  }
+  const [dMin, dMax, qMin, qMax] = part ? ranges[part] : ranges[5]
+  const divisor = randomInt(dMin, dMax)
+  const quotient = randomInt(qMin, qMax)
   const remainder = randomInt(0, divisor - 1)
   const dividend = divisor * quotient + remainder
 
@@ -247,7 +351,6 @@ export function generateDProblem(worksheet: number): Problem {
   
   switch (config.type) {
     case 'review_level_c':
-    case 'mult_div_review':
       problem = generateReviewProblem()
       break
     case 'multiplication_2digit_by_2digit':
@@ -257,11 +360,14 @@ export function generateDProblem(worksheet: number): Problem {
       problem = generateMultiplication3x2()
       break
     case 'add_subtract_review':
-      problem = generateReviewProblem()
+      problem = generateAddSubtractReview()
+      break
+    case 'mult_div_review':
+      problem = generateMultDivReview()
       break
     case 'long_division_by_2digit':
     case 'long_division_multi_digit_quotient':
-      problem = generateLongDivision()
+      problem = generateLongDivision(config.divisionPart)
       break
     case 'fraction_identification':
       problem = generateFractionIdentification()

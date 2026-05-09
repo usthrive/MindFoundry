@@ -9,26 +9,55 @@ function getWorksheetConfig(worksheet: number): {
   maxDivisor?: number
   allowRemainder?: boolean
 } {
+  // Spec lines 481-491: times tables span 11-50, then 2-digit × 1-digit
+  // is 51-90 (Parts 1-5 with progressive operand ramp), 3-4 digit × 1-digit
+  // is 91-110, division intro at 111, then division with remainders to 160.
   if (worksheet <= 10) return { type: 'review_level_b' }
+
+  // Worksheets 11-20: ×2 and ×3 tables
   if (worksheet <= 14) return { type: 'times_table_2_3', tables: [2] }
-  if (worksheet <= 18) return { type: 'times_table_2_3', tables: [3] }
-  if (worksheet <= 22) return { type: 'times_table_2_3', tables: [2, 3] }
-  if (worksheet <= 26) return { type: 'times_table_4_5', tables: [4] }
-  if (worksheet <= 30) return { type: 'times_table_4_5', tables: [5] }
-  if (worksheet <= 34) return { type: 'times_table_4_5', tables: [4, 5] }
-  if (worksheet <= 38) return { type: 'times_table_6_7', tables: [6] }
-  if (worksheet <= 42) return { type: 'times_table_6_7', tables: [7] }
-  if (worksheet <= 46) return { type: 'times_table_6_7', tables: [6, 7] }
-  if (worksheet <= 50) return { type: 'times_table_8_9', tables: [8] }
-  if (worksheet <= 54) return { type: 'times_table_8_9', tables: [9] }
-  if (worksheet <= 60) return { type: 'times_table_8_9', tables: [8, 9] }
-  if (worksheet <= 70) return { type: 'times_table_8_9', tables: [2, 3, 4, 5, 6, 7, 8, 9] }
+  if (worksheet <= 17) return { type: 'times_table_2_3', tables: [3] }
+  if (worksheet <= 20) return { type: 'times_table_2_3', tables: [2, 3] }
+
+  // Worksheets 21-30: ×4 and ×5 tables
+  if (worksheet <= 24) return { type: 'times_table_4_5', tables: [4] }
+  if (worksheet <= 27) return { type: 'times_table_4_5', tables: [5] }
+  if (worksheet <= 30) return { type: 'times_table_4_5', tables: [4, 5] }
+
+  // Worksheets 31-40: ×6 and ×7 tables
+  if (worksheet <= 34) return { type: 'times_table_6_7', tables: [6] }
+  if (worksheet <= 37) return { type: 'times_table_6_7', tables: [7] }
+  if (worksheet <= 40) return { type: 'times_table_6_7', tables: [6, 7] }
+
+  // Worksheets 41-50: ×8, ×9, then full mixed review of all tables
+  if (worksheet <= 44) return { type: 'times_table_8_9', tables: [8] }
+  if (worksheet <= 47) return { type: 'times_table_8_9', tables: [9] }
+  if (worksheet <= 50) return { type: 'times_table_8_9', tables: [2, 3, 4, 5, 6, 7, 8, 9] }
+
+  // Worksheets 51-90: 2-digit × 1-digit (Parts 1-5 with progressive ramp).
+  // Previously this whole 40-sheet span used maxMultiplicand=99 with no scaling.
+  if (worksheet <= 58) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 29 }
+  if (worksheet <= 66) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 49 }
+  if (worksheet <= 74) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 69 }
+  if (worksheet <= 82) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 89 }
   if (worksheet <= 90) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 99 }
+
+  // Worksheets 91-110: 3-digit × 1-digit
   if (worksheet <= 110) return { type: 'multiplication_3digit_by_1digit', maxMultiplicand: 999 }
+
+  // Worksheets 111-120: division intro (exact, small divisors)
   if (worksheet <= 120) return { type: 'division_intro', maxDivisor: 9, allowRemainder: false }
-  if (worksheet <= 140) return { type: 'division_exact', maxDivisor: 9, allowRemainder: false }
-  if (worksheet <= 160) return { type: 'division_with_remainder', maxDivisor: 9, allowRemainder: true }
+
+  // Worksheets 121-160: division with remainders (Parts 1-4: divisor ramp)
+  if (worksheet <= 130) return { type: 'division_with_remainder', maxDivisor: 5, allowRemainder: true }
+  if (worksheet <= 140) return { type: 'division_with_remainder', maxDivisor: 7, allowRemainder: true }
+  if (worksheet <= 150) return { type: 'division_with_remainder', maxDivisor: 9, allowRemainder: true }
+  if (worksheet <= 160) return { type: 'division_exact', maxDivisor: 9, allowRemainder: false }
+
+  // Worksheets 161-180: 2-digit ÷ 1-digit
   if (worksheet <= 180) return { type: 'division_2digit_by_1digit', maxDivisor: 9, allowRemainder: true }
+
+  // Worksheets 181-200: 3-digit ÷ 1-digit
   return { type: 'division_3digit_by_1digit', maxDivisor: 9, allowRemainder: true }
 }
 
@@ -139,7 +168,10 @@ function generateTimesTableProblem(tables: number[]): Problem {
 }
 
 function generateMultiDigitMultiplication(maxMultiplicand: number, subtype: LevelCProblemType): Problem {
-  const multiplicand = randomInt(Math.floor(maxMultiplicand / 10), maxMultiplicand)
+  // Force a 2-digit minimum so Part 1 ramps (max=29, 49, 69, ...) still produce
+  // genuinely 2-digit multiplicands rather than single-digit ones.
+  const minMultiplicand = subtype === 'multiplication_2digit_by_1digit' ? 11 : Math.max(11, Math.floor(maxMultiplicand / 10))
+  const multiplicand = randomInt(minMultiplicand, maxMultiplicand)
   const multiplier = randomInt(2, 9)
   const product = multiplicand * multiplier
   
@@ -220,7 +252,7 @@ export function generateCProblem(worksheet: number): Problem {
       problem = generateTimesTableProblem(config.tables || [2, 3])
       break
     case 'multiplication_2digit_by_1digit':
-      problem = generateMultiDigitMultiplication(99, config.type)
+      problem = generateMultiDigitMultiplication(config.maxMultiplicand || 99, config.type)
       break
     case 'multiplication_3digit_by_1digit':
     case 'multiplication_4digit_by_1digit':

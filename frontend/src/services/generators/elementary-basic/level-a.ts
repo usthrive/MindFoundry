@@ -15,12 +15,15 @@ function getWorksheetConfig(worksheet: number): {
   subtrahend?: number
   maxMinuend?: number
 } {
-  if (worksheet <= 10) return { type: 'addition_sums_to_12', maxSum: 12 }
-  if (worksheet <= 20) return { type: 'addition_sums_to_15', maxSum: 15 }
-  if (worksheet <= 30) return { type: 'addition_sums_to_18', maxSum: 18 }
-  if (worksheet <= 40) return { type: 'addition_sums_to_20', maxSum: 20 }
-  if (worksheet <= 50) return { type: 'addition_sums_to_24', maxSum: 24 }
-  if (worksheet <= 60) return { type: 'addition_sums_to_28', maxSum: 28 }
+  // Spec lines 353-360: addition ladder is shifted by +10 worksheets.
+  // 1-10 is review of 2A (small sums); ladder begins at 11-20 with sums to 12.
+  if (worksheet <= 10) return { type: 'addition_sums_to_12', maxSum: 10 }
+  if (worksheet <= 20) return { type: 'addition_sums_to_12', maxSum: 12 }
+  if (worksheet <= 30) return { type: 'addition_sums_to_15', maxSum: 15 }
+  if (worksheet <= 40) return { type: 'addition_sums_to_18', maxSum: 18 }
+  if (worksheet <= 50) return { type: 'addition_sums_to_20', maxSum: 20 }
+  if (worksheet <= 60) return { type: 'addition_sums_to_24', maxSum: 24 }
+  if (worksheet <= 70) return { type: 'addition_sums_to_28', maxSum: 28 }
   if (worksheet <= 80) return { type: 'addition_summary', maxSum: 28 }
   if (worksheet <= 90) return { type: 'subtract_1', subtrahend: 1, maxMinuend: 20 }
   if (worksheet <= 100) return { type: 'subtract_2', subtrahend: 2, maxMinuend: 20 }
@@ -203,7 +206,11 @@ function generateSubtractionProblem(
 }
 
 function generateSubtractionFromFixedProblem(maxMinuend: number, subtype: LevelAProblemType): Problem {
-  const minuend = maxMinuend
+  // Previously `minuend = maxMinuend` made the minuend constant within a block,
+  // so a 10-worksheet block had only 9 distinct problems (e.g. 11-1..11-10).
+  // Each block now introduces its new minuend while reviewing prior ones (10..maxMinuend),
+  // matching Kumon's spiral-review intent for the "Subtracting from N" sets.
+  const minuend = randomInt(10, maxMinuend)
   const subtrahend = randomInt(1, minuend - 1)
   const difference = minuend - subtrahend
 

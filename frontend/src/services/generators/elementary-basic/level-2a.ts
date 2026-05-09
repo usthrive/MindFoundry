@@ -7,37 +7,38 @@ function getWorksheetConfig(worksheet: number): {
   addends: number[]
   maxFirst: number
 } {
+  // Spec lines 273-288: each new addend introduces with a small first-operand
+  // cap (Part 1) then ramps higher (Part 2). The previous flat maxFirst=20
+  // erased that ramp — kids saw the same operand range whether they were on
+  // worksheet 11 or worksheet 30.
   if (worksheet <= 10) {
     return { type: 'add_review_1_2_3', addends: [1, 2, 3], maxFirst: 20 }
   }
-  if (worksheet <= 30) {
-    return { type: 'add_4', addends: [4], maxFirst: 20 }
-  }
-  if (worksheet <= 50) {
-    return { type: 'add_5', addends: [5], maxFirst: 20 }
-  }
-  if (worksheet <= 70) {
-    return { type: 'add_up_to_5', addends: [1, 2, 3, 4, 5], maxFirst: 20 }
-  }
-  if (worksheet <= 90) {
-    return { type: 'add_6', addends: [6], maxFirst: 20 }
-  }
-  if (worksheet <= 110) {
-    return { type: 'add_7', addends: [7], maxFirst: 20 }
-  }
-  if (worksheet <= 130) {
-    return { type: 'add_up_to_7', addends: [1, 2, 3, 4, 5, 6, 7], maxFirst: 20 }
-  }
-  if (worksheet <= 150) {
-    return { type: 'add_8', addends: [8], maxFirst: 20 }
-  }
-  if (worksheet <= 160) {
-    return { type: 'add_9', addends: [9], maxFirst: 20 }
-  }
-  if (worksheet <= 170) {
-    return { type: 'add_10', addends: [10], maxFirst: 20 }
-  }
-  return { type: 'add_up_to_10', addends: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], maxFirst: 20 }
+  // +4 Part 1 (11-20: max 12+4), Part 2 (21-30: max 16+4)
+  if (worksheet <= 20) return { type: 'add_4', addends: [4], maxFirst: 12 }
+  if (worksheet <= 30) return { type: 'add_4', addends: [4], maxFirst: 16 }
+  // +5 Part 1 (31-40: max 12+5), Part 2 (41-50: max 15+5)
+  if (worksheet <= 40) return { type: 'add_5', addends: [5], maxFirst: 12 }
+  if (worksheet <= 50) return { type: 'add_5', addends: [5], maxFirst: 15 }
+  // 51-70: mixed +1 to +5
+  if (worksheet <= 70) return { type: 'add_up_to_5', addends: [1, 2, 3, 4, 5], maxFirst: 15 }
+  // +6 Part 1 (71-80: max 12+6), Part 2 (81-90: max 14+6)
+  if (worksheet <= 80) return { type: 'add_6', addends: [6], maxFirst: 12 }
+  if (worksheet <= 90) return { type: 'add_6', addends: [6], maxFirst: 14 }
+  // +7 Part 1 (91-100: max 11+7), Part 2 (101-110: max 13+7)
+  if (worksheet <= 100) return { type: 'add_7', addends: [7], maxFirst: 11 }
+  if (worksheet <= 110) return { type: 'add_7', addends: [7], maxFirst: 13 }
+  // 111-130: mixed +1 to +7
+  if (worksheet <= 130) return { type: 'add_up_to_7', addends: [1, 2, 3, 4, 5, 6, 7], maxFirst: 13 }
+  // +8 Part 1 (131-140: max 11+8), Part 2 (141-150: max 12+8)
+  if (worksheet <= 140) return { type: 'add_8', addends: [8], maxFirst: 11 }
+  if (worksheet <= 150) return { type: 'add_8', addends: [8], maxFirst: 12 }
+  // +9 (151-160: max 12+9)
+  if (worksheet <= 160) return { type: 'add_9', addends: [9], maxFirst: 12 }
+  // +9 and +10 mixed (161-170: max 15+10) — spec line 287
+  if (worksheet <= 170) return { type: 'add_10', addends: [9, 10], maxFirst: 15 }
+  // 171-200: full mixed +1..+10
+  return { type: 'add_up_to_10', addends: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], maxFirst: 15 }
 }
 
 function generateAdditionProblem(addends: number[], maxFirst: number, subtype: Level2AProblemType): Problem {
@@ -122,7 +123,7 @@ export function get2AWorksheetInfo(worksheet: number) {
     'add_up_to_7': 'Adding +1 to +7 (Mixed)',
     'add_8': 'Adding +8',
     'add_9': 'Adding +9',
-    'add_10': 'Adding +10',
+    'add_10': 'Adding +9 and +10',
     'add_up_to_10': 'Adding +1 to +10 (Mixed)',
   }
   

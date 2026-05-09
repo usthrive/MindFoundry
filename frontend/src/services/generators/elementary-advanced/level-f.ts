@@ -12,15 +12,43 @@ import {
 
 function getWorksheetConfig(worksheet: number): {
   type: LevelFProblemType
+  maxDenom?: number
+  conversionPart?: 1 | 2 | 3
 } {
+  // Spec table for Level F:
+  //   1-20   | review E
+  //   21-30  | mult/div of 3 fractions
+  //   31-50  | addition of 3 fractions
+  //   51-60  | add/sub of 3 fractions
+  //   61-90  | order of operations (3 fractions, Parts 1-3) ← was 61-100
+  //   91-120 | order of operations (3+ fractions, Parts 1-4) ← was 101-130
+  //   121-150| fraction → decimal
+  //   151-170| decimal → fraction
+  //   171-180| word problems
+  //   181-200| decimal operations
   if (worksheet <= 20) return { type: 'review_level_e' }
-  if (worksheet <= 40) return { type: 'three_fraction_mult_div' }
-  if (worksheet <= 60) return { type: 'three_fraction_addition' }
-  if (worksheet <= 80) return { type: 'three_fraction_add_subtract' }
-  if (worksheet <= 100) return { type: 'order_of_operations_3_fractions' }
-  if (worksheet <= 130) return { type: 'order_of_operations_multi_fractions' }
-  if (worksheet <= 150) return { type: 'fraction_to_decimal' }
-  if (worksheet <= 170) return { type: 'decimal_to_fraction' }
+  if (worksheet <= 30) return { type: 'three_fraction_mult_div' }
+  if (worksheet <= 50) return { type: 'three_fraction_addition' }
+  if (worksheet <= 60) return { type: 'three_fraction_add_subtract' }
+
+  // Order of ops Parts 1-3 (3 fractions): denom ramp 4→6→8
+  if (worksheet <= 70) return { type: 'order_of_operations_3_fractions', maxDenom: 4 }
+  if (worksheet <= 80) return { type: 'order_of_operations_3_fractions', maxDenom: 6 }
+  if (worksheet <= 90) return { type: 'order_of_operations_3_fractions', maxDenom: 8 }
+
+  // Order of ops Parts 1-4 (multi-fractions): denom ramp 4→6→8→10
+  if (worksheet <= 100) return { type: 'order_of_operations_multi_fractions', maxDenom: 4 }
+  if (worksheet <= 110) return { type: 'order_of_operations_multi_fractions', maxDenom: 6 }
+  if (worksheet <= 115) return { type: 'order_of_operations_multi_fractions', maxDenom: 8 }
+  if (worksheet <= 120) return { type: 'order_of_operations_multi_fractions', maxDenom: 10 }
+
+  // Worksheets 121-160: Fractions ↔ Decimals (Parts 1-3 per spec line 603).
+  // Part 1 (121-140): fraction → decimal, simple denominators.
+  // Part 2 (141-150): fraction → decimal, harder denominators including thirds.
+  // Part 3 (151-170): decimal → fraction.
+  if (worksheet <= 140) return { type: 'fraction_to_decimal', conversionPart: 1 }
+  if (worksheet <= 150) return { type: 'fraction_to_decimal', conversionPart: 2 }
+  if (worksheet <= 170) return { type: 'decimal_to_fraction', conversionPart: 3 }
   if (worksheet <= 180) return { type: 'word_problems' }
   return { type: 'decimal_operations' }
 }
@@ -116,13 +144,16 @@ function generateThreeFractionAddition(): Problem {
   }
 }
 
-function generateOrderOfOperations(): Problem {
-  const num1 = randomInt(1, 5)
-  const denom1 = randomInt(2, 6)
-  const num2 = randomInt(1, 5)
-  const denom2 = randomInt(2, 6)
-  const num3 = randomInt(1, 5)
-  const denom3 = randomInt(2, 6)
+function generateOrderOfOperations(maxDenom: number = 6): Problem {
+  const denomFloor = 2
+  const denomCeil = Math.max(denomFloor + 1, maxDenom)
+  const numCeil = Math.max(2, denomCeil - 1)
+  const num1 = randomInt(1, numCeil)
+  const denom1 = randomInt(denomFloor, denomCeil)
+  const num2 = randomInt(1, numCeil)
+  const denom2 = randomInt(denomFloor, denomCeil)
+  const num3 = randomInt(1, numCeil)
+  const denom3 = randomInt(denomFloor, denomCeil)
 
   const productNum = num2 * num3
   const productDenom = denom2 * denom3
@@ -153,8 +184,12 @@ function generateOrderOfOperations(): Problem {
   }
 }
 
-function generateFractionToDecimal(): Problem {
-  const denominators = [2, 4, 5, 8, 10, 20, 25, 50, 100]
+function generateFractionToDecimal(part: 1 | 2 = 1): Problem {
+  // Part 1: simple terminating decimals (halves, quarters, fifths, tenths).
+  // Part 2: harder denominators (eighths, twentieths, fiftieths, hundredths).
+  const denominators = part === 2
+    ? [8, 16, 20, 25, 40, 50, 100]
+    : [2, 4, 5, 10]
   const denom = randomChoice(denominators)
   const num = randomInt(1, denom - 1)
 
@@ -337,10 +372,10 @@ export function generateFProblem(worksheet: number): Problem {
       break
     case 'order_of_operations_3_fractions':
     case 'order_of_operations_multi_fractions':
-      problem = generateOrderOfOperations()
+      problem = generateOrderOfOperations(config.maxDenom)
       break
     case 'fraction_to_decimal':
-      problem = generateFractionToDecimal()
+      problem = generateFractionToDecimal(config.conversionPart === 2 ? 2 : 1)
       break
     case 'decimal_to_fraction':
       problem = generateDecimalToFraction()
