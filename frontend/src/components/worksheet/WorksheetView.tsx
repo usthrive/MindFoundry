@@ -341,6 +341,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const manualRegroup = isManualRegroupMode(level, worksheetNumber)
   const [showRegroupTransitionModal, setShowRegroupTransitionModal] = useState(false)
   const [regroupNudgeIndex, setRegroupNudgeIndex] = useState<number | null>(null)
+  // Transient: which problem just had auto-regroup fire — drives the "-1"/"+10" chip animation
+  // above the regrouped row. Clears after ~1.2s so the chips fade out and only the regrouped
+  // values remain. Auto-demo mode only (early worksheets); never set in manual mode.
+  const [operationChipsForIndex, setOperationChipsForIndex] = useState<number | null>(null)
 
   // Show carry transition modal on first encounter of manual carry mode
   useEffect(() => {
@@ -1289,7 +1293,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   }), [handleInput, currentPageState, activeIndex, currentPage, problemsPerPage, onAnswerChange])
 
   // Apply the full required regroup state for a subtraction problem (auto mode).
-  // Also used in manual mode after both tap targets fire for the same column pair.
+  // Also fires the transient "-1"/"+10" operation chips so the child sees what
+  // operation was just applied before the values settle into the regrouped row.
   const applyAutoRegroup = useCallback((problemIndex: number) => {
     setPageStates(prev => {
       const currentState = prev[currentPage]
@@ -1306,6 +1311,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         },
       }
     })
+    // Fire the operation-chip animation. Cleared after ~1.2s.
+    setOperationChipsForIndex(problemIndex)
+    setTimeout(() => {
+      setOperationChipsForIndex(curr => (curr === problemIndex ? null : curr))
+    }, 1200)
   }, [currentPage])
 
   // Manual mode: tap the donor digit → fill the strike for that column (and any
@@ -1453,6 +1463,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 onRegroupAddTap={isActive && problem.type === 'subtraction'
                   ? (col: number) => handleRegroupAddTap(index, col)
                   : undefined}
+                showOperationChips={problem.type === 'subtraction' && operationChipsForIndex === index}
               />
 
               {/* Micro hint - shown as inline toast below problem */}

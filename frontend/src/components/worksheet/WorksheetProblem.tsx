@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import type { Problem } from '@/services/generators/types'
 
@@ -34,6 +35,10 @@ export interface WorksheetProblemProps {
   regroupNeedsStrike?: number[]
   /** Columns where a "+10" receiver mark is required by the problem. */
   regroupNeedsAdd?: number[]
+  /** When true, transient "-1" / "+10" operation chips animate over the regrouped row.
+   *  Fires for ~1 second right after auto-regroup populates the values, then disappears.
+   *  Used in the auto-demo phase (early worksheets) to teach what the regroup is doing. */
+  showOperationChips?: boolean
 }
 
 /**
@@ -66,6 +71,7 @@ export default function WorksheetProblem({
   onRegroupAddTap,
   regroupNeedsStrike,
   regroupNeedsAdd,
+  showOperationChips = false,
 }: WorksheetProblemProps) {
   // Get operator symbol
   const operatorSymbols: Record<string, string> = {
@@ -228,132 +234,70 @@ export default function WorksheetProblem({
           </div>
         )}
 
-        {/* Top annotation row.
-            Addition: carry digit (red).
-            Subtraction: donor's replacement digit (e.g., "3" above a slashed "4"). The receiver's "+10"
-            indicator is intentionally NOT placed here — it sits inline-left of the receiver digit
-            in the operand1 row below, so the digit visually reads as "13" (not "3 with separate
-            carry above", which would look identical to addition and confuse the child). */}
-        <div className={cn('flex justify-end', cellGap)} style={{ minHeight: compact ? '1.25rem' : '1.5rem' }}>
-          {/* Empty space for operator column */}
-          <div className={compact ? 'w-5' : 'w-6'} />
-          {Array.from({ length: maxDigits }, (_, visualIdx) => {
-            const colIndex = maxDigits - 1 - visualIdx
-            const carry = carries?.[colIndex]
-            // In manual mode for addition, show tappable carry boxes above columns > 0
-            const showCarryBox = manualCarryMode && isActive && colIndex > 0
+        {/* Top annotation row. Addition only: carry digit (red). Subtraction's regroup
+            annotations are NOT placed here — they sit in a dedicated row between operand1
+            and operand2 so all rows keep identical column widths (preserving alignment). */}
+        {problem.type !== 'subtraction' && (
+          <div className={cn('flex justify-end', cellGap)} style={{ minHeight: compact ? '1.25rem' : '1.5rem' }}>
+            {/* Empty space for operator column */}
+            <div className={compact ? 'w-5' : 'w-6'} />
+            {Array.from({ length: maxDigits }, (_, visualIdx) => {
+              const colIndex = maxDigits - 1 - visualIdx
+              const carry = carries?.[colIndex]
+              const showCarryBox = manualCarryMode && isActive && colIndex > 0
 
-            const strike = regroupStrikes?.[colIndex]
-            const isSubtraction = problem.type === 'subtraction'
-
-            return (
-              <div
-                key={`carry-${visualIdx}`}
-                className={cn(
-                  getColWidth(visualIdx),
-                  'text-center flex items-center justify-center'
-                )}
-              >
-                {isSubtraction ? (
-                  // Subtraction: only the donor strike-replacement lives here.
-                  strike ? (
-                    <span className="text-xs font-bold text-amber-600">
-                      {strike}
-                    </span>
-                  ) : manualRegroupMode && isActive && (regroupNeedsStrike?.includes(colIndex) ?? false) ? (
+              return (
+                <div
+                  key={`carry-${visualIdx}`}
+                  className={cn(
+                    getColWidth(visualIdx),
+                    'text-center flex items-center justify-center'
+                  )}
+                >
+                  {showCarryBox ? (
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onRegroupStrikeTap?.(colIndex)
-                      }}
                       className={cn(
                         'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
                         'flex items-center justify-center touch-manipulation',
-                        'border-dashed border-amber-300 text-amber-300'
+                        carry
+                          ? 'border-red-400 bg-red-50 text-red-600'
+                          : 'border-dashed border-gray-300 text-gray-300'
                       )}
-                      title="Tap the top digit to regroup"
-                    />
-                  ) : null
-                ) : showCarryBox ? (
-                  // Addition manual carry mode: tappable carry box
-                  <div
-                    className={cn(
-                      'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
-                      'flex items-center justify-center touch-manipulation',
-                      carry
-                        ? 'border-red-400 bg-red-50 text-red-600'
-                        : 'border-dashed border-gray-300 text-gray-300'
-                    )}
-                    title="Tap to toggle carry"
-                  >
-                    {carry || ''}
-                  </div>
-                ) : carry ? (
-                  // Auto carry mode: display only
-                  <span className={cn(
-                    'text-xs font-bold text-red-500',
-                    'animate-pulse'
-                  )}>
-                    {carry}
-                  </span>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
+                      title="Tap to toggle carry"
+                    >
+                      {carry || ''}
+                    </div>
+                  ) : carry ? (
+                    <span className={cn('text-xs font-bold text-red-500', 'animate-pulse')}>
+                      {carry}
+                    </span>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* First operand row - digit by digit. For subtraction, the donor digit
-            shows a diagonal strike and (in manual mode) is tappable as a regroup target. */}
+            shows a diagonal strike to indicate "this value is replaced by the row below". */}
         <div className={cn('flex justify-end font-mono font-bold tabular-nums', cellGap)}>
           {/* Empty space for operator column */}
           <div className={compact ? 'w-5' : 'w-6'} />
           {Array.from({ length: maxDigits }, (_, visualIdx) => {
             const colIndex = maxDigits - 1 - visualIdx
             const digitChar = padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''
-            const isSubtraction = problem.type === 'subtraction'
-            const struck = !!regroupStrikes?.[colIndex]
-            const received = !!regroupAdds?.[colIndex]
-            const isStrikeTarget = isSubtraction && manualRegroupMode && isActive &&
-              !struck && (regroupNeedsStrike?.includes(colIndex) ?? false)
-            const isAddTarget = isSubtraction && manualRegroupMode && isActive &&
-              !received && (regroupNeedsAdd?.includes(colIndex) ?? false)
+            const struck = problem.type === 'subtraction' &&
+              (!!regroupStrikes?.[colIndex] || !!regroupAdds?.[colIndex])
 
             return (
               <div
                 key={`op1-${visualIdx}`}
-                onClick={isStrikeTarget ? (e) => {
-                  e.stopPropagation()
-                  onRegroupStrikeTap?.(colIndex)
-                } : undefined}
                 className={cn(
                   getColWidth(visualIdx),
                   'text-center flex items-center justify-center relative',
-                  smallFontSize,
-                  isStrikeTarget && 'cursor-pointer touch-manipulation rounded-md ring-2 ring-amber-300 ring-dashed bg-amber-50/40'
+                  smallFontSize
                 )}
-                title={isStrikeTarget ? 'Tap to regroup this digit' : undefined}
               >
-                {/* Inline "+10" prefix on the receiver digit. Visually reads as e.g. "13"
-                    so the child understands the 1 belongs to tens place, not a separate carry. */}
-                {received ? (
-                  <span className="text-xs font-bold text-amber-600 self-start leading-none mr-0.5 -mt-0.5">
-                    {regroupAdds?.[colIndex]}
-                  </span>
-                ) : isAddTarget ? (
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onRegroupAddTap?.(colIndex)
-                    }}
-                    className={cn(
-                      'w-4 h-4 text-[9px] font-bold rounded border cursor-pointer',
-                      'flex items-center justify-center touch-manipulation',
-                      'border-dashed border-amber-300 text-amber-300',
-                      'self-start leading-none mr-0.5 -mt-0.5'
-                    )}
-                    title="Tap to borrow 10 from the next column"
-                  />
-                ) : null}
                 <span className={cn(struck && 'text-gray-400')}>{digitChar}</span>
                 {struck && (
                   <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -367,6 +311,101 @@ export default function WorksheetProblem({
             )
           })}
         </div>
+
+        {/* Regrouped values row (subtraction only). Sits directly below the original top
+            number. Each cell shows the new value used in subtraction:
+              - donor column → shows the reduced digit (e.g. "3" when 4 donated 1)
+              - receiver-only column → shows the original digit with a small "1" prefix
+                so it visually reads as "13" (the +10 belongs to that place, not a separate carry)
+              - chain column (received AND donated) → shows the strike value, since it already
+                reflects both transformations. */}
+        {problem.type === 'subtraction' && (
+          <div className={cn('flex justify-end font-mono font-bold tabular-nums', cellGap)}
+               style={{ minHeight: compact ? '1.5rem' : '1.75rem' }}>
+            {/* Empty space for operator column */}
+            <div className={compact ? 'w-5' : 'w-6'} />
+            {Array.from({ length: maxDigits }, (_, visualIdx) => {
+              const colIndex = maxDigits - 1 - visualIdx
+              const strike = regroupStrikes?.[colIndex]
+              const add = regroupAdds?.[colIndex]
+              const needsStrike = regroupNeedsStrike?.includes(colIndex) ?? false
+              const needsAdd = regroupNeedsAdd?.includes(colIndex) ?? false
+              const colNeedsRegroup = needsStrike || needsAdd
+              const colIsFilled = (!needsStrike || !!strike) && (!needsAdd || !!add)
+              const showTapTarget = manualRegroupMode && isActive && colNeedsRegroup && !colIsFilled
+              const originalDigit = padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''
+
+              // What to display in the regrouped row for this column:
+              let display: React.ReactNode = null
+              if (strike) {
+                // Donor column (or chain) — show the reduced digit
+                display = (
+                  <span className="text-amber-600">{strike}</span>
+                )
+              } else if (add) {
+                // Receiver-only column — show "¹" + original digit (e.g. "¹3" → "13")
+                display = (
+                  <span className="text-amber-600 inline-flex items-baseline">
+                    <span className="text-[0.6em] leading-none mr-0.5">{add}</span>
+                    <span>{originalDigit}</span>
+                  </span>
+                )
+              }
+
+              // Operation chip ("−1" for donor, "+10" for receiver-only).
+              // Shown briefly above the cell when auto-regroup just fired, so the child
+              // sees what operation was applied before the values become permanent.
+              const chipLabel = strike && !add
+                ? '−1'         // pure donor (gave 1 away)
+                : add && !strike
+                  ? '+10'      // pure receiver (got 10)
+                  : strike && add
+                    ? '+10 −1'  // chain: both received and donated
+                    : null
+
+              return (
+                <div
+                  key={`regroup-${visualIdx}`}
+                  onClick={showTapTarget ? (e) => {
+                    e.stopPropagation()
+                    // Apply whatever this column needs — one tap fills both strike and add
+                    // if both are required (chain case).
+                    if (needsStrike) onRegroupStrikeTap?.(colIndex)
+                    if (needsAdd) onRegroupAddTap?.(colIndex)
+                  } : undefined}
+                  className={cn(
+                    getColWidth(visualIdx),
+                    'text-center flex items-center justify-center relative',
+                    smallFontSize,
+                    showTapTarget && 'cursor-pointer touch-manipulation rounded-md border-2 border-dashed border-amber-300 bg-amber-50/40'
+                  )}
+                  title={showTapTarget ? 'Tap to regroup this column' : undefined}
+                >
+                  {display}
+                  <AnimatePresence>
+                    {showOperationChips && chipLabel && (
+                      <motion.span
+                        key="chip"
+                        initial={{ opacity: 0, y: -4, scale: 0.6 }}
+                        animate={{ opacity: 1, y: -22, scale: 1 }}
+                        exit={{ opacity: 0, y: -28, scale: 0.6 }}
+                        transition={{ duration: 0.35, ease: 'easeOut' }}
+                        className={cn(
+                          'absolute left-1/2 -translate-x-1/2 pointer-events-none',
+                          'text-[10px] font-bold text-amber-700',
+                          'bg-amber-100 border border-amber-300 rounded px-1 leading-tight',
+                          'whitespace-nowrap'
+                        )}
+                      >
+                        {chipLabel}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Second operand row with operator */}
         <div className={cn('flex items-center font-mono font-bold tabular-nums', cellGap)}>

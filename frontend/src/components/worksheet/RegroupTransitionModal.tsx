@@ -60,21 +60,25 @@ export default function RegroupTransitionModal({ show, onDismiss }: RegroupTrans
               You have been doing amazing with regrouping! Now it is time to do the regrouping yourself.
             </p>
 
-            {/* Visual example: 43 - 18 with regroup annotations */}
+            {/* Visual example: 43 - 18 with regroup annotations + operation labels */}
             <div className="bg-amber-50 rounded-xl p-4 mb-4 w-full">
               <p className="text-sm text-gray-500 mb-3 font-medium">Here is how it works:</p>
               <div className="flex flex-col items-end font-mono text-lg font-bold mx-auto w-fit">
-                {/* Replacement-digit row (above the donor "4") */}
+                {/* Operation labels: "-1" above donor, "+10" above receiver */}
                 <div className="flex gap-1 mb-0.5">
                   <div className="w-8 text-center" />
-                  <div className="w-8 text-center text-xs text-amber-600 font-bold">
-                    <span className="inline-block bg-amber-50 border border-amber-300 rounded px-1">3</span>
+                  <div className="w-8 text-center">
+                    <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 leading-tight">
+                      −1
+                    </span>
                   </div>
-                  <div className="w-8 text-center text-xs text-amber-600 font-bold">
-                    <span className="inline-block bg-amber-50 border border-amber-300 rounded px-1">1</span>
+                  <div className="w-8 text-center">
+                    <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 leading-tight">
+                      +10
+                    </span>
                   </div>
                 </div>
-                {/* Top operand with strike on the "4" */}
+                {/* Top operand with strike on the "4" (and on the "3" since it's regrouped too) */}
                 <div className="flex gap-1">
                   <div className="w-8 text-center" />
                   <div className="w-8 text-center relative">
@@ -83,7 +87,21 @@ export default function RegroupTransitionModal({ show, onDismiss }: RegroupTrans
                       <span className="block w-6 h-0.5 bg-amber-600 rotate-[-25deg]" />
                     </span>
                   </div>
-                  <div className="w-8 text-center">3</div>
+                  <div className="w-8 text-center relative">
+                    <span className="text-gray-400">3</span>
+                    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="block w-6 h-0.5 bg-amber-600 rotate-[-25deg]" />
+                    </span>
+                  </div>
+                </div>
+                {/* Regrouped row — the actual values used in subtraction */}
+                <div className="flex gap-1">
+                  <div className="w-8 text-center" />
+                  <div className="w-8 text-center text-amber-600">3</div>
+                  <div className="w-8 text-center text-amber-600 inline-flex items-baseline justify-center">
+                    <span className="text-[0.55em] leading-none mr-0.5">1</span>
+                    <span>3</span>
+                  </div>
                 </div>
                 {/* Bottom operand */}
                 <div className="flex gap-1 items-center">
@@ -100,8 +118,9 @@ export default function RegroupTransitionModal({ show, onDismiss }: RegroupTrans
                   <div className="w-8 text-center">5</div>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
-                Tap the top digit to cross it out. Tap above the next column to add the 10.
+              <p className="text-xs text-gray-600 mt-3 text-center leading-snug">
+                The tens column gives <span className="font-bold text-amber-700">1</span> to the ones.<br />
+                Tens becomes <span className="font-bold text-amber-700">3</span>, and ones becomes <span className="font-bold text-amber-700">13</span>.
               </p>
             </div>
 
