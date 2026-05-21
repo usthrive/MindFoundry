@@ -19,6 +19,21 @@ export interface WorksheetProblemProps {
   manualCarryMode?: boolean
   /** Total answer columns (to identify last column for 2-digit entry) */
   answerColumnCount?: number
+  // ── Subtraction regroup (borrow) annotations ──
+  /** Replacement digit for the donor column (e.g., "3" written above a slashed "4"). */
+  regroupStrikes?: (string | null)[]
+  /** "+10" indicator for the receiver column (always "1", shown above the digit). */
+  regroupAdds?: (string | null)[]
+  /** When true, regroup annotations are tappable inputs (child performs the regroup manually). */
+  manualRegroupMode?: boolean
+  /** Tap handler for the donor-column strike target (passes column index of the donor). */
+  onRegroupStrikeTap?: (column: number) => void
+  /** Tap handler for the receiver-column "+10" target (passes column index of the receiver). */
+  onRegroupAddTap?: (column: number) => void
+  /** Columns where a donor strike is required by the problem (used to show tap targets only where needed). */
+  regroupNeedsStrike?: number[]
+  /** Columns where a "+10" receiver mark is required by the problem. */
+  regroupNeedsAdd?: number[]
 }
 
 /**
@@ -44,6 +59,13 @@ export default function WorksheetProblem({
   onColumnClick,
   manualCarryMode = false,
   answerColumnCount,
+  regroupStrikes,
+  regroupAdds,
+  manualRegroupMode = false,
+  onRegroupStrikeTap,
+  onRegroupAddTap,
+  regroupNeedsStrike,
+  regroupNeedsAdd,
 }: WorksheetProblemProps) {
   // Get operator symbol
   const operatorSymbols: Record<string, string> = {
@@ -206,7 +228,8 @@ export default function WorksheetProblem({
           </div>
         )}
 
-        {/* Carry row */}
+        {/* Top annotation row — addition carry, subtraction "+10" receiver, and subtraction donor replacement digit.
+            For subtraction, both annotations sit above operand1; the strike line itself is drawn on the operand1 row. */}
         <div className={cn('flex justify-end', cellGap)} style={{ minHeight: compact ? '1.25rem' : '1.5rem' }}>
           {/* Empty space for operator column */}
           <div className={compact ? 'w-5' : 'w-6'} />
@@ -216,16 +239,65 @@ export default function WorksheetProblem({
             // In manual mode for addition, show tappable carry boxes above columns > 0
             const showCarryBox = manualCarryMode && isActive && colIndex > 0
 
+            const strike = regroupStrikes?.[colIndex]
+            const add = regroupAdds?.[colIndex]
+            const isSubtraction = problem.type === 'subtraction'
+
             return (
               <div
                 key={`carry-${visualIdx}`}
                 className={cn(
                   getColWidth(visualIdx),
-                  'text-center flex items-center justify-center'
+                  'text-center flex items-center justify-center gap-0.5'
                 )}
               >
-                {showCarryBox ? (
-                  // Manual carry mode: tappable carry box
+                {isSubtraction ? (
+                  // Subtraction: two slots — donor replacement digit and "+10" receiver indicator.
+                  <>
+                    {/* Donor strike-replacement (sits above the operand1 digit at this column) */}
+                    {strike ? (
+                      <span className="text-xs font-bold text-amber-600">
+                        {strike}
+                      </span>
+                    ) : manualRegroupMode && isActive ? (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onRegroupStrikeTap?.(colIndex)
+                        }}
+                        className={cn(
+                          'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
+                          'flex items-center justify-center touch-manipulation',
+                          'border-dashed border-amber-300 text-amber-300',
+                          // Only show the strike target when this column needs to act as a donor
+                          regroupNeedsStrike?.includes(colIndex) ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        )}
+                        title="Tap the top digit to regroup"
+                      />
+                    ) : null}
+                    {/* Receiver "+10" indicator */}
+                    {add ? (
+                      <span className="text-xs font-bold text-amber-600">
+                        {add}
+                      </span>
+                    ) : manualRegroupMode && isActive ? (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onRegroupAddTap?.(colIndex)
+                        }}
+                        className={cn(
+                          'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
+                          'flex items-center justify-center touch-manipulation',
+                          'border-dashed border-amber-300 text-amber-300',
+                          regroupNeedsAdd?.includes(colIndex) ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        )}
+                        title="Tap to add the 10"
+                      />
+                    ) : null}
+                  </>
+                ) : showCarryBox ? (
+                  // Addition manual carry mode: tappable carry box
                   <div
                     className={cn(
                       'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
@@ -252,22 +324,46 @@ export default function WorksheetProblem({
           })}
         </div>
 
-        {/* First operand row - digit by digit */}
+        {/* First operand row - digit by digit. For subtraction, the donor digit
+            shows a diagonal strike and (in manual mode) is tappable as a regroup target. */}
         <div className={cn('flex justify-end font-mono font-bold tabular-nums', cellGap)}>
           {/* Empty space for operator column */}
           <div className={compact ? 'w-5' : 'w-6'} />
-          {Array.from({ length: maxDigits }, (_, visualIdx) => (
-            <div
-              key={`op1-${visualIdx}`}
-              className={cn(
-                getColWidth(visualIdx),
-                'text-center flex items-center justify-center',
-                smallFontSize
-              )}
-            >
-              {padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''}
-            </div>
-          ))}
+          {Array.from({ length: maxDigits }, (_, visualIdx) => {
+            const colIndex = maxDigits - 1 - visualIdx
+            const digitChar = padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''
+            const isSubtraction = problem.type === 'subtraction'
+            const struck = !!regroupStrikes?.[colIndex]
+            const isStrikeTarget = isSubtraction && manualRegroupMode && isActive &&
+              !struck && (regroupNeedsStrike?.includes(colIndex) ?? false)
+
+            return (
+              <div
+                key={`op1-${visualIdx}`}
+                onClick={isStrikeTarget ? (e) => {
+                  e.stopPropagation()
+                  onRegroupStrikeTap?.(colIndex)
+                } : undefined}
+                className={cn(
+                  getColWidth(visualIdx),
+                  'text-center flex items-center justify-center relative',
+                  smallFontSize,
+                  isStrikeTarget && 'cursor-pointer touch-manipulation rounded-md ring-2 ring-amber-300 ring-dashed bg-amber-50/40'
+                )}
+                title={isStrikeTarget ? 'Tap to regroup this digit' : undefined}
+              >
+                <span className={cn(struck && 'text-gray-400')}>{digitChar}</span>
+                {struck && (
+                  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className={cn(
+                      'block h-0.5 bg-amber-600 rotate-[-22deg]',
+                      compact ? 'w-6' : 'w-8'
+                    )} />
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Second operand row with operator */}

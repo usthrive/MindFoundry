@@ -4,6 +4,7 @@ import Button from '@/components/ui/Button'
 import WorksheetProblem from './WorksheetProblem'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import CarryTransitionModal from './CarryTransitionModal'
+import RegroupTransitionModal from './RegroupTransitionModal'
 import {
   getProblemsPerPage,
   getTotalPages,
@@ -76,6 +77,9 @@ export interface PageState {
   columnDigits: Record<number, (string | null)[]>  // per-problem array of column digits (index 0 = ones)
   activeColumns: Record<number, number>             // per-problem active column index (0 = ones)
   carries: Record<number, (string | null)[]>        // carry indicators per column
+  // Subtraction regroup state (parallel arrays indexed by column, 0 = ones)
+  regroupStrikes?: Record<number, (string | null)[]> // donor replacement digit per column
+  regroupAdds?: Record<number, (string | null)[]>    // "+10" receiver indicator per column
   // Scratch pad state
   scratchPadStrokes: Record<number, Stroke[]>
 }
@@ -138,6 +142,71 @@ function computeCarries(problem: Problem, columns: (string | null)[]): (string |
 }
 
 /**
+ * Compute the required subtraction regroup annotations for a problem.
+ *
+ * Returns:
+ *   - strikes[col] = replacement digit ("3" if col-digit was 4 and donated 1)
+ *   - adds[col]    = "1" if the column received a +10 borrow (else null)
+ *
+ * Handles chain borrows across zeros — e.g., 302 − 178 produces
+ * strikes = [null, "9", "2"], adds = ["1", "1", null].
+ */
+function computeRequiredRegroups(problem: Problem): {
+  strikes: (string | null)[]
+  adds: (string | null)[]
+} {
+  if (problem.type !== 'subtraction' || !problem.operands?.length) {
+    return { strikes: [], adds: [] }
+  }
+  const [top, bot] = problem.operands
+  const maxDigits = Math.max(String(top).length, String(bot).length)
+
+  const topDigits: number[] = []
+  const botDigits: number[] = []
+  for (let i = 0; i < maxDigits; i++) {
+    topDigits.push(getDigitAtPlace(top, i))
+    botDigits.push(getDigitAtPlace(bot, i))
+  }
+
+  const strikes: (string | null)[] = new Array(maxDigits).fill(null)
+  const adds: (string | null)[] = new Array(maxDigits).fill(null)
+
+  for (let col = 0; col < maxDigits - 1; col++) {
+    if (topDigits[col] < botDigits[col]) {
+      let donor = col + 1
+      while (donor < maxDigits && topDigits[donor] === 0) {
+        topDigits[donor] = 9
+        strikes[donor] = '9'
+        adds[donor] = '1'
+        donor++
+      }
+      if (donor < maxDigits) {
+        topDigits[donor] -= 1
+        strikes[donor] = String(topDigits[donor])
+      }
+      topDigits[col] += 10
+      adds[col] = '1'
+    }
+  }
+
+  return { strikes, adds }
+}
+
+/** Indices where the required regroup state has a strike (donor columns). */
+function strikeColumns(required: { strikes: (string | null)[] }): number[] {
+  return required.strikes
+    .map((v, i) => (v ? i : -1))
+    .filter(i => i >= 0)
+}
+
+/** Indices where the required regroup state has a "+10" add (receiver columns). */
+function addColumns(required: { adds: (string | null)[] }): number[] {
+  return required.adds
+    .map((v, i) => (v ? i : -1))
+    .filter(i => i >= 0)
+}
+
+/**
  * Create a default (empty) set of column fields for PageState initialization.
  */
 function emptyColumnState() {
@@ -145,6 +214,8 @@ function emptyColumnState() {
     columnDigits: {} as Record<number, (string | null)[]>,
     activeColumns: {} as Record<number, number>,
     carries: {} as Record<number, (string | null)[]>,
+    regroupStrikes: {} as Record<number, (string | null)[]>,
+    regroupAdds: {} as Record<number, (string | null)[]>,
     scratchPadStrokes: {} as Record<number, Stroke[]>,
   }
 }
@@ -157,6 +228,8 @@ function initColumnStateForProblems(problems: Problem[]) {
   const columnDigits: Record<number, (string | null)[]> = {}
   const activeColumns: Record<number, number> = {}
   const carries: Record<number, (string | null)[]> = {}
+  const regroupStrikes: Record<number, (string | null)[]> = {}
+  const regroupAdds: Record<number, (string | null)[]> = {}
 
   problems.forEach((problem, index) => {
     if (problem.displayFormat === 'vertical') {
@@ -165,11 +238,20 @@ function initColumnStateForProblems(problems: Problem[]) {
         columnDigits[index] = new Array(colCount).fill(null)
         activeColumns[index] = 0
         carries[index] = new Array(colCount).fill(null)
+        regroupStrikes[index] = new Array(colCount).fill(null)
+        regroupAdds[index] = new Array(colCount).fill(null)
       }
     }
   })
 
-  return { columnDigits, activeColumns, carries, scratchPadStrokes: {} as Record<number, Stroke[]> }
+  return {
+    columnDigits,
+    activeColumns,
+    carries,
+    regroupStrikes,
+    regroupAdds,
+    scratchPadStrokes: {} as Record<number, Stroke[]>,
+  }
 }
 
 /**
@@ -194,8 +276,30 @@ function isManualCarryMode(level: string, worksheetNumber: number): boolean {
   return false
 }
 
+/**
+ * Determine if manual regroup mode should be active for a given worksheet.
+ * Mirrors isManualCarryMode for subtraction with borrowing.
+ *
+ * Level B: 2-digit subtraction with borrow spans 121-150 (30 worksheets).
+ * First ~20% (121-126) use auto-regroup demonstrations; manual kicks in at 127+.
+ * 3-digit subtraction (161-200) is always manual.
+ */
+function isManualRegroupMode(level: string, worksheetNumber: number): boolean {
+  if (level === 'B') {
+    if (worksheetNumber >= 127 && worksheetNumber <= 150) return true
+    if (worksheetNumber >= 161 && worksheetNumber <= 200) return true
+    return false
+  }
+  // For levels C+ with subtraction problems, always use manual regroup
+  const advancedLevels = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
+  if (advancedLevels.includes(level)) return true
+  return false
+}
+
 /** localStorage key for tracking whether the carry transition modal has been shown */
 const CARRY_MODAL_SHOWN_KEY = 'mindfoundry_carry_modal_shown'
+/** localStorage key for tracking whether the regroup transition modal has been shown */
+const REGROUP_MODAL_SHOWN_KEY = 'mindfoundry_regroup_modal_shown'
 
 /**
  * WorksheetView - Multi-problem worksheet display
@@ -233,6 +337,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const [showCarryTransitionModal, setShowCarryTransitionModal] = useState(false)
   const [carryNudgeIndex, setCarryNudgeIndex] = useState<number | null>(null)
 
+  // Manual regroup mode (subtraction borrowing — mirrors manual carry)
+  const manualRegroup = isManualRegroupMode(level, worksheetNumber)
+  const [showRegroupTransitionModal, setShowRegroupTransitionModal] = useState(false)
+  const [regroupNudgeIndex, setRegroupNudgeIndex] = useState<number | null>(null)
+
   // Show carry transition modal on first encounter of manual carry mode
   useEffect(() => {
     if (manualCarry) {
@@ -247,6 +356,21 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       }
     }
   }, [manualCarry])
+
+  // Show regroup transition modal on first encounter of manual regroup mode
+  useEffect(() => {
+    if (manualRegroup) {
+      try {
+        const shown = localStorage.getItem(REGROUP_MODAL_SHOWN_KEY)
+        if (!shown) {
+          setShowRegroupTransitionModal(true)
+          localStorage.setItem(REGROUP_MODAL_SHOWN_KEY, 'true')
+        }
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, [manualRegroup])
 
   // Track if we've consumed the initialPageState to avoid re-using it
   const initialPageStateConsumed = useRef(false)
@@ -299,6 +423,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         columnDigits: initialPageState.columnDigits ?? {},
         activeColumns: initialPageState.activeColumns ?? {},
         carries: initialPageState.carries ?? {},
+        regroupStrikes: initialPageState.regroupStrikes ?? {},
+        regroupAdds: initialPageState.regroupAdds ?? {},
         scratchPadStrokes: initialPageState.scratchPadStrokes ?? {},
       }
 
@@ -310,6 +436,14 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             normalized.columnDigits[index] = new Array(colCount).fill(null)
             normalized.activeColumns[index] = normalized.activeColumns[index] ?? 0
             normalized.carries[index] = normalized.carries[index] ?? new Array(colCount).fill(null)
+          }
+        }
+        // Backfill regroup arrays separately (legacy sessions before this feature)
+        if (problem.displayFormat === 'vertical') {
+          const colCount = getAnswerColumnCount(problem)
+          if (colCount > 0) {
+            normalized.regroupStrikes![index] = normalized.regroupStrikes?.[index] ?? new Array(colCount).fill(null)
+            normalized.regroupAdds![index] = normalized.regroupAdds?.[index] ?? new Array(colCount).fill(null)
           }
         }
       })
@@ -578,8 +712,36 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       }
     }
 
-    // Clear any lingering nudge
+    // In manual regroup mode, check for missing regroups before proceeding
+    if (manualRegroup) {
+      for (let index = 0; index < currentPageState.problems.length; index++) {
+        const problem = currentPageState.problems[index]
+        if (problem.type !== 'subtraction' || problem.displayFormat !== 'vertical') continue
+        if (currentPageState.results[index] === true) continue
+
+        const required = computeRequiredRegroups(problem)
+        const strikes = currentPageState.regroupStrikes?.[index] ?? []
+        const adds = currentPageState.regroupAdds?.[index] ?? []
+
+        // Any required strike or add that hasn't been entered → nudge
+        const missingStrike = required.strikes.some((s, c) => s && !strikes[c])
+        const missingAdd = required.adds.some((a, c) => a && !adds[c])
+        if (missingStrike || missingAdd) {
+          // Only nudge if the child has actually entered something — they may still be reading the problem
+          const columns = currentPageState.columnDigits[index]
+          const hasAnyDigit = columns?.some(d => d !== null)
+          if (hasAnyDigit) {
+            setRegroupNudgeIndex(index)
+            setTimeout(() => setRegroupNudgeIndex(null), 5000)
+            return
+          }
+        }
+      }
+    }
+
+    // Clear any lingering nudges
     setCarryNudgeIndex(null)
+    setRegroupNudgeIndex(null)
 
     const results: Record<number, boolean> = { ...currentPageState.results }
     const attemptCounts: Record<number, number> = { ...currentPageState.attemptCounts }
@@ -691,7 +853,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }, 1200)
       }
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer, manualCarry])
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer, manualCarry, manualRegroup])
 
   // Handle completing full teaching (locks the problem and shows answer)
   const handleTeachingComplete = useCallback(() => {
@@ -836,6 +998,49 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           const digit = String(num)
           const isLastColumn = newActiveCol === columnCount - 1
 
+          // ── Subtraction regroup gate ──
+          // For subtraction problems where the active column requires a regroup
+          // (top digit < bottom digit), block digit entry until the regroup is in place.
+          // In manual mode: nudge the child to perform the regroup taps themselves.
+          // In auto mode: silently apply the full regroup so the child can proceed.
+          if (activeProblem.type === 'subtraction') {
+            const required = computeRequiredRegroups(activeProblem)
+            const existingStrikes = currentState.regroupStrikes?.[activeIndex] ?? new Array(columnCount).fill(null)
+            const existingAdds = currentState.regroupAdds?.[activeIndex] ?? new Array(columnCount).fill(null)
+            // The active column is "ready to subtract" only when:
+            //  - if it RECEIVES a +10 borrow → the add for this column is filled
+            //  - if it DONATES (was reduced) → the strike for this column is filled
+            // Either case being incomplete means the displayed top digit doesn't yet reflect
+            // the regrouped value, so subtraction would produce the wrong digit.
+            const needsAddHere = !!required.adds[newActiveCol]
+            const needsStrikeHere = !!required.strikes[newActiveCol]
+            const hasAddHere = !!existingAdds[newActiveCol]
+            const hasStrikeHere = !!existingStrikes[newActiveCol]
+            const colNeedsRegroup = needsAddHere || needsStrikeHere
+            const colRegroupReady =
+              (!needsAddHere || hasAddHere) &&
+              (!needsStrikeHere || hasStrikeHere)
+
+            if (colNeedsRegroup && !colRegroupReady) {
+              if (manualRegroup) {
+                // Manual mode: refuse input, nudge child
+                setRegroupNudgeIndex(activeIndex)
+                setTimeout(() => setRegroupNudgeIndex(null), 5000)
+                return prev
+              } else {
+                // Auto mode: apply the full required regroup state silently
+                return {
+                  ...prev,
+                  [currentPage]: {
+                    ...currentState,
+                    regroupStrikes: { ...(currentState.regroupStrikes ?? {}), [activeIndex]: required.strikes },
+                    regroupAdds: { ...(currentState.regroupAdds ?? {}), [activeIndex]: required.adds },
+                  },
+                }
+              }
+            }
+          }
+
           if (isLastColumn) {
             // Last column (highest place value): allow up to 2 digits (captures overflow)
             const existing = newColumns[newActiveCol]
@@ -924,7 +1129,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }
       }
     })
-  }, [currentPage, activeIndex, currentPageState, sessionActive, onAnswerChange, problemsPerPage, handleSubmitPage, handleEnterKey])
+  }, [currentPage, activeIndex, currentPageState, sessionActive, onAnswerChange, problemsPerPage, handleSubmitPage, handleEnterKey, manualRegroup])
 
   // Go to next page
   const handleNextPage = () => {
@@ -1083,6 +1288,73 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     },
   }), [handleInput, currentPageState, activeIndex, currentPage, problemsPerPage, onAnswerChange])
 
+  // Apply the full required regroup state for a subtraction problem (auto mode).
+  // Also used in manual mode after both tap targets fire for the same column pair.
+  const applyAutoRegroup = useCallback((problemIndex: number) => {
+    setPageStates(prev => {
+      const currentState = prev[currentPage]
+      if (!currentState) return prev
+      const problem = currentState.problems[problemIndex]
+      if (!problem || problem.type !== 'subtraction') return prev
+      const required = computeRequiredRegroups(problem)
+      return {
+        ...prev,
+        [currentPage]: {
+          ...currentState,
+          regroupStrikes: { ...(currentState.regroupStrikes ?? {}), [problemIndex]: required.strikes },
+          regroupAdds: { ...(currentState.regroupAdds ?? {}), [problemIndex]: required.adds },
+        },
+      }
+    })
+  }, [currentPage])
+
+  // Manual mode: tap the donor digit → fill the strike for that column (and any
+  // chained donors above it that the borrow path requires).
+  const handleRegroupStrikeTap = useCallback((problemIndex: number, donorCol: number) => {
+    setPageStates(prev => {
+      const currentState = prev[currentPage]
+      if (!currentState) return prev
+      const problem = currentState.problems[problemIndex]
+      if (!problem || problem.type !== 'subtraction') return prev
+      const required = computeRequiredRegroups(problem)
+      if (!required.strikes[donorCol]) return prev  // not a donor column — ignore
+
+      const existingStrikes = currentState.regroupStrikes?.[problemIndex] ?? new Array(required.strikes.length).fill(null)
+      const newStrikes = [...existingStrikes]
+      newStrikes[donorCol] = required.strikes[donorCol]
+      return {
+        ...prev,
+        [currentPage]: {
+          ...currentState,
+          regroupStrikes: { ...(currentState.regroupStrikes ?? {}), [problemIndex]: newStrikes },
+        },
+      }
+    })
+  }, [currentPage])
+
+  // Manual mode: tap the receiver "+10" → fill the add for that column.
+  const handleRegroupAddTap = useCallback((problemIndex: number, receiverCol: number) => {
+    setPageStates(prev => {
+      const currentState = prev[currentPage]
+      if (!currentState) return prev
+      const problem = currentState.problems[problemIndex]
+      if (!problem || problem.type !== 'subtraction') return prev
+      const required = computeRequiredRegroups(problem)
+      if (!required.adds[receiverCol]) return prev
+
+      const existingAdds = currentState.regroupAdds?.[problemIndex] ?? new Array(required.adds.length).fill(null)
+      const newAdds = [...existingAdds]
+      newAdds[receiverCol] = required.adds[receiverCol]
+      return {
+        ...prev,
+        [currentPage]: {
+          ...currentState,
+          regroupAdds: { ...(currentState.regroupAdds ?? {}), [problemIndex]: newAdds },
+        },
+      }
+    })
+  }, [currentPage])
+
   return (
     <div className="space-y-4">
       {/* Page indicator */}
@@ -1149,9 +1421,38 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                       },
                     },
                   }))
+                  // Auto-regroup demonstration: when child taps a subtraction column
+                  // whose top digit < bottom digit, animate the full regroup into place.
+                  // Only fires when manual mode is OFF (early worksheets) — gives the child
+                  // a visual "this is what regrouping looks like" moment before they own the action.
+                  if (!manualRegroup && problem.type === 'subtraction') {
+                    const required = computeRequiredRegroups(problem)
+                    if (required.adds[col]) {
+                      applyAutoRegroup(index)
+                    }
+                  }
                 } : undefined}
                 manualCarryMode={manualCarry && problem.displayFormat === 'vertical' && problem.type === 'addition'}
                 answerColumnCount={problem.displayFormat === 'vertical' ? getAnswerColumnCount(problem) : undefined}
+                regroupStrikes={problem.displayFormat === 'vertical' && problem.type === 'subtraction'
+                  ? currentPageState.regroupStrikes?.[index]
+                  : undefined}
+                regroupAdds={problem.displayFormat === 'vertical' && problem.type === 'subtraction'
+                  ? currentPageState.regroupAdds?.[index]
+                  : undefined}
+                manualRegroupMode={manualRegroup && problem.displayFormat === 'vertical' && problem.type === 'subtraction'}
+                regroupNeedsStrike={problem.displayFormat === 'vertical' && problem.type === 'subtraction'
+                  ? strikeColumns(computeRequiredRegroups(problem))
+                  : undefined}
+                regroupNeedsAdd={problem.displayFormat === 'vertical' && problem.type === 'subtraction'
+                  ? addColumns(computeRequiredRegroups(problem))
+                  : undefined}
+                onRegroupStrikeTap={isActive && problem.type === 'subtraction'
+                  ? (col: number) => handleRegroupStrikeTap(index, col)
+                  : undefined}
+                onRegroupAddTap={isActive && problem.type === 'subtraction'
+                  ? (col: number) => handleRegroupAddTap(index, col)
+                  : undefined}
               />
 
               {/* Micro hint - shown as inline toast below problem */}
@@ -1310,11 +1611,26 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         onDismiss={() => setShowCarryTransitionModal(false)}
       />
 
+      {/* Regroup Transition Modal - shown once when manual regroup mode starts */}
+      <RegroupTransitionModal
+        show={showRegroupTransitionModal}
+        onDismiss={() => setShowRegroupTransitionModal(false)}
+      />
+
       {/* Carry Nudge Toast - shown when child skips carry entry in manual mode */}
       {carryNudgeIndex !== null && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 animate-bounce">
           <div className="bg-amber-100 border border-amber-300 text-amber-800 rounded-xl px-4 py-2 shadow-lg text-sm font-medium">
             Did you forget to carry?
+          </div>
+        </div>
+      )}
+
+      {/* Regroup Nudge Toast - shown when child tries to subtract without regrouping */}
+      {regroupNudgeIndex !== null && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 animate-bounce">
+          <div className="bg-amber-100 border border-amber-300 text-amber-800 rounded-xl px-4 py-2 shadow-lg text-sm font-medium">
+            The top digit is smaller — regroup first!
           </div>
         </div>
       )}
