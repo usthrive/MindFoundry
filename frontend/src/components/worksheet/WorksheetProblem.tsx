@@ -228,8 +228,12 @@ export default function WorksheetProblem({
           </div>
         )}
 
-        {/* Top annotation row — addition carry, subtraction "+10" receiver, and subtraction donor replacement digit.
-            For subtraction, both annotations sit above operand1; the strike line itself is drawn on the operand1 row. */}
+        {/* Top annotation row.
+            Addition: carry digit (red).
+            Subtraction: donor's replacement digit (e.g., "3" above a slashed "4"). The receiver's "+10"
+            indicator is intentionally NOT placed here — it sits inline-left of the receiver digit
+            in the operand1 row below, so the digit visually reads as "13" (not "3 with separate
+            carry above", which would look identical to addition and confuse the child). */}
         <div className={cn('flex justify-end', cellGap)} style={{ minHeight: compact ? '1.25rem' : '1.5rem' }}>
           {/* Empty space for operator column */}
           <div className={compact ? 'w-5' : 'w-6'} />
@@ -240,7 +244,6 @@ export default function WorksheetProblem({
             const showCarryBox = manualCarryMode && isActive && colIndex > 0
 
             const strike = regroupStrikes?.[colIndex]
-            const add = regroupAdds?.[colIndex]
             const isSubtraction = problem.type === 'subtraction'
 
             return (
@@ -248,54 +251,29 @@ export default function WorksheetProblem({
                 key={`carry-${visualIdx}`}
                 className={cn(
                   getColWidth(visualIdx),
-                  'text-center flex items-center justify-center gap-0.5'
+                  'text-center flex items-center justify-center'
                 )}
               >
                 {isSubtraction ? (
-                  // Subtraction: two slots — donor replacement digit and "+10" receiver indicator.
-                  <>
-                    {/* Donor strike-replacement (sits above the operand1 digit at this column) */}
-                    {strike ? (
-                      <span className="text-xs font-bold text-amber-600">
-                        {strike}
-                      </span>
-                    ) : manualRegroupMode && isActive ? (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onRegroupStrikeTap?.(colIndex)
-                        }}
-                        className={cn(
-                          'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
-                          'flex items-center justify-center touch-manipulation',
-                          'border-dashed border-amber-300 text-amber-300',
-                          // Only show the strike target when this column needs to act as a donor
-                          regroupNeedsStrike?.includes(colIndex) ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                        )}
-                        title="Tap the top digit to regroup"
-                      />
-                    ) : null}
-                    {/* Receiver "+10" indicator */}
-                    {add ? (
-                      <span className="text-xs font-bold text-amber-600">
-                        {add}
-                      </span>
-                    ) : manualRegroupMode && isActive ? (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onRegroupAddTap?.(colIndex)
-                        }}
-                        className={cn(
-                          'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
-                          'flex items-center justify-center touch-manipulation',
-                          'border-dashed border-amber-300 text-amber-300',
-                          regroupNeedsAdd?.includes(colIndex) ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                        )}
-                        title="Tap to add the 10"
-                      />
-                    ) : null}
-                  </>
+                  // Subtraction: only the donor strike-replacement lives here.
+                  strike ? (
+                    <span className="text-xs font-bold text-amber-600">
+                      {strike}
+                    </span>
+                  ) : manualRegroupMode && isActive && (regroupNeedsStrike?.includes(colIndex) ?? false) ? (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onRegroupStrikeTap?.(colIndex)
+                      }}
+                      className={cn(
+                        'w-5 h-5 text-[10px] font-bold rounded border cursor-pointer',
+                        'flex items-center justify-center touch-manipulation',
+                        'border-dashed border-amber-300 text-amber-300'
+                      )}
+                      title="Tap the top digit to regroup"
+                    />
+                  ) : null
                 ) : showCarryBox ? (
                   // Addition manual carry mode: tappable carry box
                   <div
@@ -334,8 +312,11 @@ export default function WorksheetProblem({
             const digitChar = padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''
             const isSubtraction = problem.type === 'subtraction'
             const struck = !!regroupStrikes?.[colIndex]
+            const received = !!regroupAdds?.[colIndex]
             const isStrikeTarget = isSubtraction && manualRegroupMode && isActive &&
               !struck && (regroupNeedsStrike?.includes(colIndex) ?? false)
+            const isAddTarget = isSubtraction && manualRegroupMode && isActive &&
+              !received && (regroupNeedsAdd?.includes(colIndex) ?? false)
 
             return (
               <div
@@ -352,6 +333,27 @@ export default function WorksheetProblem({
                 )}
                 title={isStrikeTarget ? 'Tap to regroup this digit' : undefined}
               >
+                {/* Inline "+10" prefix on the receiver digit. Visually reads as e.g. "13"
+                    so the child understands the 1 belongs to tens place, not a separate carry. */}
+                {received ? (
+                  <span className="text-xs font-bold text-amber-600 self-start leading-none mr-0.5 -mt-0.5">
+                    {regroupAdds?.[colIndex]}
+                  </span>
+                ) : isAddTarget ? (
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRegroupAddTap?.(colIndex)
+                    }}
+                    className={cn(
+                      'w-4 h-4 text-[9px] font-bold rounded border cursor-pointer',
+                      'flex items-center justify-center touch-manipulation',
+                      'border-dashed border-amber-300 text-amber-300',
+                      'self-start leading-none mr-0.5 -mt-0.5'
+                    )}
+                    title="Tap to borrow 10 from the next column"
+                  />
+                ) : null}
                 <span className={cn(struck && 'text-gray-400')}>{digitChar}</span>
                 {struck && (
                   <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
