@@ -318,8 +318,13 @@ export default function WorksheetProblem({
               - receiver-only column → shows the original digit with a small "1" prefix
                 so it visually reads as "13" (the +10 belongs to that place, not a separate carry)
               - chain column (received AND donated) → shows the strike value, since it already
-                reflects both transformations. */}
-        {problem.type === 'subtraction' && (
+                reflects both transformations.
+            In optional mode (no helpers required), this row is hidden when no values
+            are populated — child enters the answer directly with no visual scaffolding. */}
+        {problem.type === 'subtraction'
+         && (manualRegroupMode
+             || regroupStrikes?.some(v => !!v)
+             || regroupAdds?.some(v => !!v)) && (
           <div className={cn('flex justify-end font-mono font-bold tabular-nums', cellGap)}
                style={{ minHeight: compact ? '1.5rem' : '1.75rem' }}>
             {/* Empty space for operator column */}

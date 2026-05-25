@@ -5,6 +5,7 @@ import WorksheetProblem from './WorksheetProblem'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import CarryTransitionModal from './CarryTransitionModal'
 import RegroupTransitionModal from './RegroupTransitionModal'
+import RegroupGraduationModal from './RegroupGraduationModal'
 import {
   getProblemsPerPage,
   getTotalPages,
@@ -277,29 +278,49 @@ function isManualCarryMode(level: string, worksheetNumber: number): boolean {
 }
 
 /**
- * Determine if manual regroup mode should be active for a given worksheet.
- * Mirrors isManualCarryMode for subtraction with borrowing.
+ * Three-phase ramp for subtraction regrouping helpers:
  *
- * Level B: 2-digit subtraction with borrow spans 121-150 (30 worksheets).
- * First ~20% (121-126) use auto-regroup demonstrations; manual kicks in at 127+.
- * 3-digit subtraction (161-200) is always manual.
+ *   'auto'     – animation demo. Tapping a column that needs a borrow auto-fills
+ *                the regrouped row with "-1"/"+10" chips flying in. No input
+ *                gating. Used early so the child sees what regrouping is.
+ *   'manual'   – tap targets visible, child must tap to perform the regroup
+ *                before entering the answer. Input + submit gated.
+ *   'optional' – no tap targets, no chips, no gates. The child enters the
+ *                answer directly; regrouping is performed mentally. The
+ *                regrouped row only renders if some prior state populated it
+ *                (e.g., session restore). This is the "graduation" mode.
+ *
+ * Level B 2-digit borrow (121-150):
+ *   121-126 auto (6 sheets)  →  127-130 manual (4 sheets)  →  131-150 optional (20 sheets)
+ *
+ * Level B 3-digit borrow (161-200) — same proportions but on the larger range:
+ *   161-166 auto  →  167-170 manual  →  171-200 optional
+ *
+ * Levels C+ inherit 'optional' by default; the regrouping concept is assumed
+ * mastered. (If a child needs help later, they can use the existing hint
+ * system, and we can add a per-child override toggle in a future pass.)
  */
-function isManualRegroupMode(level: string, worksheetNumber: number): boolean {
+type RegroupMode = 'auto' | 'manual' | 'optional'
+
+function getRegroupMode(level: string, worksheetNumber: number): RegroupMode {
   if (level === 'B') {
-    if (worksheetNumber >= 127 && worksheetNumber <= 150) return true
-    if (worksheetNumber >= 161 && worksheetNumber <= 200) return true
-    return false
+    if (worksheetNumber >= 121 && worksheetNumber <= 126) return 'auto'
+    if (worksheetNumber >= 127 && worksheetNumber <= 130) return 'manual'
+    if (worksheetNumber >= 131 && worksheetNumber <= 150) return 'optional'
+    if (worksheetNumber >= 161 && worksheetNumber <= 166) return 'auto'
+    if (worksheetNumber >= 167 && worksheetNumber <= 170) return 'manual'
+    if (worksheetNumber >= 171 && worksheetNumber <= 200) return 'optional'
+    return 'optional'
   }
-  // For levels C+ with subtraction problems, always use manual regroup
-  const advancedLevels = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O']
-  if (advancedLevels.includes(level)) return true
-  return false
+  return 'optional'
 }
 
 /** localStorage key for tracking whether the carry transition modal has been shown */
 const CARRY_MODAL_SHOWN_KEY = 'mindfoundry_carry_modal_shown'
 /** localStorage key for tracking whether the regroup transition modal has been shown */
 const REGROUP_MODAL_SHOWN_KEY = 'mindfoundry_regroup_modal_shown'
+/** localStorage key for the "you've graduated from manual mode" celebration modal */
+const REGROUP_GRADUATION_MODAL_SHOWN_KEY = 'mindfoundry_regroup_graduation_modal_shown'
 
 /**
  * WorksheetView - Multi-problem worksheet display
@@ -337,13 +358,16 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const [showCarryTransitionModal, setShowCarryTransitionModal] = useState(false)
   const [carryNudgeIndex, setCarryNudgeIndex] = useState<number | null>(null)
 
-  // Manual regroup mode (subtraction borrowing — mirrors manual carry)
-  const manualRegroup = isManualRegroupMode(level, worksheetNumber)
+  // Subtraction regroup helpers ramp: auto-demo → manual → optional
+  const regroupMode = getRegroupMode(level, worksheetNumber)
+  const manualRegroup = regroupMode === 'manual'
+  const autoRegroupDemo = regroupMode === 'auto'
   const [showRegroupTransitionModal, setShowRegroupTransitionModal] = useState(false)
+  const [showRegroupGraduationModal, setShowRegroupGraduationModal] = useState(false)
   const [regroupNudgeIndex, setRegroupNudgeIndex] = useState<number | null>(null)
   // Transient: which problem just had auto-regroup fire — drives the "-1"/"+10" chip animation
   // above the regrouped row. Clears after ~1.2s so the chips fade out and only the regrouped
-  // values remain. Auto-demo mode only (early worksheets); never set in manual mode.
+  // values remain. Auto-demo mode only (early worksheets); never set in manual or optional mode.
   const [operationChipsForIndex, setOperationChipsForIndex] = useState<number | null>(null)
 
   // Show carry transition modal on first encounter of manual carry mode
@@ -375,6 +399,25 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       }
     }
   }, [manualRegroup])
+
+  // Show the graduation modal once, when the child first enters 'optional' regroup mode
+  // after having seen the manual mode. Gated on REGROUP_MODAL_SHOWN_KEY so it never fires
+  // before manual mode has been introduced (e.g., if they jump straight to optional via a
+  // session restore or by skipping levels).
+  useEffect(() => {
+    if (regroupMode === 'optional') {
+      try {
+        const manualSeen = localStorage.getItem(REGROUP_MODAL_SHOWN_KEY)
+        const graduationSeen = localStorage.getItem(REGROUP_GRADUATION_MODAL_SHOWN_KEY)
+        if (manualSeen && !graduationSeen) {
+          setShowRegroupGraduationModal(true)
+          localStorage.setItem(REGROUP_GRADUATION_MODAL_SHOWN_KEY, 'true')
+        }
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, [regroupMode])
 
   // Track if we've consumed the initialPageState to avoid re-using it
   const initialPageStateConsumed = useRef(false)
@@ -1433,9 +1476,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                   }))
                   // Auto-regroup demonstration: when child taps a subtraction column
                   // whose top digit < bottom digit, animate the full regroup into place.
-                  // Only fires when manual mode is OFF (early worksheets) — gives the child
-                  // a visual "this is what regrouping looks like" moment before they own the action.
-                  if (!manualRegroup && problem.type === 'subtraction') {
+                  // Only fires in the 'auto' phase (early worksheets) — never in manual
+                  // (child does it themselves) or optional (no helpers by default).
+                  if (autoRegroupDemo && problem.type === 'subtraction') {
                     const required = computeRequiredRegroups(problem)
                     if (required.adds[col]) {
                       applyAutoRegroup(index)
@@ -1626,6 +1669,12 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       <RegroupTransitionModal
         show={showRegroupTransitionModal}
         onDismiss={() => setShowRegroupTransitionModal(false)}
+      />
+
+      {/* Regroup Graduation Modal - shown once when the child reaches optional regroup mode */}
+      <RegroupGraduationModal
+        show={showRegroupGraduationModal}
+        onDismiss={() => setShowRegroupGraduationModal(false)}
       />
 
       {/* Carry Nudge Toast - shown when child skips carry entry in manual mode */}
