@@ -1046,11 +1046,14 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           const isLastColumn = newActiveCol === columnCount - 1
 
           // ── Subtraction regroup gate ──
-          // For subtraction problems where the active column requires a regroup
-          // (top digit < bottom digit), block digit entry until the regroup is in place.
-          // In manual mode: nudge the child to perform the regroup taps themselves.
-          // In auto mode: silently apply the full regroup so the child can proceed.
-          if (activeProblem.type === 'subtraction') {
+          // Behaviour depends on the regroup phase for this worksheet:
+          //   manual   → block digit entry until the child performs the regroup taps; nudge.
+          //   auto     → silently apply the full regroup so the child sees it appear.
+          //   optional → DO NOTHING. No gate, no auto-fill. The child enters the answer
+          //              directly with no scaffolding. (This is the graduation phase —
+          //              previously this fell through to the auto branch by mistake, which
+          //              made the helper row pop up the moment a digit was typed.)
+          if (activeProblem.type === 'subtraction' && (manualRegroup || autoRegroupDemo)) {
             const required = computeRequiredRegroups(activeProblem)
             const existingStrikes = currentState.regroupStrikes?.[activeIndex] ?? new Array(columnCount).fill(null)
             const existingAdds = currentState.regroupAdds?.[activeIndex] ?? new Array(columnCount).fill(null)
@@ -1075,7 +1078,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 setTimeout(() => setRegroupNudgeIndex(null), 5000)
                 return prev
               } else {
-                // Auto mode: apply the full required regroup state silently
+                // Auto-demo mode: apply the full required regroup state silently
                 return {
                   ...prev,
                   [currentPage]: {
@@ -1176,7 +1179,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }
       }
     })
-  }, [currentPage, activeIndex, currentPageState, sessionActive, onAnswerChange, problemsPerPage, handleSubmitPage, handleEnterKey, manualRegroup])
+  }, [currentPage, activeIndex, currentPageState, sessionActive, onAnswerChange, problemsPerPage, handleSubmitPage, handleEnterKey, manualRegroup, autoRegroupDemo])
 
   // Go to next page
   const handleNextPage = () => {
