@@ -57,6 +57,7 @@ export type Database = {
           current_worksheet: number
           questions_per_page_mode: 'one' | 'standard' | 'half'
           supplementary_practice: Record<string, unknown> | null
+          regroup_helper_mode: 'adaptive' | 'auto' | 'manual' | 'optional'
           tier: 'free' | 'basic' | 'plus' | 'premium'
           streak: number
           total_problems: number
@@ -75,6 +76,7 @@ export type Database = {
           current_worksheet?: number
           questions_per_page_mode?: 'one' | 'standard' | 'half'
           supplementary_practice?: Record<string, unknown> | null
+          regroup_helper_mode?: 'adaptive' | 'auto' | 'manual' | 'optional'
         }
         Update: {
           name?: string
@@ -82,6 +84,7 @@ export type Database = {
           current_worksheet?: number
           questions_per_page_mode?: 'one' | 'standard' | 'half'
           supplementary_practice?: Record<string, unknown> | null
+          regroup_helper_mode?: 'adaptive' | 'auto' | 'manual' | 'optional'
           total_problems?: number
           total_correct?: number
         }

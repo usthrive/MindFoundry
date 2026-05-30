@@ -31,6 +31,9 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
   const [questionsPerPageMode, setQuestionsPerPageMode] = useState<QuestionsPerPageMode>(
     (child.questions_per_page_mode as QuestionsPerPageMode) || 'standard'
   )
+  const [regroupHelperMode, setRegroupHelperMode] = useState<'adaptive' | 'auto' | 'manual' | 'optional'>(
+    (child.regroup_helper_mode as 'adaptive' | 'auto' | 'manual' | 'optional') || 'adaptive'
+  )
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +60,7 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
         current_level: currentLevel,
         current_worksheet: currentWorksheet,
         questions_per_page_mode: questionsPerPageMode,
+        regroup_helper_mode: regroupHelperMode,
       })
 
       if (!success) throw new Error('Failed to update child profile')
@@ -269,6 +273,28 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   Quick feedback helps kids stay motivated with immediate results
+                </p>
+              </div>
+
+              {/* Subtraction Regroup Helpers */}
+              <div className="mt-4">
+                <label htmlFor="regroupHelperMode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Subtraction borrowing helpers
+                </label>
+                <select
+                  id="regroupHelperMode"
+                  value={regroupHelperMode}
+                  onChange={(e) => setRegroupHelperMode(e.target.value as 'adaptive' | 'auto' | 'manual' | 'optional')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value="adaptive">Adaptive (Recommended) — fades as they master it</option>
+                  <option value="auto">Always show the demo</option>
+                  <option value="manual">Always tap to regroup</option>
+                  <option value="optional">No helpers — answer directly</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Adaptive removes the borrowing helpers after ~5 correct in a row, and brings them
+                  back if your child starts missing. Choose a fixed mode to override.
                 </p>
               </div>
             </div>

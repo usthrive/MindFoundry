@@ -1789,6 +1789,12 @@ export default function StudyPage() {
                 onPageStateChange={handlePageStateChange}
                 sessionActive={sessionActive}
                 supplementaryPractice={getSupplementaryPractice()}
+                childId={currentChild?.id}
+                regroupHelperOverride={
+                  (currentChild as Record<string, unknown> | null)?.regroup_helper_mode as
+                    | 'adaptive' | 'auto' | 'manual' | 'optional'
+                    | undefined
+                }
               />
 
               {/* Fixed Worksheet NumberPad at bottom of viewport */}

@@ -605,6 +605,7 @@ export async function updateChildProfile(
     current_worksheet?: number
     questions_per_page_mode?: 'one' | 'standard' | 'half'
     supplementary_practice?: Record<string, unknown> | null
+    regroup_helper_mode?: 'adaptive' | 'auto' | 'manual' | 'optional'
   }
 ): Promise<boolean> {
   const { error } = await supabase

@@ -7,6 +7,14 @@ import CarryTransitionModal from './CarryTransitionModal'
 import RegroupTransitionModal from './RegroupTransitionModal'
 import RegroupGraduationModal from './RegroupGraduationModal'
 import {
+  resolveRegroupMode,
+  readRegroupStreak,
+  writeRegroupStreak,
+  updateStreak,
+  type RegroupHelperOverride,
+  type RegroupStreak,
+} from '@/utils/regroupMode'
+import {
   getProblemsPerPage,
   getTotalPages,
   getGridLayout,
@@ -49,6 +57,11 @@ export interface WorksheetViewProps {
   onPageStateChange?: (pageState: PageState) => void  // Callback when page state changes (for persistence)
   sessionActive: boolean
   supplementaryPractice?: SupplementaryPractice
+  /** Child id — keys the per-child adaptive regroup-mastery streak in localStorage. */
+  childId?: string
+  /** Parent override for subtraction regroup helpers (children.regroup_helper_mode).
+   *  'adaptive' (default) defers to mastery tracking; auto/manual/optional force a phase. */
+  regroupHelperOverride?: RegroupHelperOverride
 }
 
 export interface WorksheetViewRef {
@@ -277,44 +290,6 @@ function isManualCarryMode(level: string, worksheetNumber: number): boolean {
   return false
 }
 
-/**
- * Three-phase ramp for subtraction regrouping helpers:
- *
- *   'auto'     – animation demo. Tapping a column that needs a borrow auto-fills
- *                the regrouped row with "-1"/"+10" chips flying in. No input
- *                gating. Used early so the child sees what regrouping is.
- *   'manual'   – tap targets visible, child must tap to perform the regroup
- *                before entering the answer. Input + submit gated.
- *   'optional' – no tap targets, no chips, no gates. The child enters the
- *                answer directly; regrouping is performed mentally. The
- *                regrouped row only renders if some prior state populated it
- *                (e.g., session restore). This is the "graduation" mode.
- *
- * Level B 2-digit borrow (121-150):
- *   121-126 auto (6 sheets)  →  127-130 manual (4 sheets)  →  131-150 optional (20 sheets)
- *
- * Level B 3-digit borrow (161-200) — same proportions but on the larger range:
- *   161-166 auto  →  167-170 manual  →  171-200 optional
- *
- * Levels C+ inherit 'optional' by default; the regrouping concept is assumed
- * mastered. (If a child needs help later, they can use the existing hint
- * system, and we can add a per-child override toggle in a future pass.)
- */
-type RegroupMode = 'auto' | 'manual' | 'optional'
-
-function getRegroupMode(level: string, worksheetNumber: number): RegroupMode {
-  if (level === 'B') {
-    if (worksheetNumber >= 121 && worksheetNumber <= 126) return 'auto'
-    if (worksheetNumber >= 127 && worksheetNumber <= 130) return 'manual'
-    if (worksheetNumber >= 131 && worksheetNumber <= 150) return 'optional'
-    if (worksheetNumber >= 161 && worksheetNumber <= 166) return 'auto'
-    if (worksheetNumber >= 167 && worksheetNumber <= 170) return 'manual'
-    if (worksheetNumber >= 171 && worksheetNumber <= 200) return 'optional'
-    return 'optional'
-  }
-  return 'optional'
-}
-
 /** localStorage key for tracking whether the carry transition modal has been shown */
 const CARRY_MODAL_SHOWN_KEY = 'mindfoundry_carry_modal_shown'
 /** localStorage key for tracking whether the regroup transition modal has been shown */
@@ -340,6 +315,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   onPageStateChange,
   sessionActive,
   supplementaryPractice,
+  childId,
+  regroupHelperOverride,
 }, ref) => {
   const problemsPerPage = getProblemsPerPage(level, questionsPerPageMode)
   const totalPages = getTotalPages(level, questionsPerPageMode)
@@ -358,8 +335,18 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const [showCarryTransitionModal, setShowCarryTransitionModal] = useState(false)
   const [carryNudgeIndex, setCarryNudgeIndex] = useState<number | null>(null)
 
-  // Subtraction regroup helpers ramp: auto-demo → manual → optional
-  const regroupMode = getRegroupMode(level, worksheetNumber)
+  // Subtraction regroup helpers ramp: auto-demo → manual → optional.
+  // The phase is resolved from three inputs: the worksheet-number baseline, the parent
+  // override (children.regroup_helper_mode), and the child's adaptive mastery streak.
+  // The streak persists per child in localStorage; we seed component state from it on
+  // mount (WorksheetView is remounted per worksheet) and update it as pages resolve.
+  const [regroupStreak, setRegroupStreak] = useState<RegroupStreak>(() => readRegroupStreak(childId))
+  const regroupMode = resolveRegroupMode({
+    level,
+    worksheetNumber,
+    override: regroupHelperOverride,
+    streak: regroupStreak,
+  })
   const manualRegroup = regroupMode === 'manual'
   const autoRegroupDemo = regroupMode === 'auto'
   const [showRegroupTransitionModal, setShowRegroupTransitionModal] = useState(false)
@@ -384,6 +371,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       }
     }
   }, [manualCarry])
+
+  // Keep the adaptive streak in sync if the active child changes (re-read their history).
+  useEffect(() => {
+    setRegroupStreak(readRegroupStreak(childId))
+  }, [childId])
 
   // Show regroup transition modal on first encounter of manual regroup mode
   useEffect(() => {
@@ -893,6 +885,23 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         problemAttempts,
       })
 
+      // ── Adaptive regroup mastery tracking ──
+      // Fold each borrowing problem's FIRST-TRY result into the per-child streak.
+      // Only problems that actually require a borrow inform borrowing mastery — plain
+      // subtraction (no regroup) is skipped. Processed once, here at page resolution.
+      let nextStreak = regroupStreak
+      currentPageState.problems.forEach((problem, index) => {
+        if (problem.type !== 'subtraction' || problem.displayFormat !== 'vertical') return
+        const required = computeRequiredRegroups(problem)
+        const needsBorrow = required.adds.some(Boolean) || required.strikes.some(Boolean)
+        if (!needsBorrow) return
+        nextStreak = updateStreak(nextStreak, firstAttemptResults[index] === true)
+      })
+      if (nextStreak !== regroupStreak) {
+        setRegroupStreak(nextStreak)
+        writeRegroupStreak(childId, nextStreak)
+      }
+
       // Auto-advance if last page
       if (currentPage >= totalPages) {
         setTimeout(() => {
@@ -900,7 +909,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }, 1200)
       }
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer, manualCarry, manualRegroup])
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId])
 
   // Handle completing full teaching (locks the problem and shows answer)
   const handleTeachingComplete = useCallback(() => {
