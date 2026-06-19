@@ -340,32 +340,34 @@ export default function WorksheetProblem({
               const showTapTarget = manualRegroupMode && isActive && colNeedsRegroup && !colIsFilled
               const originalDigit = padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''
 
-              // What to display in the regrouped row for this column:
+              // What to display in the regrouped row for this column.
+              // `strike` is the main (ones) digit of the final value; `add` ("1") is the
+              // small place-value prefix shown ONLY when the final value is two-digit.
+              // Composing them always yields the correct value: "13", "9", "15", "1", "12".
               let display: React.ReactNode = null
-              if (strike) {
-                // Donor column (or chain) — show the reduced digit
-                display = (
-                  <span className="text-amber-600">{strike}</span>
-                )
-              } else if (add) {
-                // Receiver-only column — show "¹" + original digit (e.g. "¹3" → "13")
+              if (strike != null || add != null) {
                 display = (
                   <span className="text-amber-600 inline-flex items-baseline">
-                    <span className="text-[0.6em] leading-none mr-0.5">{add}</span>
-                    <span>{originalDigit}</span>
+                    {add != null && (
+                      <span className="text-[0.6em] leading-none mr-0.5">{add}</span>
+                    )}
+                    <span>{strike ?? originalDigit}</span>
                   </span>
                 )
               }
 
-              // Operation chip ("−1" for donor, "+10" for receiver-only).
-              // Shown briefly above the cell when auto-regroup just fired, so the child
-              // sees what operation was applied before the values become permanent.
-              const chipLabel = strike && !add
-                ? '−1'         // pure donor (gave 1 away)
-                : add && !strike
-                  ? '+10'      // pure receiver (got 10)
-                  : strike && add
-                    ? '+10 −1'  // chain: both received and donated
+              // Operation chip — derived from how the final value differs from the original
+              // digit, so it is correct even for across-zero chain columns (received +10 AND
+              // donated −1, netting a single-digit value like 9).
+              const finalValue = strike != null ? (add != null ? 10 : 0) + Number(strike) : null
+              const origValue = originalDigit !== '' ? Number(originalDigit) : null
+              const diff = finalValue != null && origValue != null ? finalValue - origValue : 0
+              const chipLabel = diff === 10
+                ? '+10'         // pure receiver
+                : diff === -1
+                  ? '−1'        // pure donor
+                  : diff > 0
+                    ? '+10 −1'  // chain: received and donated
                     : null
 
               return (

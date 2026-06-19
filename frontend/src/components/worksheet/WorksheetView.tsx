@@ -158,12 +158,24 @@ function computeCarries(problem: Problem, columns: (string | null)[]): (string |
 /**
  * Compute the required subtraction regroup annotations for a problem.
  *
- * Returns:
- *   - strikes[col] = replacement digit ("3" if col-digit was 4 and donated 1)
- *   - adds[col]    = "1" if the column received a +10 borrow (else null)
+ * The display model: each regrouped column shows its FINAL working value
+ * (after every borrow). A two-digit value (10-18) renders as a small "1"
+ * prefix + the ones digit; a single-digit value renders as just that digit.
  *
- * Handles chain borrows across zeros — e.g., 302 − 178 produces
- * strikes = [null, "9", "2"], adds = ["1", "1", null].
+ * Returns parallel arrays keyed by column (0 = ones):
+ *   - strikes[col] = the MAIN digit to show in the regrouped row
+ *                    (ones-part of the final value), or null if not regrouped.
+ *   - adds[col]    = "1" iff the final value is two-digit (the small prefix),
+ *                    else null.
+ *
+ * A column's final value = origDigit − (1 if it donated to the column below)
+ *                                    + (10 if it received a borrow).
+ * These combine correctly for every case:
+ *   245 − 156 → strikes=[ "5", "3", "1"], adds=["1","1",null]  → "1  13  15"
+ *               (ones 15, tens 4−1+10=13, hundreds 2−1=1)
+ *   302 − 178 → strikes=[ "2", "9", "2"], adds=["1",null,null] → "2   9  12"
+ *               (ones 12, tens 0+10−1=9 (single digit, NO prefix), hundreds 2)
+ *    43 −  18 → strikes=[ "3", "3", …],   adds=["1",null]       → "3  13"
  */
 function computeRequiredRegroups(problem: Problem): {
   strikes: (string | null)[]
@@ -182,24 +194,44 @@ function computeRequiredRegroups(problem: Problem): {
     botDigits.push(getDigitAtPlace(bot, i))
   }
 
-  const strikes: (string | null)[] = new Array(maxDigits).fill(null)
-  const adds: (string | null)[] = new Array(maxDigits).fill(null)
+  // Run the standard right-to-left borrowing algorithm, recording which columns
+  // DONATE (lend 1 down) and which RECEIVE (+10). `working` is the running top value.
+  const donated = new Array(maxDigits).fill(false)
+  const received = new Array(maxDigits).fill(false)
+  const working = [...topDigits]
 
   for (let col = 0; col < maxDigits - 1; col++) {
-    if (topDigits[col] < botDigits[col]) {
+    if (working[col] < botDigits[col]) {
+      // Walk up to the nearest column that can lend. Each zero column on the way
+      // both receives a borrow (+10) and passes one along (−1) — across-zero chain.
       let donor = col + 1
-      while (donor < maxDigits && topDigits[donor] === 0) {
-        topDigits[donor] = 9
-        strikes[donor] = '9'
-        adds[donor] = '1'
+      while (donor < maxDigits && working[donor] === 0) {
+        working[donor] += 10
+        received[donor] = true
+        working[donor] -= 1
+        donated[donor] = true
         donor++
       }
       if (donor < maxDigits) {
-        topDigits[donor] -= 1
-        strikes[donor] = String(topDigits[donor])
+        working[donor] -= 1
+        donated[donor] = true
       }
-      topDigits[col] += 10
+      working[col] += 10
+      received[col] = true
+    }
+  }
+
+  // Compose display arrays from the final value of each regrouped column.
+  const strikes: (string | null)[] = new Array(maxDigits).fill(null)
+  const adds: (string | null)[] = new Array(maxDigits).fill(null)
+  for (let col = 0; col < maxDigits; col++) {
+    if (!donated[col] && !received[col]) continue
+    const finalValue = topDigits[col] - (donated[col] ? 1 : 0) + (received[col] ? 10 : 0)
+    if (finalValue >= 10) {
       adds[col] = '1'
+      strikes[col] = String(finalValue - 10)
+    } else {
+      strikes[col] = String(finalValue)
     }
   }
 
