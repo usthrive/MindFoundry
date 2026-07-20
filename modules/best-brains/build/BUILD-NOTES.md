@@ -211,3 +211,142 @@ Module Interface Contract + TS domain types + Supabase `bb_` schema.
 `getPackDay(pack, day)`; packs regenerate per render — never persist them;
 sprint item realization from the sprint's GeneratorSpec; placement flow still
 unbuilt (DD5 walk); `/foundry` route + PracticeModulesPage card still owed.
+
+---
+
+## Increment 3 — child session flow (placement, weekly hub, daily practice) · 2026-07-19
+
+**Scope shipped:** `/foundry` routing shell + Flow 1 (placement), Flow 2 (weekly
+cycle: hub → lesson → guided), Flow 3 (daily practice: warm-up → practice →
+day-done), shared components, and the persistence service. Increment-4 surfaces
+(SprintGate/Run/Finish, PuzzleGrove, WeeklyCheck chain, TreasureChest, parent
+screens, PracticeModulesPage card) are warm "coming this week" route stubs.
+
+**Design inbound status:** `modules/best-brains/design/inbound/` was EMPTY at
+build time → screens are clean neutral Tailwind (theme tokens only — primary/
+secondary/surface/text-*; no hardcoded hex), semantic class groupings,
+presentational components (`components/`) split from containers (`screens/`)
+so the token/skin pass can restyle without rewrites.
+
+**Files (all under `frontend/src/modules/best-brains/` unless noted):**
+
+- `FoundryRoutes.tsx` — lazy route tree; mounted in `App.tsx` as `/foundry/*`
+  behind `ProtectedRoute` + `Suspense` (own chunk, ~246 kB incl. pack content).
+- `screens/FoundryLayout.tsx` — selected-child guard (→ `/select-child`),
+  `FoundrySessionProvider`, calm max-w-2xl canvas. `screens/FoundryIndex.tsx`
+  routes unenrolled → placement, enrolled → hub.
+- `session/FoundrySession.tsx` — loads enrollment + week state, regenerates the
+  pack via `generatePack(level, week, packSeed, contentVersion)` per mount
+  (never persisted), derives interaction band (level A→A, B/C→B, D/E→C; age
+  pre-placement), session clock for the dose cap.
+- `session/weekLogic.ts` — PURE: `deriveTiles` (daily-unlock law: first
+  not-done day is today IFF the previous day wasn't completed the same
+  calendar day → finishing early leaves tomorrow "resting"; no early unlock
+  path exists), `LESSON_KEY` Day-1 lesson gate, `sessionCapMinutes`
+  (short 5/standard 10/full 15, hard cap 15).
+- `copy.ts` — band-keyed microcopy: SCREEN-SPECS appendix H rows 1–15
+  verbatim (`COPY`), module strings in-voice (`MODULE_COPY`), rotating
+  specific confirms (`CONFIRMS`), miss openers (`MISS_OPENER`).
+- `answers.ts` — `checkAnswer(spec, given)` for the AnswerSpec validations
+  (manual-review → acknowledged ungraded), `tapOptionsFor` (band-A tap
+  options: answer + deterministic near-miss distractors, stable order).
+- `services/bbProgressService.ts` — `getEnrollment` / `enroll` (upsert from
+  PlacementResult), `getOrInitWeekState` (creates row with fresh pack_seed +
+  pinned CONTENT_VERSION; 23505-safe), `listWeekStates`,
+  `transitionWeekState` (validates WEEK_STATE_TRANSITIONS, throws on illegal
+  edges, stamps started/completed), `updateDayProgress` (JSONB merge),
+  `recordItemAttempt` (append-only; hint_rungs_used + error_tag; never throws
+  into the session).
+- Components: `WrenBubble` (band voice/decoration law, paired AudioButton),
+  `AudioButton` (ttsService browser voice, ≥48px, A-band autoplay),
+  `HintLadder` (rungs strictly in order, labels, fresh request per rung),
+  `AnchorPanel` (full/strategy-only/empty; slide-in; never the live item),
+  `BBScratchPad` (wraps existing ui/ScratchPad; session-scoped per-item stroke
+  store), `AnswerEntry` (band input law: choices tappable everywhere, A tap
+  options, B NumberPad, C typed; text-shaped validations typed at any band).
+- Screens: `PlacementWelcome` / `PlacementActivity` / `StartingPoint` /
+  `JourneyMap` / `ThisWeekHub` / `LessonRoom` / `GuidedPractice` / `WarmUp` /
+  `PracticePage` / `DayDone` / `ComingThisWeek` (stub).
+
+**Placement (how level+week are assigned):** adaptive walk over ladder A→B→C
+(the levels with entry-week content); start level from age (≤6 A, ≤8 B, else
+C); cluster = 5 exit-skill items from `generatePack(level, 1, walkSeed)
+.masteryCheck.formA`; ≥80% steps up, <50% steps down, else place here (DD5
+thresholds from constants); every answer gets the identical "Got it!" ack —
+right/wrong never shown; pause offer every 8 items; `StartingPoint` reveals
+strengths (catalog concept names of ≥60% clusters) + neutral letter, then
+writes `bb_enrollment` via `enroll()` with entryWeek=1.
+
+**Ambiguity resolutions / deferred (owed to increment 4):**
+
+- **Sprint realization from GeneratorSpec — DEFERRED** (SprintGate/Run/Finish
+  are increment-4 screens; the owed sprint-item realizer goes with them).
+- **Day 1 = Lesson → GuidedPractice → done** (Flow 2 step 4 verbatim; the
+  hub's "WarmUp or LessonRoom first" line resolved in favor of the flow doc).
+  Day-1 concept-echo pack items are therefore unserved in this increment —
+  increment 4 may fold them into warm-up rotation or a Day-1 practice slice.
+- **Day 5** = WarmUp → stub (PuzzleGrove/WeeklyCheck are increment 4); the
+  Day-5 tile is marked `partial` so the week cannot close without them
+  (dual-strand law holds).
+- Parking (2 interventions) records telemetry + warm copy and moves on; the
+  chest ritual itself is increment 4. A-band placement safety-exit (idle/
+  random-tap detection) and placement resume >7-days deferred with it.
+- Mid-level entry (front-block mastery → week 13) deferred until post-week-2
+  content exists; D/E join the placement ladder with their week-1 packs.
+- Offline/PWA answer queueing not wired (global edge rule) — service is
+  console-safe on failure but no local queue yet.
+
+**Verification:** `npx tsc --noEmit` clean; `npm run build` clean (pre-existing
+chunk warning only; FoundryRoutes is its own lazy chunk). Headless smoke
+(tsx): pack serving for A1/B1/C1/B2, deterministic regen, daily-unlock law
+(fresh week / same-day rest / next-day unlock), lesson gate, 15-min hard cap,
+checkAnswer matrix, tap-options-contain-answer — all pass (A1 day-2 has zero
+retrieval items by design: no earlier week exists; WarmUp skips an empty
+slice). Browser smoke via chrome-devtools MCP against `npm run dev`:
+`/foundry` + 9 child routes each load the lazy chunk and redirect
+unauthenticated to `/login` with zero console errors/warnings. No test
+account exists in .env/seed and none was created against the live DB —
+authenticated screen walk is owed to the first seeded QA pass.
+
+**LS1-R3 retrofit (adopted mid-increment from
+`research/phase2-gaps/DESIGN-DEFAULTS-ADDENDUM-LS1.md`):**
+
+- (a) Hint-ladder escalation discipline — DONE: `HintLadder` takes
+  `escalationLocked`; rung 1 opens freely (incl. miss auto-open) but rungs 2–3
+  require a genuine attempt since the last rung (`attemptedSinceRung` in
+  `PracticePage`); locked state shows a band-keyed "try it first" line, never
+  a dead end. Cited `LS1-R3(a)` at both sites.
+- (b) Post-reveal fix-it — DONE at increment 3's only bottom-out reveal site
+  (WarmUp miss path): bands B/C get an explain-back ("first step in your own
+  words", recorded as ungraded telemetry `explain-back: …`, with an "I said it
+  out loud instead" escape); band A re-enacts the same item once
+  (tap-to-choose re-attempt), closing warmly either way. Cited `LS1-R3(b)`.
+  OWED to increment 4: near-transfer variant items where the template surface
+  makes them cheap; the PracticePage bottom-out case (it parks after 2
+  interventions without revealing — reveal+fix-it there belongs to the
+  TreasureChest/reteach ritual).
+
+**Live authenticated smoke (chrome-devtools MCP, user session, child "test
+old child"):** full Flow 1 driven — PlacementWelcome (C-band voice) → 5-item
+C-cluster walk (NumberPad, identical "Got it." acks) → StartingPoint (Level C,
+2 strengths) → enroll → JourneyMap (24-stop C trail, "you are here", empty
+shelf, effort strip) → ThisWeekHub (concept card, Day 1 lit, Days 2–5
+resting) → LessonRoom (7 segments, dots disabled first-encounter, no skip) →
+pin moment → GuidedPractice (modeled tap-along; completion/prompted/
+independent exercised via the miss→park path) → DayDone (canonical B-band
+dose line + specific praise). Day-2 deep-link: WarmUp miss → reveal →
+"Let's fix it" → explain-back → PracticePage (page 1 of 2; rung-1 open →
+escalation LOCKED until attempt → unlocked after attempt; park copy on 2nd
+miss). Zero console errors/warnings throughout. Supabase verified read-only:
+bb_enrollment (level C, placement_result, strengths), bb_week_state
+(pack_seed pinned, content_version 1.0.0, state in_week, day_progress
+lesson+day-1 done), bb_item_attempts (placement day=NULL rows; day-1 guided
+rows; day-2 rows with error_tag procedure-slip/concept-misconception,
+hint_rungs_used=1, explain-back row). Fixes from the live walk: FoundryLayout
+grace window for the AuthContext children-restore race (full-page reload was
+bouncing to /select-child); GuidedPractice attemptNo reset on example
+advance.
+
+**Known limitation:** day screens trust the hub for the unlock law — a child
+deep-linking `/foundry/day/N/...` bypasses tile gating (hub is the only
+child-side entry; add a route-level guard with the increment-4 pass).

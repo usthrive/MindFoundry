@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
@@ -28,6 +29,9 @@ import ExamPrepPage from '@/pages/ExamPrepPage'
 import PracticeModulesPage from '@/pages/PracticeModulesPage'
 import SchoolHelpPage from '@/pages/SchoolHelpPage'
 import CohortPage from '@/pages/CohortPage'
+
+// Best Brains-inspired module ("Foundry Method") — lazy chunk, route base /foundry
+const FoundryRoutes = lazy(() => import('@/modules/best-brains/FoundryRoutes'))
 
 function App() {
   return (
@@ -168,6 +172,23 @@ function App() {
             element={
               <ProtectedRoute>
                 <ExamPrepPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Best Brains-inspired module (Foundry Method) */}
+          <Route
+            path="/foundry/*"
+            element={
+              <ProtectedRoute>
+                <Suspense
+                  fallback={
+                    <div className="flex min-h-screen items-center justify-center bg-background">
+                      <p className="text-lg text-gray-600">Setting up…</p>
+                    </div>
+                  }
+                >
+                  <FoundryRoutes />
+                </Suspense>
               </ProtectedRoute>
             }
           />
