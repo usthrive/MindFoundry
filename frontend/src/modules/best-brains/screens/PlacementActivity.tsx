@@ -73,6 +73,26 @@ export default function PlacementActivity() {
   const item = items[Math.min(itemIdx, items.length - 1)];
   const band = bandForLevel(level);
 
+  /**
+   * Terminal placement (C3 fix): settle at the highest level the child did NOT
+   * fail — cluster accuracy ≥ the step-down threshold (50%). A level scored
+   * below it was too hard and is never assigned, even when the walk stepped up
+   * into it and can no longer step back down (the level below is already
+   * visited, so `canDown` is false and the old code wrongly held at the failed
+   * level). Deterministic floor: if every tested cluster was failed, settle at
+   * the ladder floor (A) — the safest start, never a level the child failed.
+   *   e.g. pass A 5/5 → step up → fail B 0/5  ⇒ settle A (not B)
+   *        pass B 4/5 → step up → fail C 2/5  ⇒ settle B (not C)
+   */
+  function settleLevel(results: PlacementClusterResult[]): BBLevel {
+    const passed = results.filter((c) => c.accuracy >= PLACEMENT_STEP_DOWN_THRESHOLD);
+    if (passed.length === 0) return LADDER[0];
+    return passed.reduce(
+      (hi, c) => (LADDER.indexOf(c.level) > LADDER.indexOf(hi) ? c.level : hi),
+      passed[0].level,
+    );
+  }
+
   function finishWalk(all: PlacementClusterResult[], placed: BBLevel) {
     const result: PlacementResult = {
       placedLevel: placed,
@@ -110,8 +130,10 @@ export default function PlacementActivity() {
     setVisited((v) => [...v, level]);
 
     if (decision === 'hold') {
-      // <50% at the bottom of the ladder places at the safest level (A).
-      finishWalk(all, accuracy < PLACEMENT_STEP_DOWN_THRESHOLD && idx === 0 ? 'A' : level);
+      // C3: settle from the whole walk, never at `level` — a failed step-up
+      // (canDown blocked by the visited level below) must not place the child
+      // in the level they just failed.
+      finishWalk(all, settleLevel(all));
       return;
     }
     setLevel(LADDER[idx + (decision === 'step_up' ? 1 : -1)]);

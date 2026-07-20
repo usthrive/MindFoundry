@@ -40,11 +40,44 @@ export function useParentContext(): ParentContextValue {
   return ctx;
 }
 
+/**
+ * The calm load-failure affordance (P-1). Shown in place of the parent
+ * surfaces when the shared data fetch fails, so a transient network hiccup
+ * never masquerades as "your enrolled child hasn't started yet."
+ */
+function ParentLoadError({ onRetry }: { onRetry: () => Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  return (
+    <section className="mf-card-quiet flex flex-col gap-3 p-6 text-center">
+      <p className="text-[15px] font-semibold text-text-primary">Couldn't load this just now</p>
+      <p className="text-[13.5px] leading-relaxed text-text-secondary">
+        A brief connection hiccup — nothing about your child's week is lost. Give it another tap.
+      </p>
+      <button
+        type="button"
+        disabled={retrying}
+        onClick={async () => {
+          setRetrying(true);
+          try {
+            await onRetry();
+          } finally {
+            setRetrying(false);
+          }
+        }}
+        className="mf-btn-primary touch-manipulation disabled:opacity-60"
+      >
+        {retrying ? 'Trying…' : 'Try again'}
+      </button>
+    </section>
+  );
+}
+
 export default function FoundryParentLayout() {
   const { children: childList } = useAuth();
   const [loading, setLoading] = useState(true);
   const [enrollments, setEnrollments] = useState<Map<string, BBEnrollment>>(new Map());
   const [reportsByChild, setReportsByChild] = useState<Map<string, BBParentReport[]>>(new Map());
+  const [loadError, setLoadError] = useState(false);
 
   const childIds = childList.map((c) => c.id).join(',');
 
@@ -53,6 +86,7 @@ export default function FoundryParentLayout() {
     if (ids.length === 0) {
       setEnrollments(new Map());
       setReportsByChild(new Map());
+      setLoadError(false);
       setLoading(false);
       return;
     }
@@ -68,8 +102,13 @@ export default function FoundryParentLayout() {
       );
       setEnrollments(enr);
       setReportsByChild(reports);
+      setLoadError(false);
     } catch (e) {
+      // Distinguish a transient load failure from a genuine "not enrolled"
+      // state (P-1): surface a calm retry rather than letting downstream
+      // screens render an enrolled child as "not started yet".
       console.error('[bb] parent surface load failed', e);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -99,7 +138,7 @@ export default function FoundryParentLayout() {
               <WrenMark size={30} />
             </Link>
           </header>
-          <Outlet />
+          {loadError && !loading ? <ParentLoadError onRetry={refresh} /> : <Outlet />}
         </main>
       </div>
     </ParentContext.Provider>

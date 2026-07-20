@@ -250,28 +250,32 @@ export default function PracticePage() {
     attemptNo.current += 1;
     const missCount = misses + 1;
     setMisses(missCount);
-    if (missCount >= 2) {
-      if (rung >= 3) {
-        // LS1-R3(b): the ladder is exhausted — the answer appears with its
-        // reasoning (P8: only after rung 3 + a real attempt), and a fix-it
-        // step follows before the day continues.
-        const reasoning = item.hintLadder[item.hintLadder.length - 1] ?? '';
-        setFeedback({
-          kind: 'reveal',
-          text: `${MISS_OPENER[band]} ${reasoning} It comes to ${item.answer.value}.`,
-        });
-        return;
-      }
-      // Two interventions spent → park warmly, flow continues (§4.2 move-on rule).
+    // H1: the reveal fires after the LAST authored rung of THIS item's ladder
+    // plus one genuine attempt — never a hard-coded rung 3. Authored ladders
+    // are 1–3 rungs, so a fixed 3 made the reveal + fix-it dead code and the
+    // "answer after rung 3" caption unkeepable. The two-miss floor still keeps
+    // a single slip from ever bottoming out.
+    const maxRung = Math.min(3, item.hintLadder.length);
+    if (missCount >= 2 && rung >= maxRung) {
+      // LS1-R3(b): the ladder is exhausted — reveal the answer with its
+      // reasoning (P8: only after the top rung + a real attempt), then the
+      // fix-it step runs before the day continues. The item is left holding
+      // its misses so it re-serves warmly from the treasure chest (Flow 7).
       parkedTotal.current += 1;
-      setFeedback({ kind: 'parked', text: COPY.itemParked[band] });
+      const reasoning = item.hintLadder[item.hintLadder.length - 1] ?? '';
+      setFeedback({
+        kind: 'reveal',
+        text: `${MISS_OPENER[band]} ${reasoning} It comes to ${item.answer.value}.`,
+      });
       return;
     }
-    // Miss-triggered: hint ladder auto-opens at rung 1 (DD13; bare ✗ never renders).
-    if (rung === 0 && item.hintLadder.length > 0) {
-      setRung(1);
+    // Not yet at the top rung: this miss opens the next rung (the miss IS the
+    // genuine attempt that gates escalation, LS1-R3(a); the child may also open
+    // it from the ladder). Never a bare ✗ (DD13).
+    if (rung < maxRung) {
+      setRung(rung + 1);
       hintsUsedTotal.current += 1;
-      setAttemptedSinceRung(false); // LS1-R3(a): try with rung 1 before rung 2.
+      setAttemptedSinceRung(false); // LS1-R3(a): try with this rung before the next.
     }
     setFeedback({ kind: 'miss', text: MISS_OPENER[band] });
   }

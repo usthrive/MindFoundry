@@ -96,10 +96,10 @@ export default function SchoolSync() {
       <section className="mf-card-quiet p-5">
         <span className="mf-label mf-label-teal">What this does</span>
         <p className="mt-1.5 text-[14px] leading-relaxed text-text-secondary">
-          We'll lean {name}'s warm-ups toward overlapping skills when they exist — only concepts
+          We'll lean {name}'s warm-ups toward overlapping skills when they exist — only concepts{' '}
           {name} has already been taught here can be leaned into. The weekly ladder itself never
           reorders: if a school topic sits later on {name}'s trail, we won't rush to it, because
-          each rung is built on the one below. This note is optional, stored in plain words on
+          each rung is built on the one below. This note is optional, stored in plain words on{' '}
           {name}'s settings, and fades after about six weeks.
         </p>
       </section>

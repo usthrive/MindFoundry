@@ -106,7 +106,8 @@ export default function HintLadder({
         ))}
       {revealed > 0 && revealed < maxRung && (
         <p className="text-center text-[11.5px] text-text-secondary">
-          The answer only comes after rung 3 and one try — with the why.
+          {/* H1: the promised rung is this ladder's real last rung, not a fixed 3. */}
+          The answer only comes after rung {maxRung} and one try — with the why.
         </p>
       )}
     </div>

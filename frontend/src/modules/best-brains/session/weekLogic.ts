@@ -106,5 +106,13 @@ export function sessionCapMinutes(
  */
 export function isDayActionable(dayProgress: DayProgress, day: number, now: Date = new Date()): boolean {
   const { tiles } = deriveTiles(dayProgress, now);
-  return tiles[day] === 'today' || tiles[day] === 'partial';
+  const unlocked = tiles[day] === 'today' || tiles[day] === 'partial';
+  // C4 teach-first (P8): the first practice of a new concept is gated on the
+  // lesson. Day 1 is never actionable until the lesson + guided session marks
+  // the lesson done — closes the in-app-nav bypass to /foundry/day/1/practice
+  // on a fresh week. No resume/mid-week regression: reaching Day 2+ requires
+  // Day 1 done, which is stamped together with the lesson gate, so later days
+  // already satisfy isLessonComplete.
+  if (day === 1 && !isLessonComplete(dayProgress)) return false;
+  return unlocked;
 }

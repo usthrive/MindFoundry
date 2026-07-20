@@ -109,14 +109,48 @@ export default function GuidedPractice() {
     }
   }
 
-  function submitStep() {
-    if (!step.expected || !entry.trim()) return;
-    const correct = normalize(entry) === normalize(step.expected);
+  // C2 (band input law, P10): band A cannot type or read a step string, so its
+  // guided input is tap-the-count. Target = the step's own numeric result when
+  // it has one, else the example's cardinal answer (sequence steps like "5, 6,
+  // 7, 8" resolve to the count the child taps). Bands B/C keep typed entry.
+  function bandATarget(): number | null {
+    const s = Number(String(step.expected ?? '').trim());
+    if (Number.isInteger(s)) return s;
+    const a = Number(String(example.answer).trim());
+    return Number.isInteger(a) ? a : null;
+  }
+
+  function bandATiles(target: number): number[] {
+    const opts = new Set<number>([target]);
+    for (const d of [1, -1, 2, -2, 3]) {
+      if (opts.size >= 3) break;
+      const v = target + d;
+      if (v >= 0) opts.add(v);
+    }
+    // Deterministic order keyed on the step so tiles don't reshuffle (P2 calm).
+    let h = 0;
+    for (const ch of `${example.id}:${stepIdx}`) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return [...opts].sort(
+      (a, b) => (((a * 2654435761 + h) >>> 8) % 1000) - (((b * 2654435761 + h) >>> 8) % 1000),
+    );
+  }
+
+  function gradeGiven(given: string): boolean {
+    if (band === 'A') {
+      const t = bandATarget();
+      return t !== null && Number(given.trim()) === t;
+    }
+    return normalize(given) === normalize(step.expected ?? '');
+  }
+
+  function submitStep(given: string) {
+    if (!given.trim()) return;
+    const correct = gradeGiven(given);
     void recordItemAttempt({
       childId,
       packId: pack!.packId,
       itemId: example.id,
-      answer: entry,
+      answer: given,
       correct,
       hintRungsUsed: 0,
       attemptNo: attemptNo.current,
@@ -192,30 +226,58 @@ export default function GuidedPractice() {
 
       {needsInput && (
         <div className="rounded-3xl bg-surface p-5 shadow-sm">
-          <p className={cn('mb-3 text-text-primary', band === 'A' ? 'text-xl' : 'text-lg')}>{step.childDo}</p>
-          <form
-            className="flex gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              submitStep();
-            }}
-          >
-            <input
-              type="text"
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder="Your step"
-              aria-label="Your step"
-              className="min-h-[56px] flex-1 rounded-2xl border-2 border-gray-200 bg-white px-4 text-lg text-text-primary focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <button
-              type="submit"
-              disabled={!entry.trim()}
-              className="min-h-[56px] rounded-2xl bg-primary px-6 font-semibold text-white shadow-md hover:bg-primary-hover disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/40 touch-manipulation"
+          <div className="flex items-start gap-3">
+            <p className={cn('mb-3 flex-1 text-text-primary', band === 'A' ? 'text-xl' : 'text-lg')}>
+              {step.childDo}
+            </p>
+            {/* C2: band A cannot read — every instruction is audio-carried (P10). */}
+            {band === 'A' && <AudioButton text={step.childDo ?? ''} band={band} autoplay />}
+          </div>
+          {band === 'A' && bandATarget() !== null ? (
+            /* C2: band A is tap-first — no keyboard, no reading-gated entry (P10).
+               Tap the count; the tiles include the answer (band-A convention). */
+            <div className="flex flex-wrap justify-center gap-4">
+              {bandATiles(bandATarget()!).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => submitStep(String(opt))}
+                  aria-label={`Answer ${opt}`}
+                  className={cn(
+                    'flex h-20 w-20 items-center justify-center rounded-3xl bg-white text-3xl font-bold text-text-primary shadow-lg',
+                    'transition-all hover:scale-105 hover:bg-gray-50 active:scale-95',
+                    'focus:outline-none focus:ring-4 focus:ring-primary/40 touch-manipulation select-none',
+                  )}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <form
+              className="flex gap-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitStep(entry);
+              }}
             >
-              Check
-            </button>
-          </form>
+              <input
+                type="text"
+                value={entry}
+                onChange={(e) => setEntry(e.target.value)}
+                placeholder="Your step"
+                aria-label="Your step"
+                className="min-h-[56px] flex-1 rounded-2xl border-2 border-gray-200 bg-white px-4 text-lg text-text-primary focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <button
+                type="submit"
+                disabled={!entry.trim()}
+                className="min-h-[56px] rounded-2xl bg-primary px-6 font-semibold text-white shadow-md hover:bg-primary-hover disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/40 touch-manipulation"
+              >
+                Check
+              </button>
+            </form>
+          )}
         </div>
       )}
 

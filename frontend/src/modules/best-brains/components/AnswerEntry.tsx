@@ -37,6 +37,14 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
     setValue('');
   }, [item.id]);
 
+  // H2: clear the buffer the moment an answer is submitted, so a miss never
+  // leaves stale digits to merge into the next attempt (Maya's phantom "82…").
+  // Editing in progress is untouched — the buffer only clears on commit.
+  function submit(answer: string) {
+    onSubmit(answer);
+    setValue('');
+  }
+
   // --- Multiple choice (any band; oversized at A) --------------------------
   if (item.choices && item.choices.length > 0) {
     return (
@@ -102,7 +110,7 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
         className={cn('flex flex-col gap-3', className)}
         onSubmit={(e) => {
           e.preventDefault();
-          if (value.trim()) onSubmit(value);
+          if (value.trim()) submit(value);
         }}
       >
         <input
@@ -155,7 +163,7 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
         onBackspace={() => setValue((v) => v.slice(0, -1))}
         onClear={() => setValue('')}
         onSubmit={() => {
-          if (value.trim()) onSubmit(value);
+          if (value.trim()) submit(value);
         }}
         allowDecimal={item.answer.validation === 'equivalent-numeric'}
         allowFraction={item.answer.validation === 'equivalent-fraction'}

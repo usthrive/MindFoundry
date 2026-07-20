@@ -12,7 +12,7 @@
  * flow continues.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getPackDay } from '../generator/packGenerator';
@@ -43,6 +43,27 @@ export default function WarmUp() {
     if (!pack || !Number.isInteger(day) || day < 1 || day > 5) return [];
     return getPackDay(pack, day).items.filter((i) => i.isRetrieval);
   }, [pack, day]);
+
+  // C1: an empty warm-up slot (early weeks like the A1 origin carry 0 retrieval
+  // items — a01.ts QG-2 note) must never strand the child on a blank screen.
+  // Day 5 forwards to the Grove, which requires the day-5 slot banked first
+  // (PuzzleGrove guards on dayProgress['5']); do that write here, from an
+  // effect — never navigate() during render. Day ≤4 forwards declaratively in
+  // the render below (no side effect needed — PracticePage owns its progress).
+  const day5Forwarded = useRef(false);
+  useEffect(() => {
+    if (loading || !enrollment || !weekState || !pack) return;
+    if (day !== 5 || items.length > 0) return;
+    if (weekState.dayProgress['5']) return; // already banked → the render guard forwards
+    if (!isDayActionable(weekState.dayProgress, 5)) return;
+    if (day5Forwarded.current) return;
+    day5Forwarded.current = true;
+    void (async () => {
+      await updateDayProgress(weekState, '5', { state: 'partial', completedItemIds: [] });
+      await refreshWeekState();
+      navigate('/foundry/puzzle', { replace: true });
+    })();
+  }, [loading, enrollment, weekState, pack, day, items.length, refreshWeekState, navigate]);
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack || !Number.isInteger(day) || day < 2 || day > 5) {
@@ -80,10 +101,12 @@ export default function WarmUp() {
     navigate('/foundry/puzzle', { replace: true });
   }
 
-  // No retrieval slice (early weeks): straight onward.
+  // No retrieval slice (early weeks): never render blank (C1). Day ≤4 forwards
+  // declaratively to the core practice surface; day 5 is banked+forwarded by
+  // the effect above — show a safe placeholder, never null, meanwhile.
   if (items.length === 0) {
-    void goOnward();
-    return null;
+    if (day <= 4) return <Navigate to={`/foundry/day/${day}/practice`} replace />;
+    return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   }
 
   const item = items[Math.min(idx, items.length - 1)];

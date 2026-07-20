@@ -16,6 +16,7 @@ import {
   updateDayProgress,
 } from '../services/bbProgressService';
 import { sprintsUsedThisWeek } from '../session/sprintLogic';
+import { SPRINTS_PER_WEEK_MAX } from '../constants';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 
@@ -41,6 +42,7 @@ export default function SprintFinish() {
 
   const [lastCount, setLastCount] = useState<number | null | 'none'>(null);
   const [history, setHistory] = useState<number[]>([]);
+  const [thisOrdinal, setThisOrdinal] = useState<number | null>(null);
   const persisted = useRef(false);
 
   const count = results.filter((r) => r.correct).length;
@@ -52,6 +54,7 @@ export default function SprintFinish() {
     if (persisted.current || !weekState || !pack || !sprint || results.length === 0) return;
     persisted.current = true;
     const ordinal = sprintsUsedThisWeek(weekState.dayProgress) + 1;
+    setThisOrdinal(ordinal);
     void (async () => {
       try {
         const prior = await getSprintHistory(childId, pack.packId, sprint.id);
@@ -101,6 +104,18 @@ export default function SprintFinish() {
             ? { label: 'steady', line: `Same count as last time — steady hands. Automaticity is built exactly like this.` }
             : { label: 'wobbled', line: `Last time ${lastCount}, today ${count} — counts wobble; the you-versus-you game is long.` };
 
+  // A second sprint may remain this week (DD11 ≤2/week) and the parent hasn't
+  // opted out — offer it here, calm and opt-in. The PracticePage offer site
+  // only surfaces at the one day boundary, so without this the budgeted second
+  // run is UI-unreachable (S-10). Never at Level A. `thisOrdinal` is this run's
+  // ordinal (1 or 2), captured when the budget was booked, so the re-offer
+  // never flashes on the second run.
+  const canRunAgain =
+    thisOrdinal !== null &&
+    thisOrdinal < SPRINTS_PER_WEEK_MAX &&
+    enrollment.level !== 'A' &&
+    !enrollment.settings.sprintOptOut;
+
   return (
     <div className="flex min-h-[70vh] flex-col justify-center gap-6">
       <WrenBubble band={band} autoplay text={COPY.sprintEnd[band]} emotion="settled" />
@@ -126,6 +141,23 @@ export default function SprintFinish() {
               title={`${c}`}
             />
           ))}
+        </div>
+      )}
+
+      {canRunAgain && (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-center text-[13px] text-text-secondary">
+            {band === 'C'
+              ? 'Room for one more this week, if you feel like it — still just you versus you.'
+              : "There's room for one more this week, if you'd like — no pressure either way."}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/foundry/sprint', { replace: true, state: { day } })}
+            className="min-h-[48px] rounded-2xl border-2 border-primary bg-white px-5 text-base font-semibold text-primary hover:bg-primary-light focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+          >
+            Another two minutes
+          </button>
         </div>
       )}
 
