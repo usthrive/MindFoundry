@@ -412,6 +412,12 @@ export interface DayProgressEntry {
   completedItemIds?: string[];
   minutesSpent?: number;
   completedAt?: string;
+  /**
+   * First-attempt accuracy for the day's graded items, 0–100 (LS1-R5: the
+   * mastery stability rule reads this; the scoring RPC falls back to deriving
+   * it from bb_item_attempts for legacy rows). Never child-visible (P6).
+   */
+  accuracyPct?: number;
 }
 
 export type DayProgress = Record<string, DayProgressEntry>;

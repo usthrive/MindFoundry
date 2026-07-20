@@ -20,6 +20,8 @@ import type {
   DayProgress,
   DayProgressEntry,
   ErrorTag,
+  MasteryForm,
+  ParentSummarySeed,
   PlacementResult,
   WeekMasteryRecord,
   WeekMasteryState,
@@ -256,6 +258,157 @@ export interface RecordAttemptInput {
   /** 1–5 for daily work; null for placement / Form B / sprints. */
   day: number | null;
   errorTag?: ErrorTag;
+}
+
+/**
+ * Advance the enrollment pointer to the next week (WeekResolve "reveal next
+ * week" — the cycle turns; the hub paces days from there). Gates stay intact:
+ * callers only invoke this from a PASSED/FAST_TRACK week.
+ */
+export async function advanceToNextWeek(childId: string, nextWeek: number): Promise<void> {
+  const { error } = await supabase
+    .from('bb_enrollment')
+    .update({ current_week: Math.min(24, Math.max(1, nextWeek)) })
+    .eq('child_id', childId);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Mastery scoring (server-side RPC — the client can never write a verdict)
+// ---------------------------------------------------------------------------
+
+export interface MasteryAnswerInput {
+  itemId: string;
+  answer: string;
+  correct: boolean;
+  errorTag?: ErrorTag;
+}
+
+export interface MasteryScoreResult {
+  /** DD1 state the RPC transitioned the week into. */
+  state: WeekMasteryState;
+  scorePct: number;
+  /** Parent-facing verdict written to bb_parent_reports. */
+  verdict: 'passed' | 'one_more_round' | 'escalated';
+  /** LS1-R5: true when the check passed but a practice day held the verdict back. */
+  stabilityHold: boolean;
+}
+
+/**
+ * Score a mastery check server-side (SECURITY DEFINER RPC): the server
+ * recomputes the percent, applies DD1 + the LS1-R5 stability rule, writes the
+ * bb_week_state transition + mastery JSONB, and upserts the weekly parent
+ * report (E102 frame; verdict + % parent-only). A DB trigger rejects any
+ * client-side write of verdict states, so this call is the only path.
+ */
+export async function scoreMasteryCheck(
+  state: WeekState,
+  form: MasteryForm,
+  answers: MasteryAnswerInput[],
+  summarySeed: ParentSummarySeed,
+): Promise<MasteryScoreResult> {
+  const { data, error } = await supabase.rpc('bb_score_mastery_check', {
+    p_child_id: state.childId,
+    p_level: state.level,
+    p_week: state.week,
+    p_form: form,
+    p_answers: answers.map((a) => ({
+      itemId: a.itemId,
+      answer: a.answer.slice(0, 500),
+      correct: a.correct,
+      errorTag: a.errorTag ?? null,
+    })),
+    p_summary_seed: summarySeed,
+  });
+  if (error) throw error;
+  const row = data as { state: WeekMasteryState; score_pct: number; verdict: MasteryScoreResult['verdict']; stability_hold: boolean };
+  return {
+    state: row.state,
+    scorePct: row.score_pct,
+    verdict: row.verdict,
+    stabilityHold: row.stability_hold,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Sprints (DD11 — self-referenced history only, never a grade)
+// ---------------------------------------------------------------------------
+
+/**
+ * Correct-counts of this child's completed sprints of one sprint id, keyed by
+ * sprint ordinal (attempt_no convention, see session/sprintLogic.ts). Powers
+ * "you versus your own last time" and the C-band personal sparkline — this
+ * child only, by construction.
+ */
+export async function getSprintHistory(
+  childId: string,
+  packId: string,
+  sprintId: string,
+): Promise<number[]> {
+  const { data, error } = await supabase
+    .from('bb_item_attempts')
+    .select('attempt_no, correct')
+    .eq('child_id', childId)
+    .eq('pack_id', packId)
+    .like('item_id', `${sprintId}#%`)
+    .is('day', null);
+  if (error) throw error;
+  const byOrdinal = new Map<number, number>();
+  for (const row of data as Array<{ attempt_no: number; correct: boolean }>) {
+    if (row.correct) byOrdinal.set(row.attempt_no, (byOrdinal.get(row.attempt_no) ?? 0) + 1);
+    else if (!byOrdinal.has(row.attempt_no)) byOrdinal.set(row.attempt_no, 0);
+  }
+  return [...byOrdinal.entries()].sort((a, b) => a[0] - b[0]).map(([, count]) => count);
+}
+
+// ---------------------------------------------------------------------------
+// Treasure chest (parked items derived from the append-only attempt log)
+// ---------------------------------------------------------------------------
+
+export interface ParkedItemRef {
+  itemId: string;
+  missCount: number;
+  lastMissedAt: string;
+  errorTag?: ErrorTag;
+}
+
+/**
+ * Parked daily-practice items for a pack (Flow 7): an item is parked when it
+ * holds ≥2 misses, its latest attempt is still a miss, it re-parked at most
+ * twice (≥4 total misses folds the skill into warm-up rotation instead —
+ * never an ever-growing pile), and it isn't stale (>14 days silently retires).
+ * Mastery-check and sprint slots (MA/MB/FS/PZ) never park.
+ */
+export async function listParkedItems(childId: string, packId: string): Promise<ParkedItemRef[]> {
+  const { data, error } = await supabase
+    .from('bb_item_attempts')
+    .select('item_id, correct, error_tag, created_at')
+    .eq('child_id', childId)
+    .eq('pack_id', packId)
+    .order('created_at');
+  if (error) throw error;
+
+  const byItem = new Map<string, { misses: number; lastCorrect: boolean; lastAt: string; tag?: ErrorTag }>();
+  for (const row of data as Array<{ item_id: string; correct: boolean; error_tag: ErrorTag | null; created_at: string }>) {
+    if (!/-D\d-/.test(row.item_id)) continue; // daily slots only
+    const entry = byItem.get(row.item_id) ?? { misses: 0, lastCorrect: false, lastAt: row.created_at };
+    if (!row.correct) {
+      entry.misses += 1;
+      if (row.error_tag) entry.tag = row.error_tag;
+    }
+    entry.lastCorrect = row.correct;
+    entry.lastAt = row.created_at;
+    byItem.set(row.item_id, entry);
+  }
+
+  const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const parked: ParkedItemRef[] = [];
+  for (const [itemId, e] of byItem) {
+    if (e.misses >= 2 && e.misses < 4 && !e.lastCorrect && new Date(e.lastAt).getTime() >= cutoff) {
+      parked.push({ itemId, missCount: e.misses, lastMissedAt: e.lastAt, errorTag: e.tag });
+    }
+  }
+  return parked.sort((a, b) => a.itemId.localeCompare(b.itemId));
 }
 
 /** Append one attempt row. Fire-and-forget friendly: failures are logged, never thrown. */

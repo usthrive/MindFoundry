@@ -32,7 +32,7 @@ interface FoundrySessionValue {
   packUnavailable: boolean;
   /** Interaction band: from the placed level, or the child's age pre-placement. */
   band: InteractionBand;
-  /** Daily dose cap in minutes (settings-scaled, hard cap 15). */
+  /** Daily dose cap in minutes (settings-scaled under the LS1-R1 band hard cap 10/15/20). */
   capMinutes: number;
   /** Minutes elapsed in this browser session inside /foundry. */
   sessionMinutes: () => number;
@@ -112,7 +112,8 @@ export function FoundrySessionProvider({ children }: { children: ReactNode }) {
     !!enrollment && (!hasPackContent(enrollment.level, enrollment.currentWeek) || (!!weekState && !pack));
 
   const band: InteractionBand = enrollment ? bandForLevel(enrollment.level) : bandForAge(childAge);
-  const capMinutes = sessionCapMinutes(enrollment?.settings?.sessionLength);
+  // LS1-R1: the dose cap is age-banded (8/10, 12/15, 15/20 target/hard).
+  const capMinutes = sessionCapMinutes(enrollment?.settings?.sessionLength, band);
 
   const sessionMinutes = useCallback(
     () => (Date.now() - sessionStart.current) / 60000,

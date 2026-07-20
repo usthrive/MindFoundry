@@ -71,13 +71,51 @@ export const WEEK_STATE_TRANSITIONS: Record<WeekMasteryState, readonly WeekMaste
 /** Terminal "week is owned" states — both count as mastered, indistinguishable in warmth. */
 export const PASSED_STATES: readonly WeekMasteryState[] = ['passed', 'fast_track'];
 
+/** States inside the DD1 corrective loop (the hub shows the dual-thread line). */
+export const CORRECTIVE_STATES: readonly WeekMasteryState[] = ['near_miss_cycle1', 'cycle2'];
+
+/**
+ * LS1-R5 (DD1.1) — mastery stability rule: the weekly verdict considers week
+ * stability, not the check alone. Advance requires check ≥ MASTERY_THRESHOLD
+ * AND no completed practice day materially below 0.80. "Materially below" is
+ * implemented as first-attempt day accuracy < 75% (i.e., more than 5pp under
+ * the 80% stability line). Mirrored in the bb_score_mastery_check RPC — the
+ * SQL constant must match this one.
+ */
+export const STABILITY_MIN_PCT = 75;
+
 // ---------------------------------------------------------------------------
 // Daily dose & retention engine
 // ---------------------------------------------------------------------------
 
-/** Daily dose bounds in minutes (E12); 15 is a HARD CAP — no setting extends it (P1/E45). */
+/** Daily dose bounds in minutes (E12) — the CONTENT dose model (validator QG side). */
 export const DAILY_DOSE_MIN_MINUTES = 5;
 export const DAILY_DOSE_MAX_MINUTES = 15;
+
+/**
+ * LS1-R1 — age-banded session caps replace the flat 15-min cap:
+ * target/hard-cap = 8/10 min (band A, 4–6), 12/15 (band B, 6–9),
+ * 15/20 (band C, 9–12). The hard cap is un-extendable by any setting
+ * (P1/E45: "more isn't better here — consistency is").
+ */
+export const BAND_SESSION_CAPS: Record<'A' | 'B' | 'C', { target: number; hard: number }> = {
+  A: { target: 8, hard: 10 },
+  B: { target: 12, hard: 15 },
+  C: { target: 15, hard: 20 },
+};
+
+/**
+ * LS1-R2 — adaptive stop rule (v1 heuristic): two distinct fatigue signals in
+ * one session → warm early end; the concept resurfaces tomorrow (the day
+ * stays partial). Signals: rolling first-attempt accuracy < 0.6 over the last
+ * 5 items; ≥2 rapid guesses (<2s, wrong); hint ladder ridden to rung 3 on
+ * ≥2 consecutive items.
+ */
+export const FATIGUE_ROLLING_WINDOW = 5;
+export const FATIGUE_ACCURACY_FLOOR = 0.6;
+export const FATIGUE_RAPID_GUESS_MS = 2000;
+export const FATIGUE_RAPID_GUESS_COUNT = 2;
+export const FATIGUE_DEEP_HINT_STREAK = 2;
 /** Spaced-retrieval share of daily items (DD8 [DIVERGENCE]; QG-2). */
 export const RETRIEVAL_SHARE_MIN = 0.2;
 export const RETRIEVAL_SHARE_MAX = 0.3;

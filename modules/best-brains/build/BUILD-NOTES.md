@@ -350,3 +350,238 @@ advance.
 **Known limitation:** day screens trust the hub for the unlock law — a child
 deep-linking `/foundry/day/N/...` bypasses tile gating (hub is the only
 child-side entry; add a route-level guard with the increment-4 pass).
+*(Fixed in increment 4: `isDayActionable` route guards.)*
+
+---
+
+## Increment 4 — mastery engine, corrective loop, sprint, puzzle, treasure chest · 2026-07-19/20
+
+**Scope shipped:** server-side mastery scoring (SECURITY DEFINER RPC + DB
+guard trigger), the full Flow-6 mastery journey (WeeklyCheck → WeekResolve /
+StrengthenPlan → MicroReteach → FreshProblems, incl. fast-track, cycle-2 and
+escalation variants), Flow-5 sprints (gate/run/finish + item realizer),
+Flow-4 PuzzleGrove, Flow-7 TreasureChest (+ the weekly collection ritual),
+and the LS1 session-engine refinements R1/R2/R4/R5 + R3(b) completion.
+Design inbound still EMPTY → neutral-Tailwind conventions from increment 3.
+
+### T1 — server-side mastery scoring (`supabase/migrations/20260719000002_bb_mastery_rpc.sql`, APPLIED to live DB as `bb_mastery_rpc`)
+
+- **`bb_score_mastery_check(p_child_id, p_level, p_week, p_form, p_answers, p_summary_seed)`**
+  (SECURITY DEFINER, `search_path=public`, EXECUTE granted to `authenticated`
+  only): explicit child-ownership check (`children.user_id = auth.uid()`),
+  `FOR UPDATE` row lock, form/state legality (Form A only from
+  `in_week|mastery_check`, Form B only from `near_miss_cycle1|cycle2`),
+  server-side percent recompute, dominant-DD7-tag extraction (top 2),
+  DD1 routing verbatim (85/95/2-cycle) + **LS1-R5 stability rule**, mastery
+  JSONB attempt append (+ `finalScorePct` / `escalatedAt` +
+  `placementRecheckRequested`), `completed_at` stamp, and the
+  **`bb_parent_reports` upsert** (E102 four-field narrative assembled from
+  the pack's `parentSummarySeed` + computed fields; `strengthening` selected
+  by dominant tag from `strengtheningByTag`; verdict
+  passed/one_more_round/escalated; percent parent-only). Returns
+  `{state, score_pct, verdict, stability_hold}`.
+- **Enforcement (honest description):** the house RLS pattern legitimately
+  gives parents UPDATE on their children's `bb_week_state` rows
+  (day_progress writes), so a column-revoke would break the session flow.
+  Instead a **BEFORE UPDATE guard trigger** (`bb_week_state_guard`) rejects
+  ANY state change except `not_started→in_week` and `in_week→mastery_check`,
+  and ANY `mastery` JSONB write, unless the transaction-local `bb.rpc` flag
+  is set — which only the RPC does. Verified live: direct
+  `UPDATE ... SET state='passed'` and `SET mastery=...` both raise.
+  Maintenance edits need `SELECT set_config('bb.rpc','on',true)` in the same
+  transaction. `bb_parent_reports`: INSERT policy dropped + INSERT/UPDATE
+  privileges revoked; `authenticated` keeps a **column-level UPDATE grant on
+  `acknowledged_at` only** (the E15 acknowledge tap) — verified via
+  `information_schema.column_privileges`.
+- **Honest limit:** per-item `correct` flags are client-asserted (packs
+  regenerate deterministically client-side; items are never stored
+  server-side, so the server cannot re-derive answers). The RPC owns
+  aggregation, thresholds, stability, DD1 routing, the state write, and the
+  report. A forged sheet could inflate item flags but can never skip states,
+  change thresholds, or write `passed` directly.
+- LS1-R5 implementation detail: "no completed practice day materially below
+  0.80" = first-attempt accuracy < **75%** (`STABILITY_MIN_PCT`, mirrored in
+  SQL) on any DONE independent-practice day (days 2–4; Day 1 is
+  instructional). Source: `day_progress.accuracyPct` (now written by
+  PracticePage), fallback derivation from `bb_item_attempts`
+  (`attempt_no=1`, ≥3 rows so tiny samples never veto). A stability hold on
+  a ≥85% check routes to `near_miss_cycle1` with `stabilityHold: true` in
+  the attempt record (parent report says one_more_round; child sees the
+  normal warm StrengthenPlan).
+
+### T2 — WeeklyCheck / WeekResolve / corrective loop
+
+- `components/CheckRunner.tsx` — shared Form A/B surface: PracticePage dress,
+  one-in-focus, **no back**, feedback held (identical "Got it." ack per
+  item), strategy-card-only AnchorPanel (P7 exception), ScratchPad, no
+  timer; resume via sessionStorage (answered items stand — no
+  restart-scumming; best-effort, documented).
+- `WeeklyCheck` — framing line (row 11), `in_week→mastery_check` transition
+  on entry (client-legal edge), per-item attempts (day=5), submit → RPC →
+  routes passed→`/resolve`, near-miss→`/strengthen`; offline/transient
+  submit failure → warm offline-tally copy (row 12), answers stand.
+- `WeekResolve` — shelf add, canonical row 7 with the concept slot filled
+  (`weekPassedLine` — the spec's "Two-digit subtraction" is its worked
+  example; found rendering literally during the smoke and fixed), fast-track
+  credit (row 15), post-corrective warmth indistinguishable from first-pass,
+  next-week preview from the catalog, CTA → TreasureChest (collection
+  ritual). **Next-week reveal lives on the hub** and waits for the cycle to
+  turn (completedAt not today → "reveal" CTA advances
+  `bb_enrollment.current_week`; nothing extra unlocks the same day, P1).
+- `StrengthenPlan` — the one wobbly skill named from the dominant tag's
+  mistakeBank subtype; plan + non-stuck guarantee; cycle-2 "different angle"
+  line; escalation variant (live-teacher card + program-owned re-check
+  framing). No %, no "Review", no red.
+- `MicroReteach` — reteachPointer resolver (parses `script[N]` +
+  `guidedExamples/<id>` refs; prose pointers fall back to the modeled
+  example — worked-example first, always); cycle 2 = alternate bank entry
+  for the same tag when authored, else example-first presentation.
+- `FreshProblems` — Form B via CheckRunner (QG-4 disjointness honored by
+  never re-serving Form A surfaces), attempts day=NULL, attempt_no=cycle;
+  RPC routes fast_track/passed → resolve, cycle2/escalated → strengthen.
+- Hub: corrective dual-thread line ("This week: X · Still strengthening: Y"),
+  "one more round" CTA gated to the NEXT day (same-day rest per Flow 6's
+  "usually next day"); escalated card; passed settled state; chest count
+  badge (quiet number, no red).
+
+### T3 — sprint (`generator/sprintItems.ts`, `session/sprintLogic.ts`, three screens)
+
+- `realizeSprintItems(sprint)` — deterministic (seeded sub-stream off
+  `generator.seed`), 10–30 items honoring `itemCount`; covers all six
+  registered sprint templates (`add_within_10_facts_v1`,
+  `numeral_writing_v1`, `add/sub_within_100_facts_v1`, fixture
+  `add_tens_2digit_v1`, `mult_facts_v1`) with surface-freshness within a run.
+- Offer law (`sprintEligible`): pack sprint non-null ∧ today =
+  `scheduledDay` ∧ Level B+ ∧ `settings.sprintOptOut` false ∧ <2 done this
+  week ∧ not declined today. Offer site = PracticePage page boundary.
+- `SprintGate` — three facts before any start control, skill named as old,
+  equal-weight "Let's go"/"Not today", first-ever demystifier; decline =
+  localStorage same-day flag only (nothing stored server-side, nothing
+  shown, P11); re-guards on deep link.
+- `SprintRun` — soft filling arc (no numerals/ticking/red), wrong answers
+  simply advance, "done for now" always visible, interruption (unmount)
+  discards silently and never spends the budget; timer end → finish.
+- `SprintFinish` — persists ONLY here (partial counts fine): attempt rows
+  `item_id = <sprintId>#<nn>` (the `-FS-` infix marks sprint telemetry),
+  `day NULL`, **`attempt_no` = sprint ordinal within the week** (chosen
+  convention — makes you-vs-you queryable); budget entry in `day_progress`
+  under `sprint-1|2`; self-referenced compare (improved/steady/wobbled/
+  first-ever) + C-band personal sparkline.
+
+### T4 — PuzzleGrove + TreasureChest
+
+- `PuzzleGrove` — serves the Day-5 noncomputational page items (DD3's Day-5
+  slice, unserved in increment 3) then the featured `pack.puzzle` under the
+  Grove mark; qualitative Ms. Wren close (strategy talk, never a score);
+  manual-review acknowledged ungraded; park option ("brain marinating") —
+  the Day-5 tile stays partial until the puzzle closes the week (WeeklyCheck
+  marks day 5 done only when the puzzle id is in completedItemIds);
+  available during corrective weeks (DD1); band-A "show a grown-up" card
+  from `teacherNoteStrip`.
+- `TreasureChest` — parked items DERIVED from the append-only attempt log
+  (`listParkedItems`: ≥2 misses, latest still a miss, <4 total misses =
+  re-park max twice then folds to warm-up rotation, >14 days silently
+  retires; daily `-D#-` slots only); DD7-tag routing (misconception → bank
+  gloss FIRST then re-attempt; slip/misread/comprehension → oriented
+  re-attempt with the located step); resolution praise names the move;
+  PLUS the weekly collection: mastered concept cards from passed/fast_track
+  week states (quiet, no points/confetti — the WeekResolve ritual target).
+  *Fresh-isomorph re-attempt after a chest reteach is a same-item re-attempt
+  in v1 (template instantiators aren't exposed outside the builders) —
+  increment 5 owes the true isomorph regeneration.*
+
+### T5 — LS1 session-engine refinements (all cited in code)
+
+- **R1 age-banded caps** — `BAND_SESSION_CAPS` target/hard 8/10 (A), 12/15
+  (B), 15/20 (C); `sessionCapMinutes(setting, band)` (short 5 / standard
+  target / full hard, hard un-extendable); FoundrySession passes the band.
+- **R2 adaptive stop** — signals: rolling first-attempt accuracy <0.6 over
+  last 5; ≥2 rapid wrong answers <2s; ladder ridden to rung 3 on ≥2
+  consecutive items. TWO distinct signals, checked between items only →
+  warm early DayDone variant (`adaptiveStop` copy), day stays partial so
+  the concept resurfaces tomorrow.
+- **R4 retrieval ramp** — `CONTENT_VERSION` bumped to **1.1.0**;
+  version-gated post-pass `applyRetrievalRamp` in packGenerator relocates
+  Day 1's last retrieval warm-up to Day 5 (re-minted D5 id): template weeks
+  now run D1 20% → D5 40% retrieval (was 33% → 25%), pack-wide share
+  unchanged so QG-2 holds; per-day counts stay in QG-8 bounds; fixtures
+  verbatim; learners pinned at 1.0.0 regenerate their original packs
+  byte-identically (verified). `bb-verify-packs` green (423 assertions).
+- **R5** — see T1 (verdict = check ≥85 AND week stability);
+  `DayProgressEntry.accuracyPct` written by PracticePage (merged over
+  partial visits).
+- **R3(b) completion** — PracticePage bottom-out site: with the ladder at
+  rung 3, a second miss now REVEALS the answer with the rung-3 reasoning
+  (P8: only after 3 rungs + real attempts) and routes into fix-it:
+  `nearTransferVariant` (session/fixit.ts — deterministic operand-shifted
+  variant when the surface is simple arithmetic) or explain-back otherwise;
+  both close warmly and advance. Below rung 3 the §4.2 two-intervention park
+  is unchanged.
+- **Route-level day-unlock guard** (increment-3 bug) — `isDayActionable`
+  enforced in WarmUp + PracticePage; every mastery screen re-guards on the
+  DD1 state; SprintGate re-guards eligibility; Day-5 re-entry forwards to
+  the Grove instead of replaying warm-ups.
+
+### Verification
+
+- `npx tsc --noEmit` clean; `npm run build` clean (pre-existing chunk
+  warning only); `npx tsx scripts/bb-verify-packs.ts` — 423 assertions,
+  0 failures (generator changed: ramp + version bump).
+- Migration applied via MCP `apply_migration` as `bb_mastery_rpc`; verified:
+  RPC present + SECURITY DEFINER (pg_proc), guard trigger enabled
+  (pg_trigger), column grant exactly `acknowledged_at` — and both illegal
+  writes raise (live negative test).
+- **Live authenticated smoke** (chrome-devtools MCP, user session, test
+  child "test old child", Level C week 1, content pinned 1.0.0): Day-3
+  chain — hub (chest badge "1" from real increment-3 telemetry) → WarmUp →
+  PracticePage p1 → **SprintGate at the page boundary** (three facts,
+  first-ever line) → SprintRun (4 answered, early exit) → SprintFinish
+  (count 4, first-ever framing; FS rows + sprint-1 budget verified in DB) →
+  resume-at-item p2 → DayDone (praise line, accuracyPct 100 persisted).
+  Day-5 chain — WarmUp → PuzzleGrove (3 page items + featured puzzle,
+  qualitative close, park control present) → WeeklyCheck (row-11 framing,
+  identical acks, no back) with 4/6 → **RPC verdict near_miss_cycle1
+  (67%)** → StrengthenPlan naming "digit vs value" → DB: mastery attempt
+  {A, 0, 67, tags [concept-misconception, representation-misread]}, report
+  verdict one_more_round percent 67, strengthening text selected by tag →
+  hub dual-thread + next-day rest (attempt rewound to yesterday via
+  flagged SQL) → "one more round" CTA → MicroReteach (script segment +
+  guided example) → FreshProblems 6/6 → **RPC verdict fast_track**,
+  finalScorePct 100, completed_at set, report flipped to passed/100 →
+  WeekResolve (fast-track credit, next-week preview) → TreasureChest
+  (collection card + parked misconception item: bank gloss → re-attempt →
+  resolution praise; badge cleared) → hub settled passed state with NO
+  same-day reveal (P1). Zero console errors/warnings.
+  **Both verdict ends driven** (one_more_round + passed-via-fast-track);
+  not driven live: plain Form-A pass, cycle-2/escalation, stability-hold
+  (logic SQL-reviewed; hold needs a low-accuracy day + ≥85 check).
+- Smoke DB mutations (test child 453ec35a… ONLY, bb_week_state.day_progress
+  + mastery timestamp): day-1 completedAt rewound to yesterday; days 2 & 4
+  marked done (yesterday, accuracyPct 100, plausible completedItemIds);
+  day-3 completedAt rewound after the live run; mastery attempts[0]
+  attemptedAt rewound (with the bb.rpc flag). No Kumon tables touched.
+
+### Known limitations / owed to increment 5
+
+- **Parent screens + PracticeModulesPage module card** (increment 5 scope):
+  ParentWelcome/PlacementStory/ParentHome/WeeklyReport (report READING +
+  acknowledge tap — rows exist and are written by the RPC now)/
+  ReportHistory/TrendsView/MasteryMap/PatternsView/CoachCorner/SchoolSync/
+  ParentControls (incl. LS1-R1 band-cap copy + sprint opt-out + session
+  length; settings currently defaults-only).
+- Escalation aftermath: `escalated` state renders the card, but live-teacher
+  queue state + placement re-check launch (Flow 1 re-check variant) are not
+  wired; `escalated→passed` resolution path unbuilt.
+- Chest fresh-isomorph after reteach (see T4); C-band "what tricked me"
+  note; chest offered by Ms. Wren at session start (currently hub-entry
+  only).
+- Check resume is sessionStorage-only (a reload mid-check on another device
+  restarts unanswered items; answered items still stand via the log rules
+  only client-side). Offline answer queueing still unbuilt (global edge).
+- Sprint personal best is within-week (attempt_no ordinal per pack);
+  cross-week same-skill history needs more content + a skill-keyed query.
+- Accelerated mode ignores `weekRevealDay`; reveal is simply next-calendar-
+  day after a pass. LS1-R6 bounded choice still post-MVP.
+- `ComingThisWeek.tsx` no longer routed (kept for possible reuse).
+- Day-1 non-retrieval concept-echo items remain unserved (Day 1 = lesson +
+  guided); one former Day-1 warm-up now serves on Day 5 via the R4 ramp.

@@ -178,6 +178,78 @@ export const MODULE_COPY = {
     B: 'A little help?',
     C: 'Hint',
   } as BandCopy,
+  /** PuzzleGrove open — the week's one non-computational page (DD12). */
+  puzzleOpen: {
+    A: 'Puzzle time! This one is for playing.',
+    B: 'Back to the Grove! A puzzle about this week\'s idea.',
+    C: 'The Grove page — this is where you get to be the teacher.',
+  } as BandCopy,
+  /** PuzzleGrove qualitative close (strategy talk, never a score). */
+  puzzleClose: {
+    A: 'What a good puzzle brain!',
+    B: 'You tried a strategy, checked it, and stuck with it — that\'s real puzzle work.',
+    C: 'You reasoned it through instead of guessing — exactly the point of the Grove.',
+  } as BandCopy,
+  /** PuzzleGrove park option ("brain marinating"). */
+  puzzlePark: {
+    A: 'We can let it rest and come back!',
+    B: 'Brain marinating — we can come back after the check.',
+    C: 'Let it marinate — we can return after the check.',
+  } as BandCopy,
+  /** WeeklyCheck submit-in-flight. */
+  checkTallying: {
+    A: 'Counting up your great work…',
+    B: 'Tallying your week…',
+    C: 'Scoring the check…',
+  } as BandCopy,
+  /** StrengthenPlan cycle-2 entry — a different angle promised. */
+  strengthenCycle2: {
+    A: 'Let\'s look at it a brand-new way!',
+    B: 'This time we\'ll look at it from a different angle — sometimes the second door opens easily.',
+    C: 'Round two, different angle. Same skill, new way in — that\'s how debugging works.',
+  } as BandCopy,
+  /** StrengthenPlan escalation variant — reinforcements, program-owned. */
+  strengthenEscalated: {
+    A: 'A real teacher friend wants to explore this with you!',
+    B: 'A real teacher from our team wants to look at this with you — that\'s an upgrade, not a problem.',
+    C: 'A teacher from our team is joining in. If the hill was too steep, that\'s ours to fix — not yours.',
+  } as BandCopy,
+  /** MicroReteach intro (worked example first). */
+  reteachIntro: {
+    A: 'Let\'s watch my favorite example again!',
+    B: 'Quick look at the sneaky step together — then brand-new problems.',
+    C: 'Two minutes on the one step that\'s fighting you — think of it as reading the bug report.',
+  } as BandCopy,
+  /** FreshProblems framing (Form B — brand-new by law). */
+  freshIntro: {
+    A: 'All-new problems, just for you!',
+    B: 'Brand-new problems — not the old ones. That would just test your memory of the pages.',
+    C: 'Brand-new problems — reusing the old ones would test your memory, not the skill.',
+  } as BandCopy,
+  /** LS1-R2 adaptive stop — warm early end, concept resurfaces tomorrow. */
+  adaptiveStop: {
+    A: 'Your brain worked SO hard. We finish tomorrow!',
+    B: 'Your brain did heavy lifting today — we\'ll finish fresh tomorrow. It will wait for you.',
+    C: 'That was real effort. We stop while it\'s still good — the rest holds until tomorrow.',
+  } as BandCopy,
+  /** Hub: corrective dual-thread line + reveal-next-week CTA. */
+  nextWeekReveal: {
+    A: 'A new adventure is ready!',
+    B: 'Ready for the next idea? The trail continues.',
+    C: 'Next concept is ready when you are.',
+  } as BandCopy,
+  /** TreasureChest empty settled moment. */
+  chestEmpty: {
+    A: 'The chest is empty — all caught!',
+    B: 'Chest\'s empty — every sneaky one caught. Nice.',
+    C: 'Log\'s clear. Every bug beaten.',
+  } as BandCopy,
+  /** TreasureChest opener. */
+  chestOpen: {
+    A: 'Let\'s open our treasure chest!',
+    B: 'Shall we catch yesterday\'s sneaky ones?',
+    C: 'The bug list — let\'s close some entries.',
+  } as BandCopy,
 } as const;
 
 /**
@@ -189,6 +261,18 @@ export const CONFIRMS: Record<InteractionBand, readonly string[]> = {
   B: ['That works — you lined the steps up.', 'Solid — the setup did the job.', 'Yes — you followed the model.'],
   C: ['Correct — clean setup.', 'Right — the method held.', 'Yes — exactly the strategy from the anchor.'],
 };
+
+/**
+ * Canonical row 7 with the concept slot filled: the spec's B-band string names
+ * "Two-digit subtraction" as its worked example — at runtime the actual owned
+ * concept takes that slot (same law as row 2's "generic slot — always filled
+ * with the specific move"; a line reusable for different weeks unedited would
+ * fail the P4 violation test).
+ */
+export function weekPassedLine(band: InteractionBand, conceptName: string): string {
+  if (band === 'B') return `${conceptName} is *yours* now. Up on the shelf it goes.`;
+  return COPY.weekPassed[band];
+}
 
 /** Miss opener (Acknowledge step of Acknowledge→Locate→Guide→Re-attempt; never a bare ✗). */
 export const MISS_OPENER: BandCopy = {

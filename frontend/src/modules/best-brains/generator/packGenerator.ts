@@ -24,8 +24,12 @@ import { buildB02 } from './templates/weeks/b02';
 import { buildC01 } from './templates/weeks/c01';
 import { buildC02 } from './templates/weeks/c02';
 
-/** Default content version stamped on template-generated packs. */
-export const CONTENT_VERSION = '1.0.0';
+/**
+ * Default content version stamped on template-generated packs.
+ * 1.1.0 — LS1-R4 retrieval ramp (see applyRetrievalRamp). Learners pinned at
+ * 1.0.0 keep regenerating their original packs (DD15 versioned pointers).
+ */
+export const CONTENT_VERSION = '1.1.0';
 
 type WeekBuilder = (packSeed: number, contentVersion: string) => WeeklyConceptPack;
 
@@ -81,7 +85,44 @@ export function generatePack(
       `No pack content for ${level} week ${week} (increment 2 covers: ${available})`,
     );
   }
-  return builder(packSeed, contentVersion);
+  const pack = builder(packSeed, contentVersion);
+  if (versionAtLeast(contentVersion, 1, 1)) applyRetrievalRamp(pack);
+  return pack;
+}
+
+function versionAtLeast(version: string, major: number, minor: number): boolean {
+  const m = version.match(/^(\d+)\.(\d+)/);
+  if (!m) return false;
+  const [vMajor, vMinor] = [Number(m[1]), Number(m[2])];
+  return vMajor > major || (vMajor === major && vMinor >= minor);
+}
+
+/**
+ * LS1-R4 — retrieval ramp across the week (contentVersion ≥ 1.1.0, template
+ * cells only; fixtures stay verbatim). The 1.0.0 authored day-mix is
+ * front-loaded (Day 1 ≈33% retrieval, Days 4–5 25%); the research default
+ * wants the retrieval share ramping ~20% → ~40% late-week instead. The
+ * cheapest QG-legal move: relocate Day 1's LAST retrieval warm-up to Day 5
+ * (re-minted into the D5 id slot). Result on the 2-retrieval Day-1 weeks:
+ * D1 1/5 (20%) · D2–3 1/6 · D4 1/4 · D5 2/5 (40%). Pack-wide share is
+ * unchanged, so the QG-2 20–30% gate still holds (QG gates win — a mix the
+ * gates can't absorb is logged and skipped, per the addendum); per-day item
+ * counts stay within the 3–8 structural bounds. Deterministic: no RNG draws.
+ */
+function applyRetrievalRamp(pack: WeeklyConceptPack): void {
+  const day1 = pack.days.find((d) => d.day === 1);
+  const day5 = pack.days.find((d) => d.day === 5);
+  if (!day1 || !day5) return;
+  const day1Retrieval = day1.items.filter((i) => i.isRetrieval);
+  // Only ramp when Day 1 keeps ≥1 warm-up and Day 5 stays within QG-8 bounds.
+  if (day1Retrieval.length < 2 || day5.items.length >= 8) return;
+  const moved = day1Retrieval[day1Retrieval.length - 1];
+  day1.items = day1.items.filter((i) => i !== moved);
+  const { level, week } = pack.identity;
+  day5.items = [
+    ...day5.items,
+    { ...moved, id: `${level}${week}-D5-${String(day5.items.length + 1).padStart(2, '0')}` },
+  ];
 }
 
 /**

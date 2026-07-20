@@ -20,6 +20,7 @@ import { COPY, CONFIRMS, MISS_OPENER } from '../copy';
 import { checkAnswer } from '../answers';
 import { recordItemAttempt, updateDayProgress } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
+import { isDayActionable } from '../session/weekLogic';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import AnswerEntry from '../components/AnswerEntry';
@@ -46,6 +47,15 @@ export default function WarmUp() {
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack || !Number.isInteger(day) || day < 2 || day > 5) {
     return <Navigate to="/foundry" replace />;
+  }
+  // Route-level day-unlock guard: deep links must not bypass tile gating
+  // (increment-3 known bug, fixed). Day-5 re-entry (warm-up already banked)
+  // forwards to the Grove instead of replaying the warm-ups.
+  if (day === 5 && weekState.dayProgress['5']) {
+    return <Navigate to="/foundry/puzzle" replace />;
+  }
+  if (!isDayActionable(weekState.dayProgress, day)) {
+    return <Navigate to="/foundry/hub" replace />;
   }
 
   if (!startedRef.current) {

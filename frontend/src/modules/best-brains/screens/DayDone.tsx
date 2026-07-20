@@ -7,13 +7,15 @@
  */
 
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { COPY } from '../copy';
+import { COPY, MODULE_COPY } from '../copy';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 
 interface DayDoneState {
   praise?: string;
   partial?: boolean;
+  /** LS1-R2: the adaptive stop ended the day early — warmer variant line. */
+  adaptive?: boolean;
 }
 
 export default function DayDone() {
@@ -52,7 +54,13 @@ export default function DayDone() {
       <WrenBubble
         band={band}
         autoplay
-        text={partial ? COPY.idleTimeout[band] : COPY.dayComplete[band]}
+        text={
+          partial
+            ? state.adaptive
+              ? MODULE_COPY.adaptiveStop[band] // LS1-R2 warm early-end variant
+              : COPY.idleTimeout[band]
+            : COPY.dayComplete[band]
+        }
         emotion="settled"
       />
 
