@@ -1,0 +1,497 @@
+/**
+ * WeeklyConceptPack validator — machine-checked quality gates QG-1..QG-10
+ * (QUESTION-GENERATOR-SPEC §3.6) plus the structural/schema constraints that
+ * TypeScript cannot express (packId/contentId regexes, count bounds,
+ * isRetrieval→retrievalSource, distractor errorTags, threshold consistency).
+ *
+ * Interpretations calibrated so the spec's own worked sample packs (§4,
+ * ported verbatim as fixtures) pass — the fixtures are normative:
+ *  - QG-1 duplicate surfaces: exact ordered operand tuple in the SAME format
+ *    class (item.type), among daily items <2 days apart, and within each
+ *    mastery form. Commuted/cross-format reuse is flagged only same-day.
+ *  - QG-3/QG-9 mistake-bank coverage applies to NON-retrieval items' choices
+ *    (retrieval items trap errors of their SOURCE week, whose bank lives in
+ *    that week's pack).
+ *  - QG-5 hint audit flags a rung that equals the answer, contains
+ *    "= <answer>", or contains the whole answer string (len ≥ 3). The
+ *    arithmetic audit recomputes answers via the template registry for
+ *    generated items with objective validations.
+ *  - QG-2 origin exception: Level A Week 1 is the curriculum-graph origin
+ *    (no earlier week exists), so a zero retrieval share is legal there only.
+ *  - §3.3 ramps: retrieval warm-ups must sit at difficulty ≤ 3 (the ordering
+ *    ramps are generation-side rules; the spec's worked packs themselves
+ *    deviate from a strict ordering reading, so they are not gated here).
+ */
+
+import type {
+  BBLevel,
+  PackDay,
+  PackItem,
+  WeekRef,
+  WeeklyConceptPack,
+} from '../types';
+import {
+  BB_LEVELS,
+  DAILY_DOSE_MAX_MINUTES,
+  DAILY_DOSE_MIN_MINUTES,
+  FAST_TRACK_PCT,
+  MASTERY_BAND_MAX_PCT,
+  MASTERY_BAND_MIN_PCT,
+  RETRIEVAL_SHARE_MAX,
+  RETRIEVAL_SHARE_MIN,
+  SPRINT_DURATION_SECONDS,
+  SPRINT_SOURCE_MIN_WEEKS_PRIOR,
+  WEEKS_PER_LEVEL,
+} from '../constants';
+import { getTemplate } from './templates/registry';
+import { commutedSignature, surfaceSignature } from './surface';
+
+export interface Violation {
+  /** Gate code: QG-1..QG-10 or S-* for structural/schema checks. */
+  gate: string;
+  /** JSON-path-ish locator inside the pack. */
+  path: string;
+  message: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  violations: Violation[];
+}
+
+// ---------------------------------------------------------------------------
+// Enums & regexes (mirror of the JSON schema)
+// ---------------------------------------------------------------------------
+
+const PACK_ID_RE = /^MFM-[A-E](2[0-4]|1[0-9]|[1-9])$/;
+const CONTENT_ID_RE = /^[A-E](2[0-4]|1[0-9]|[1-9])-(D[1-5]|GE|PZ|FS|MA|MB)-[0-9]{2}$/;
+const SEMVER_RE = /^[0-9]+\.[0-9]+\.[0-9]+$/;
+const CONCEPT_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+const ERROR_TAGS = new Set([
+  'fact-recall', 'procedure-slip', 'concept-misconception',
+  'representation-misread', 'task-comprehension',
+]);
+const ITEM_TYPES = new Set([
+  'computation', 'word-problem', 'representation', 'reasoning',
+  'error-analysis', 'classification', 'drawing', 'fluency',
+]);
+const VALIDATIONS = new Set([
+  'exact-numeric', 'equivalent-numeric', 'equivalent-fraction', 'number-sentence',
+  'choice-key', 'short-text-keyword', 'ordered-list', 'set', 'manual-review',
+]);
+const BANDS = new Set(['beginner', 'intermediate', 'transition', 'advanced']);
+const STRAND_TAGS = new Set([
+  'number-sense-counting', 'addition-subtraction', 'multiplication-division',
+  'decimals-fractions', 'probability-statistics', 'algebra-geometry',
+]);
+const PUZZLE_TYPES = new Set([
+  'logic', 'pattern', 'math-art', 'game', 'estimation', 'construction', 'error-analysis',
+]);
+const DAY_FOCUS_TEMPLATE = [
+  'concept-echo', 'fluency-application', 'fluency-application', 'word-problems', 'noncomputational',
+] as const;
+const FADE_ORDER: Record<string, number> = {
+  modeled: 0, completion: 1, prompted: 2, independent: 3,
+};
+
+/** Per-band per-item minutes: base + 0.25 × difficulty (+2.5 min/day overhead). */
+const BAND_MINUTES_BASE: Record<string, number> = {
+  beginner: 0.8, intermediate: 1.0, transition: 1.1, advanced: 1.2,
+};
+const DAY_OVERHEAD_MINUTES = 2.5;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function levelOrdinal(level: BBLevel): number {
+  return BB_LEVELS.indexOf(level);
+}
+
+function isStrictlyEarlier(src: WeekRef, level: BBLevel, week: number): boolean {
+  const so = levelOrdinal(src.level);
+  const po = levelOrdinal(level);
+  return so < po || (so === po && src.week < week);
+}
+
+/** Parse "3", "0.5", "3/4", "1 7/12" → numeric value (or null). */
+function numericValue(raw: string): number | null {
+  const s = raw.trim();
+  let m = /^(\d+)\s+(\d+)\/(\d+)$/.exec(s);
+  if (m) return Number(m[1]) + Number(m[2]) / Number(m[3]);
+  m = /^(\d+)\/(\d+)$/.exec(s);
+  if (m) return Number(m[1]) / Number(m[2]);
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
+  return null;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+interface LocatedItem {
+  item: PackItem;
+  path: string;
+  /** 1–5 for daily items; 5 for mastery forms. */
+  day: number;
+  section: 'daily' | 'formA' | 'formB';
+}
+
+// ---------------------------------------------------------------------------
+// The validator
+// ---------------------------------------------------------------------------
+
+export function validatePack(pack: WeeklyConceptPack): ValidationResult {
+  const v: Violation[] = [];
+  const add = (gate: string, path: string, message: string) => v.push({ gate, path, message });
+
+  const { level, week } = pack.identity;
+  const idPrefix = `${level}${week}-`;
+
+  // --- S-SCHEMA / QG-10: identity, versioning, top-level shapes ------------
+  if (pack.schemaVersion !== '1.0') add('QG-10', 'schemaVersion', `schemaVersion must be "1.0", got "${pack.schemaVersion}"`);
+  if (!PACK_ID_RE.test(pack.packId)) add('QG-10', 'packId', `packId "${pack.packId}" fails pattern MFM-<Level><Week>`);
+  else if (pack.packId !== `MFM-${level}${week}`) add('QG-10', 'packId', `packId "${pack.packId}" does not match identity ${level}${week}`);
+  if (!SEMVER_RE.test(pack.contentVersion)) add('QG-10', 'contentVersion', `contentVersion "${pack.contentVersion}" is not semver`);
+  if (!BB_LEVELS.includes(level)) add('S-SCHEMA', 'identity.level', `invalid level "${level}"`);
+  if (!Number.isInteger(week) || week < 1 || week > WEEKS_PER_LEVEL) add('S-SCHEMA', 'identity.week', `week ${week} outside 1..${WEEKS_PER_LEVEL}`);
+  if (!CONCEPT_ID_RE.test(pack.identity.conceptId)) add('S-SCHEMA', 'identity.conceptId', `conceptId "${pack.identity.conceptId}" is not kebab-case`);
+  if (pack.identity.conceptName.length > 80) add('S-SCHEMA', 'identity.conceptName', 'conceptName exceeds 80 chars');
+  if (!BANDS.has(pack.identity.band)) add('S-SCHEMA', 'identity.band', `invalid band "${pack.identity.band}"`);
+  const tags = pack.identity.strandTags;
+  if (tags.length < 1 || tags.length > 3 || new Set(tags).size !== tags.length || tags.some((t) => !STRAND_TAGS.has(t))) {
+    add('S-SCHEMA', 'identity.strandTags', 'strandTags must be 1-3 unique valid strand labels');
+  }
+  for (const [i, ref] of pack.identity.prerequisiteWeeks.entries()) {
+    if (!BB_LEVELS.includes(ref.level) || ref.week < 1 || ref.week > WEEKS_PER_LEVEL) {
+      add('S-SCHEMA', `identity.prerequisiteWeeks[${i}]`, 'invalid week reference');
+    }
+  }
+  if (level === 'A' && pack.presentation?.audioFirst !== true) {
+    add('S-SCHEMA', 'presentation.audioFirst', 'Level A packs require presentation.audioFirst = true');
+  }
+
+  // --- Explanation / guided examples ---------------------------------------
+  const script = pack.explanation.script;
+  if (script.length < 2 || script.length > 6) add('S-SCHEMA', 'explanation.script', `script needs 2-6 segments, has ${script.length}`);
+  const vocab = pack.explanation.vocabulary;
+  if (vocab.length < 1 || vocab.length > 6) add('S-SCHEMA', 'explanation.vocabulary', `vocabulary needs 1-6 entries, has ${vocab.length}`);
+  const ges = pack.guidedExamples;
+  if (ges.length < 3 || ges.length > 5) add('S-SCHEMA', 'guidedExamples', `needs 3-5 guided examples, has ${ges.length}`);
+  let lastFade = -1;
+  ges.forEach((ge, i) => {
+    const p = `guidedExamples[${i}]`;
+    if (!CONTENT_ID_RE.test(ge.id) || !ge.id.startsWith(idPrefix) || !ge.id.includes('-GE-')) {
+      add('S-ID', `${p}.id`, `guided-example id "${ge.id}" must match ${level}${week}-GE-nn`);
+    }
+    const fade = FADE_ORDER[ge.fadeLevel];
+    if (i === 0 && ge.fadeLevel !== 'modeled') add('S-SCHEMA', `${p}.fadeLevel`, 'guided examples must start with a modeled example');
+    if (fade < lastFade) add('S-SCHEMA', `${p}.fadeLevel`, 'guided examples must be ordered by fade (modeled first)');
+    lastFade = Math.max(lastFade, fade);
+    if (ge.steps.length < 1 || ge.steps.length > 8) add('S-SCHEMA', `${p}.steps`, `needs 1-8 steps, has ${ge.steps.length}`);
+    ge.steps.forEach((s, j) => {
+      if (s.teacherSay === undefined && s.childDo === undefined) {
+        add('S-SCHEMA', `${p}.steps[${j}]`, 'step needs teacherSay and/or childDo');
+      }
+    });
+  });
+
+  // --- Days: structure + QG-8 template order --------------------------------
+  const days = pack.days;
+  if (days.length !== 5) add('QG-8', 'days', `pack must have exactly 5 days, has ${days.length}`);
+  const located: LocatedItem[] = [];
+  days.forEach((day: PackDay, di: number) => {
+    const p = `days[${di}]`;
+    if (day.day !== di + 1) add('S-SCHEMA', `${p}.day`, `day number ${day.day} at index ${di} (expected ${di + 1})`);
+    if (DAY_FOCUS_TEMPLATE[di] && day.focus !== DAY_FOCUS_TEMPLATE[di]) {
+      add('QG-8', `${p}.focus`, `Day ${di + 1} focus "${day.focus}" violates the DD3 template order (expected "${DAY_FOCUS_TEMPLATE[di]}")`);
+    }
+    if (day.pageCount < 1 || day.pageCount > 3) add('QG-6', `${p}.pageCount`, `pageCount ${day.pageCount} outside 1-3`);
+    if (day.items.length < 3 || day.items.length > 8) add('QG-6', `${p}.items`, `${day.items.length} items outside 3-8`);
+    if (day.teacherNoteStrip !== undefined && day.day !== 5) {
+      add('S-SCHEMA', `${p}.teacherNoteStrip`, 'teacherNoteStrip belongs on Day 5 only');
+    }
+    day.items.forEach((item, ii) => {
+      if (!item.id.includes(`-D${di + 1}-`)) {
+        add('S-ID', `${p}.items[${ii}].id`, `item id "${item.id}" must use the D${di + 1} slot`);
+      }
+      located.push({ item, path: `${p}.items[${ii}]`, day: di + 1, section: 'daily' });
+    });
+  });
+  const day5 = days[4];
+  if (day5) {
+    if (!day5.items.some((it) => it.strand === 'noncomputational')) {
+      add('QG-8', 'days[4]', 'Day 5 must carry the noncomputational strand (DD12 strand coupling)');
+    }
+    if (pack.identity.band === 'beginner' && !day5.teacherNoteStrip) {
+      add('S-SCHEMA', 'days[4].teacherNoteStrip', 'beginner-band packs require the Day-5 teacherNoteStrip (E57)');
+    }
+  }
+
+  // --- Mastery check ---------------------------------------------------------
+  const mc = pack.masteryCheck;
+  if (mc.passThresholdPct < MASTERY_BAND_MIN_PCT || mc.passThresholdPct > MASTERY_BAND_MAX_PCT) {
+    add('S-SCHEMA', 'masteryCheck.passThresholdPct', `passThresholdPct ${mc.passThresholdPct} outside DD1 band ${MASTERY_BAND_MIN_PCT}-${MASTERY_BAND_MAX_PCT}`);
+  }
+  if (mc.fastTrackPct !== FAST_TRACK_PCT) add('S-SCHEMA', 'masteryCheck.fastTrackPct', `fastTrackPct must be ${FAST_TRACK_PCT}`);
+  (['formA', 'formB'] as const).forEach((form) => {
+    const items = mc[form];
+    if (items.length < 6 || items.length > 10) add('S-SCHEMA', `masteryCheck.${form}`, `${form} needs 6-10 items, has ${items.length}`);
+    const slot = form === 'formA' ? '-MA-' : '-MB-';
+    items.forEach((item, i) => {
+      if (!item.id.includes(slot)) add('S-ID', `masteryCheck.${form}[${i}].id`, `id "${item.id}" must use the ${slot.slice(1, 3)} slot`);
+      located.push({ item, path: `masteryCheck.${form}[${i}]`, day: 5, section: form });
+    });
+  });
+  if (!mc.isomorphNotes.trim()) add('QG-4', 'masteryCheck.isomorphNotes', 'isomorphNotes must describe the per-index isomorph classes');
+
+  // --- Item-level structural checks (S-ITEM + QG-9 tag hygiene) -------------
+  const seenIds = new Set<string>();
+  const bankTags = new Set(pack.mistakeBank.map((m) => m.errorTag));
+  for (const { item, path } of located) {
+    if (!CONTENT_ID_RE.test(item.id)) add('S-ID', `${path}.id`, `item id "${item.id}" fails the contentId pattern`);
+    else if (!item.id.startsWith(idPrefix)) add('S-ID', `${path}.id`, `item id "${item.id}" does not carry the ${level}${week} prefix`);
+    if (seenIds.has(item.id)) add('S-ID', `${path}.id`, `duplicate item id "${item.id}"`);
+    seenIds.add(item.id);
+    if (!ITEM_TYPES.has(item.type)) add('S-SCHEMA', `${path}.type`, `invalid item type "${item.type}"`);
+    if (!Number.isInteger(item.difficulty) || item.difficulty < 1 || item.difficulty > 5) {
+      add('S-SCHEMA', `${path}.difficulty`, `difficulty ${item.difficulty} outside 1-5`);
+    }
+    if (item.hintLadder.length < 1 || item.hintLadder.length > 3) {
+      add('QG-5', `${path}.hintLadder`, `hint ladder needs 1-3 rungs, has ${item.hintLadder.length}`);
+    }
+    const et = item.errorTags;
+    if (et.length < 1 || et.length > 3 || new Set(et).size !== et.length || et.some((t) => !ERROR_TAGS.has(t))) {
+      add('QG-9', `${path}.errorTags`, 'errorTags must be 1-3 unique tags from the closed DD7 enum');
+    }
+    if (!VALIDATIONS.has(item.answer.validation)) add('S-SCHEMA', `${path}.answer.validation`, `invalid validation "${item.answer.validation}"`);
+    if (item.isRetrieval) {
+      if (!item.retrievalSource) add('QG-2', `${path}.retrievalSource`, 'isRetrieval=true requires retrievalSource');
+      if (item.difficulty > 3) add('S-RAMP', `${path}.difficulty`, `retrieval warm-up at difficulty ${item.difficulty} (must be ≤3, §3.3)`);
+    }
+    // Choices block
+    if (item.choices) {
+      if (item.answer.validation !== 'choice-key') add('S-SCHEMA', `${path}.answer.validation`, 'items with choices must validate as choice-key');
+      if (item.choices.length < 2 || item.choices.length > 6) add('S-SCHEMA', `${path}.choices`, `needs 2-6 choices, has ${item.choices.length}`);
+      const keys = item.choices.map((c) => c.key);
+      if (new Set(keys).size !== keys.length || keys.some((k) => !/^[A-F]$/.test(k))) {
+        add('S-SCHEMA', `${path}.choices`, 'choice keys must be unique letters A-F');
+      }
+      const correct = item.choices.filter((c) => c.isCorrect);
+      if (correct.length !== 1) add('S-SCHEMA', `${path}.choices`, `exactly one correct choice required, found ${correct.length}`);
+      if (correct.length === 1 && item.answer.value !== correct[0].key) {
+        add('QG-5', `${path}.answer.value`, `choice-key answer "${item.answer.value}" does not match the correct choice key "${correct[0].key}"`);
+      }
+      item.choices.forEach((c, ci) => {
+        if (!c.isCorrect) {
+          if (!c.errorTag) add('QG-3', `${path}.choices[${ci}]`, 'distractor is missing its DD7 errorTag');
+          if (!c.rationale) add('QG-3', `${path}.choices[${ci}]`, 'distractor is missing its rationale');
+          if (c.errorTag && !ERROR_TAGS.has(c.errorTag)) add('QG-9', `${path}.choices[${ci}]`, `invalid distractor errorTag "${c.errorTag}"`);
+          if (c.errorTag && !item.isRetrieval && !bankTags.has(c.errorTag)) {
+            add('QG-3', `${path}.choices[${ci}]`, `distractor tag "${c.errorTag}" is not covered by the pack's mistakeBank (QG-9)`);
+          }
+        }
+      });
+    } else if (item.answer.validation === 'choice-key') {
+      add('S-SCHEMA', `${path}.choices`, 'choice-key validation requires a choices block');
+    }
+  }
+
+  // --- QG-2: retrieval integrity --------------------------------------------
+  const dailyItems = located.filter((l) => l.section === 'daily');
+  const retrieval = dailyItems.filter((l) => l.item.isRetrieval);
+  for (const { item, path } of retrieval) {
+    const src = item.retrievalSource;
+    if (src) {
+      if (src.level === level && src.week === week) add('QG-2', `${path}.retrievalSource`, 'retrieval must never draw from the current week');
+      else if (!isStrictlyEarlier(src, level, week)) {
+        add('QG-2', `${path}.retrievalSource`, `retrieval source ${src.level}${src.week} is not strictly earlier than ${level}${week} (backward-only)`);
+      }
+    }
+  }
+  const share = dailyItems.length > 0 ? retrieval.length / dailyItems.length : 0;
+  const isCurriculumOrigin = level === 'A' && week === 1;
+  if (share > RETRIEVAL_SHARE_MAX + 1e-9) {
+    add('QG-2', 'days', `retrieval share ${(share * 100).toFixed(1)}% above ${RETRIEVAL_SHARE_MAX * 100}%`);
+  }
+  if (share < RETRIEVAL_SHARE_MIN - 1e-9 && !isCurriculumOrigin) {
+    add('QG-2', 'days', `retrieval share ${(share * 100).toFixed(1)}% below ${RETRIEVAL_SHARE_MIN * 100}% (only the A·W1 curriculum origin may run without warm-ups)`);
+  }
+  // Non-retrieval items must not dangle a retrievalSource-style styling as retrieval share.
+  for (const { item, path } of dailyItems) {
+    if (!item.isRetrieval && item.prompt.startsWith('Warm-up!')) {
+      add('QG-2', path, 'item styled as a warm-up must set isRetrieval=true');
+    }
+  }
+
+  // --- QG-1: duplicate surfaces ---------------------------------------------
+  const bySig = new Map<string, Array<{ day: number; path: string; section: string }>>();
+  for (const { item, path, day, section } of located) {
+    const sig = surfaceSignature(item);
+    if (!sig) continue;
+    const list = bySig.get(sig) ?? [];
+    list.push({ day, path, section });
+    bySig.set(sig, list);
+  }
+  for (const [sig, occ] of bySig) {
+    for (let i = 0; i < occ.length; i++) {
+      for (let j = i + 1; j < occ.length; j++) {
+        const a = occ[i];
+        const b = occ[j];
+        const bothDaily = a.section === 'daily' && b.section === 'daily';
+        const sameForm = a.section !== 'daily' && a.section === b.section;
+        if ((bothDaily && Math.abs(a.day - b.day) < 2) || sameForm) {
+          add('QG-1', b.path, `duplicate operand surface "${sig}" also at ${a.path} (${sameForm ? 'same mastery form' : '<2 days apart'})`);
+        }
+      }
+    }
+  }
+  // Same-day commuted reuse among daily items.
+  const byCommuted = new Map<string, Array<{ day: number; path: string; exact: string | null }>>();
+  for (const { item, path, day, section } of located) {
+    if (section !== 'daily') continue;
+    const csig = commutedSignature(item);
+    if (!csig) continue;
+    const list = byCommuted.get(csig) ?? [];
+    list.push({ day, path, exact: surfaceSignature(item) });
+    byCommuted.set(csig, list);
+  }
+  for (const [csig, occ] of byCommuted) {
+    for (let i = 0; i < occ.length; i++) {
+      for (let j = i + 1; j < occ.length; j++) {
+        if (occ[i].day === occ[j].day && occ[i].exact !== occ[j].exact) {
+          add('QG-1', occ[j].path, `same-day commuted operand reuse "${csig}" also at ${occ[i].path}`);
+        }
+      }
+    }
+  }
+
+  // --- QG-4: Form-B isomorph audit ------------------------------------------
+  if (mc.formA.length === mc.formB.length) {
+    mc.formA.forEach((a, i) => {
+      const b = mc.formB[i];
+      const p = `masteryCheck.formB[${i}]`;
+      if (a.type !== b.type) add('QG-4', p, `type "${b.type}" differs from formA[${i}] "${a.type}" (same isomorph class required)`);
+      if (a.difficulty !== b.difficulty) add('QG-4', p, `difficulty ${b.difficulty} differs from formA[${i}] ${a.difficulty}`);
+      if (a.generator && b.generator && a.generator.templateId !== b.generator.templateId) {
+        add('QG-4', p, `template "${b.generator.templateId}" differs from formA[${i}] "${a.generator.templateId}"`);
+      }
+      if (a.prompt === b.prompt) add('QG-4', p, 'formB prompt is identical to formA (fresh surface required)');
+      const sa = surfaceSignature(a);
+      const sb = surfaceSignature(b);
+      if (sa && sb && sa === sb) add('QG-4', p, `formB operand surface "${sb}" reuses formA[${i}]`);
+    });
+  } else {
+    add('QG-4', 'masteryCheck', `formA (${mc.formA.length}) and formB (${mc.formB.length}) must pair by index`);
+  }
+
+  // --- QG-5: answer + hint audit --------------------------------------------
+  const auditHints = (hints: readonly string[], answerValue: string, path: string, prompt: string) => {
+    const val = answerValue.trim();
+    if (!val) return;
+    // Items that display their candidate answers openly in the prompt
+    // (compare-the-given-options style) may legitimately reference them in hints.
+    const shownInPrompt = prompt.includes(val);
+    const eqRe = new RegExp(`=\\s*${escapeRegExp(val)}(?![\\d/])`);
+    hints.forEach((h, hi) => {
+      const leak =
+        h.trim() === val ||
+        (!shownInPrompt && (eqRe.test(h) || (val.length >= 3 && h.includes(val))));
+      if (leak) add('QG-5', `${path}.hintLadder[${hi}]`, `hint rung contains the item's literal answer ("${val}")`);
+    });
+  };
+  for (const { item, path } of located) {
+    auditHints(item.hintLadder, item.answer.value, path, item.prompt);
+    // Arithmetic re-check via the template registry.
+    if (item.generator) {
+      const tpl = getTemplate(item.generator.templateId);
+      if (tpl?.answerFor && ['exact-numeric', 'equivalent-numeric', 'equivalent-fraction', 'ordered-list'].includes(item.answer.validation)) {
+        let expected: string | null = null;
+        try {
+          expected = tpl.answerFor(item.generator.params);
+        } catch {
+          add('QG-5', `${path}.generator`, `template "${item.generator.templateId}" could not recompute the answer from params`);
+        }
+        if (expected !== null) {
+          let ok: boolean;
+          if (item.answer.validation === 'ordered-list') {
+            const norm = (s: string) => s.split(/[\s,;]+/).filter(Boolean).join(',');
+            ok = norm(expected) === norm(item.answer.value);
+          } else {
+            const ev = numericValue(expected);
+            const av = numericValue(item.answer.value);
+            ok = ev !== null && av !== null && Math.abs(ev - av) < 1e-9;
+          }
+          if (!ok) {
+            add('QG-5', `${path}.answer.value`, `arithmetic check failed: template "${item.generator.templateId}" computes ${expected}, pack says ${item.answer.value}`);
+          }
+        }
+      }
+    }
+  }
+  // Puzzle hints + structure
+  const pz = pack.puzzle;
+  if (!CONTENT_ID_RE.test(pz.id) || !pz.id.includes('-PZ-') || !pz.id.startsWith(idPrefix)) {
+    add('S-ID', 'puzzle.id', `puzzle id "${pz.id}" must match ${level}${week}-PZ-nn`);
+  }
+  if (!PUZZLE_TYPES.has(pz.puzzleType)) add('S-SCHEMA', 'puzzle.puzzleType', `invalid puzzleType "${pz.puzzleType}"`);
+  if (pz.hintLadder.length < 1 || pz.hintLadder.length > 3) add('QG-5', 'puzzle.hintLadder', 'puzzle hint ladder needs 1-3 rungs');
+  auditHints(pz.hintLadder, pz.answer.value, 'puzzle', pz.prompt);
+  if (pz.errorTags && (pz.errorTags.length < 1 || pz.errorTags.length > 3 || pz.errorTags.some((t) => !ERROR_TAGS.has(t)))) {
+    add('QG-9', 'puzzle.errorTags', 'puzzle errorTags must be 1-3 tags from the closed DD7 enum');
+  }
+
+  // --- QG-6: dose model ------------------------------------------------------
+  const base = BAND_MINUTES_BASE[pack.identity.band] ?? 1.0;
+  days.forEach((day, di) => {
+    const minutes =
+      DAY_OVERHEAD_MINUTES + day.items.reduce((acc, it) => acc + base + 0.25 * it.difficulty, 0);
+    if (minutes < DAILY_DOSE_MIN_MINUTES || minutes > DAILY_DOSE_MAX_MINUTES) {
+      add('QG-6', `days[${di}]`, `estimated dose ${minutes.toFixed(1)} min outside ${DAILY_DOSE_MIN_MINUTES}-${DAILY_DOSE_MAX_MINUTES} min`);
+    }
+  });
+
+  // --- QG-7: sprint legality -------------------------------------------------
+  const sprint = pack.fluencySprint;
+  if (level === 'A' && sprint !== null) add('QG-7', 'fluencySprint', 'Level A packs must carry fluencySprint = null (DD11)');
+  if (sprint) {
+    const p = 'fluencySprint';
+    if (!CONTENT_ID_RE.test(sprint.id) || !sprint.id.includes('-FS-') || !sprint.id.startsWith(idPrefix)) {
+      add('S-ID', `${p}.id`, `sprint id "${sprint.id}" must match ${level}${week}-FS-nn`);
+    }
+    if (sprint.durationSeconds !== SPRINT_DURATION_SECONDS) add('QG-7', `${p}.durationSeconds`, `sprint duration must be ${SPRINT_DURATION_SECONDS}s`);
+    if (sprint.selfReferenced !== true) add('QG-7', `${p}.selfReferenced`, 'sprint must be self-referenced');
+    if (sprint.graded !== false) add('QG-7', `${p}.graded`, 'sprint must be ungraded');
+    if (sprint.itemCount < 10 || sprint.itemCount > 30) add('QG-7', `${p}.itemCount`, `itemCount ${sprint.itemCount} outside 10-30`);
+    if (sprint.scheduledDay < 2 || sprint.scheduledDay > 3) add('QG-7', `${p}.scheduledDay`, `scheduledDay ${sprint.scheduledDay} must be 2 or 3`);
+    const src = sprint.sourceWeek;
+    const srcOrd = levelOrdinal(src.level);
+    const sameLevelTooClose = srcOrd === levelOrdinal(level) && src.week > week - SPRINT_SOURCE_MIN_WEEKS_PRIOR;
+    if (srcOrd > levelOrdinal(level) || sameLevelTooClose) {
+      add('QG-7', `${p}.sourceWeek`, `sprint source ${src.level}${src.week} must be mastered ≥${SPRINT_SOURCE_MIN_WEEKS_PRIOR} weeks before ${level}${week} (DD11)`);
+    }
+  }
+
+  // --- Mistake bank + parent seed -------------------------------------------
+  if (pack.mistakeBank.length < 3 || pack.mistakeBank.length > 10) {
+    add('S-SCHEMA', 'mistakeBank', `needs 3-10 entries, has ${pack.mistakeBank.length}`);
+  }
+  pack.mistakeBank.forEach((m, i) => {
+    if (!ERROR_TAGS.has(m.errorTag)) add('QG-9', `mistakeBank[${i}]`, `invalid errorTag "${m.errorTag}"`);
+    if (!m.description || !m.exampleWrongAnswer || !m.distractorRationale || !m.reteachPointer) {
+      add('S-SCHEMA', `mistakeBank[${i}]`, 'mistake-bank entry is missing required fields');
+    }
+  });
+  const seed = pack.parentSummarySeed;
+  if (seed.improvingCandidates.length < 2) add('S-SCHEMA', 'parentSummarySeed.improvingCandidates', 'needs ≥2 evidence slots (E102)');
+  if (seed.strengtheningByTag.length < 2) add('S-SCHEMA', 'parentSummarySeed.strengtheningByTag', 'needs ≥2 growth-area entries (E102)');
+  seed.strengtheningByTag.forEach((s, i) => {
+    if (!ERROR_TAGS.has(s.errorTag)) add('QG-9', `parentSummarySeed.strengtheningByTag[${i}]`, `invalid errorTag "${s.errorTag}"`);
+  });
+  if (!seed.homeFocus.praiseLine || !seed.homeFocus.questionForChild) {
+    add('S-SCHEMA', 'parentSummarySeed.homeFocus', 'homeFocus requires praiseLine and questionForChild');
+  }
+
+  return { valid: v.length === 0, violations: v };
+}

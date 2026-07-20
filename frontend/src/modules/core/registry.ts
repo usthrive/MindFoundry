@@ -17,6 +17,7 @@ import {
   BB_LEVEL_DISPLAY_NAMES,
   WEEKS_PER_LEVEL,
 } from '../best-brains/constants';
+import { CONCEPT_CATALOG } from '../best-brains/content/catalog';
 
 // ---------------------------------------------------------------------------
 // Kumon module (existing, live) — declarative description only
@@ -104,12 +105,17 @@ const bestBrainsModule: MindFoundryModule = {
       'Re-checkable after two failed corrective cycles (DD1).',
   },
   conceptCatalog(): ConceptRef[] {
-    // Filled in increment 2 from CURRICULUM-MAP.md (Level × Week concept tables).
-    return [];
+    // Increment 2: ported from CURRICULUM-MAP.md (5 levels × 24-week concept tables).
+    return CONCEPT_CATALOG.map((c) => ({
+      conceptId: c.conceptId,
+      conceptName: c.conceptName,
+      levelId: c.level,
+      position: c.week,
+    }));
   },
   sessionGenerator: {
     kind: 'weekly-pack-generator',
-    entry: 'frontend/src/modules/best-brains/generator', // built in increment 2
+    entry: 'frontend/src/modules/best-brains/generator', // generatePack(level, week, seed, contentVersion)
     deterministic: true, // seeded WeeklyConceptPack regeneration (templateId + params + seed)
   },
   progressSchema: {
