@@ -1,0 +1,6 @@
+# Transient test evidence — regenerable by the persona harness; kept out of git to avoid bloat.
+# The durable deliverables (personas/, harness/, fixtures, findings/, FINDINGS.md) ARE committed.
+screenshots/
+runs/
+harness/introspect.ts
+harness/*.tmp
