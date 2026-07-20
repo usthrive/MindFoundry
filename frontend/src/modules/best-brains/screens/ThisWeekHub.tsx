@@ -16,6 +16,7 @@ import { getCatalogWeek } from '../content/catalog';
 import { advanceToNextWeek, listParkedItems } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
+import WrenMark from '../components/WrenMark';
 import AnchorPanel from '../components/AnchorPanel';
 import type { DayTileState } from '../types';
 
@@ -25,16 +26,27 @@ function isToday(iso: string | undefined): boolean {
 }
 
 const TILE_LABELS: Record<DayTileState, string> = {
-  done: 'Done',
-  partial: 'Almost there',
-  today: 'Today',
-  locked: 'Resting',
+  done: 'done',
+  partial: 'almost',
+  today: 'today',
+  locked: 'resting',
 };
 
 export default function ThisWeekHub() {
   const navigate = useNavigate();
-  const { loading, enrollment, weekState, pack, packUnavailable, band, childId, ensureWeekStarted, refreshEnrollment } =
-    useFoundrySession();
+  const {
+    loading,
+    enrollment,
+    weekState,
+    pack,
+    packUnavailable,
+    band,
+    childId,
+    childName,
+    capMinutes,
+    ensureWeekStarted,
+    refreshEnrollment,
+  } = useFoundrySession();
   const [anchorOpen, setAnchorOpen] = useState(false);
   const [chestCount, setChestCount] = useState(0);
   const [revealing, setRevealing] = useState(false);
@@ -130,20 +142,49 @@ export default function ThisWeekHub() {
             ? `Week ${enrollment.currentWeek} begins with a lesson — come meet this week's idea.`
             : COPY.welcomeBack[band];
 
+  // The single primary action (P1/P2): today's actionable day, when one exists.
+  const actionableDay = todayDay !== null && !weekPassed ? todayDay : null;
+  const primaryCta =
+    actionableDay === null
+      ? null
+      : actionableDay === 1 && !lessonDone
+        ? "Start the lesson with Ms. Wren"
+        : `Start Day ${actionableDay}'s practice`;
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Concept card — kid-readable name + one-line why (P1). */}
-      <section aria-label="This week's concept" className="rounded-3xl bg-surface p-6 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-wide text-text-muted">
-          Week {enrollment.currentWeek}
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-text-primary">{pack.identity.conceptName}</h1>
-        <p className="mt-2 text-text-secondary">{pack.explanation.whyBeforeHow}</p>
+    <div className="flex flex-col gap-5">
+      {/* Header row per the reference: greeting + Level · Week + the Wren mark. */}
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="text-[21px] font-bold text-text-primary">Hi, {childName}</p>
+          <p className="text-[12.5px] tracking-[0.02em] text-text-secondary">
+            Level {enrollment.level} · Week {enrollment.currentWeek}
+          </p>
+        </div>
+        <WrenMark size={38} />
+      </header>
+
+      {/* Concept card — white, teal top-rule, one primary action inside (P1). */}
+      <section aria-label="This week's concept" className="mf-card flex flex-col gap-3 p-5">
+        {!weekState.startedAt && <span className="mf-chip self-start">New this week</span>}
+        <h1 className="text-[24px] font-bold leading-snug text-text-primary">{pack.identity.conceptName}</h1>
+        <p className="text-[15px] leading-relaxed text-text-secondary">{pack.explanation.whyBeforeHow}</p>
         {/* Corrective dual-thread line — matter-of-fact, never alarm (DD1/P6). */}
         {(corrective || escalated) && strengtheningSkill && (
-          <p className="mt-2 text-sm font-medium text-text-secondary">
-            This week: {pack.identity.conceptName} · Still strengthening: {strengtheningSkill}
+          <p className="text-[13px] text-text-secondary">
+            This week: {pack.identity.conceptName} · Still strengthening:{' '}
+            <span className="font-semibold" style={{ color: 'var(--mf-accent-deep)' }}>
+              {strengtheningSkill}
+            </span>
           </p>
+        )}
+        {primaryCta && (
+          <>
+            <button type="button" onClick={() => void openDay(actionableDay!)} className="mf-btn-primary mt-1 w-full">
+              {primaryCta}
+            </button>
+            <p className="text-center text-[13px] text-text-secondary">About {capMinutes} minutes</p>
+          </>
         )}
       </section>
 
@@ -180,8 +221,9 @@ export default function ThisWeekHub() {
         </button>
       )}
 
-      {/* Five day-tiles — today lit, done filled, future resting (never forbidding). */}
-      <section aria-label="This week's days" className="grid grid-cols-5 gap-2">
+      {/* Five day-tiles — done teal fill / active teal outline + apricot dot /
+          resting warm fill (never forbidding). Day labels, never weekday names (DD3). */}
+      <section aria-label="This week's days" className="flex gap-2">
         {[1, 2, 3, 4, 5].map((day) => {
           const state = tiles[day];
           const actionable = state === 'today' || state === 'partial';
@@ -193,17 +235,19 @@ export default function ThisWeekHub() {
               onClick={() => void openDay(day)}
               aria-label={`Day ${day}: ${TILE_LABELS[state]}`}
               className={cn(
-                'flex min-h-[88px] flex-col items-center justify-center gap-1 rounded-2xl border-2 p-2 transition-all touch-manipulation',
-                state === 'done' && 'border-secondary/30 bg-secondary-light text-secondary-700',
-                state === 'partial' &&
-                  'border-primary/40 bg-primary-light text-primary-700 hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary/40',
-                state === 'today' &&
-                  'border-primary bg-white text-text-primary shadow-md hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary/40',
-                state === 'locked' && 'border-gray-100 bg-gray-50 text-text-muted',
+                'mf-tile flex-1 transition-all touch-manipulation',
+                state === 'done' && 'mf-tile-done',
+                (state === 'today' || state === 'partial') &&
+                  'mf-tile-active hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary/40',
+                state === 'locked' && 'mf-tile-resting',
               )}
             >
-              <span className="text-lg font-bold">Day {day}</span>
-              <span className="text-xs font-medium">{state === 'done' ? '●' : TILE_LABELS[state]}</span>
+              <span className="text-sm font-bold">Day {day}</span>
+              {state === 'today' || state === 'partial' ? (
+                <span className="mf-tile-dot" aria-hidden="true" />
+              ) : (
+                <span className="mf-tile-sub">{state === 'locked' && day === 5 ? 'check day' : TILE_LABELS[state]}</span>
+              )}
             </button>
           );
         })}
@@ -213,41 +257,40 @@ export default function ThisWeekHub() {
         <p className="text-center text-sm text-text-muted">{MODULE_COPY.tileResting[band]}</p>
       )}
 
-      {/* Secondary affordances: anchor handle, lesson replay, map, chest. */}
-      <section aria-label="More" className="grid grid-cols-2 gap-3">
+      {/* Quiet action row per the reference: Anchor / Chest / Journey map. */}
+      <section aria-label="More" className="flex gap-2.5">
         <button
           type="button"
           onClick={() => setAnchorOpen(true)}
-          className="min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white px-4 font-medium text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
+          className="mf-btn-quiet flex flex-1 flex-col items-center justify-center gap-0.5 touch-manipulation"
         >
-          📌 This week's anchor
+          <span aria-hidden="true" style={{ color: 'var(--mf-primary)' }}>⌗</span>
+          Anchor
         </button>
         <Link
-          to="/foundry/map"
-          className="flex min-h-[56px] items-center justify-center rounded-2xl border-2 border-gray-200 bg-white px-4 font-medium text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
-        >
-          🗺️ My journey
-        </Link>
-        {lessonDone && (
-          <Link
-            to="/foundry/lesson"
-            className="flex min-h-[56px] items-center justify-center rounded-2xl border-2 border-gray-200 bg-white px-4 font-medium text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
-          >
-            ▶ Watch the lesson again
-          </Link>
-        )}
-        <Link
           to="/foundry/chest"
-          className="flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-4 font-medium text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
+          className="mf-btn-quiet flex flex-1 flex-col items-center justify-center gap-0.5 touch-manipulation"
         >
-          🧰 Treasure chest
-          {chestCount > 0 && (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-light text-xs font-semibold text-secondary-700">
-              {chestCount}
-            </span>
-          )}
+          <span aria-hidden="true" style={{ color: 'var(--mf-accent-deep)' }}>▣</span>
+          {chestCount > 0 ? `Chest · ${chestCount} waiting` : 'Chest'}
+        </Link>
+        <Link
+          to="/foundry/map"
+          className="mf-btn-quiet flex flex-1 flex-col items-center justify-center gap-0.5 touch-manipulation"
+        >
+          <span aria-hidden="true" style={{ color: 'var(--mf-primary)' }}>◔</span>
+          Journey map
         </Link>
       </section>
+
+      {lessonDone && (
+        <Link
+          to="/foundry/lesson"
+          className="mf-btn-quiet flex items-center justify-center touch-manipulation"
+        >
+          Watch the lesson again
+        </Link>
+      )}
 
       <AnchorPanel
         pack={pack}

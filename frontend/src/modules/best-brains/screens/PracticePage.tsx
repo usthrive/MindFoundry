@@ -349,30 +349,31 @@ export default function PracticePage() {
   return (
     <div className="flex min-h-[70vh] flex-col gap-5">
       <header className="flex items-center justify-between">
-        <p className="text-sm font-medium uppercase tracking-wide text-text-muted">
+        <p className="mf-label">
           Day {day} · page {page} of {pageCount}
         </p>
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setAnchorOpen(true)}
-            aria-label="Open this week's anchor"
-            className="flex h-12 min-w-[48px] items-center justify-center rounded-xl border-2 border-gray-200 bg-white px-3 text-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
-          >
-            📌
-          </button>
-          <button
-            type="button"
             onClick={() => setSoftStopped(true)}
             aria-label="Stop for today"
-            className="flex h-12 min-w-[48px] items-center justify-center rounded-xl border-2 border-gray-200 bg-white px-3 text-sm font-medium text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
+            className="flex h-10 min-w-[48px] items-center justify-center rounded-xl border border-gray-200 bg-white px-3 text-[11.5px] font-semibold text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
           >
             Done for now
+          </button>
+          {/* Anchor tab bleeds off the right edge, per the reference. */}
+          <button
+            type="button"
+            onClick={() => setAnchorOpen(true)}
+            aria-label="Open this week's anchor"
+            className="-mr-4 flex h-10 min-w-[48px] items-center justify-center rounded-l-xl rounded-r-none bg-primary px-3 text-[11.5px] font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation sm:-mr-5"
+          >
+            Anchor ⌗
           </button>
         </div>
       </header>
 
-      <section aria-label="The problem" className="rounded-3xl bg-surface p-6 shadow-sm">
+      <section aria-label="The problem" className="mf-card-quiet p-6">
         <div className="flex items-start gap-3">
           <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{item.prompt}</p>
           <AudioButton
@@ -432,7 +433,7 @@ export default function PracticePage() {
             text={band === 'A' ? 'Your turn on a fresh one!' : 'Same move, fresh numbers — take it.'}
             emotion="curious"
           />
-          <section aria-label="A fresh one" className="rounded-3xl bg-surface p-6 shadow-sm">
+          <section aria-label="A fresh one" className="mf-card-quiet p-6">
             <p className={cn('text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{fixit.variant.prompt}</p>
           </section>
           <AnswerEntry

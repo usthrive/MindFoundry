@@ -136,13 +136,14 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
   }
 
   // --- B band (and A fallback for numerals): NumberPad ---------------------
+  // Reference dress: dashed teal answer box, warm tray behind the keys.
   return (
-    <div className={cn('flex flex-col items-center gap-4', className)}>
+    <div className={cn('mf-pad-tray flex flex-col items-center gap-3', className)}>
       <div
         aria-label="Your answer so far"
-        className="flex min-h-[64px] w-full max-w-[240px] items-center justify-center rounded-2xl border-2 border-gray-200 bg-white text-3xl font-bold text-text-primary"
+        className="flex min-h-[60px] w-full max-w-[240px] items-center justify-center rounded-xl border-[2.5px] border-dashed border-primary bg-white text-3xl font-bold text-text-primary"
       >
-        {value || <span className="text-text-muted">?</span>}
+        {value || <span className="text-text-muted">&nbsp;</span>}
       </div>
       <NumberPad
         onNumberClick={(n) => {

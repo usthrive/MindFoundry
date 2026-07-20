@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getCohortForChild } from '@/services/cohorts/cohortService'
 import { countUnread } from '@/services/cohorts/stickerService'
 import ParentInviteBanner from '@/components/cohorts/ParentInviteBanner'
+import { getModule } from '@/modules/core/registry'
 import type { Cohort } from '@/types/cohort'
 
 interface ModuleCardProps {
@@ -240,6 +241,19 @@ export default function PracticeModulesPage() {
             description="Watch helpful math videos to learn new concepts"
             path="/videos"
           />
+
+          {/* Foundry Method (weekly concept mastery with Ms. Wren) — calm card,
+              name from the module registry (never "Best Brains" user-facing). */}
+          {getModule('best-brains').status === 'live' && (
+            <ModuleCard
+              icon="🪶"
+              title={getModule('best-brains').displayName}
+              description="One new math idea a week with Ms. Wren — short, calm daily practice that makes it stick"
+              path="/foundry"
+              badge="Weekly"
+              badgeColor="bg-teal-100 text-teal-700"
+            />
+          )}
 
           {/* Teams (Cohorts) */}
           <TeamsCard

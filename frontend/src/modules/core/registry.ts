@@ -86,7 +86,8 @@ const bestBrainsModule: MindFoundryModule = {
     'practiced in 5–15 minute daily doses, gated by an 85% weekly mastery check with ' +
     'a corrective reteach loop, and narrated to parents in a weekly report.',
   entryRoute: '/foundry',
-  status: 'in-development',
+  // Increment 5: full child journey + parent view + module card shipped.
+  status: 'live',
   levels: BB_LEVELS.map((id, ordinal) => ({
     id,
     displayName: BB_LEVEL_DISPLAY_NAMES[id],

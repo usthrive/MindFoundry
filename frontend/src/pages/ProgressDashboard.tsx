@@ -313,6 +313,17 @@ export default function ProgressDashboard() {
           </ProgressTabButton>
         </div>
 
+        {/* Foundry Method parent surface — weekly reports live on their own page */}
+        <button
+          onClick={() => navigate('/foundry/parent')}
+          className="w-full flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-3 text-left shadow-sm hover:bg-teal-50 transition-colors"
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold text-teal-800">
+            <span>🪶</span> Foundry Method — Ms. Wren's weekly reports
+          </span>
+          <span className="text-teal-600">›</span>
+        </button>
+
         {/* Tab Content */}
         {activeTab === 'kumon' ? (
           <>

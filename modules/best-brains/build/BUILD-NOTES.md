@@ -585,3 +585,207 @@ Design inbound still EMPTY → neutral-Tailwind conventions from increment 3.
 - `ComingThisWeek.tsx` no longer routed (kept for possible reuse).
 - Day-1 non-retrieval concept-echo items remain unserved (Day 1 = lesson +
   guided); one former Day-1 warm-up now serves on Day 5 via the R4 ramp.
+
+---
+
+## Increment 5 — parent view, module card, Claude-Design skin · 2026-07-20 (FINAL build increment)
+
+**Scope shipped:** the full parent journey (`/foundry/parent/*`, 11
+SCREEN-SPECS §E screens), the PracticeModulesPage module card + registry
+status flip to `live` + ProgressDashboard parent entry, and the
+Claude-Design skin (design/inbound tokens + four reference screens) applied
+module-wide.
+
+### T1 — design-token integration & skin
+
+- `theme/tokens.css` — three layers, ALL scoped under a `.mf-foundry` root
+  class (applied by FoundryLayout and FoundryParentLayout), so Kumon screens
+  are untouched:
+  1. the inbound token variables verbatim (paper/ink/teal/apricot, band type
+     scales, radii, shadows, calm motion, tap targets);
+  2. a **Tailwind semantic-utility remap** — increment 3 deliberately styled
+     every screen with theme tokens only, so re-pointing those utilities
+     (`bg-primary`→teal #3B7B78, `bg-surface`/grays→warm paper neutrals,
+     `warning`→apricot, **`error`→lavender #8B819B (never red)**, shadows→the
+     calm scale, `rounded-3xl/2xl/xl`→20/16/14) *is* the skin pass for every
+     child screen at once, hover/focus/ring variants included, plus the
+     shared NumberPad/ScratchPad utilities used inside the module;
+  3. component classes for the reference grammar: `.mf-card` (white,
+     radius-20, shadow, 6px teal top-rule), `.mf-tile-done/active/resting`
+     (+ apricot dot), `.mf-bubble`/`.mf-bubble-teal` (radius 4/16/16/16),
+     `.mf-sheet` (+handle) hint bottom-sheet, `.mf-label`/`.mf-chip`,
+     `.mf-report-body` (serif), `.mf-verdict` (underline typography),
+     `.mf-ack-btn` (ink), `.mf-btn-primary/quiet`, `.mf-pad-tray`.
+- `components/WrenMark.tsx` — the reference bird motif recreated as a React
+  SVG (teal circles + paper eye + apricot beak; decorative, aria-hidden).
+- **Reference-fidelity restyles:** `ThisWeekHub` (greeting header + WrenMark,
+  concept card with chip/CTA/dose line, day tiles per the tile grammar —
+  "Day N" labels kept per DD3, weekday names in the reference NOT adopted —
+  quiet Anchor/Chest/Journey-map action row) and `PracticePage` (mf-label
+  header, edge-bleeding Anchor tab, white item card, warm NumberPad tray
+  with dashed teal answer box). `WrenBubble` (WrenMark + bubble radii),
+  `HintLadder` (bottom-sheet dress, dashed future-rung previews, "answer
+  only after rung 3" footer), `AnswerEntry` (tray dress) carry the grammar
+  into every screen that uses them.
+- **Grammar-generalized (remap + shared components, no per-screen rewrite):**
+  LessonRoom, GuidedPractice, WarmUp, DayDone, WeeklyCheck, WeekResolve,
+  StrengthenPlan, MicroReteach, FreshProblems, Sprint trio, PuzzleGrove,
+  TreasureChest, placement screens, JourneyMap. FoundryLayout column tightened
+  to 430px (reference frame is 390px mobile).
+
+### T2 — parent journey (`screens/parent/`, `services/bbParentService.ts`, `parentCopy.ts`)
+
+- `FoundryParentLayout` — parent-mode guard per the app's own convention
+  (ProgressDashboard precedent): parent surfaces are account-owner routes
+  behind ProtectedRoute; the layout never touches the selected child and no
+  child-side screen links to `/foundry/parent/*` (P6: verdict + % exist only
+  here). Provides a ParentContext (children, enrollments, reports per child).
+- `bbParentService.ts` — listReports/getReport/**acknowledgeReport** (the
+  only report write; DB grants UPDATE on `acknowledged_at` alone),
+  listEnrollments, updateEnrollmentSettings (read-merge-write on
+  `bb_enrollment.settings`), listWeekStatesReadOnly (never initializes rows
+  from the parent surface), listMissGroups (DD7 misses, 28-day window),
+  listSprintCounts. `parentCopy.ts` — verdict labels (Passed / One more
+  round / Extra support — "Review" never rendered), DD7 parent glosses with
+  program-plan attached, LEVEL_CONTEXT (DD2 parent-only level↔age
+  sentences), coach etiquette, gate explainer.
+- Screens (all 11): **ParentWelcome** (three cards + expandable verdict
+  pre-framing + LS1-R1 band-cap dose honesty; once-flag in localStorage,
+  cards persist from ParentHome's help link) · **PlacementStory** (level +
+  DD2 context, strengths, first-month targets from the catalog,
+  re-checkable-placement promise, destigmatizing register) · **ParentHome**
+  (per-child week strips from day_progress, effort-framed consistency line,
+  "Weekly report ready — read it" state, links row — matches the reference)
+  · **WeeklyReport** (renders `bb_parent_reports.narrative` E102 four-field
+  frame verbatim — serif body, sans labels, verdict-as-typography, % exactly
+  once, apricot "At home this week" box, "Seen it — {child} will know their
+  week counted" ink button writing `acknowledged_at`; verdict-pending state)
+  · **ReportHistory** (archive + profile header) · **TrendsView** (three
+  honest graphics max: Form-A check % with the 85% gate explained, day
+  accuracy + minutes from day_progress, sprint counts hidden on opt-out;
+  "still gathering the story" under 3 weeks; no red/arrows/projections) ·
+  **MasteryMap** (24 cells; "took the strong road" = any Form-B attempt on a
+  passed week; checkpoint/exit chips) · **PatternsView** (DD7 groups in
+  parent language, pattern-vs-one-off, plan attached, standing footer) ·
+  **CoachCorner** (report homeFocus praise + teach-it-back with TTS
+  delivery, placement-strength starter lines pre-report, etiquette footer) ·
+  **SchoolSync** (settings.schoolTopic, honest lean-warm-ups-only effect
+  statement, ~6-week staleness prompt, no school name) · **ParentControls**
+  (sprint opt-out, persona voice — instruction TTS never removable, sound
+  effects, session length inside LS1-R1 band caps with the un-extendable
+  hard-cap copy, P12 plain-words data list, escalation note).
+
+### T3 — module card + registry + parent entry
+
+- `core/registry.ts`: best-brains `status: 'in-development'` → **`'live'`**.
+- `PracticeModulesPage.tsx`: calm card in the module grid — title from
+  `getModule('best-brains').displayName` ("Foundry Method"; "Best Brains"
+  appears nowhere user-facing), 🪶 icon, quiet "Weekly" teal badge, route
+  `/foundry`; rendered only while the registry says `live`.
+- `ProgressDashboard.tsx`: one-line teal banner under the progress tabs →
+  `/foundry/parent` (smallest clean integration on the existing parent
+  surface).
+
+### T4 — verification
+
+- `npx tsc --noEmit` clean; `npm run build` clean (pre-existing chunk-size
+  warning only).
+- **Auth blocker (reported per BROWSER-TESTING-TOOLING):** headless test
+  signup is email-confirmation-blocked (valid-format `.test`/unregistered
+  domains rejected outright; MX-valid address accepted but no session
+  returned) and anonymous sign-ins are disabled — so a live-DB authenticated
+  drive was NOT possible from Playwright. One orphan unconfirmed auth user
+  (`bb.inc5.smoke.mindfoundry@gmail.com`) exists from the attempt; no rows
+  were created in any table. The increment-4 test child (453ec35a…) lives
+  under the user's own login and is unreachable headlessly.
+- **Fallback A — read-only live smoke:** /login, /foundry, /foundry/parent,
+  /foundry/parent/welcome all load and redirect unauthenticated → /login
+  with zero console errors (3 pre-existing app-wide warnings only).
+- **Fallback B — full UI drive against a mocked backend** (Playwright
+  channel:'chrome', every request to the Supabase host intercepted and
+  served from fixtures; live DB untouched): ParentHome → WeeklyReport →
+  **acknowledge tap verified** (PATCH body exactly
+  `{"acknowledged_at": …}` — the column-grant write) → post-ack state; all
+  11 parent screens rendered; child hub (mid-week fixture: done/active/
+  resting tiles, concept card, CTA) and hub-CTA → Day-3 WarmUp (item card +
+  tray NumberPad dress). Screenshots 01–18 in
+  `modules/best-brains/testing/screenshots/inc5/`. Console: module screens
+  clean; remaining entries are pre-existing app-level noise (celebration
+  config/subscription singletons, navigation-aborted fetches) plus the
+  app-shell bottom-nav/DEV-badge overlay visible in full-page captures.
+- Found during the drive: **PracticePage cold deep-link race** — its local
+  `weekState` mirror lags one render behind the session context, so a direct
+  URL hit bounces to the hub (hub click-through, the only child-side entry,
+  is unaffected). Logged below as a limitation.
+
+### Reused vs new (whole module, §9)
+
+**Reused:** house auth/session (AuthContext, ProtectedRoute, selected-child
+convention), `children` as the FK anchor, house RLS pattern, Supabase JSONB
+convention, ttsService (AudioButton + CoachCorner delivery), ui/ScratchPad
+(wrapped), NumberPad (re-dressed via scoped CSS only), lazy-route + Suspense
+convention, ProgressDashboard as the parent-surface precedent, Tailwind
+theme-token vocabulary (as the skin's remap surface). **New:** module core
+contract/registry, 4 `bb_` tables + guard trigger + scoring RPC, the
+deterministic pack generator + catalog + validator + fixtures, 23 child
+screens + 11 parent screens + 8 module components, week/sprint/fixit logic,
+bbProgressService/bbParentService, band-keyed copy + parent copy, the
+module-scoped design-token skin. **Deliberately not inherited:** Kumon
+worksheet pacing/mastery semantics, points/streaks/confetti, red error
+styling, % on child surfaces.
+
+### Module Interface Contract (summary)
+
+`core/contract.ts`: descriptive registry metadata + typed capability
+surfaces, not a runtime plugin system — `MindFoundryModule` {id, displayName,
+description, entryRoute, status, levels (unitKind worksheet|week),
+placement (parent-selected | diagnostic-adaptive + recheck), conceptCatalog(),
+sessionGenerator (worksheet | deterministic weekly-pack), progressSchema,
+parentReportSchema (continuous | weekly + requiresAcknowledgement)}.
+`MODULE_REGISTRY` holds `kumon` (live, described declaratively) and
+`best-brains` (now `live`; entryRoute `/foundry`; weekly cadence with
+acknowledgement). The unit-of-progress difference stays first-class.
+
+### Known limitations (increment-5 close-out; carries forward increment 4's)
+
+- Escalation aftermath unwired (live-teacher queue, placement re-check
+  launch, `escalated→passed` resolution); ParentControls shows the framing
+  only. Schedule controls (week-reveal day, report notification day) and the
+  module's single weekly notification are not implemented — reports are
+  pull-only from ParentHome today. Accelerated-mode request UI not exposed.
+- Data export / hard-delete are described in the P12 panel but route to
+  account contact, not a self-serve flow. SchoolSync stores the topic;
+  generator-side warm-up leaning is not wired (honest copy says "when
+  overlap exists"). No syllabus-photo input (P12-safe text only).
+- TrendsView retention curve (warm-up retrieval accuracy on older material)
+  deferred: attempts don't tag retrieval provenance yet; shown instead are
+  check %, day accuracy/minutes, sprint counts. PatternsView shows tag
+  groups + concepts, not 1–2 anonymized example items. Monthly Test Log
+  (DD9) still has no table, so MasteryMap has no per-test drill-down.
+- PracticePage cold deep-link race (above). Chest fresh-isomorph after
+  reteach, C-band "what tricked me" note, offline queueing, cross-week
+  sprint history — all still open from increment 4. Seeded content still
+  covers 9/120 cells; unseeded cells show the calm coverage note.
+- Skin: ThisWeekHub + PracticePage are reference-fidelity; the other child
+  screens carry the grammar via the utility remap + shared components and
+  may drift from the untransferred 30 design files in fine detail (fetchable
+  on demand per LINK-RECEIVED). The app-shell bottom nav overlays module
+  pages on mobile heights — an app-chrome matter outside module scope.
+- Live authenticated browser verification is owed to the next session with
+  the user's Chrome (chrome-devtools MCP): drive ParentHome → WeeklyReport →
+  acknowledge on the real increment-4 report (child 453ec35a…), and clean up
+  the orphan unconfirmed auth user.
+
+### Phase 6 gate self-check
+
+**Does the module run end-to-end placement → weekly cycle → parent report?
+YES, with the caveats above.** Placement (DD5 walk → enroll) was driven live
+in increment 3; the weekly cycle (hub → lesson → guided → daily practice →
+sprints → puzzle → WeeklyCheck → RPC verdicts both directions → corrective
+loop → chest/resolve) was driven live in increment 4 with server-side
+scoring verified; increment 5 closes the loop's last leg — the report is
+now READ and ACKNOWLEDGED on a real parent surface (rendered from the
+RPC-written narrative; acknowledge write verified as the exact column-grant
+PATCH, against a mocked backend due to the auth blocker). The module card
+and registry expose the module as live. Remaining gaps are enumerated
+honestly above; none break the core loop.

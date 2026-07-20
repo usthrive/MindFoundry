@@ -1,15 +1,19 @@
 /**
  * FoundryLayout — the /foundry shell: requires a selected child, provides the
  * Foundry session context, and frames every screen in the module's calm,
- * low-density canvas (P2/P5). Neutral Tailwind styling grouped semantically so
- * a later token/skin pass can restyle without rewrites (design/inbound was
- * empty at build time).
+ * low-density canvas (P2/P5).
+ *
+ * Increment 5: carries the Claude-Design skin. The `.mf-foundry` root class
+ * scopes theme/tokens.css (paper canvas #EFEAE2, calm teal/apricot palette,
+ * warm neutrals) to this module only — Kumon screens are unaffected. The
+ * mobile-first 430px column mirrors the reference screens' 390px card frame.
  */
 
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { FoundrySessionProvider } from '../session/FoundrySession';
+import '../theme/tokens.css';
 
 export default function FoundryLayout() {
   const { currentChild, children: childList, loading } = useAuth();
@@ -25,7 +29,7 @@ export default function FoundryLayout() {
 
   if (loading || (!currentChild && childList.length === 0 && !graceOver)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="mf-foundry flex min-h-screen items-center justify-center bg-background">
         <p className="text-lg text-text-secondary">Setting up…</p>
       </div>
     );
@@ -37,8 +41,8 @@ export default function FoundryLayout() {
 
   return (
     <FoundrySessionProvider>
-      <div className="min-h-screen bg-background">
-        <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
+      <div className="mf-foundry min-h-screen bg-background">
+        <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
           <Outlet />
         </main>
       </div>

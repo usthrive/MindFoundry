@@ -10,6 +10,18 @@
 
 import { Navigate, Route, Routes } from 'react-router-dom';
 import FoundryLayout from './screens/FoundryLayout';
+import FoundryParentLayout from './screens/parent/FoundryParentLayout';
+import ParentHome from './screens/parent/ParentHome';
+import ParentWelcome from './screens/parent/ParentWelcome';
+import PlacementStory from './screens/parent/PlacementStory';
+import WeeklyReport from './screens/parent/WeeklyReport';
+import ReportHistory from './screens/parent/ReportHistory';
+import TrendsView from './screens/parent/TrendsView';
+import MasteryMap from './screens/parent/MasteryMap';
+import PatternsView from './screens/parent/PatternsView';
+import CoachCorner from './screens/parent/CoachCorner';
+import SchoolSync from './screens/parent/SchoolSync';
+import ParentControls from './screens/parent/ParentControls';
 import FoundryIndex from './screens/FoundryIndex';
 import PlacementWelcome from './screens/PlacementWelcome';
 import PlacementActivity from './screens/PlacementActivity';
@@ -35,6 +47,22 @@ import TreasureChest from './screens/TreasureChest';
 export default function FoundryRoutes() {
   return (
     <Routes>
+      {/* Parent journey (PARENT-FLOWS) — its own layout: parent context, no
+          selected-child requirement, never linked from child screens (P6:
+          verdict + % live only here). */}
+      <Route path="parent" element={<FoundryParentLayout />}>
+        <Route index element={<ParentHome />} />
+        <Route path="welcome" element={<ParentWelcome />} />
+        <Route path="story/:childId" element={<PlacementStory />} />
+        <Route path="report/:childId/:level/:week" element={<WeeklyReport />} />
+        <Route path="history/:childId" element={<ReportHistory />} />
+        <Route path="trends/:childId" element={<TrendsView />} />
+        <Route path="mastery/:childId" element={<MasteryMap />} />
+        <Route path="patterns/:childId" element={<PatternsView />} />
+        <Route path="coach/:childId" element={<CoachCorner />} />
+        <Route path="school/:childId" element={<SchoolSync />} />
+        <Route path="controls/:childId" element={<ParentControls />} />
+      </Route>
       <Route element={<FoundryLayout />}>
         <Route index element={<FoundryIndex />} />
         {/* Flow 1 — placement */}
