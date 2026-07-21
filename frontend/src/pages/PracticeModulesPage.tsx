@@ -248,7 +248,7 @@ export default function PracticeModulesPage() {
               registry displayName to the neutral codename "Foundry Method". */}
           {getModule('best-brains').status === 'live' && (
             <ModuleCard
-              icon="🪶"
+              icon="🧠"
               title={getModule('best-brains').displayName}
               description="One new math idea a week with Ms. Wren — short, calm daily practice that makes it stick"
               path="/foundry"

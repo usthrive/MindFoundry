@@ -90,7 +90,7 @@ export default function BestBrainsProgressTab({
   if (loadState === 'error') {
     return (
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-teal-100/50 p-8 text-center">
-        <div className="text-4xl mb-2">🪶</div>
+        <div className="text-4xl mb-2">🧠</div>
         <p className="text-sm text-gray-600">We couldn't load Best Brains just now.</p>
         <button
           onClick={() => void load()}
@@ -106,7 +106,7 @@ export default function BestBrainsProgressTab({
   if (loadState === 'not-enrolled' || !enrollment) {
     return (
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-teal-100/50 p-8 text-center">
-        <div className="text-5xl mb-3">🪶</div>
+        <div className="text-5xl mb-3">🧠</div>
         <h3 className="text-lg font-bold text-gray-900">
           {childName} hasn't started Best Brains yet
         </h3>
