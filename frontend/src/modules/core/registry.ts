@@ -25,7 +25,7 @@ import { CONCEPT_CATALOG } from '../best-brains/content/catalog';
 
 const kumonModule: MindFoundryModule = {
   id: 'kumon',
-  displayName: 'Kumon-Style Practice',
+  displayName: 'Kumon Method',
   description:
     'Worksheet-based math practice ladder (levels 7A through O plus X electives): ' +
     'daily sessions, repetition-driven mastery, graduated hints.',
@@ -80,7 +80,10 @@ const kumonModule: MindFoundryModule = {
 
 const bestBrainsModule: MindFoundryModule = {
   id: 'best-brains',
-  displayName: 'Foundry Method',
+  // User-facing label for this private build. Neutral codename is "Foundry Method" —
+  // revert to it for any public/commercial release (avoid using the Best Brains trademark
+  // as a product feature name). The module id stays 'best-brains' internally.
+  displayName: 'Best Brains Method',
   description:
     'Weekly concept mastery: one new concept per week, taught by a teacher persona, ' +
     'practiced in 5–15 minute daily doses, gated by an 85% weekly mastery check with ' +

@@ -133,8 +133,8 @@ export default function FoundryParentLayout() {
             <Link to="/progress" className="text-[12.5px] font-semibold text-text-secondary hover:text-text-primary">
               ← Progress
             </Link>
-            <Link to="/foundry/parent" className="flex items-center gap-2" aria-label="Foundry Method parent home">
-              <span className="mf-label">Foundry Method · Parents</span>
+            <Link to="/foundry/parent" className="flex items-center gap-2" aria-label="Best Brains Method parent home">
+              <span className="mf-label">Best Brains Method · Parents</span>
               <WrenMark size={30} />
             </Link>
           </header>
