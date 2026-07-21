@@ -23,7 +23,7 @@ import {
 import { getCatalogWeek } from '../src/modules/best-brains/content/catalog';
 import type { WeeklyConceptPack } from '../src/modules/best-brains/types';
 
-const SEEDS = [12345, 67890, 424242];
+const SEEDS = [12345, 67890, 424242, 8, 999983];
 
 let failures = 0;
 let checks = 0;
@@ -106,6 +106,14 @@ for (const cell of AVAILABLE_WEEKS) {
   }
   console.log(`  ok (${cell.source})`);
 }
+
+// Level-D coverage summary (the proof level: 23 template weeks + 1 fixture = 24).
+const dCells = AVAILABLE_WEEKS.filter((w) => w.level === 'D');
+const dTemplate = dCells.filter((w) => w.source === 'template').length;
+const dFixture = dCells.filter((w) => w.source === 'fixture').length;
+console.log(
+  `\nLevel D coverage: ${dCells.length}/24 cells servable (${dTemplate} template + ${dFixture} fixture).`,
+);
 
 console.log(`\n${checks} assertions, ${failures} failure(s).`);
 if (failures > 0) {

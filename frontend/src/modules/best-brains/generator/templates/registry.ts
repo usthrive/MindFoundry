@@ -11,6 +11,8 @@
  * the arithmetic audit skips them.
  */
 
+import { LIB_TEMPLATE_DEFS } from './lib/compute';
+
 type Params = Record<string, unknown>;
 
 export interface TemplateDef {
@@ -140,6 +142,10 @@ const DEFS: TemplateDef[] = [
   { id: 'retr_digit_value_v1', answerFor: (p) => String(n(p, 'digit') * n(p, 'place')) },
   { id: 'retr_chart_below_v1', answerFor: (p) => String(n(p, 'n') + 10) },
   { id: 'retr_word_sub_v1', answerFor: (p) => String(n(p, 'a') - n(p, 'b')) },
+
+  // --- Level D template library (generator/templates/lib/compute.ts) -------
+  // Spread the shared Level-D answer definitions so QG-5 can recompute them.
+  ...LIB_TEMPLATE_DEFS,
 ];
 
 export const TEMPLATE_REGISTRY: ReadonlyMap<string, TemplateDef> = new Map(
