@@ -187,6 +187,142 @@ export function roundInt(n: number, place: number): number {
 }
 
 // ---------------------------------------------------------------------------
+// Multi-step composition — a serializable rational op-chain (FIX-SPEC §4.2/§5).
+//
+// A multi-step item's answer is COMPOSED from an ordered chain of exact rational
+// operations. Because the chain is plain serializable data that ships in
+// `generator.params`, three things follow for free:
+//   1. stepCount = steps.length is DERIVABLE from params (never a hand-set label,
+//      review B5) — the assembler reads it, the generator stamps the same number;
+//   2. the registry `answerFor` re-executes the IDENTICAL chain over the same
+//      params, so QG-5 audits the composed answer exactly as it audits single-op
+//      items (no borrowed single-op templateId that would verify nothing);
+//   3. it is TOTAL over its param space (Frac ops never throw on the operands the
+//      generators produce; no non-terminating-division escape hatch).
+// Whole numbers are Frac with d = 1, so one evaluator covers whole-number and
+// fraction multi-step problems alike.
+// ---------------------------------------------------------------------------
+
+export type RatOp = 'add' | 'sub' | 'mul' | 'div';
+
+export interface RatStep {
+  op: RatOp;
+  /** Operand numerator. */
+  n: number;
+  /** Operand denominator (1 for whole numbers). */
+  d: number;
+}
+
+/** Fold an ordered rational op-chain from an initial value; exact throughout. */
+export function evalRatChain(initN: number, initD: number, steps: RatStep[]): Frac {
+  let acc: Frac = reduceFrac(initN, initD);
+  for (const s of steps) {
+    const b: Frac = { n: s.n, d: s.d };
+    acc = s.op === 'add' ? addFrac(acc, b)
+      : s.op === 'sub' ? subFrac(acc, b)
+      : s.op === 'mul' ? mulFrac(acc, b)
+      : divFrac(acc, b);
+  }
+  return acc;
+}
+
+/** answerFor for the generic multi-step rational chain. */
+function multistepRat(p: Params): string {
+  const steps = p.steps;
+  if (!Array.isArray(steps)) throw new Error('multistep chain missing steps[]');
+  return formatFrac(evalRatChain(num(p, 'initN'), num(p, 'initD'), steps as RatStep[]));
+}
+
+/** Decimal op-chain — same shape as RatStep but exact scaled-integer decimals,
+ *  so a multi-step DECIMAL word problem displays a decimal answer (not a fraction). */
+export interface DecStep {
+  op: RatOp;
+  /** Operand as a decimal string ('0.5'); for 'div' it must be a whole number. */
+  v: string;
+}
+
+export function evalDecChain(init: string, steps: DecStep[]): string {
+  let acc = init;
+  for (const s of steps) {
+    acc = s.op === 'add' ? addDec(acc, s.v)
+      : s.op === 'sub' ? subDec(acc, s.v)
+      : s.op === 'mul' ? mulDec(acc, s.v)
+      : divDecByWhole(acc, Number(s.v));
+  }
+  return acc;
+}
+
+function multistepDec(p: Params): string {
+  const steps = p.steps;
+  if (!Array.isArray(steps)) throw new Error('multistep decimal chain missing steps[]');
+  return evalDecChain(str(p, 'init'), steps as DecStep[]);
+}
+
+// ---------------------------------------------------------------------------
+// Concept-specific misconception verifies (error-analysis, all levels).
+// The "wrong" value is a NAMED misconception's real output, computed by code —
+// never fabricated (the D8 class). Reusable across the fraction/decimal weeks.
+// ---------------------------------------------------------------------------
+
+/** Fraction add/sub/× with a named misconception. Modes:
+ *  tops-bottoms = (n1±n2)/(d1±d2); wrong-op-add/-mul = did the wrong operation;
+ *  num-only = combined numerators but kept the first denominator (forgot to rename). */
+function verifyFrac(p: Params): VerifyResult {
+  const a: Frac = { n: num(p, 'n1'), d: num(p, 'd1') };
+  const b: Frac = { n: num(p, 'n2'), d: num(p, 'd2') };
+  const op = str(p, 'op');
+  const correct = op === '+' ? addFrac(a, b) : op === '-' ? subFrac(a, b) : mulFrac(a, b);
+  const mode = str(p, 'wrongMode');
+  let wrong: Frac;
+  switch (mode) {
+    case 'tops-bottoms':
+      wrong = reduceFrac(op === '-' ? a.n - b.n : a.n + b.n, op === '*' ? a.d * b.d : a.d + b.d);
+      break;
+    case 'wrong-op-add': wrong = addFrac(a, b); break;
+    case 'wrong-op-mul': wrong = mulFrac(a, b); break;
+    case 'num-only': wrong = reduceFrac(op === '-' ? a.n - b.n : a.n + b.n, a.d); break;
+    default: throw new Error(`bad frac wrongMode '${mode}'`);
+  }
+  return { correct: formatFrac(correct), wrong: formatFrac(wrong) };
+}
+
+/** Decimal add/sub/× with a named misconception. Modes:
+ *  right-align = added as if right-justified (ignores the point); wrong-op-* = wrong op;
+ *  point-drop = multiplied the digits but dropped the decimal point (whole-number result). */
+function verifyDec(p: Params): VerifyResult {
+  const a = str(p, 'a');
+  const b = str(p, 'b');
+  const op = str(p, 'op');
+  const correct = op === '+' ? addDec(a, b) : op === '-' ? subDec(a, b) : mulDec(a, b);
+  const mode = str(p, 'wrongMode');
+  let wrong: string;
+  switch (mode) {
+    case 'right-align': {
+      // Treat both as their digit strings right-justified (the classic misalignment):
+      // strip points, operate as integers, then reattach the LONGER scale.
+      const da = parseDec(a);
+      const db = parseDec(b);
+      const scale = Math.max(da.scale, db.scale);
+      const ai = Math.abs(da.int);
+      const bi = Math.abs(db.int);
+      const raw = op === '-' ? ai - bi : ai + bi;
+      wrong = formatDec(raw, scale);
+      break;
+    }
+    case 'wrong-op-add': wrong = addDec(a, b); break;
+    case 'wrong-op-sub': wrong = subDec(a, b); break;
+    case 'point-drop': {
+      const da = parseDec(a);
+      const db = parseDec(b);
+      wrong = String(da.int * db.int); // multiplied digits, dropped the point entirely
+      break;
+    }
+    default: throw new Error(`bad dec wrongMode '${mode}'`);
+  }
+  return { correct, wrong };
+}
+
+// ---------------------------------------------------------------------------
 // Template answerFor definitions (consumed by registry.ts → QG-5 audit)
 // ---------------------------------------------------------------------------
 
@@ -245,8 +381,81 @@ function angle(p: Params): string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Verify truths (FIX-SPEC §5 / §7 QG-11) — recompute the CORRECT answer of an
+// embedded-claim item (discrimination / error-analysis) from its serializable
+// `generator.params`, so QG-11 can confirm the option keyed `isCorrect` (or the
+// item's stated true answer) is actually true, and that an error-analysis
+// item's "wrong" number is a genuine misconception output — never fabricated
+// (the D6 / D8 bug classes). Truth functions live beside `answerFor` and are
+// registered on the same TemplateDef via `verifyFor`.
+// ---------------------------------------------------------------------------
+
+export interface VerifyResult {
+  /** Canonical correct value the `isCorrect` option / stated true answer must carry. */
+  correct: string;
+  /** Error-analysis only: the genuine misconception output that must appear as the shown "wrong" value. */
+  wrong?: string;
+}
+
+export interface VerifyDef {
+  id: string;
+  verifyFor: (params: Params) => VerifyResult;
+}
+
+function binop(a: number, b: number, op: string): number {
+  switch (op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '*': return a * b;
+    case '/': return a / b;
+    default: throw new Error(`bad binop '${op}'`);
+  }
+}
+
+/** All verify (QG-11 truth) templates, keyed by templateId. */
+export const LIB_VERIFY_DEFS: VerifyDef[] = [
+  // Single binary operation truth (discrimination: which op applies?).
+  {
+    id: 'd_verify_binop_v1',
+    verifyFor: (p) => ({ correct: String(binop(num(p, 'a'), num(p, 'b'), str(p, 'op'))) }),
+  },
+  // True op vs a named misconception op (error-analysis: correct + the shown wrong).
+  {
+    id: 'd_verify_binop_misconception_v1',
+    verifyFor: (p) => ({
+      correct: String(binop(num(p, 'a'), num(p, 'b'), str(p, 'op'))),
+      wrong: String(binop(num(p, 'a'), num(p, 'b'), str(p, 'wrongOp'))),
+    }),
+  },
+  // Multi-step rational chain truth (multi-step-based discrimination / error-analysis).
+  {
+    id: 'd_verify_ratchain_v1',
+    verifyFor: (p) => {
+      const steps = p.steps;
+      if (!Array.isArray(steps)) throw new Error('verify chain missing steps[]');
+      return { correct: formatFrac(evalRatChain(num(p, 'initN'), num(p, 'initD'), steps as RatStep[])) };
+    },
+  },
+  // Division-with-remainder truth (error-analysis on a claimed "q R r").
+  {
+    id: 'd_verify_remainder_v1',
+    verifyFor: (p) => {
+      const a = num(p, 'a');
+      const b = num(p, 'b');
+      return { correct: `${Math.floor(a / b)} R ${a % b}` };
+    },
+  },
+  // Fraction misconception truth (tops-and-bottoms, wrong-op, forgot-to-rename).
+  { id: 'd_verify_frac_v1', verifyFor: verifyFrac },
+  // Decimal misconception truth (right-align, wrong-op, point-drop).
+  { id: 'd_verify_dec_v1', verifyFor: verifyDec },
+];
+
 /** All Level-D deterministic templates, keyed by templateId. */
 export const LIB_TEMPLATE_DEFS: AnswerDef[] = [
+  { id: 'd_multistep_rat_v1', answerFor: multistepRat },
+  { id: 'd_multistep_dec_v1', answerFor: multistepDec },
   // --- Whole-number place value / rounding ---------------------------------
   { id: 'd_pv_expand_v1', answerFor: (p) => String(num(p, 'value')) },
   { id: 'd_pv_digit_value_v1', answerFor: (p) => String(num(p, 'digit') * 10 ** num(p, 'place')) },

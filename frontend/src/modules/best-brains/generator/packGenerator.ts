@@ -90,6 +90,17 @@ const WEEK_BUILDERS: ReadonlyMap<string, WeekBuilder> = new Map<string, WeekBuil
   ['D24', buildD24],
 ]);
 
+/**
+ * Weeks migrated to the v2 pedagogy contract (CONTENT-GENERATOR-FIX-SPEC §2).
+ * The correctness gate passes `contract:'v2'` to `validatePack` for these so the
+ * QG-11 embedded-claim DETECTOR blocks; v1 weeks + fixtures stay report-only.
+ * Kept in lock-step with each blueprint's `pedagogyContract:'v2'` as weeks migrate.
+ */
+export const V2_WEEKS: ReadonlySet<string> = new Set<string>([
+  'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12',
+  'D13', 'D14', 'D15', 'D16', 'D18', 'D19', 'D20', 'D21', 'D22', 'D23', 'D24',
+]);
+
 /** (level, week) cells generated from seeded templates. */
 export const GENERATED_WEEKS: ReadonlyArray<{ level: BBLevel; week: number }> = [
   { level: 'A', week: 1 },

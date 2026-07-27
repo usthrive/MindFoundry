@@ -19,9 +19,20 @@ import {
   generatePack,
   validatePack,
   surfaceSignature,
+  getTemplate,
+  V2_WEEKS,
 } from '../src/modules/best-brains/generator';
 import { getCatalogWeek } from '../src/modules/best-brains/content/catalog';
-import type { WeeklyConceptPack } from '../src/modules/best-brains/types';
+import type { PackItem, WeeklyConceptPack } from '../src/modules/best-brains/types';
+
+/** Every child-answered item that ships a generator spec (day + mastery items). */
+function generatorItems(p: WeeklyConceptPack): PackItem[] {
+  return [
+    ...p.days.flatMap((d) => d.items),
+    ...p.masteryCheck.formA,
+    ...p.masteryCheck.formB,
+  ];
+}
 
 const SEEDS = [12345, 67890, 424242, 8, 999983];
 
@@ -50,8 +61,9 @@ for (const cell of AVAILABLE_WEEKS) {
   for (const seed of SEEDS) {
     const pack = generatePack(cell.level, cell.week, seed);
 
-    // 2. Quality gates
-    const result = validatePack(pack);
+    // 2. Quality gates (v2 weeks validated under the v2 contract → QG-11 detector blocks)
+    const contract = V2_WEEKS.has(`${cell.level}${cell.week}`) ? 'v2' : 'v1';
+    const result = validatePack(pack, { contract });
     if (!result.valid) {
       for (const viol of result.violations) {
         console.error(`  FAIL  [seed ${seed}] ${viol.gate} @ ${viol.path}: ${viol.message}`);
@@ -62,6 +74,20 @@ for (const cell of AVAILABLE_WEEKS) {
     // 3. Determinism: regenerate with the same seed → deep-equal
     const again = generatePack(cell.level, cell.week, seed);
     assert(packJson(pack) === packJson(again), `[seed ${seed}] same seed regenerates deep-equal pack`);
+
+    // 3b. No authoring-time metadata leaks into the shipped pack (FIX-SPEC §3, review M2).
+    assert(!packJson(pack).includes('"authorMeta"'), `[seed ${seed}] emitted pack carries no authorMeta`);
+
+    // 3c. Every generator-backed item's templateId resolves in the registry, so the
+    //     QG-5 arithmetic audit is never silently skipped (FIX-SPEC §5, review determinism-minor).
+    for (const it of generatorItems(pack)) {
+      if (it.generator) {
+        assert(
+          getTemplate(it.generator.templateId) !== undefined,
+          `[seed ${seed}] item ${it.id} templateId "${it.generator.templateId}" resolves in registry`,
+        );
+      }
+    }
 
     // 5. Form-B disjointness from Form-A surfaces (per index)
     const { formA, formB } = pack.masteryCheck;

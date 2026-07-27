@@ -11,7 +11,8 @@
  * the arithmetic audit skips them.
  */
 
-import { LIB_TEMPLATE_DEFS } from './lib/compute';
+import { LIB_TEMPLATE_DEFS, LIB_VERIFY_DEFS } from './lib/compute';
+import type { VerifyResult } from './lib/compute';
 
 type Params = Record<string, unknown>;
 
@@ -19,6 +20,11 @@ export interface TemplateDef {
   id: string;
   /** Recompute the canonical answer string for the arithmetic audit (QG-5). */
   answerFor?: (params: Params) => string;
+  /** Recompute the CORRECT answer of an embedded-claim item (discrimination /
+   *  error-analysis) so QG-11 can confirm the isCorrect option / stated true
+   *  answer is actually true and any shown "wrong" value is a real misconception
+   *  output (FIX-SPEC §5/§7). */
+  verifyFor?: (params: Params) => VerifyResult;
 }
 
 function n(params: Params, key: string): number {
@@ -144,8 +150,10 @@ const DEFS: TemplateDef[] = [
   { id: 'retr_word_sub_v1', answerFor: (p) => String(n(p, 'a') - n(p, 'b')) },
 
   // --- Level D template library (generator/templates/lib/compute.ts) -------
-  // Spread the shared Level-D answer definitions so QG-5 can recompute them.
+  // Spread the shared Level-D answer definitions so QG-5 can recompute them,
+  // and the verify (QG-11 truth) definitions for embedded-claim item types.
   ...LIB_TEMPLATE_DEFS,
+  ...LIB_VERIFY_DEFS,
 ];
 
 export const TEMPLATE_REGISTRY: ReadonlyMap<string, TemplateDef> = new Map(

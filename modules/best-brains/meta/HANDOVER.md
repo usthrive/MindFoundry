@@ -4,6 +4,21 @@
 
 ---
 
+## ⭐ STATUS UPDATE 2026-07-21 — GENERATOR REBUILT; LEVEL D PASSES BOTH GATES (100%)
+
+**The Step-2 generator rebuild is COMPLETE and PROVEN.** The Level-D style-gate FAIL described below (1/24) has been resolved by rebuilding the generator per the 9 fixes (NOT hand-patching weeks). Current state:
+
+- **Level D: 23/23 generated weeks = clean ACCEPT (100%), 0 REJECT, 0 HUMAN_REVIEW** — adversarially confirmed on the same rubric that failed the old corpus (which scored 1/24 ≈ 4%). D17 stays the calibration fixture.
+- **Correctness gate GREEN** (`npx tsx scripts/bb-verify-packs.ts` — 7,877 assertions, 0 failures); **QG-11 regression test passes** (`scripts/bb-qg11-test.ts`); **`tsc --noEmit` clean**; every week seed-invariant across 120 seeds under the v2 contract.
+- **What changed (all on branch `best-brains-content-engine`, uncommitted until you approve — see §4 R4):** a v2 pedagogy layer — new lib modules `meta.ts / ledger.ts / situations.ts / multistep.ts / discrimination.ts / erroranalysis.ts / metacog.ts / pedagogy.ts` (13 seed-invariant preflight gates), `validator.ts` QG-11 (anchor/claim audit + week-independent regression test proving it catches the original D6/D8 bugs), a `verifyFor` registry so error-analysis truth is code-derived (the D6/D8 fabrication class is now structurally impossible), and all 23 `weeks/dNN.ts` rewritten to `pedagogyContract:'v2'`. `V2_WEEKS` in `packGenerator.ts` gates the migration; the correctness gate stayed green at every step.
+- **Build contract + kit** (read these before touching the generator): `build/CONTENT-GENERATOR-FIX-SPEC.md` (Rev 2 — the 9-fix architecture, hardened by a 4-lens adversarial review of 7 blockers + 11 majors) and `build/FANOUT-AUTHORING-KIT.md` (per-week recipes + the hard rules earned from real bugs).
+
+**NEXT (your decisions — now unblocked):** (1) merge `best-brains-content-engine → main` (still a clean fast-forward); (2) the ~80-week fill of Levels A/B/C/E — reuse `FANOUT-AUTHORING-KIT.md` + the style-gate workflow, requiring the same ≥80% clean-ACCEPT per level (Level B needs clock/coin generators; Level E has figure/proof cells to keep human/AI-flagged); (3) the **Fable-5 strategic-review checkpoint** (per L18/R5): a top-model pedagogy-ceiling pass over a sample + the v2 meta-prompt (`MASTER-META-PROMPT-TEMPLATE-v2.md`) + `NEXT-PROGRAMS-STARTER.md`. No merge/push/fill has been done — those are yours.
+
+*(The sections below are the ORIGINAL 2026-07-21 handover, pre-rebuild, kept for context. Where they say "fix the generator / FAILED authenticity," that work is DONE per this banner.)*
+
+---
+
 ## 0. What this project is
 
 **Mind Foundry** is a children's math-practice web app (React 18 + TypeScript + Vite + Tailwind frontend; Supabase backend; deploys to Netlify). It has two learning modules, both live behind cards on the post-child-select home menu (`PracticeModulesPage`, route `/home`):

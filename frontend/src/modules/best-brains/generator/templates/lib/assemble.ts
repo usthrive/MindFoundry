@@ -37,6 +37,8 @@ import { streamRng, type Rng } from '../../rng';
 import { contentId, makeDay, makeMasteryItems, TupleGuard } from '../shared';
 import type { ItemDraft } from '../shared';
 import type { ItemGen } from './items';
+import type { AuthorMeta } from './meta';
+import { pedagogicalPreflight } from './pedagogy';
 
 const LEVEL = 'D' as const;
 const FOCI = ['concept-echo', 'fluency-application', 'fluency-application', 'word-problems', 'noncomputational'] as const;
@@ -76,6 +78,15 @@ export interface WeekBlueprint {
   days: SlotGen[][];
   /** Exactly 6 mastery slot generators (Form A & Form B share these). */
   mastery: SlotGen[];
+  // --- v2 pedagogy contract (CONTENT-GENERATOR-FIX-SPEC) ---------------------
+  /** 'v2' enables the pedagogical preflight (§6); default 'v1' = legacy (gates skipped). */
+  pedagogyContract?: 'v1' | 'v2';
+  /** The concrete model/idea named in whyBeforeHow (BB-W1 §6.9). Required for v2. */
+  conceptualAnchor?: string;
+  /** The explicit advance vs a shared-family prior week (BB-G1 §6.13). */
+  deepeningDelta?: string;
+  /** The puzzle's cognitive-op/step-count for the remove-the-concept check (§6.10). Required for v2. */
+  puzzleMeta?: AuthorMeta;
 }
 
 /** Guided-example builder with the correct `D<week>-GE-0n` id. */
@@ -104,23 +115,41 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
     const guard = new TupleGuard();
     const dayStreams = [1, 2, 3, 4, 5].map((i) => streamRng(packSeed, `d${i}`));
 
-    const days: PackDay[] = bp.days.map((plan, i) =>
-      makeDay(
-        LEVEL,
-        bp.week,
-        i + 1,
-        FOCI[i],
-        2,
-        plan.map(({ gen, diff }) => gen(dayStreams[i], guard, diff)),
-      ),
+    // Generate all drafts FIRST (authorMeta intact), preserving the exact draw
+    // order days1–5 → puzzle → formA → formB so the shared guard/stream
+    // consumption — and thus v1 output — stays bit-stable (review M3).
+    const dayDrafts: ItemDraft[][] = bp.days.map((plan, i) =>
+      plan.map(({ gen, diff }) => gen(dayStreams[i], guard, diff)),
     );
-
     const puzzle = bp.puzzle(streamRng(packSeed, 'pz'), guard);
-
     const maRng = streamRng(packSeed, 'ma');
     const mbRng = streamRng(packSeed, 'mb');
-    const formA = makeMasteryItems(LEVEL, bp.week, 'MA', bp.mastery.map(({ gen, diff }) => gen(maRng, guard, diff)));
-    const formB = makeMasteryItems(LEVEL, bp.week, 'MB', bp.mastery.map(({ gen, diff }) => gen(mbRng, guard, diff)));
+    const formADrafts = bp.mastery.map(({ gen, diff }) => gen(maRng, guard, diff));
+    const formBDrafts = bp.mastery.map(({ gen, diff }) => gen(mbRng, guard, diff));
+
+    // v2 pedagogical preflight over the drafts (authorMeta present, pre-strip).
+    if ((bp.pedagogyContract ?? 'v1') === 'v2') {
+      pedagogicalPreflight({
+        level: LEVEL,
+        week: bp.week,
+        conceptId: bp.conceptId,
+        conceptualAnchor: bp.conceptualAnchor,
+        deepeningDelta: bp.deepeningDelta,
+        explanation: bp.explanation,
+        guidedExamples: bp.guidedExamples,
+        parentSummarySeed: bp.parentSummarySeed,
+        dayDrafts,
+        puzzle,
+        puzzleMeta: bp.puzzleMeta,
+      });
+    }
+
+    // Assemble (makeDay / makeMasteryItems strip authorMeta on emit).
+    const days: PackDay[] = dayDrafts.map((drafts, i) =>
+      makeDay(LEVEL, bp.week, i + 1, FOCI[i], 2, drafts),
+    );
+    const formA = makeMasteryItems(LEVEL, bp.week, 'MA', formADrafts);
+    const formB = makeMasteryItems(LEVEL, bp.week, 'MB', formBDrafts);
 
     let fluencySprint: FluencySprint | null = null;
     if (bp.sprint) {

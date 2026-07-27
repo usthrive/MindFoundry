@@ -18,9 +18,26 @@ import type {
   PackItem,
 } from '../../types';
 import { Rng } from '../rng';
+import type { AuthorMeta } from './lib/meta';
 
-/** A PackItem minus its id — ids are assigned at day/section assembly time. */
-export type ItemDraft = Omit<PackItem, 'id'>;
+/**
+ * A PackItem minus its id, PLUS the authoring-time-only `authorMeta` the v2
+ * pedagogical preflight reads (CONTENT-GENERATOR-FIX-SPEC §3). `authorMeta` is
+ * stripped by `emitItem` before a shipped PackItem is produced, so it never
+ * reaches the pack JSON.
+ */
+export type ItemDraft = Omit<PackItem, 'id'> & { authorMeta?: AuthorMeta };
+
+/**
+ * Build a shipped PackItem from a draft, DROPPING authoring-time-only fields
+ * (currently just `authorMeta`). Explicit destructure — never a blind spread —
+ * so a forgotten field cannot silently ship (§3, review M2). The CI deep-scan in
+ * bb-verify-packs asserts no emitted item carries `authorMeta`.
+ */
+export function emitItem(id: string, draft: ItemDraft): PackItem {
+  const { authorMeta: _authorMeta, ...rest } = draft;
+  return { id, ...rest };
+}
 
 export function contentId(level: BBLevel, week: number, slot: string, nn: number): string {
   return `${level}${week}-${slot}-${String(nn).padStart(2, '0')}`;
@@ -35,10 +52,9 @@ export function makeDay(
   drafts: ItemDraft[],
   teacherNoteStrip?: string,
 ): PackDay {
-  const items: PackItem[] = drafts.map((draft, i) => ({
-    id: contentId(level, week, `D${day}`, i + 1),
-    ...draft,
-  }));
+  const items: PackItem[] = drafts.map((draft, i) =>
+    emitItem(contentId(level, week, `D${day}`, i + 1), draft),
+  );
   const result: PackDay = { day, focus, pageCount, items };
   if (teacherNoteStrip !== undefined) result.teacherNoteStrip = teacherNoteStrip;
   return result;
@@ -50,10 +66,7 @@ export function makeMasteryItems(
   form: 'MA' | 'MB',
   drafts: ItemDraft[],
 ): PackItem[] {
-  return drafts.map((draft, i) => ({
-    id: contentId(level, week, form, i + 1),
-    ...draft,
-  }));
+  return drafts.map((draft, i) => emitItem(contentId(level, week, form, i + 1), draft));
 }
 
 /** Tracks used operand tuples so surfaces stay fresh across the whole pack. */

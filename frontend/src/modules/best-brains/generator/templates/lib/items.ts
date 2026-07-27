@@ -86,17 +86,23 @@ export function digitValue(digits = 6): ItemGen {
   const lo = 10 ** (digits - 1);
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const value = r.int(lo, hi);
-      const s = String(value);
-      // Pick a place whose digit is nonzero (index from the right).
-      let place = 0;
-      for (let tries = 0; tries < 10; tries++) {
-        const p = r.int(0, s.length - 1);
-        if (Number(s[s.length - 1 - p]) !== 0) {
-          place = p;
-          break;
+      // Draw a number that has at least one nonzero digit appearing EXACTLY ONCE,
+      // then target that place — so "the digit D" names one place unambiguously
+      // (338164 has two 3s: "the value of the digit 3" would be ambiguous).
+      let value = r.int(lo, hi);
+      let s = String(value);
+      let place = -1;
+      for (let tries = 0; tries < 40 && place < 0; tries++) {
+        const cands: number[] = [];
+        for (let p = 0; p < s.length; p++) {
+          const ch = s[s.length - 1 - p];
+          if (ch !== '0' && s.split(ch).length - 1 === 1) cands.push(p);
         }
+        if (cands.length) { place = cands[r.int(0, cands.length - 1)]; break; }
+        value = r.int(lo, hi);
+        s = String(value);
       }
+      if (place < 0) for (let p = 0; p < s.length; p++) if (s[s.length - 1 - p] !== '0') { place = p; break; }
       const digit = Number(s[s.length - 1 - place]);
       return {
         type: 'computation',

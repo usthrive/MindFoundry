@@ -12,6 +12,7 @@ export {
   AVAILABLE_WEEKS,
   CONTENT_VERSION,
   GENERATED_WEEKS,
+  V2_WEEKS,
   generatePack,
   getPackDay,
   hasPackContent,

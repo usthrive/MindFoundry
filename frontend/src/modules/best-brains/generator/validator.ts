@@ -130,6 +130,50 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * QG-11(b) prose anchor scan — CONSERVATIVE by design (FIX-SPEC §7b, review B3).
+ * Flags ONLY a self-contained binary "a <+|×> b = c" integer equation whose
+ * result is wrong. It deliberately ignores multi-term chains (a step past it is
+ * an operator), fraction/decimal/mixed literals, unit-word-adjacent numbers, ids,
+ * and en-dash ranges — so it cannot false-fail correct prose (the D17/A15/B14
+ * fixtures and every v1 week stay green), while still catching a fabricated
+ * product/sum baked into narration (the D8 class). Subtraction is excluded
+ * (hyphen/en-dash/negative ambiguity).
+ */
+function scanBinaryIntegerEquations(text: string): Array<{ expr: string; computed: number; stated: number }> {
+  const out: Array<{ expr: string; computed: number; stated: number }> = [];
+  // Comma-grouped ("1,000") or plain integers; commas stripped before Number().
+  const NUM = '\\d{1,3}(?:,\\d{3})+|\\d{1,7}';
+  const re = new RegExp(`(${NUM})\\s+([×x*·+])\\s+(${NUM})\\s*=\\s*(${NUM})`, 'g');
+  const val = (s: string) => Number(s.replace(/,/g, ''));
+  let mm: RegExpExecArray | null;
+  while ((mm = re.exec(text)) !== null) {
+    const start = mm.index;
+    const end = re.lastIndex;
+    // Look left past spaces: a preceding digit/operator/dot/slash/= means the first
+    // operand continues a larger numeric expression (a plain word/punctuation before
+    // is fine). Comma is NOT a boundary — NUM already consumes comma-grouped numbers,
+    // so any leftover comma is punctuation, not a grouping separator.
+    let bi = start - 1;
+    while (bi >= 0 && text[bi] === ' ') bi--;
+    const beforeCh = bi >= 0 ? text[bi] : ' ';
+    if (/[\d./×x*·+\-÷–=]/.test(beforeCh)) continue;
+    // Look right past spaces: a trailing digit/operator/dot/slash/% means the RHS
+    // continues (a chain, decimal, fraction, or percentage). Comma excluded (see above).
+    let ai = end;
+    while (ai < text.length && text[ai] === ' ') ai++;
+    const afterCh = ai < text.length ? text[ai] : ' ';
+    if (/[\d./×x*·+\-÷–%]/.test(afterCh)) continue;
+    const a = val(mm[1]);
+    const b = val(mm[3]);
+    const stated = val(mm[4]);
+    const op = mm[2];
+    const computed = op === '+' ? a + b : a * b;
+    if (computed !== stated) out.push({ expr: `${mm[1]} ${op} ${mm[3]} = ${mm[4]}`, computed, stated });
+  }
+  return out;
+}
+
 interface LocatedItem {
   item: PackItem;
   path: string;
@@ -142,7 +186,10 @@ interface LocatedItem {
 // The validator
 // ---------------------------------------------------------------------------
 
-export function validatePack(pack: WeeklyConceptPack): ValidationResult {
+export function validatePack(
+  pack: WeeklyConceptPack,
+  opts: { contract?: 'v1' | 'v2' } = {},
+): ValidationResult {
   const v: Violation[] = [];
   const add = (gate: string, path: string, message: string) => v.push({ gate, path, message });
 
@@ -492,6 +539,89 @@ export function validatePack(pack: WeeklyConceptPack): ValidationResult {
   if (!seed.homeFocus.praiseLine || !seed.homeFocus.questionForChild) {
     add('S-SCHEMA', 'parentSummarySeed.homeFocus', 'homeFocus requires praiseLine and questionForChild');
   }
+
+  // --- QG-11: embedded-claim / anchor audit (FIX-SPEC §7, fix #6) -----------
+  // Blocks for v2 packs; the mismatch, prose-anchor, and pointer checks are
+  // designed to never false-fail correct content, so they are safe for v1 +
+  // fixtures too. Only the "no-verify-template embedded claim" DETECTOR is
+  // v2-gated (v1/fixtures legitimately carry hand-authored error-analysis).
+  const isV2 = opts.contract === 'v2';
+  const CLAIM_RE = /\b(wrote|got|claims?|says?|answered)\b[^.?!]*?\d/i;
+  const REMAINDER_CLAIM_RE = /\b\d+\s*R\s*\d+\b/;
+  const numEq = (x: string, y: string): boolean => {
+    const a = numericValue(x);
+    const b = numericValue(y);
+    return a !== null && b !== null && Math.abs(a - b) < 1e-9;
+  };
+  for (const { item, path } of located) {
+    const tpl = item.generator ? getTemplate(item.generator.templateId) : undefined;
+    const verify = tpl?.verifyFor;
+    if (verify && item.generator) {
+      // (a) MISMATCH audit — recompute the truth of an embedded-claim item.
+      let truth: { correct: string; wrong?: string } | null = null;
+      try {
+        truth = verify(item.generator.params);
+      } catch {
+        add('QG-11', `${path}.generator`, `verify template "${item.generator.templateId}" could not recompute the claim`);
+      }
+      if (truth) {
+        if (item.answer.validation === 'choice-key' && item.choices) {
+          const correct = item.choices.find((c) => c.isCorrect);
+          if (correct) {
+            const ok =
+              numEq(correct.text, truth.correct) ||
+              correct.text.includes(truth.correct) ||
+              (item.answer.acceptableForms ?? []).some((f) => numEq(f, truth!.correct) || f.includes(truth!.correct));
+            if (!ok) {
+              add('QG-11', `${path}.choices`, `option keyed correct ("${correct.text}") ≠ recomputed truth "${truth.correct}" (D6 class)`);
+            }
+          }
+        } else {
+          const forms = [item.answer.value, ...(item.answer.acceptableForms ?? [])];
+          const present = forms.some((f) => numEq(f, truth!.correct) || f.includes(truth!.correct));
+          if (!present) {
+            add('QG-11', `${path}.answer`, `stated answer does not carry the recomputed true value "${truth.correct}"`);
+          }
+        }
+        if (truth.wrong !== undefined && !item.prompt.includes(truth.wrong)) {
+          add('QG-11', `${path}.prompt`, `error-analysis prompt does not show the recomputed misconception value "${truth.wrong}" (D8 class)`);
+        }
+      }
+    } else if (isV2 && (item.answer.validation === 'choice-key' || item.type === 'error-analysis')) {
+      // (a-detector) v2: a verify-a-worked-answer item MUST carry a verify template.
+      if (CLAIM_RE.test(item.prompt) || REMAINDER_CLAIM_RE.test(item.prompt)) {
+        add('QG-11', `${path}.prompt`, 'v2 item embeds a worked-answer claim but has no verify template — use the generated discrimination/erroranalysis primitive');
+      }
+    }
+  }
+  // (b) prose anchor audit — conservative binary-integer equations only.
+  const scanProse = (text: string, where: string) => {
+    for (const hit of scanBinaryIntegerEquations(text)) {
+      add('QG-11', where, `anchor equation "${hit.expr}" computes ${hit.computed} — a fabricated/wrong number in narration`);
+    }
+  };
+  pack.explanation.script.forEach((seg, i) => scanProse(seg.say, `explanation.script[${i}]`));
+  scanProse(pack.explanation.summary, 'explanation.summary');
+  scanProse(pack.explanation.whyBeforeHow, 'explanation.whyBeforeHow');
+  pack.guidedExamples.forEach((ge, i) =>
+    ge.steps.forEach((s, j) => {
+      if (s.teacherSay) scanProse(s.teacherSay, `guidedExamples[${i}].steps[${j}].teacherSay`);
+    }),
+  );
+  scanProse(pack.puzzle.prompt, 'puzzle.prompt');
+  // (c) reteach-pointer resolution — only structured tokens must resolve.
+  const geIds = new Set(pack.guidedExamples.map((g) => g.id));
+  pack.mistakeBank.forEach((mb, i) => {
+    const p = mb.reteachPointer ?? '';
+    const scriptRef = p.match(/script\[(\d+)\]/);
+    if (scriptRef && Number(scriptRef[1]) >= pack.explanation.script.length) {
+      add('QG-11', `mistakeBank[${i}].reteachPointer`, `references script[${scriptRef[1]}] but the pack has ${pack.explanation.script.length} script segments`);
+    }
+    const geRef = p.match(/[A-E]\d+-GE-\d+/);
+    if (geRef && !geIds.has(geRef[0])) {
+      add('QG-11', `mistakeBank[${i}].reteachPointer`, `references ${geRef[0]} which is not a guided example in this pack`);
+    }
+  });
 
   return { valid: v.length === 0, violations: v };
 }
