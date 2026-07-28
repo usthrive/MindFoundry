@@ -13,6 +13,14 @@
 - **What changed (all on branch `best-brains-content-engine`, uncommitted until you approve — see §4 R4):** a v2 pedagogy layer — new lib modules `meta.ts / ledger.ts / situations.ts / multistep.ts / discrimination.ts / erroranalysis.ts / metacog.ts / pedagogy.ts` (13 seed-invariant preflight gates), `validator.ts` QG-11 (anchor/claim audit + week-independent regression test proving it catches the original D6/D8 bugs), a `verifyFor` registry so error-analysis truth is code-derived (the D6/D8 fabrication class is now structurally impossible), and all 23 `weeks/dNN.ts` rewritten to `pedagogyContract:'v2'`. `V2_WEEKS` in `packGenerator.ts` gates the migration; the correctness gate stayed green at every step.
 - **Build contract + kit** (read these before touching the generator): `build/CONTENT-GENERATOR-FIX-SPEC.md` (Rev 2 — the 9-fix architecture, hardened by a 4-lens adversarial review of 7 blockers + 11 majors) and `build/FANOUT-AUTHORING-KIT.md` (per-week recipes + the hard rules earned from real bugs).
 
+**⭐ UPDATE 2026-07-27 — PHASE A (Fable 5) DONE.** The pedagogy-ceiling review + all Phase-B build
+contracts are written: `build/PEDAGOGY-CEILING-REVIEW.md` (depth verdict + 7 ceiling lifts),
+`build/POLISH-PASS-SPEC.md` (7 surface-defect classes, incl. 3 found beyond the L24 audit),
+`build/FILL-ARCHITECTURE.md` (A/B/C/E band settings, 8 new generator families, 96 per-week recipes),
+`build/PHASE-B-BUILD-PLAN.md` (the ordered Opus task list: B0 polish → B1 families → fills E→C→B→A).
+**An Opus session executes PHASE-B-BUILD-PLAN.md next.** Owed after that: the Fable Phase-C sign-off
+(fresh-eyes audit of A/B/C/E samples + completeness critic) and the still-open Phase-7c meta-prompt v2.
+
 **NEXT (your decisions — now unblocked):** (1) merge `best-brains-content-engine → main` (still a clean fast-forward); (2) the ~80-week fill of Levels A/B/C/E — reuse `FANOUT-AUTHORING-KIT.md` + the style-gate workflow, requiring the same ≥80% clean-ACCEPT per level (Level B needs clock/coin generators; Level E has figure/proof cells to keep human/AI-flagged); (3) the **Fable-5 strategic-review checkpoint** (per L18/R5): a top-model pedagogy-ceiling pass over a sample + the v2 meta-prompt (`MASTER-META-PROMPT-TEMPLATE-v2.md`) + `NEXT-PROGRAMS-STARTER.md`. No merge/push/fill has been done — those are yours.
 
 *(The sections below are the ORIGINAL 2026-07-21 handover, pre-rebuild, kept for context. Where they say "fix the generator / FAILED authenticity," that work is DONE per this banner.)*

@@ -24,6 +24,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { wholeMoney } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -91,15 +92,15 @@ const cmpMoney = situation({
     const a = r.int(3, 30); const k = r.int(2, 6); const item = r.pick(['a kite', 'a book', 'a game', 'a plant', 'a mug']);
     const name = r.pick(NAMES);
     return {
-      prompt: `${item[0].toUpperCase() + item.slice(1)} costs $${a}. ${name}'s bike costs ${k} times as much. How much does the bike cost?`,
+      prompt: `${item[0].toUpperCase() + item.slice(1)} costs ${wholeMoney(a)}. ${name}'s bike costs ${k} times as much. How much does the bike cost?`,
       answerValue: String(a * k), templateId: 'd_mul_v1', params: { a, b: k }, units: 'dollars',
-      acceptableForms: [`$${a * k}`],
+      acceptableForms: [wholeMoney(a * k)],
       hints: ['Does "times as much" scale the price up in copies, or add to it?', 'Stack the base price that many times over.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
 });
-const cmpEstimate = withEstimateFirst(cmpMoney, 'times-as-much stacks whole copies of the price, so the answer should land well above the base cost.');
+const cmpEstimate = withEstimateFirst(cmpMoney, 'should the bike cost a little more than the base price, or many times as much?');
 
 // --- Multi-step comparison problems --------------------------------------------
 const msTogether = multiStep({
@@ -130,7 +131,9 @@ const msLonger = multiStep({
 });
 
 const msPartWhole = multiStep({
-  situationType: 'part-whole', cognitiveOp: 'mul-compare', usesPriorSkill: true,
+  // The week's inverse-start item: the stated total is the RESULT of the scaling,
+  // so the opening move is a divide (PEDAGOGY-CEILING-REVIEW F3).
+  situationType: 'part-whole', cognitiveOp: 'mul-compare', usesPriorSkill: true, posing: 'inverse-start',
   draw: (r) => {
     const k = r.int(2, 5); const small = r.int(3, 9); const total = small * k; const [n1, n2] = two(r);
     return {

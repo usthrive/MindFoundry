@@ -182,6 +182,17 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
   const pm = ctx.puzzleMeta;
   if (!pm) throw new Error(`${tag} [v2 pedagogy]: v2 blueprint must declare puzzleMeta {cognitiveOp, stepCount} for the remove-the-concept check`);
   const pKey = `${pm.cognitiveOp}|${pm.stepCount}`;
+  // Scope note (L31): the adversarial style gate found two puzzles that were
+  // verbatim clones of their OWN week's Day-2/3/4 template while passing this
+  // Day-1-only test. Widening the check to all core days was tried and REVERTED:
+  // 18 of 23 puzzles declare the generic cognitiveOp 'multi-step', which the core
+  // also produces, so the widened gate fired on 14 weeks whose puzzles the judges
+  // had assessed as genuinely distinct — it was measuring label coarseness, not
+  // structure. Making this checkable needs a puzzle-OPERATION taxonomy (each
+  // puzzle declaring the new move it demands: search / constraint / repair /
+  // completeness-argument / deduction), which is authoring work scheduled with the
+  // fill. Until then the whole-week judgment stays with the style gate, which
+  // demonstrably catches it.
   const day1Keys = new Set(day(1).filter((d) => !d.isRetrieval).map((d) => `${meta(d).cognitiveOp}|${meta(d).stepCount}`));
   if (day1Keys.has(pKey)) {
     fail(`puzzle collapses to a Day-1 core structure (${pKey}) — it must apply the concept a genuinely new way (BB-G7 remove-the-concept)`);
@@ -202,6 +213,26 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
   );
   if (!justifies) {
     fail(`no non-computational item demands justification (BB-G2 coupling): need a manual-review/short-text explanation item`);
+  }
+
+  // 6.14 — Warm-up format variety (POLISH-PASS-SPEC §P4) ----------------------
+  // Two warm-ups of the SAME format on one day read as a re-run of the same
+  // exercise, which is exactly the impression the retrieval ramp exists to
+  // avoid. Keyed on the blueprint's declared generator templateId, so this is
+  // blueprint-structural and therefore seed-invariant (it throws for every seed
+  // or for none).
+  const warmupKey = (d: ItemDraft) => d.generator?.templateId ?? `authored:${d.type}`;
+  for (let n = 1; n <= 5; n++) {
+    const warmups = day(n).filter((d) => d.isRetrieval);
+    const keys = warmups.map(warmupKey);
+    const dupe = keys.find((k, i) => keys.indexOf(k) !== i);
+    if (dupe) {
+      fail(`Day ${n} serves two warm-ups of the same format (${dupe}); vary the retrieval format within a day (P4)`);
+    }
+  }
+  const weekWarmupFormats = new Set(allDayItems.filter((d) => d.isRetrieval).map(warmupKey));
+  if (weekWarmupFormats.size < 3) {
+    fail(`only ${weekWarmupFormats.size} distinct warm-up format(s) across the week; need ≥3 (P4). Formats: ${[...weekWarmupFormats].join(', ')}`);
   }
 
   // 6.13 — Ledger precondition (deepening delta) ------------------------------

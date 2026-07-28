@@ -20,6 +20,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { unitFor } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C9 = { level: 'C' as const, week: 9 };
@@ -99,11 +100,14 @@ const roundUpStory = situation({
     const b = r.int(3, 8);
     let a = r.int(20, 90);
     if (a % b === 0) a += 1;
-    const [group, unit] = r.pick([['tables', 'guests'], ['buses', 'students'], ['boats', 'rowers']]);
+    // D6's assigned frames are baking + bookshelf; seating people at tables and
+    // buses belongs to D7 (POLISH-PASS-SPEC §P3 rotation). unitFor(), not
+    // `.slice(0,-1)` — that naive singular printed "Each buse holds 6".
+    const [group, unit] = r.pick([['trays', 'rolls'], ['crates', 'jars'], ['shelves', 'books']]);
     const name = r.pick(NAMES);
     const value = Math.floor(a / b) + 1;
     return {
-      prompt: `${name} is seating ${a} ${unit}. Each ${group.slice(0, -1)} holds ${b}. How many ${group} are needed so everyone has a place?`,
+      prompt: `${name} is packing ${a} ${unit}. Each ${unitFor(1, group)} holds ${b}. How many ${group} are needed so every one is stored?`,
       answerValue: String(value), templateId: 'd_interpret_rem_v1', params: { a, b, mode: 'round-up' }, units: group,
       hints: ['Which matters here — how many fit at one place, or how many places it takes so no one is left out?', 'A place that is only part full still needs a whole one of its own.'],
       errorTags: ['task-comprehension', 'concept-misconception'],
@@ -128,7 +132,7 @@ const estBase = situation({
     };
   },
 });
-const estFirst = withEstimateFirst(estBase, 'sharing leaves whole groups plus maybe a few extra, so the number of groups should be near the share size, and one larger when something would be left out.');
+const estFirst = withEstimateFirst(estBase, 'will the number of groups come out exactly even, or will one more be needed?');
 
 // --- Multi-step division word problems (exact op-chains; answer + step-count derived) ---
 const msGatherShare = multiStep({
@@ -203,7 +207,7 @@ const discrimRemSize = discrimination({
       prompt: `A baker packs ${a} ${thing} into ${container} that each hold ${b}. Which choice shows the full ${container} and the leftover written correctly?`,
       correct: `${q} R ${rem}`,
       distractors: [
-        { text: `${q - 1} R ${rem + b}`, errorTag: 'concept-misconception', rationale: `Stops one group early, so the leftover is not smaller than the group size — another ${container.slice(0, -1)} still fills.` },
+        { text: `${q - 1} R ${rem + b}`, errorTag: 'concept-misconception', rationale: `Stops one group early, so the leftover is not smaller than the group size — another ${unitFor(1, container)} still fills.` },
         { text: `${q} R ${rem + 1}`, errorTag: 'procedure-slip', rationale: 'Miscounts the leftover by one when checking what stays behind.' },
       ],
       hints: ['Which leftover is still too big to leave alone — could another whole group be made from it?', 'A leftover that reaches the group size means one more group still fits.'],
@@ -278,7 +282,7 @@ export const buildD06 = makeWeekBuilder({
     // Day 2 — fluency + application: discrimination + metacognition enter
     [
       { gen: wArea, diff: 2 },
-      { gen: wMulFact, diff: 2 },
+      { gen: wDivExact, diff: 2 },
       { gen: discrimRemSize, diff: 3 },
       { gen: estFirst, diff: 3 },
       { gen: roundUpStory, diff: 3 },

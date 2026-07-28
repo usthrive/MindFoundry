@@ -34,6 +34,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { countNoun } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -87,7 +88,7 @@ const gTemp = situation({
     };
   },
 });
-const gMeta = withEstimateFirst(gTemp, 'a pattern that climbs by the same amount every step should land far above where it began — never close to the start, since the equal jumps keep piling up.');
+const gMeta = withEstimateFirst(gTemp, 'should the later term sit close to the starting value, or far from it?');
 
 // --- Single-step COORDINATE situations (grid moves; x before y) -----------------
 const gRobot = situation({
@@ -95,7 +96,7 @@ const gRobot = situation({
   draw: (r) => {
     const start = r.int(1, 9); const step = r.int(2, 8); const k = r.int(4, 9);
     return {
-      prompt: `A robot starts on a grid at x = ${start} and rolls ${step} units right at each turn. Counting its starting spot as the 1st mark, what is its x-coordinate at the ${k}th mark?`,
+      prompt: `A robot starts on a grid at x = ${start} and rolls ${countNoun(step, 'units')} right at each turn. Counting its starting spot as the 1st mark, what is its x-coordinate at the ${k}th mark?`,
       answerValue: String(start + step * (k - 1)), templateId: 'd_pattern_term_v1', params: { start, step, k },
       hints: ['Does the starting spot count as the first grid mark, or the zero-th?', 'From the start, add the right-move once for every mark after the first.'],
       errorTags: ['procedure-slip', 'representation-misread'],
@@ -108,7 +109,7 @@ const gMap = situation({
   draw: (r) => {
     const a = r.int(3, 20); const b = r.int(2, 15); const name = r.pick(NAMES);
     return {
-      prompt: `On ${name}'s treasure map you begin at the origin, step ${a} units right to a palm tree, then ${b} more units right to the chest. What is the chest's x-coordinate?`,
+      prompt: `On ${name}'s treasure map you begin at the origin, step ${countNoun(a, 'units')} right to a palm tree, then ${b} more units right to the chest. What is the chest's x-coordinate?`,
       answerValue: String(a + b), templateId: 'd_add_v1', params: { a, b },
       hints: ['Does stepping right a second time change the across-number, or the up-number?', 'Combine both right-steps into a single across-distance from the origin.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -149,7 +150,7 @@ const discXY = discrimination({
   draw: (r) => {
     const x = r.int(1, 9); let y = r.int(1, 9); if (y === x) y = x === 9 ? 8 : x + 1;
     return {
-      prompt: `A point sits ${x} units right and ${y} units up from the origin (0, 0). Which ordered pair names it?`,
+      prompt: `A point sits ${countNoun(x, 'units')} right and ${countNoun(y, 'units')} up from the origin (0, 0). Which ordered pair names it?`,
       correct: `(${x}, ${y})`, correctForms: ['across then up'],
       distractors: [
         { text: `(${y}, ${x})`, errorTag: 'representation-misread', rationale: 'Writes up before across — swaps the two coordinates.' },
@@ -271,7 +272,7 @@ export const buildD22 = makeWeekBuilder({
             { text: 'sometimes', errorTag: 'concept-misconception', rationale: 'An across-value of zero means no across-move, so the point is always pinned to the up-axis.' },
             { text: 'never', errorTag: 'representation-misread', rationale: 'Confuses which coordinate pins a point to the axis.' },
           ],
-          hints: ['What does an across-value of zero tell you about where the point sits?', 'No across-move keeps a point on the up-axis.'],
+          hints: ['What does an across-value of zero tell you about where the point sits?', 'Picture standing at the origin and never stepping sideways — which line are you still standing on?'],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
         diff: 3,

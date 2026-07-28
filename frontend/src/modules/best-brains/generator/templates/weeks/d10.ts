@@ -31,6 +31,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { addFrac, formatFrac, subFrac } from '../lib/compute';
+import { partitionWord } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -53,7 +54,7 @@ const sCombineAdd = situation({
     const name = r.pick(NAMES);
     const grain = r.pick(['oats', 'flour', 'raisins', 'berries', 'cocoa']);
     return {
-      prompt: `${name}'s muffin recipe uses ${n1}/${d} cup of ${grain}, then ${n2}/${d} cup more. How many cups of ${grain} in all?`,
+      prompt: `${name}'s recipe measures ${grain} in ${partitionWord(d)} of a cup. It uses ${n1}/${d} cup, then ${n2}/${d} cup more. How many cups of ${grain} in all?`,
       answerValue: formatFrac(addFrac({ n: n1, d }, { n: n2, d })),
       templateId: 'd_frac_like_v1', params: { n1, n2, d, op: 1 }, units: 'cup', validation: 'equivalent-fraction',
       hints: ['Do the two amounts already use the same-size pieces, or must they be re-cut first?', 'Add the counts on top; the piece-size on the bottom stays the same.'],
@@ -69,7 +70,7 @@ const sMeasureSub = situation({
     const n1 = r.int(2, d - 1); const n2 = r.int(1, n1 - 1);
     const name = r.pick(NAMES);
     return {
-      prompt: `A trail is ${n1}/${d} of a kilometre long. ${name} has already walked ${n2}/${d} of a kilometre. How much of the kilometre is left to walk?`,
+      prompt: `A trail is marked in ${partitionWord(d)} of a kilometre. It runs ${n1}/${d} of a kilometre, and ${name} has already walked ${n2}/${d}. How much of the trail is left to walk?`,
       answerValue: formatFrac(subFrac({ n: n1, d }, { n: n2, d })),
       templateId: 'd_frac_like_v1', params: { n1, n2, d, op: -1 }, validation: 'equivalent-fraction',
       hints: ['Are both distances measured in the same size of piece already?', 'Take the smaller count from the larger; the piece-size does not change.'],
@@ -85,7 +86,7 @@ const sTimeAdd = situation({
     const n1 = r.int(1, d - 1); const n2 = r.int(1, d - 1);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} spent ${n1}/${d} of an hour on maths and ${n2}/${d} of an hour on reading. What fraction of an hour was that altogether?`,
+      prompt: `${name}'s timetable is blocked in ${partitionWord(d)} of an hour. ${name} spent ${n1}/${d} of an hour on maths and ${n2}/${d} on reading. What fraction of an hour was that altogether?`,
       answerValue: formatFrac(addFrac({ n: n1, d }, { n: n2, d })),
       templateId: 'd_frac_like_v1', params: { n1, n2, d, op: 1 }, units: 'hour', validation: 'equivalent-fraction',
       hints: ['Which part changes when you join same-size pieces — the count, or the piece-size?', 'Combine the same-size time-pieces; leave the bottom number where it is.'],
@@ -101,7 +102,7 @@ const sSharing = situation({
     const n1 = r.int(2, d - 1); const n2 = r.int(1, n1 - 1);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} had ${n1}/${d} of a pizza and shared ${n2}/${d} of it with a friend. How much of the pizza is left?`,
+      prompt: `A pizza is cut into ${d} equal slices. ${name} had ${n1}/${d} of it and shared ${n2}/${d} with a friend. How much of the pizza is left?`,
       answerValue: formatFrac(subFrac({ n: n1, d }, { n: n2, d })),
       templateId: 'd_frac_like_v1', params: { n1, n2, d, op: -1 }, validation: 'equivalent-fraction',
       hints: ['Do both amounts count the same-size slices already?', 'Take the shared count off the top; the slice-size stays put.'],
@@ -118,7 +119,7 @@ const meBase = situation({
     const n1 = r.int(1, d - 1); const n2 = r.int(1, d - 1);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name}'s blue ribbon is ${n1}/${d} of a metre and a red ribbon is ${n2}/${d} of a metre. Laid end to end, how long are they together?`,
+      prompt: `Ribbon is sold in ${partitionWord(d)} of a metre. ${name}'s blue ribbon is ${n1}/${d} of a metre and a red one is ${n2}/${d}. Laid end to end, how long are they together?`,
       answerValue: formatFrac(addFrac({ n: n1, d }, { n: n2, d })),
       templateId: 'd_frac_like_v1', params: { n1, n2, d, op: 1 }, units: 'metre', validation: 'equivalent-fraction',
       hints: ['Before adding, are both lengths cut into the same size of piece?', 'Join the counts of same-size pieces; the piece-size stays fixed.'],
@@ -126,7 +127,7 @@ const meBase = situation({
     };
   },
 });
-const meEstimate = withEstimateFirst(meBase, 'joining two same-size pieces makes a length longer than either piece alone, so the total should land above the larger of the two.');
+const meEstimate = withEstimateFirst(meBase, 'should the joined length come out longer or shorter than the longer piece alone?');
 
 // --- Multi-step like-denominator chains (≥2 ops each; fixed name-free hints) -----
 const msRecipe = multiStep({
@@ -137,7 +138,7 @@ const msRecipe = multiStep({
     const n3 = r.int(1, Math.min(d - 1, n1 + n2 - 1));
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} pours ${n1}/${d} litre of juice into a jug, then ${n2}/${d} litre more, then pours ${n3}/${d} litre back out. How much juice is in the jug now?`,
+      prompt: `A jug is marked in ${partitionWord(d)} of a litre. ${name} pours in ${n1}/${d} litre, then ${n2}/${d} litre more, then pours ${n3}/${d} litre back out. How much juice is in the jug now?`,
       initN: n1, initD: d, steps: [{ op: 'add', n: n2, d }, { op: 'sub', n: n3, d }], units: 'litre', validation: 'equivalent-fraction',
       hints: ['Does the question want one amount, or the running total after every change?', 'Combine the two pours first, then take the poured-out amount away.'],
       errorTags: ['concept-misconception', 'procedure-slip'],
@@ -152,7 +153,7 @@ const msDistance = multiStep({
     const n1 = r.int(1, d - 1); const n2 = r.int(1, d - 1); const n3 = r.int(1, d - 1);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} jogs ${n1}/${d} of a mile, then ${n2}/${d} of a mile, then ${n3}/${d} of a mile. How far did ${name} jog in total?`,
+      prompt: `A running track is marked in ${partitionWord(d)} of a mile. ${name} jogs ${n1}/${d}, then ${n2}/${d}, then ${n3}/${d} of a mile. How far did ${name} jog in total?`,
       initN: n1, initD: d, steps: [{ op: 'add', n: n2, d }, { op: 'add', n: n3, d }], units: 'mile', validation: 'equivalent-fraction',
       hints: ['Which do you want — a single leg, or the whole distance after every leg?', 'Add the legs one at a time; every leg is measured in the same size of piece.'],
       errorTags: ['concept-misconception', 'procedure-slip'],
@@ -167,7 +168,7 @@ const msPartWhole = multiStep({
     const n1 = r.int(1, d - 2); const n2 = r.int(1, d - 1 - n1);
     const name = r.pick(NAMES);
     return {
-      prompt: `A garden bed is one whole plot. ${name} fills ${n1}/${d} of it with carrots and ${n2}/${d} of it with beans. What fraction of the plot is still empty?`,
+      prompt: `A garden bed is marked out in ${partitionWord(d)}. ${name} fills ${n1}/${d} of it with carrots and ${n2}/${d} of it with beans. What fraction of the plot is still empty?`,
       initN: 1, initD: 1, steps: [{ op: 'sub', n: n1, d }, { op: 'sub', n: n2, d }], validation: 'equivalent-fraction',
       hints: ['Is the whole staying whole, or are pieces being taken from it?', 'Start from one whole and take away each planted piece in turn.'],
       errorTags: ['concept-misconception', 'representation-misread'],

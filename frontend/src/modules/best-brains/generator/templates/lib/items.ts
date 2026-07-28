@@ -19,6 +19,7 @@
  */
 
 import type { Choice, ErrorTag, ItemType, WeekRef } from '../../../types';
+import { fmtInt } from './format';
 import type { Rng } from '../../rng';
 import { makeChoices, TupleGuard } from '../shared';
 import type { ItemDraft } from '../shared';
@@ -64,7 +65,7 @@ export function expandedForm(digits = 6): ItemGen {
       for (let i = 0; i < s.length; i++) {
         const place = s.length - 1 - i;
         const d = Number(s[i]);
-        if (d !== 0) terms.push(String(d * 10 ** place));
+        if (d !== 0) terms.push(fmtInt(d * 10 ** place));
       }
       return {
         type: 'computation',
@@ -106,7 +107,7 @@ export function digitValue(digits = 6): ItemGen {
       const digit = Number(s[s.length - 1 - place]);
       return {
         type: 'computation',
-        prompt: `What is the VALUE of the digit ${digit} in ${value}?`,
+        prompt: `What is the VALUE of the digit ${digit} in ${fmtInt(value)}?`,
         answer: { value: String(digit * 10 ** place), acceptableForms: [], validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -129,7 +130,7 @@ export function roundWhole(place: number, lo: number, hi: number): ItemGen {
       if (n % unit === unit / 2) n += 1;
       return {
         type: 'computation',
-        prompt: `Round ${n} to the nearest ${unit}.`,
+        prompt: `Round ${fmtInt(n)} to the nearest ${unit}.`,
         answer: { value: String(roundInt(n, place)), acceptableForms: [], validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -157,7 +158,7 @@ export function compareWhole(digits = 6): ItemGen {
       ]);
       return {
         type: 'representation',
-        prompt: `Compare: ${a} __ ${b}. Which symbol makes it true?`,
+        prompt: `Compare: ${fmtInt(a)} __ ${fmtInt(b)}. Which symbol makes it true?`,
         choices,
         answer: { value: correctKey, acceptableForms: [correct], validation: 'choice-key' },
         difficulty,
@@ -181,7 +182,7 @@ export function addWhole(lo: number, hi: number): ItemGen {
       const b = r.int(lo, hi);
       return {
         type: 'computation',
-        prompt: `${a} + ${b} = ?`,
+        prompt: `${fmtInt(a)} + ${fmtInt(b)} = ?`,
         answer: { value: String(a + b), acceptableForms: [], validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -208,7 +209,7 @@ export function subWhole(lo: number, hi: number, acrossZeros = false): ItemGen {
       }
       return {
         type: 'computation',
-        prompt: `${a} − ${b} = ?`,
+        prompt: `${fmtInt(a)} − ${fmtInt(b)} = ?`,
         answer: { value: String(a - b), acceptableForms: [], validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -401,7 +402,17 @@ export function fracCompareChoice(): ItemGen {
         const greater = a1 / b1 > a2 / b2 ? fracStr(a1, b1) : fracStr(a2, b2);
         const lesser = a1 / b1 > a2 / b2 ? fracStr(a2, b2) : fracStr(a1, b1);
         const { choices, correctKey } = makeChoices(rr, greater, [
-          { text: lesser, errorTag: 'concept-misconception', rationale: 'Judges size by the bigger bottom number — smaller pieces, not more amount.' },
+          {
+            text: lesser,
+            errorTag: 'concept-misconception',
+            // Pick the misconception that genuinely yields THIS distractor.
+            rationale:
+              (a1 / b1 > a2 / b2 ? b2 > b1 : b1 > b2)
+                ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
+                : (a1 / b1 > a2 / b2 ? a2 > a1 : a1 > a2)
+                  ? 'Judges size by the bigger top number alone, ignoring how big the pieces are.'
+                  : 'Compares the two fractions without first giving them a common piece-size.',
+          },
           { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Skips finding a common size to compare fairly.' },
         ]);
         return {
@@ -567,7 +578,16 @@ export function decCompareChoice(): ItemGen {
       const greater = av > bv ? a : b;
       const lesser = av > bv ? b : a;
       const { choices, correctKey } = makeChoices(r, greater, [
-        { text: lesser, errorTag: 'concept-misconception', rationale: 'Chooses the one with more digits — "longer means bigger" misread of decimals.' },
+        {
+          text: lesser,
+          errorTag: 'concept-misconception',
+          // "Longer means bigger" only explains this distractor when the SMALLER
+          // decimal is in fact the longer one.
+          rationale:
+            lesser.length > greater.length
+              ? 'Chooses the one with more digits — "longer means bigger" misread of decimals.'
+              : 'Compares the digits after the point without lining up the places first.',
+        },
         { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Ignores the tenths place, where the comparison is decided.' },
       ]);
       return {

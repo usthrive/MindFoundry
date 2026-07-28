@@ -23,6 +23,8 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { coprimeNumerator } from '../lib/format';
+import { boundAttribute } from '../lib/contexts';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -43,7 +45,7 @@ const eqRecipe = situation({
   situationType: 'sharing', cognitiveOp: 'frac-equiv',
   draw: (r) => {
     const d1 = r.pick([2, 3, 4, 5, 6]);
-    const n1 = r.int(1, d1 - 1);
+    const n1 = coprimeNumerator(r, d1);
     const k = r.int(2, 4);
     const d2 = d1 * k;
     const grain = r.pick(['oats', 'flour', 'rice', 'sugar', 'cocoa']);
@@ -140,7 +142,7 @@ const cmpMeasure = situation({
     };
   },
 });
-const cmpEstimate = withEstimateFirst(cmpMeasure, 'a fraction that reaches past the halfway landmark is worth more than half, so weigh each one against that mark before you decide.');
+const cmpEstimate = withEstimateFirst(cmpMeasure, 'which of the two reaches past the halfway mark — one of them, both, or neither?');
 
 // --- Multi-step: fraction-of-a-set (PRIOR skill) composed with a whole-number op -
 const msSetAdd = multiStep({
@@ -149,10 +151,11 @@ const msSetAdd = multiStep({
     const d = r.pick([2, 3, 4, 5, 6, 8]);
     const m = r.int(2, 6);
     const total = d * m;
-    const n = r.int(1, d - 1);
+    const n = coprimeNumerator(r, d);
     const k = r.int(2, 9);
-    const thing = r.pick(['apples', 'marbles', 'beads', 'tiles', 'cards']);
-    const kind = r.pick(['ripe', 'red', 'shiny', 'blue', 'gold']);
+    // Noun and adjective drawn as ONE bound pair — drawing them from separate
+    // pools produced "1/4 of the marbles are ripe" (POLISH-PASS-SPEC §P3).
+    const { noun: thing, attribute: kind } = boundAttribute(r);
     return {
       prompt: `A crate holds ${total} ${thing}. ${n}/${d} of them are ${kind}. Then ${k} more ${kind} ${thing} are added. How many ${kind} ${thing} are there now?`,
       initN: total, steps: [{ op: 'mul', n, d }, { op: 'add', n: k, d: 1 }], units: thing,
@@ -168,7 +171,7 @@ const msSetRest = multiStep({
     const d = r.pick([2, 3, 4, 5, 6, 8]);
     const m = r.int(2, 6);
     const total = d * m;
-    const n = r.int(1, d - 1);
+    const n = coprimeNumerator(r, d);
     const silver = m * (d - n);
     const k = r.int(1, Math.max(1, silver - 1));
     return {
@@ -184,7 +187,7 @@ const msShareEqual = multiStep({
   situationType: 'sharing', cognitiveOp: 'multi-step', usesPriorSkill: true,
   draw: (r) => {
     const d = r.pick([2, 3, 4, 5, 6]);
-    const n = r.int(1, d - 1);
+    const n = coprimeNumerator(r, d);
     const m = r.pick([4, 6]);
     const total = d * m;
     const p = r.pick(m === 4 ? [2, 4] : [2, 3, 6]);

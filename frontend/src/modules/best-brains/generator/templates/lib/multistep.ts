@@ -16,6 +16,7 @@ import type { Rng } from '../../rng';
 import type { TupleGuard, ItemDraft } from '../shared';
 import { drawUniqueItem } from './guard';
 import { evalDecChain, evalRatChain, formatFrac, type DecStep, type RatStep } from './compute';
+import { valueForms } from './format';
 import type { AuthorMeta, SituationType } from './meta';
 
 export type ItemGen = (rng: Rng, guard: TupleGuard, difficulty: number) => ItemDraft;
@@ -44,6 +45,8 @@ export interface MultiStepCfg {
   cognitiveOp?: string;
   /** True when ≥1 step invokes a strictly-prior-week skill (BB-W13 substrate). */
   usesPriorSkill?: boolean;
+  /** How the problem is POSED (AuthorMeta.posing); default 'forward'. */
+  posing?: AuthorMeta['posing'];
   draw: (r: Rng) => MultiStepDraw;
 }
 
@@ -71,9 +74,10 @@ export function multiStep(cfg: MultiStepCfg): ItemGen {
         cognitiveOp: cfg.cognitiveOp ?? 'multi-step',
         situationType: cfg.situationType,
         ...(cfg.usesPriorSkill ? { usesPriorSkill: true } : {}),
+        ...(cfg.posing ? { posing: cfg.posing } : {}),
       };
       const acceptableForms =
-        d.acceptableForms ?? (d.units ? [`${result} ${d.units}`] : []);
+        d.acceptableForms ?? (d.units ? valueForms(result, d.units) : []);
       const draft: ItemDraft = {
         type: 'word-problem',
         prompt: d.prompt,
@@ -116,6 +120,7 @@ export function multiStepDec(cfg: {
   situationType: SituationType;
   cognitiveOp?: string;
   usesPriorSkill?: boolean;
+  posing?: AuthorMeta['posing'];
   draw: (r: Rng) => MultiStepDecDraw;
 }): ItemGen {
   return (rng, guard, difficulty) =>
@@ -130,8 +135,9 @@ export function multiStepDec(cfg: {
         cognitiveOp: cfg.cognitiveOp ?? 'multi-step',
         situationType: cfg.situationType,
         ...(cfg.usesPriorSkill ? { usesPriorSkill: true } : {}),
+        ...(cfg.posing ? { posing: cfg.posing } : {}),
       };
-      const acceptableForms = d.acceptableForms ?? (d.units ? [`${result} ${d.units}`] : []);
+      const acceptableForms = d.acceptableForms ?? (d.units ? valueForms(result, d.units) : []);
       const draft: ItemDraft = {
         type: 'word-problem',
         prompt: d.prompt,

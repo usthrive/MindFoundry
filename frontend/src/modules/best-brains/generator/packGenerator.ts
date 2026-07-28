@@ -52,8 +52,15 @@ import { buildD24 } from './templates/weeks/d24';
  * Default content version stamped on template-generated packs.
  * 1.1.0 — LS1-R4 retrieval ramp (see applyRetrievalRamp). Learners pinned at
  * 1.0.0 keep regenerating their original packs (DD15 versioned pointers).
+ * 1.2.0 — the B0 SURFACE-REALISM pass: currency and grammar rendered through
+ *   lib/format.ts, context-sensitive fraction simplification, cross-week context
+ *   rotation, warm-up format variety, thousands separators, and the pedagogy
+ *   lifts (eliciting metacognition, claim-only error analysis, signal fade).
+ *   Surfaces CHANGE deliberately at this bump — a given pack_seed renders
+ *   different prose than it did at 1.1.0, while every computed answer is
+ *   unchanged. Determinism is re-established at the new content.
  */
-export const CONTENT_VERSION = '1.1.0';
+export const CONTENT_VERSION = '1.2.0';
 
 type WeekBuilder = (packSeed: number, contentVersion: string) => WeeklyConceptPack;
 

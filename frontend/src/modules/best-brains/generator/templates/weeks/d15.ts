@@ -21,14 +21,16 @@
  *    ≤2× in the daily core; every rung-1 an algorithm-free orienting question.
  */
 
-import { asWarmup, classify, divideRemainder, multiply, reasoning } from '../lib/items';
+import { asWarmup, classify, divideRemainder, factorPair, multiply, reasoning } from '../lib/items';
 import { situation } from '../lib/situations';
 import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { fmtInt, wholeMoney } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
+const D3 = { level: 'D' as const, week: 3 };
 const C12 = { level: 'C' as const, week: 12 };
 const D5 = { level: 'D' as const, week: 5 };
 const D6 = { level: 'D' as const, week: 6 };
@@ -43,6 +45,7 @@ const wMulFact = asWarmup(multiply(2, 9, 2, 9), C12);
 const wTwoByOne = asWarmup(multiply(11, 49, 3, 9), D5);
 const wTwoByTwo = asWarmup(multiply(11, 29, 11, 29), D8);
 const wDiv = asWarmup(divideRemainder(3, 9, 20, 89), D6);
+const wFactor = asWarmup(factorPair(), D3);                   // D3 missing-factor form (not a second bare product)
 
 // --- Single-step 3-digit × 2-digit situations (fixed, role-based, name-free hints) --
 const sPack = situation({
@@ -64,11 +67,11 @@ const sSeat = situation({
   situationType: 'area', cognitiveOp: 'mul',
   draw: (r) => {
     const a = r.int(102, 389); const b = r.int(13, 49);
-    const place = r.pick(['theater', 'arena', 'stadium', 'hall', 'auditorium']);
+    const place = r.pick(['library', 'archive', 'bookshop', 'reading room', 'store room']);
     return {
-      prompt: `A ${place} has ${a} rows of ${b} seats. How many seats are there in all?`,
-      answerValue: String(a * b), templateId: 'd_mul_v1', params: { a, b }, units: 'seats',
-      hints: ['Picture the seats as a grid of rows and columns — what finds the whole array?', 'Multiply the number of rows by the seats in each row.'],
+      prompt: `A ${place} has ${a} shelves holding ${b} books each. How many books are there in all?`,
+      answerValue: String(a * b), templateId: 'd_mul_v1', params: { a, b }, units: 'books',
+      hints: ['Picture the books as a grid of shelves and columns — what finds the whole array?', 'Multiply the number of shelves by the books on each shelf.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
@@ -95,9 +98,9 @@ const sMoney = situation({
     const a = r.int(103, 269); const b = r.int(12, 29);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name}'s club buys ${a} tickets at $${b} each. What is the total cost?`,
+      prompt: `${name}'s club buys ${a} tickets at ${wholeMoney(b)} each. What is the total cost?`,
       answerValue: String(a * b), templateId: 'd_mul_v1', params: { a, b }, units: 'dollars',
-      acceptableForms: [`$${a * b}`],
+      acceptableForms: [wholeMoney(a * b)],
       hints: ['Does buying more at one price scale the cost up in equal steps?', 'Multiply the price by how many tickets are bought.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -105,7 +108,7 @@ const sMoney = situation({
 });
 const mcEstimate = withEstimateFirst(
   sMoney,
-  'rounding both factors to their leading place gives a nearby round product, so the answer should land close to that round number and far above either factor alone.',
+  'round both factors to their leading place — about where should the answer land?',
 );
 
 // --- Multi-step 3-digit × 2-digit problems (chain answer from the op-chain) ------
@@ -123,16 +126,20 @@ const msFill = multiStep({
   },
 });
 
+// INVERSE-START (PEDAGOGY-CEILING-REVIEW F3). Every other multi-step in this week
+// narrates its operations in execution order, so the child follows rather than
+// plans. Here the stated total is the RESULT of the packing, so the opening move
+// is a divide the sentence order never announces.
 const msShip = multiStep({
-  situationType: 'part-whole', cognitiveOp: 'multi-step',
+  situationType: 'part-whole', cognitiveOp: 'multi-step', usesPriorSkill: true, posing: 'inverse-start',
   draw: (r) => {
-    const a = r.int(104, 269); const b = r.int(12, 24); const c = r.int(10, 79);
+    const b = r.int(12, 24); const crates = r.int(8, 20); const a = b * crates; const c = r.int(2, b - 1);
     const [n1, n2] = two(r);
     return {
-      prompt: `${n1} packs ${a} crates with ${b} tins each; then ${n2} removes ${c} dented tins. How many good tins remain?`,
-      initN: a, steps: [{ op: 'mul', n: b, d: 1 }, { op: 'sub', n: c, d: 1 }], units: 'tins',
-      hints: ['Does the story build a whole amount and then take part of it away?', 'Multiply to get the full amount, then subtract what is removed.'],
-      errorTags: ['task-comprehension', 'procedure-slip'],
+      prompt: `${n1} packed ${a} tins equally into ${crates} crates. ${n2} then takes ${c} tins out of one crate. How many tins are left in that crate?`,
+      initN: a, steps: [{ op: 'div', n: crates, d: 1 }, { op: 'sub', n: c, d: 1 }], units: 'tins',
+      hints: ['Do you already know what one crate holds, or must you work that out first?', 'Find what a single crate held, then take away the tins removed from it.'],
+      errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
 });
@@ -143,7 +150,7 @@ const msBudget = multiStep({
     const a = r.int(110, 240); const b = r.int(12, 29); const c = r.int(15, 89);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} buys ${a} tickets at $${b} each and then uses a $${c} group voucher. What is the final cost in dollars?`,
+      prompt: `${name} buys ${a} tickets at ${wholeMoney(b)} each and then uses a ${wholeMoney(c)} group voucher. What is the final cost in dollars?`,
       initN: a, steps: [{ op: 'mul', n: b, d: 1 }, { op: 'sub', n: c, d: 1 }], units: 'dollars',
       hints: ['What has to be worked out before the voucher can be taken off?', 'Multiply to get the full cost, then subtract the reduction.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -159,11 +166,11 @@ const discEstimate = discrimination({
     const rA = Math.round(a / 100) * 100; const rB = Math.round(b / 10) * 10;
     const est = rA * rB;
     return {
-      prompt: `Rounding both factors to their biggest place, which is the closest estimate of ${a} × ${b}?`,
-      correct: String(est),
+      prompt: `Rounding both factors to their biggest place, which is the closest estimate of ${fmtInt(a)} × ${fmtInt(b)}?`,
+      correct: fmtInt(est), correctForms: [String(est)],
       distractors: [
-        { text: String(est / 10), errorTag: 'representation-misread', rationale: 'Dropped a place — the estimate is missing one of its zeros.' },
-        { text: String(est * 10), errorTag: 'procedure-slip', rationale: 'Slipped an extra zero onto the estimate.' },
+        { text: fmtInt(est / 10), errorTag: 'representation-misread', rationale: 'Dropped a place — the estimate is missing one of its zeros.' },
+        { text: fmtInt(est * 10), errorTag: 'procedure-slip', rationale: 'Slipped an extra zero onto the estimate.' },
       ],
       hints: ['Which single round number is nearest without doing the exact multiply?', 'Round each factor to its leading place, then multiply the round numbers.'],
       errorTags: ['representation-misread', 'procedure-slip'],
@@ -230,7 +237,7 @@ export const buildD15 = makeWeekBuilder({
     // Day 1 — concept echo: single-step 3×2-digit products only, blocked
     [
       { gen: wMulFact, diff: 2 },
-      { gen: wTwoByTwo, diff: 2 },
+      { gen: wFactor, diff: 2 },
       { gen: wDiv, diff: 2 },
       { gen: sPack, diff: 2 },
       { gen: sSeat, diff: 3 },
@@ -239,7 +246,7 @@ export const buildD15 = makeWeekBuilder({
     // Day 2 — fluency + application: metacognition + discrimination + multi-step enter
     [
       { gen: wTwoByOne, diff: 2 },
-      { gen: wMulFact, diff: 2 },
+      { gen: wDiv, diff: 2 },
       { gen: mcEstimate, diff: 3 },
       { gen: discEstimate, diff: 3 },
       { gen: msFill, diff: 3 },

@@ -26,7 +26,7 @@
  *    explanation script (round → estimate → check → adjust → bracket).
  */
 
-import { asWarmup, classify, divideRemainder, multiply, reasoning } from '../lib/items';
+import { asWarmup, classify, divideRemainder, factorPair, multiply, reasoning } from '../lib/items';
 import { situation } from '../lib/situations';
 import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
@@ -34,6 +34,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
+const D3 = { level: 'D' as const, week: 3 };
 const C12 = { level: 'C' as const, week: 12 };
 const D6 = { level: 'D' as const, week: 6 };
 const D15 = { level: 'D' as const, week: 15 };
@@ -48,6 +49,7 @@ const three = (r: { shuffle: <T>(a: readonly T[]) => T[] }) => r.shuffle([...NAM
 const wMulFact = asWarmup(multiply(2, 9, 2, 9), C12);
 const wBigMul = asWarmup(multiply(101, 299, 11, 29), D15);
 const wDivRem = asWarmup(divideRemainder(3, 9, 20, 89), D6);
+const wFactor = asWarmup(factorPair(), D3);                   // D3 missing-factor form (not a second bare product)
 
 // --- Single-step division situations (fixed, role-based, name-free hints) --------
 const gShare = situation({
@@ -95,7 +97,7 @@ const gRate = situation({
     };
   },
 });
-const gRateEst = withEstimateFirst(gRate, 'a rounded, friendlier divisor tells you about how many equal groups fit, so a sensible answer lands near that easy estimate.');
+const gRateEst = withEstimateFirst(gRate, 'about how many equal groups fit if you use a friendlier divisor?');
 
 const gGroup = situation({
   situationType: 'part-whole', cognitiveOp: 'div-exact',
@@ -146,9 +148,9 @@ const mBusAdults = multiStep({
     const b = r.int(9, 30); const q = r.int(6, 20); const a = b * q; const m = r.int(2, 4);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name}'s field trip has ${a} students. Each bus seats ${b}, and every bus needs ${m} adults. How many adults are needed for all the buses?`,
-      initN: a, steps: [{ op: 'div', n: b, d: 1 }, { op: 'mul', n: m, d: 1 }], units: 'adults',
-      hints: ['Do you need the number of buses before you can count the adults?', 'Find how many buses first, then the adults each bus needs.'],
+      prompt: `${name}'s club has ${a} members. Each team takes ${b}, and every team needs ${m} coaches. How many coaches are needed for all the teams?`,
+      initN: a, steps: [{ op: 'div', n: b, d: 1 }, { op: 'mul', n: m, d: 1 }], units: 'coaches',
+      hints: ['Do you need the number of teams before you can count the coaches?', 'Find how many teams first, then the coaches each team needs.'],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
@@ -233,7 +235,7 @@ export const buildD16 = makeWeekBuilder({
     // Day 1 — concept echo: single-step division only, blocked (no interleaving yet)
     [
       { gen: wMulFact, diff: 2 },
-      { gen: wBigMul, diff: 2 },
+      { gen: wFactor, diff: 2 },
       { gen: wDivRem, diff: 2 },
       { gen: gShare, diff: 3 },
       { gen: gBox, diff: 3 },
@@ -242,7 +244,7 @@ export const buildD16 = makeWeekBuilder({
     // Day 2 — fluency + application: estimate-first metacognition + discrimination enter
     [
       { gen: wBigMul, diff: 2 },
-      { gen: wMulFact, diff: 2 },
+      { gen: wDivRem, diff: 2 },
       { gen: gRateEst, diff: 3 },
       { gen: gGroup, diff: 3 },
       { gen: dBracket, diff: 3 },
@@ -295,14 +297,14 @@ export const buildD16 = makeWeekBuilder({
   ],
   puzzle: () => ({
     id: 'D16-PZ-01',
-    title: 'Puzzle Grove: Bracket the Quotient',
-    puzzleType: 'estimation',
-    prompt: 'Without doing full long division, bracket 851 ÷ 23 between two consecutive multiples of ten, then find the exact quotient. Show the two bracketing products.',
-    answer: { value: 'between 30 and 40 (23×30=690, 23×40=920); exact quotient 37', acceptableForms: ['37'], validation: 'short-text-keyword' },
-    hintLadder: ['Which two round tens does the divisor times each one trap the number between?', 'Multiply the divisor by 30 and by 40, then home in between them.'],
+    title: 'Puzzle Grove: The Hidden Dividend',
+    puzzleType: 'logic',
+    prompt: 'A mystery number divided by 21 leaves a remainder of 5, and its quotient is somewhere in the thirties. Find EVERY number it could be, and explain how you know the list is complete.',
+    answer: { value: 'ten numbers: 635, 656, 677, 698, 719, 740, 761, 782, 803, 824 — one for each quotient from 30 to 39, each 21 more than the last', acceptableForms: ['635', '824', 'ten'], validation: 'short-text-keyword' },
+    hintLadder: ['If you know the quotient and the remainder, can you rebuild the number that was divided?', 'Rebuild one number for the smallest quotient in the thirties, then see what changes each time the quotient goes up by one.'],
     errorTags: ['concept-misconception', 'procedure-slip'],
   }),
-  puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
+  puzzleMeta: { stepCount: 3, cognitiveOp: 'constraint-search' },
   sprint: { skill: 'Single-digit multiplication facts (full table)', sourceWeek: C12, itemCount: 20, scheduledDay: 3, templateId: 'mult_facts_v1', params: { factorRange: [2, 9] } },
   mastery: [
     { gen: gShare, diff: 3 },

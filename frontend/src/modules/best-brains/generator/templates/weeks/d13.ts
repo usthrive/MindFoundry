@@ -114,7 +114,7 @@ const sEstimateBase = situation({
     };
   },
 });
-const mEstimate = withEstimateFirst(sEstimateBase, 'a rounded reading lands on the nearest friendly decimal, so it should sit right beside the original — never far off.');
+const mEstimate = withEstimateFirst(sEstimateBase, 'should the rounded reading sit close to the original, or far from it?');
 
 // --- Multi-step: compose a prior-week op (whole-number scaling) into a thousandths chain --
 const msBeads = multiStepDec({
@@ -199,7 +199,7 @@ const eaMiscountedPlace = errorAnalysis({
     op: '+', wrongMode: 'right-align',
   }),
   build: (v, p) => ({
-    prompt: `A student added ${p.a} and ${p.b} but lined the numbers up by their right-hand edges instead of by the decimal point, and wrote ${v.wrong}.`,
+    prompt: `A student added ${p.a} and ${p.b}, stacking them with their right-hand edges in line, and wrote ${v.wrong}.`,
     extension: 'Set the two numbers on a place chart so tenths sit under tenths and thousandths under thousandths, show where each digit really belongs, and write the correct sum.',
     hints: ['Do the two numbers line up by place, or by their right edges?', 'Stack them so each column — tenths, hundredths, thousandths — meets its match.'],
     errorTags: ['representation-misread', 'concept-misconception'],

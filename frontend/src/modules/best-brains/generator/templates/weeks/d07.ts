@@ -22,14 +22,16 @@
  *  - Distinct names drawn fresh via two(r); no hardcoded name from the draw pool.
  */
 
-import { asWarmup, classify, divideRemainder, multiply, reasoning } from '../lib/items';
+import { asWarmup, classify, divideExact, divideRemainder, multiply, reasoning } from '../lib/items';
 import { situation } from '../lib/situations';
 import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { article, countNoun } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
+const C9 = { level: 'C' as const, week: 9 };
 const C12 = { level: 'C' as const, week: 12 };
 const D5 = { level: 'D' as const, week: 5 };
 const D6 = { level: 'D' as const, week: 6 };
@@ -42,6 +44,7 @@ const two = (r: { shuffle: <T>(a: readonly T[]) => T[] }) => r.shuffle([...NAMES
 const wMulFact = asWarmup(multiply(2, 9, 2, 9), C12);
 const wArea = asWarmup(multiply(11, 49, 3, 9), D5);
 const wDiv = asWarmup(divideRemainder(3, 9, 20, 89), D6);
+const wDivExact = asWarmup(divideExact(2, 9, 3, 9), C9);     // C9 exact division — the contrast partner to a remainder
 
 // --- Single-step interpret-the-remainder situations (fixed, role-free hints) ----
 const siRoundUp = situation({
@@ -53,8 +56,8 @@ const siRoundUp = situation({
     const q = Math.floor(a / b); const rem = a % b;
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} is seating ${a} guests, with ${b} to a table. How many tables are needed so everyone has a seat?`,
-      answerValue: String(rem > 0 ? q + 1 : q), templateId: 'd_interpret_rem_v1', params: { a, b, mode: 'round-up' }, units: 'tables',
+      prompt: `${name} is driving ${a} riders, with ${b} to a van. How many vans are needed so everyone gets a ride?`,
+      answerValue: String(rem > 0 ? q + 1 : q), templateId: 'd_interpret_rem_v1', params: { a, b, mode: 'round-up' }, units: 'vans',
       hints: ['Does a leftover after dividing still need a whole group of its own?', 'Set out the full groups, then look at what the last leftover needs.'],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -110,9 +113,66 @@ const siRate = situation({
     };
   },
 });
-const siRateEstimate = withEstimateFirst(siRate, 'rounding up for a leftover always adds one more whole trip, so a sensible answer sits just above a plain even split.');
+const siRateEstimate = withEstimateFirst(siRate, 'will the number of trips be exactly an even split, or one more than that?');
 
 // --- Multi-step DIVISION problems (share the leftover as a fraction) ------------
+// SIGNAL FADE (PEDAGOGY-CEILING-REVIEW F2). Days 1-3 name the affordance
+// ("so everyone gets a ride", "whole bows", "left over"), which is right while
+// the idea is new. By Day 4 and the mastery check those phrases let a child
+// answer from vocabulary without performing the interpretation the week teaches,
+// so the late-week twins ask the same questions NEUTRALLY. Each remains uniquely
+// determined by the situation itself — a partly-filled van still has to drive,
+// a part-cut bow still is not a bow — the child just has to notice that.
+const siRoundUpNeutral = situation({
+  situationType: 'sharing', cognitiveOp: 'div-interpret',
+  draw: (r) => {
+    const b = r.int(3, 9);
+    let a = r.int(20, 92);
+    if (a % b === 0) a += 1;
+    const q = Math.floor(a / b); const rem = a % b;
+    const name = r.pick(NAMES);
+    return {
+      prompt: `${name} is driving ${a} riders, with ${b} to a van. How many vans will ${name} drive?`,
+      answerValue: String(rem > 0 ? q + 1 : q), templateId: 'd_interpret_rem_v1', params: { a, b, mode: 'round-up' }, units: 'vans',
+      hints: ['After the full vans are loaded, is anyone still standing on the kerb?', 'Set out the full groups, then decide what the last few riders mean.'],
+      errorTags: ['task-comprehension', 'concept-misconception'],
+    };
+  },
+});
+
+const siDropNeutral = situation({
+  situationType: 'measurement', cognitiveOp: 'div-interpret',
+  draw: (r) => {
+    const b = r.int(3, 9);
+    let a = r.int(20, 92);
+    if (a % b === 0) a += 1;
+    const q = Math.floor(a / b);
+    return {
+      prompt: `A ${a} cm ribbon is cut into bows that each use ${b} cm. How many bows does it make?`,
+      answerValue: String(q), templateId: 'd_interpret_rem_v1', params: { a, b, mode: 'drop' }, units: 'bows',
+      hints: ['Is a piece too short to finish a bow still a bow?', 'Count only what the ribbon can actually finish.'],
+      errorTags: ['task-comprehension', 'concept-misconception'],
+    };
+  },
+});
+
+const siRemainderNeutral = situation({
+  situationType: 'part-whole', cognitiveOp: 'div-interpret',
+  draw: (r) => {
+    const b = r.int(3, 9);
+    let a = r.int(20, 92);
+    if (a % b === 0) a += 1;
+    const rem = a % b;
+    const name = r.pick(NAMES);
+    return {
+      prompt: `${name} shares ${a} marbles equally among ${b} friends. How many marbles does ${name} still hold?`,
+      answerValue: String(rem), templateId: 'd_interpret_rem_v1', params: { a, b, mode: 'remainder' }, units: 'marbles',
+      hints: ['Which pile does the question point at — the shares, or what never left the hand?', 'Divide, then look only at the piece that did not fit.'],
+      errorTags: ['task-comprehension', 'concept-misconception'],
+    };
+  },
+});
+
 const msCombineShare = multiStep({
   situationType: 'combine', cognitiveOp: 'multi-step',
   draw: (r) => {
@@ -121,7 +181,7 @@ const msCombineShare = multiStep({
     const y = r.int(1, total - 1); const x = total - y;
     const [n1, n2] = two(r);
     return {
-      prompt: `${n1} pours ${x} liters of juice and ${n2} pours ${y} liters into one bowl, then they share it equally among ${p} cups. How many liters go in each cup?`,
+      prompt: `${n1} pours ${countNoun(x, 'liters')} of juice and ${n2} pours ${countNoun(y, 'liters')} into one bowl, then they share it equally among ${countNoun(p, 'cups')}. How many liters go in each cup?`,
       initN: x, steps: [{ op: 'add', n: y, d: 1 }, { op: 'div', n: p, d: 1 }], units: 'liters',
       validation: 'equivalent-fraction',
       hints: ['Which comes first — joining the two amounts, or splitting them up?', 'Join the two amounts into one, then split that total into equal shares.'],
@@ -138,7 +198,7 @@ const msSharePlus = multiStep({
     const w2 = r.int(2, 9);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} cuts a ${total} cm rope into ${p} equal pieces, then tapes a ${w2} cm strip onto one piece. How long is that piece now?`,
+      prompt: `${name} cuts ${article(total, 'cm rope')} into ${countNoun(p, 'equal pieces')}, then tapes ${article(w2, 'cm strip')} onto one piece. How long is that piece now?`,
       initN: total, steps: [{ op: 'div', n: p, d: 1 }, { op: 'add', n: w2, d: 1 }], units: 'cm',
       validation: 'equivalent-fraction',
       hints: ['Should you split the whole into equal shares before or after adding the extra piece?', 'Share the whole into equal parts first, then join the extra piece to one share.'],
@@ -156,7 +216,7 @@ const msSubShare = multiStep({
     const start = total + s;
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} has ${start} meters of wire, cuts off ${s} meters for a repair, then bends the rest into ${p} equal loops. How long is each loop?`,
+      prompt: `${name} has ${countNoun(start, 'meters')} of wire, cuts off ${countNoun(s, 'meters')} for a repair, then bends the rest into ${countNoun(p, 'equal loops')}. How long is each loop?`,
       initN: start, steps: [{ op: 'sub', n: s, d: 1 }, { op: 'div', n: p, d: 1 }], units: 'm',
       validation: 'equivalent-fraction',
       hints: ['Are you sharing everything, or only what is left after some is taken away?', 'Take away the used part first, then share the rest equally.'],
@@ -270,7 +330,7 @@ export const buildD07 = makeWeekBuilder({
     [
       { gen: wMulFact, diff: 2 },
       { gen: wDiv, diff: 2 },
-      { gen: wArea, diff: 2 },
+      { gen: wDivExact, diff: 2 },
       { gen: siRoundUp, diff: 2 },
       { gen: siDrop, diff: 3 },
       { gen: siRemainder, diff: 3 },
@@ -298,7 +358,7 @@ export const buildD07 = makeWeekBuilder({
       { gen: msCombineShare, diff: 4 },
       { gen: msSharePlus, diff: 4 },
       { gen: msSubShare, diff: 5 },
-      { gen: siRoundUp, diff: 4 },
+      { gen: siRoundUpNeutral, diff: 4 },
     ],
     // Day 5 — non-computational: error-analysis + classification + written reasoning
     [
@@ -319,7 +379,7 @@ export const buildD07 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt: 'Think about a batch of 45 cookies packed 6 to a box. Write one question about this batch whose answer is 7 and one whose answer is 3, then explain in writing why the SAME division gives two different answers.',
-          value: '"how many boxes hold all the cookies" rounds up to 7 (round up for the leftover); "how many cookies are left over" is the remainder 3; the same 45 shared into 6s gives 7 with 3 left over, and the story decides which part to report',
+          value: '"how many FULL boxes can be packed" drops the leftover and gives 7; "how many cookies are left over" reports the remainder 3; the same 45 shared into 6s gives 7 full boxes with 3 left over, and the story decides which part to report (asking how many boxes hold ALL the cookies would round up to 8)',
           acceptableForms: [],
           hints: ['Which of your two questions counts whole boxes, and which asks for the leftover?', 'Picture the same leftover reported two different ways.'],
           errorTags: ['task-comprehension', 'concept-misconception'],
@@ -340,11 +400,11 @@ export const buildD07 = makeWeekBuilder({
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
   sprint: { skill: 'Single-digit multiplication facts (full table)', sourceWeek: C12, itemCount: 20, scheduledDay: 3, templateId: 'mult_facts_v1', params: { factorRange: [2, 9] } },
   mastery: [
-    { gen: siRoundUp, diff: 3 },
+    { gen: siRoundUpNeutral, diff: 3 },
     { gen: msCombineShare, diff: 3 },
-    { gen: siDrop, diff: 3 },
+    { gen: siDropNeutral, diff: 3 },
     { gen: msSharePlus, diff: 3 },
-    { gen: siRemainder, diff: 4 },
+    { gen: siRemainderNeutral, diff: 4 },
     { gen: msSubShare, diff: 4 },
   ],
   isomorphNotes:

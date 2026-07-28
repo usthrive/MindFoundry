@@ -25,6 +25,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { fracToDec, decToFrac } from '../lib/compute';
+import { money } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -91,7 +92,10 @@ const decToFCoin = situation({
   draw: (r) => {
     const value = r.chance(0.5) ? `0.${String(r.int(5, 95)).padStart(2, '0')}` : `0.${r.int(1, 9)}`;
     return {
-      prompt: `A coin is worth $${value} of a dollar. Write that as a fraction of a dollar in simplest form.`,
+      // No `$` here: the decimal is the LESSON OBJECT being renamed as a fraction,
+      // and "$0.7 of a dollar" is doubly wrong — a price is never one-place, and
+      // the sign already says "of a dollar" (POLISH-PASS-SPEC §P1).
+      prompt: `A handful of coins is worth ${value} of a dollar. Write that as a fraction of a dollar in simplest form.`,
       answerValue: decToFrac(value), templateId: 'd_dec_to_frac_v1', params: { value }, validation: 'equivalent-fraction',
       hints: ['Which place does the last digit fall in — tenths or hundredths? That names the bottom number.', 'Write it as that many tenths or hundredths, then reduce by a shared factor.'],
       errorTags: ['representation-misread', 'concept-misconception'],
@@ -116,29 +120,36 @@ const decToFRibbon = situation({
 const msChange = multiStepDec({
   situationType: 'money-change', usesPriorSkill: true,
   draw: (r) => {
-    const p1 = r.int(2, 5);
-    const p2 = r.int(1, 9 - p1);
+    // Real cents, not tenths-dressed-as-money: a price is written to the cent,
+    // and hundredths are exactly this checkpoint week's second place.
+    const c1 = r.int(15, 45);
+    const c2 = r.int(10, 90 - c1);
+    const v1 = `0.${String(c1).padStart(2, '0')}`;
+    const v2 = `0.${String(c2).padStart(2, '0')}`;
     const [buyA, buyB] = r.shuffle(['a sticker', 'a pencil', 'a badge', 'a rubber', 'a marble', 'a card']).slice(0, 2);
     return {
-      prompt: `You have $1. You buy ${buyA} for $0.${p1} and ${buyB} for $0.${p2}. How much money do you have left?`,
-      init: '1', steps: [{ op: 'sub', v: `0.${p1}` }, { op: 'sub', v: `0.${p2}` }], units: 'dollars',
+      prompt: `You have ${money('1')}. You buy ${buyA} for ${money(v1)} and ${buyB} for ${money(v2)}. How much money do you have left?`,
+      init: '1', steps: [{ op: 'sub', v: v1 }, { op: 'sub', v: v2 }], units: 'dollars',
       hints: ['Is the question asking for what you spent, or for what stays in your pocket?', 'Take each purchase away from the money you started with, one at a time.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
 });
-const msChangeEst = withEstimateFirst(msChange, 'money left over must be smaller than the bill you started with, so a sensible answer sits below a whole dollar.');
+const msChangeEst = withEstimateFirst(msChange, 'will the change be more or less than the money you started with?');
 
 const msSave = multiStepDec({
   situationType: 'combine', usesPriorSkill: true,
   draw: (r) => {
-    const s1 = r.int(3, 6);
-    const s2 = r.int(2, 5);
-    const sp = r.int(1, 4);
+    const s1 = r.int(25, 60);
+    const s2 = r.int(15, 45);
+    const sp = r.int(10, Math.min(s1 + s2, 55));
+    const v1 = `0.${String(s1).padStart(2, '0')}`;
+    const v2 = `0.${String(s2).padStart(2, '0')}`;
+    const vsp = `0.${String(sp).padStart(2, '0')}`;
     const item = r.pick(['a sticker', 'a badge', 'a pencil', 'a card', 'a marble']);
     return {
-      prompt: `You saved $0.${s1} on Monday and $0.${s2} on Tuesday, then spent $0.${sp} on ${item}. How much money do you have now?`,
-      init: `0.${s1}`, steps: [{ op: 'add', v: `0.${s2}` }, { op: 'sub', v: `0.${sp}` }], units: 'dollars',
+      prompt: `You saved ${money(v1)} on Monday and ${money(v2)} on Tuesday, then spent ${money(vsp)} on ${item}. How much money do you have now?`,
+      init: v1, steps: [{ op: 'add', v: v2 }, { op: 'sub', v: vsp }], units: 'dollars',
       hints: ['Do the two days add together first, or does the spending come off before anything else?', 'Combine what you saved across the two days, then take the spending away from that total.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -195,8 +206,11 @@ const eaRightAlign = errorAnalysis({
     return { a: `0.${t}`, b: `0.${String(hh).padStart(2, '0')}`, op: '+', wrongMode: 'right-align' };
   },
   build: (v, p) => ({
-    prompt: `A student added $${p.a} and $${p.b}, but lined the numbers up on the right — pennies under pennies — instead of by the decimal point, and wrote the total as $${v.wrong}.`,
-    extension: 'Explain, using the money model, which column the tenths digit really belongs in, then give the true total.',
+    // Bare decimals, not prices: the ragged digit-count (0.7 beside 0.35) IS the
+    // misconception's mechanism, and money cannot legitimately be written that
+    // way. The money MODEL stays as the reteach anchor, in the extension.
+    prompt: `A student added ${p.a} and ${p.b}, stacking them with their last digits in line, and wrote the total as ${v.wrong}.`,
+    extension: 'Explain, using the money model (dimes and pennies), which column the tenths digit really belongs in, then give the true total.',
     hints: ['Does the single digit in the first amount stand for dimes, or for pennies?', 'Line up the decimal points — dimes over dimes — then add.'],
     errorTags: ['representation-misread', 'concept-misconception'],
     answerKeywords: ['tenths', 'dimes', 'line up the points'],
@@ -239,7 +253,7 @@ export const buildD12 = makeWeekBuilder({
     ge(12, 3, 'prompted', 'A jug holds 6/10 of a litre. Write that as a decimal, then say which is larger: your decimal or 0.48.', [
       { childDo: 'Convert first, then compare the tenths place.', expected: '0.6' },
     ], '0.6'),
-    ge(12, 4, 'independent', 'You pay for a $0.35 eraser and a $0.4 pencil with a $1 coin. How much change do you get? Solve cold.', [
+    ge(12, 4, 'independent', 'You pay for a $0.35 eraser and a $0.40 pencil with a $1 coin. How much change do you get? Solve cold.', [
       { childDo: 'Add the two prices, then take the total from one dollar.', expected: '0.25' },
     ], '$0.25'),
   ],
@@ -307,9 +321,9 @@ export const buildD12 = makeWeekBuilder({
       },
       {
         gen: reasoning({
-          prompt: 'Using coins, explain which is more: $0.4 or $0.36. Name the coins for each amount, then say which wins.',
-          value: '$0.4 is 4 dimes (40 cents); $0.36 is 3 dimes, a nickel and a penny (36 cents), so $0.4 is more',
-          acceptableForms: ['40', '4 dimes', '0.4'],
+          prompt: 'Using coins, explain which is more: $0.40 or $0.36. Name the coins for each amount, then say which wins.',
+          value: '$0.40 is 4 dimes (40 cents); $0.36 is 3 dimes, a nickel and a penny (36 cents), so $0.40 is more',
+          acceptableForms: ['40', '4 dimes', '0.40'],
           keywords: true,
           hints: ['Which is worth more — four dimes, or three dimes and a few pennies?', 'Turn each amount into cents, then compare the totals.'],
           errorTags: ['representation-misread', 'concept-misconception'],
@@ -343,7 +357,7 @@ export const buildD12 = makeWeekBuilder({
     { errorTag: 'concept-misconception', subtype: 'longer-is-bigger', description: 'Thinks a decimal with more digits is larger (0.35 > 0.8).', exampleWrongAnswer: '0.35 called greater than 0.8', distractorRationale: 'Offer the longer decimal as "greater."', reteachPointer: 'explanation/script[0] (compare tenths first)' },
     { errorTag: 'representation-misread', subtype: 'place-misalign', description: 'Reads tenths as hundredths or misplaces the point when converting or aligning.', exampleWrongAnswer: '3/10 written as 0.03', distractorRationale: 'Offer the place-shifted decimal.', reteachPointer: 'guidedExamples/D12-GE-01 (tenths = one place after the point)' },
     { errorTag: 'procedure-slip', subtype: 'no-simplify', description: 'Converts a decimal to a fraction but leaves it unsimplified, or slips a step in a money chain.', exampleWrongAnswer: '0.25 left as 25/100', distractorRationale: 'Offer the unsimplified fraction.', reteachPointer: 'guidedExamples/D12-GE-02 (simplify to 1/4)' },
-    { errorTag: 'task-comprehension', subtype: 'money-misread', description: 'Loses track of dollars vs cents, or answers the wrong quantity in a two-step money problem.', exampleWrongAnswer: '$0.4 read as 4 cents', distractorRationale: 'Offer the cents-misread amount.', reteachPointer: 'Day-5 reasoning (0.4 dollars = 40 cents)' },
+    { errorTag: 'task-comprehension', subtype: 'money-misread', description: 'Loses track of dollars vs cents, or answers the wrong quantity in a two-step money problem.', exampleWrongAnswer: '$0.40 read as 4 cents', distractorRationale: 'Offer the cents-misread amount.', reteachPointer: 'Day-5 reasoning (0.40 dollars = 40 cents)' },
   ],
   parentSummarySeed: {
     whatWeWorkedOn: 'Meeting decimals — reading tenths and hundredths as place-value fractions, converting between fractions and decimals, and comparing decimals by place value (not by how many digits they have). This week doubles as the mid-level checkpoint, with two-step money problems that lean on earlier addition and subtraction.',

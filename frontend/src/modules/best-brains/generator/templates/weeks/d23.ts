@@ -31,6 +31,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { an } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -96,7 +97,7 @@ const sitTriangleThird = situation({
 // Metacognition base: supplementary served ONLY through the estimate-first wrapper.
 const sitSuppEstimate = withEstimateFirst(
   sitSupplementary,
-  'the partner angle should be whatever is left of a straight line after the given one, so a large given angle leaves a small partner and a small one leaves a large partner.',
+  'if the given angle is large, should its partner be large or small?',
 );
 
 // --- Multi-step angle-sum problems (answer + step-count from the shipped chain) --
@@ -202,7 +203,7 @@ const eaAddInsteadOfSubtract = errorAnalysis({
   verifyTemplateId: 'd_verify_binop_misconception_v1', cognitiveOp: 'angle',
   drawParams: (r) => ({ a: 180, b: r.int(20, 80), op: '-', wrongOp: '+' }),
   build: (v, p) => ({
-    prompt: `A student needed the angle that pairs with a ${p.b}° angle to make a straight line, and wrote that the partner angle is ${v.wrong}°.`,
+    prompt: `A student needed the angle that pairs with ${an(Number(p.b))} ${p.b}° angle to make a straight line, and wrote that the partner angle is ${v.wrong}°.`,
     extension: 'Explain, using a straight line, why an angle that large cannot be right, then give the correct partner angle.',
     hints: ['Does the partner angle add onto the given one, or fill what is left of a straight line?', 'Two angles that form a straight line share one straight angle — take the given angle away from it.'],
     errorTags: ['fact-recall', 'concept-misconception'],
@@ -334,7 +335,7 @@ export const buildD23 = makeWeekBuilder({
     puzzleType: 'logic',
     prompt: 'A triangle\'s three angles climb in equal steps: the middle angle is 20° more than the smallest, and the largest is 20° more than the middle. All three together make 180°. Find the three angles.',
     answer: { value: '40, 60, 80', acceptableForms: ['40', '60', '80', '40, 60, 80'], validation: 'short-text-keyword' },
-    hintLadder: ['If the smallest is one unknown amount, how would you describe the other two in terms of it?', 'Three equal-step angles share the total evenly, so the middle one is the total split three ways.'],
+    hintLadder: ['If the smallest is one unknown amount, how would you describe the other two in terms of it?', 'Write the other two angles in terms of the smallest, then ask what all three must add to.'],
     errorTags: ['procedure-slip', 'concept-misconception'],
   }),
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },

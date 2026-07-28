@@ -21,6 +21,7 @@ import {
   smallWord,
   TupleGuard,
 } from '../shared';
+import { countNoun, unitFor } from '../lib/format';
 
 const NOUNS = [
   'ducks', 'stars', 'apples', 'bears', 'fish', 'leaves', 'buttons', 'shells',
@@ -61,7 +62,7 @@ function countObjects(
   const { n, noun } = drawCount(rng, guard, 'count', min, max);
   return {
     type: 'computation',
-    prompt: `[image: ${n} ${noun} ${arrangement}] Count the ${noun}. How many?`,
+    prompt: `[image: ${countNoun(n, noun)} ${arrangement}] Count the ${unitFor(n, noun)}. How many?`,
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -126,7 +127,7 @@ function lastNumber(
   const { n, noun } = drawCount(rng, guard, 'last', min, max);
   return {
     type: 'computation',
-    prompt: `[image: ${n} ${noun} in a row] Count out loud. What was the LAST number you said?`,
+    prompt: `[image: ${countNoun(n, noun)} in a row] Count out loud. What was the LAST number you said?`,
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -230,7 +231,7 @@ function matchSet(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
   ]);
   return {
     type: 'classification',
-    prompt: `[image: a group of ${a} ${nounA} and a group of ${b} ${nounB}] Circle the group that shows ${a}.`,
+    prompt: `[image: a group of ${countNoun(a, nounA)} and a group of ${countNoun(b, nounB)}] Circle the group that shows ${a}.`,
     choices,
     answer: { value: correctKey, acceptableForms: [`the ${nounA}`], validation: 'choice-key' },
     difficulty,
@@ -272,7 +273,7 @@ function groupChoice(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft
   const { choices, correctKey } = makeChoices(rng, `the ${nouns[targetIdx]}`, distractors);
   return {
     type: 'classification',
-    prompt: `[image: three groups: ${counts[0]} ${nouns[0]}, ${counts[1]} ${nouns[1]}, ${counts[2]} ${nouns[2]}] Circle the group that shows ${target}.`,
+    prompt: `[image: three groups: ${countNoun(counts[0], nouns[0])}, ${countNoun(counts[1], nouns[1])}, ${countNoun(counts[2], nouns[2])}] Circle the group that shows ${target}.`,
     choices,
     answer: {
       value: correctKey,

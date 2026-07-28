@@ -354,7 +354,7 @@ const ScratchPad = forwardRef<ScratchPadRef, ScratchPadProps>(({
             <button
               onClick={handleClear}
               disabled={disabled || strokes.length === 0}
-              className="px-3 py-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 rounded border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              className="px-3 py-1 text-sm bg-error-light hover:bg-error/20 text-error rounded border border-error/30 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               Clear
             </button>

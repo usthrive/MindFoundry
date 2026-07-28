@@ -50,6 +50,23 @@ export interface AuthorMeta {
   isMetacog?: boolean;
   /** True when >= 1 solution step invokes a strictly-prior-week skill (BB-W13 substrate). */
   usesPriorSkill?: boolean;
+  /**
+   * How the problem is POSED, as distinct from what it computes
+   * (PEDAGOGY-CEILING-REVIEW F3). The v2 corpus met its multi-step quota almost
+   * entirely with `forward` chains — genuine two-step load, but narrated in
+   * execution order, so the child never has to PLAN, only follow. The others
+   * make the plan the work:
+   *   - `inverse-start`  the stated quantity is the RESULT of the first
+   *                      operation, so the opening move is an inverse the
+   *                      sentence order does not hand over.
+   *   - `goal-first`     the goal precedes the data, so the child reads backward
+   *                      from what is wanted.
+   *   - `has-distractor` a stated quantity is NOT used. Every item in the corpus
+   *                      consumed every number it mentioned, which quietly
+   *                      teaches "use all the numbers" as a winning strategy —
+   *                      children do learn it, and it fails them on real tests.
+   */
+  posing?: 'forward' | 'inverse-start' | 'goal-first' | 'has-distractor';
 }
 
 /** A single cognitive-operation class → its human label, for evidence messages. */

@@ -107,7 +107,7 @@ const sitVolEstimateBase = situation({
     };
   },
 });
-const sitVolEstimate = withEstimateFirst(sitVolEstimateBase, 'volume stacks whole layers of cubes, so the count should land well above a single flat layer.');
+const sitVolEstimate = withEstimateFirst(sitVolEstimateBase, 'should the cube count be near one flat layer, or several times it?');
 
 // --- Multi-step volume problems (genuine ≥2-op chains; stated operands) ----------
 const msFillThenAdd = multiStep({
@@ -278,7 +278,7 @@ export const buildD24 = makeWeekBuilder({
     puzzleType: 'construction',
     prompt: 'Design two DIFFERENT boxes with whole-number edges that each hold exactly 24 unit cubes. Give both sets of edge lengths, then say which box is closer to a cube shape and explain how you know.',
     answer: { value: 'two whole-number triples with product 24, e.g. 2 by 3 by 4 and 1 by 4 by 6; the 2 by 3 by 4 box is closer to a cube', acceptableForms: ['2 by 3 by 4', '1 by 4 by 6', '24'], validation: 'short-text-keyword' },
-    hintLadder: ['Which edge triples multiply to the target number of cubes?', 'Boxes whose edges are close in size sit closer to a cube shape.'],
+    hintLadder: ['Which edge triples multiply to the target number of cubes?', 'Compare the longest and shortest edge of each box you found — which pair sits closer together?'],
     errorTags: ['procedure-slip', 'concept-misconception'],
   }),
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },

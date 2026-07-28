@@ -9,6 +9,7 @@
  */
 
 import type { WeeklyConceptPack } from '../../../types';
+import { countNoun } from '../lib/format';
 import { FAST_TRACK_PCT, MASTERY_THRESHOLD_PCT, SPRINT_DURATION_SECONDS } from '../../../constants';
 import { streamRng, Rng } from '../../rng';
 import {
@@ -400,7 +401,7 @@ function retrCompose3(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraf
   const { h, t, o } = draw;
   return {
     type: 'computation',
-    prompt: `Warm-up! ${h} hundreds, ${t} tens, and ${o} ones make what number?`,
+    prompt: `Warm-up! ${countNoun(h, 'hundreds')}, ${countNoun(t, 'tens')}, and ${countNoun(o, 'ones')} make what number?`,
     answer: { value: String(100 * h + 10 * t + o), acceptableForms: [], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',

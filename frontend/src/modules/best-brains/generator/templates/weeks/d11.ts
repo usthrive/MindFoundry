@@ -27,6 +27,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { coprimeNumerator } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import { addFrac, formatFrac, mulFrac } from '../lib/compute';
 
@@ -47,7 +48,7 @@ const wEquiv = asWarmup(fracEquivFill(), D9);
 const siRecipe = situation({
   situationType: 'rate', cognitiveOp: 'frac-times-whole',
   draw: (r) => {
-    const d = r.pick(DEN); const n = r.int(1, d - 1); const k = r.int(2, 6); const name = r.pick(NAMES);
+    const d = r.pick(DEN); const n = coprimeNumerator(r, d); const k = r.int(2, 6); const name = r.pick(NAMES);
     return {
       prompt: `Each loaf of ${name}'s bread needs ${n}/${d} cup of flour. How much flour is needed for ${k} loaves?`,
       answerValue: formatFrac(mulFrac({ n: k, d: 1 }, { n, d })),
@@ -62,7 +63,7 @@ const siRecipe = situation({
 const siLaps = situation({
   situationType: 'measurement', cognitiveOp: 'frac-times-whole',
   draw: (r) => {
-    const d = r.pick(DEN); const n = r.int(1, d - 1); const k = r.int(2, 6); const name = r.pick(NAMES);
+    const d = r.pick(DEN); const n = coprimeNumerator(r, d); const k = r.int(2, 6); const name = r.pick(NAMES);
     return {
       prompt: `One lap of the park path is ${n}/${d} km. ${name} runs ${k} laps. How far does ${name} run in all?`,
       answerValue: formatFrac(mulFrac({ n: k, d: 1 }, { n, d })),
@@ -77,7 +78,7 @@ const siLaps = situation({
 const siRibbon = situation({
   situationType: 'measurement', cognitiveOp: 'frac-times-whole',
   draw: (r) => {
-    const d = r.pick(DEN); const n = r.int(1, d - 1); const k = r.int(2, 6); const name = r.pick(NAMES);
+    const d = r.pick(DEN); const n = coprimeNumerator(r, d); const k = r.int(2, 6); const name = r.pick(NAMES);
     return {
       prompt: `Each bow takes ${n}/${d} m of ribbon. ${name} ties ${k} bows. How much ribbon is that in total?`,
       answerValue: formatFrac(mulFrac({ n: k, d: 1 }, { n, d })),
@@ -92,14 +93,14 @@ const siRibbon = situation({
 // Metacognition base: only ever served through the estimate-first wrapper (Day 2).
 const siRecipeEstimate = withEstimateFirst(
   siRecipe,
-  'copies of a fraction stack up piece by piece, so several servings should total clearly more than one serving.',
+  'should the total be more or less than one serving, and about how many times as much?',
 );
 
 // --- Multi-step: k copies of a fraction THEN add a whole number of cups ---------
 const msGranola = multiStep({
   situationType: 'combine', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const d = r.pick(DEN); const n = r.int(1, d - 1); const k = r.int(2, 5); const w = r.int(2, 4); const name = r.pick(NAMES);
+    const d = r.pick(DEN); const n = coprimeNumerator(r, d); const k = r.int(2, 5); const w = r.int(2, 4); const name = r.pick(NAMES);
     return {
       prompt: `Each batch of ${name}'s granola needs ${n}/${d} cup of oats. ${name} makes ${k} batches, then stirs in ${w} more cups of oats from the pantry. How many cups of oats are used altogether?`,
       initN: n, initD: d, steps: [{ op: 'mul', n: k, d: 1 }, { op: 'add', n: w, d: 1 }], units: 'cups',
@@ -113,7 +114,7 @@ const msGranola = multiStep({
 const msLayerCake = multiStep({
   situationType: 'part-whole', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const d = r.pick(DEN); const n = r.int(1, d - 1); const k = r.int(2, 5); const w = r.int(2, 4); const name = r.pick(NAMES);
+    const d = r.pick(DEN); const n = coprimeNumerator(r, d); const k = r.int(2, 5); const w = r.int(2, 4); const name = r.pick(NAMES);
     return {
       prompt: `A layer cake uses ${n}/${d} cup of sugar for each of its ${k} layers, plus ${w} whole cups for the frosting. How much sugar does ${name}'s cake need in all?`,
       initN: n, initD: d, steps: [{ op: 'mul', n: k, d: 1 }, { op: 'add', n: w, d: 1 }], units: 'cups',
@@ -128,7 +129,7 @@ const msLayerCake = multiStep({
 const discTotalPick = discrimination({
   variant: 'cross-op', cognitiveOp: 'choose-operation',
   draw: (r) => {
-    const d = r.pick(DEN); const n = r.int(1, d - 1); let k = r.int(2, 6);
+    const d = r.pick(DEN); const n = coprimeNumerator(r, d); let k = r.int(2, 6);
     if (n === 2 && k === 2) k = 3; // keep the added-whole distractor distinct from the answer
     const name = r.pick(NAMES);
     return {
@@ -296,14 +297,14 @@ export const buildD11 = makeWeekBuilder({
   ],
   puzzle: () => ({
     id: 'D11-PZ-01',
-    title: 'Puzzle Grove: Batch Planner',
-    puzzleType: 'construction',
-    prompt: 'A baker\'s muffin tray uses 3/4 cup of flour per batch. The baker makes 5 batches, then adds 1 more cup for dusting. How much flour is used in all? Show the copies and the total.',
-    answer: { value: '4 3/4 cups (five batches use 15/4 = 3 3/4 cups, then 1 more)', acceptableForms: ['4 3/4', '19/4', '4 and 3/4'], validation: 'short-text-keyword' },
-    hintLadder: ['Which two amounts must you add — the batches and the dusting?', 'Find the flour for five batches first, then add the extra cup.'],
+    title: 'Puzzle Grove: The Lap Threshold',
+    puzzleType: 'logic',
+    prompt: 'One lap of the park path is 3/8 km. What is the SMALLEST whole number of laps that takes you past 2 km? Show the lap just before and the lap that passes it, and say how you know no smaller number works.',
+    answer: { value: '6 laps (5 laps = 15/8 = 1 7/8 km, still short; 6 laps = 18/8 = 2 1/4 km, past 2)', acceptableForms: ['6', '6 laps'], validation: 'short-text-keyword' },
+    hintLadder: ['Does one lap on its own get you close to 2 km, or will it take several?', 'Build the copies up one lap at a time and watch for the first total that clears 2 km.'],
     errorTags: ['procedure-slip', 'concept-misconception'],
   }),
-  puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
+  puzzleMeta: { stepCount: 3, cognitiveOp: 'inverse-search' },
   sprint: { skill: 'Single-digit multiplication facts (full table)', sourceWeek: C12, itemCount: 20, scheduledDay: 3, templateId: 'mult_facts_v1', params: { factorRange: [2, 9] } },
   mastery: [
     { gen: fracTimesWhole(), diff: 3 },

@@ -32,6 +32,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { an, fmtInt } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C1 = { level: 'C' as const, week: 1 };
@@ -71,7 +72,7 @@ const sExpand = situation({
       terms = expandTerms(value);
     }
     return {
-      prompt: `A scoreboard lights up its place parts: ${terms.join(' + ')}. What single number does it show?`,
+      prompt: `A scoreboard lights up its place parts: ${terms.map((t) => fmtInt(Number(t))).join(' + ')}. What single number does it show?`,
       answerValue: String(value), templateId: 'd_pv_expand_v1', params: { value },
       hints: ['What single number do these place parts build together?', 'Place each part in its own column, then read across the whole number.'],
       errorTags: ['concept-misconception', 'procedure-slip'],
@@ -135,7 +136,7 @@ const sScaleTen = situation({
 // Metacognition carrier — only ever served through the estimate-first wrapper.
 const sScaleEstimate = withEstimateFirst(
   sScaleTen,
-  'scaling by ten or a hundred slides every digit up into a higher place, so a right answer should be much larger — carrying new zeros — not just a little bigger.',
+  'will the new number keep about the same number of digits, or gain some?',
 );
 
 // --- Multi-step place-value problems (compose with a prior-week op) --------------
@@ -148,7 +149,7 @@ const msTotal = multiStep({
     const b = r.int(90000, 300000);
     const c = r.int(20000, 150000);
     return {
-      prompt: `A festival drew ${a} people on Friday, ${b} on Saturday, and ${c} on Sunday. How many people came in all across the three days?`,
+      prompt: `A festival drew ${fmtInt(a)} people on Friday, ${fmtInt(b)} on Saturday, and ${fmtInt(c)} on Sunday. How many people came in all across the three days?`,
       initN: a, steps: [{ op: 'add', n: b, d: 1 }, { op: 'add', n: c, d: 1 }], units: 'people',
       hints: ['Does the question want one day, or every day added together?', 'Find the two-day total first, then bring in the last day.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -184,7 +185,7 @@ const discrimPlaceValue = discrimination({
     let value = 0;
     for (let p = 0; p < 6; p++) value += arr[p] * 10 ** p;
     return {
-      prompt: `In the number ${value}, one digit is a ${hiDigit} and another is a ${loDigit}. Which digit is worth MORE?`,
+      prompt: `In the number ${value}, one digit is ${an(hiDigit)} ${hiDigit} and another is ${an(loDigit)} ${loDigit}. Which digit is worth MORE?`,
       correct: `the ${hiDigit}`,
       correctForms: [String(hiDigit * 10 ** hiPlace)],
       distractors: [
@@ -205,7 +206,7 @@ const eaTimesTenAsPlus = errorAnalysis({
   verifyTemplateId: 'd_verify_binop_misconception_v1', cognitiveOp: 'pv-times-ten',
   drawParams: (r) => ({ a: r.int(1200, 90000), b: 10, op: '*', wrongOp: '+' }),
   build: (v, p) => ({
-    prompt: `A student read that one warehouse holds ${p.a} boxes and said that 10 warehouses hold ${v.wrong} boxes.`,
+    prompt: `A student read that one warehouse holds ${fmtInt(Number(p.a))} boxes and said that 10 warehouses hold ${fmtInt(Number(v.wrong))} boxes.`,
     extension: 'Explain with the place-value chart why ten TIMES a number is not ten MORE, then give the true count.',
     hints: ['Does multiplying by ten pile on ten more, or slide every digit up one place?', 'Picture the digits shifting one column to the left on the chart.'],
     errorTags: ['concept-misconception', 'fact-recall'],

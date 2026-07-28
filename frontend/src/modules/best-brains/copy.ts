@@ -123,7 +123,7 @@ export const MODULE_COPY = {
   placementWelcome: {
     A: "Hi! I'm Ms. Wren. Let's find your starting point!",
     B: "Hi, I'm Ms. Wren. Let's find your perfect starting point. Some of this will feel easy, some might feel new — both help me.",
-    C: "I'm Ms. Wren. This helps me skip what you already own — skipping earned material is the whole point. No grade, no pass or fail — just calibration.",
+    C: "I'm Ms. Wren. This helps me skip what you already own — skipping earned material is the whole point. No grade, nothing to pass — just calibration.",
   } as BandCopy,
   placementCta: {
     A: "Let's go!",

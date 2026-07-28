@@ -45,6 +45,7 @@ import {
 } from '../constants';
 import { getTemplate } from './templates/registry';
 import { commutedSignature, surfaceSignature } from './surface';
+import { GROUP_LARGE_NUMBERS } from './templates/lib/format';
 
 export interface Violation {
   /** Gate code: QG-1..QG-10 or S-* for structural/schema checks. */
@@ -117,7 +118,9 @@ function isStrictlyEarlier(src: WeekRef, level: BBLevel, week: number): boolean 
 
 /** Parse "3", "0.5", "3/4", "1 7/12" → numeric value (or null). */
 function numericValue(raw: string): number | null {
-  const s = raw.trim();
+  // Thousands separators are a RENDERING choice (P6); strip before parsing so a
+  // grouped answer and its bare form compare equal.
+  const s = raw.trim().replace(/(\d),(?=\d{3}\b)/g, '$1');
   let m = /^(\d+)\s+(\d+)\/(\d+)$/.exec(s);
   if (m) return Number(m[1]) + Number(m[2]) / Number(m[3]);
   m = /^(\d+)\/(\d+)$/.exec(s);
@@ -583,7 +586,12 @@ export function validatePack(
             add('QG-11', `${path}.answer`, `stated answer does not carry the recomputed true value "${truth.correct}"`);
           }
         }
-        if (truth.wrong !== undefined && !item.prompt.includes(truth.wrong)) {
+        // Compare with thousands separators stripped: the prompt may legitimately
+        // RENDER the value grouped ("$11,198") or as money, while `truth.wrong` is
+        // the canonical computed form. The audit is about the VALUE being shown,
+        // not about how it is punctuated (P6).
+        const stripSep = (t: string) => t.replace(/(\d),(?=\d{3}\b)/g, '$1');
+        if (truth.wrong !== undefined && !stripSep(item.prompt).includes(stripSep(truth.wrong))) {
           add('QG-11', `${path}.prompt`, `error-analysis prompt does not show the recomputed misconception value "${truth.wrong}" (D8 class)`);
         }
       }
@@ -623,5 +631,194 @@ export function validatePack(
     }
   });
 
+  // --- QG-12: SURFACE REALISM (POLISH-PASS-SPEC §P1/P2/P5/P6) --------------
+  // The blind spot the two-gate architecture had: both gates measured whether a
+  // pack was CORRECT and whether it was DEEP, and neither read it as a reader.
+  // Every defect this family catches shipped through 7,877 green assertions and
+  // a 23/23 authenticity pass, because in each case the VALUE was right and only
+  // the presentation was impossible ("$0.5", "2/4 cup of flour", "1 liters").
+  //
+  // These are BACKSTOPS. The guarantee is lib/format.ts — templates that can only
+  // interpolate through the formatters cannot emit a violation at any seed. A hit
+  // here means some template bypassed the formatters; fix the template, not this.
+  // Pinned fixtures (A15/B14/D17) are the normative regression set and are
+  // hand-authored, so QG-12 runs REPORT-ONLY over them — the same treatment
+  // QG-11 gives them (POLISH-PASS-SPEC §0).
+  const isPinnedFixture = /^MFM-(A15|B14|D17)$/.test(pack.packId);
+  runSurfaceRealismScans(pack, isPinnedFixture ? () => {} : add);
+
   return { valid: v.length === 0, violations: v };
+}
+
+// ---------------------------------------------------------------------------
+// QG-12 — surface realism
+// ---------------------------------------------------------------------------
+
+/** Money written to one decimal ("$0.5") or finer than a cent. */
+const MONEY_1DP = /\$\d+\.\d(?!\d)/;
+const MONEY_TOO_FINE = /\$\d+\.\d{3,}/;
+/** The sign already says "of a dollar"; the two together are always wrong. */
+const MONEY_OF_DOLLAR = /\$[\d.]+\s+of a dollar/i;
+/** Every money amount in a text, with the word that follows it. */
+const MONEY_AMOUNT_G = /\$(\d+)(?:\.(\d+))?\s*(\w+)?/g;
+/** A bare $N naming a DENOMINATION is an object, not an amount — exempt from all-or-none. */
+const DENOMINATION_WORD = /^(bill|note|coin|coins|notes|bills)$/i;
+
+/** A count of exactly one against a plural unit ("1 liters"). */
+const ONE_PLURAL_G = /(?<![\d.])(?<!than )(?<!the )(?<![\d/],\s)\b1 ([a-z]{4,}(?:s|es))\b/g;
+/** Verbs and comparatives that merely look plural after a bare numeral. */
+const NOT_A_PLURAL_NOUN = new Set([
+  'times', 'makes', 'takes', 'gives', 'means', 'stays', 'leaves', 'shares', 'moves',
+  'sits', 'goes', 'shows', 'turns', 'always', 'across', 'plus', 'less', 'sixths',
+  'fifths', 'fourths', 'thirds', 'tenths', 'halves', 'eighths', 'ninths', 'sevenths',
+  'twelfths', 'hundredths', 'thousandths',
+]);
+/** "a" before a numeral whose spoken form begins with a vowel ("a 8 cm strip"). */
+const ARTICLE_VOWEL = /\ba (8|11|18|8\d|8\d{2,}|11\d{2,}|18\d{2,})\b/;
+/** A naive `.slice(0,-1)` singular that produced "Each buse holds 6". */
+const BROKEN_SINGULAR = /\b(buse|boxe|dishe|batche|benche|inche|glasse|watche|brushe)\b/i;
+/** A bare 5+ digit integer in child-facing prose (grouped form expected at C+). */
+const BIG_BARE_INT = /(?<![\d,.])\d{5,}(?![\d,.])/;
+
+/**
+ * Templates where an unreduced fraction is the LESSON OBJECT — the thing being
+ * renamed, compared or converted. A blanket "always reduce" rule would destroy
+ * the lesson in exactly these weeks, which is why the rule is role-sensitive and
+ * keyed on the TEMPLATE (a reliable, structural signal) rather than on prose.
+ */
+const FRACTION_ROLE_PRESERVING =
+  /frac_equiv|frac_compare|verify_frac|frac_like|frac_to_dec|dec_to_frac|frac_times_whole|verify_binop_misconception/;
+/** Prose that physically instantiates the denominator makes the unreduced form honest. */
+const PARTITION_STATED =
+  /halves|thirds|quarters|fifths|sixths|sevenths|eighths|ninths|tenths|twelfths|sixteenths|twentieths|hundredths|(?:cut|split|marked|divided|re-?striped|re-?labell?ed)\s+(?:out\s+)?(?:in|into|with)\s+\d+\s+equal|\d+\s+equal\s+(?:parts|legs|steps|slices|panels|pieces)/i;
+/** Rename / compare / convert asks, where the unreduced operand IS the question. */
+const RENAME_OR_COMPARE = /which is greater|which move|rename|equal to|simplest form|as a decimal|which fraction/i;
+
+const FRACTION_G = /(?<![\d/])(\d+)\/(\d+)(?![\d/])/g;
+
+function gcdInt(a: number, b: number): number {
+  return b === 0 ? a : gcdInt(b, a % b);
+}
+
+type AddFn = (gate: string, path: string, message: string) => void;
+
+/** Every child- or parent-reachable string in the pack, with its path. */
+type SurfaceKind = 'prose' | 'answer';
+
+function collectSurfaces(pack: WeeklyConceptPack): Array<{ path: string; text: string; kind: SurfaceKind }> {
+  const out: Array<{ path: string; text: string; kind: SurfaceKind }> = [];
+  const push = (path: string, text?: string, kind: SurfaceKind = 'prose') => {
+    if (typeof text === 'string' && text.length) out.push({ path, text, kind });
+  };
+  push('explanation.hook', pack.explanation.hook);
+  push('explanation.whyBeforeHow', pack.explanation.whyBeforeHow);
+  push('explanation.summary', pack.explanation.summary);
+  pack.explanation.script.forEach((s, i) => {
+    push(`explanation.script[${i}].say`, s.say);
+    push(`explanation.script[${i}].visual`, s.visual);
+  });
+  pack.explanation.vocabulary.forEach((t, i) => push(`explanation.vocabulary[${i}].kidGloss`, t.kidGloss));
+  pack.guidedExamples.forEach((g, i) => {
+    push(`guidedExamples[${i}].prompt`, g.prompt);
+    push(`guidedExamples[${i}].answer`, String(g.answer), 'answer');
+    g.steps.forEach((s, j) => {
+      push(`guidedExamples[${i}].steps[${j}].teacherSay`, s.teacherSay);
+      push(`guidedExamples[${i}].steps[${j}].childDo`, s.childDo);
+    });
+  });
+  const pushItem = (it: PackItem, base: string) => {
+    push(`${base}.prompt`, it.prompt);
+    push(`${base}.answer.value`, it.answer.value, 'answer');
+    it.answer.acceptableForms.forEach((f, k) => push(`${base}.answer.acceptableForms[${k}]`, f, 'answer'));
+    it.hintLadder.forEach((h, k) => push(`${base}.hintLadder[${k}]`, h));
+    it.choices?.forEach((c, k) => {
+      push(`${base}.choices[${k}].text`, c.text);
+      push(`${base}.choices[${k}].rationale`, c.rationale);
+    });
+  };
+  pack.days.forEach((d, di) => d.items.forEach((it, ii) => pushItem(it, `days[${di}].items[${ii}]`)));
+  pack.masteryCheck.formA.forEach((it, i) => pushItem(it, `masteryCheck.formA[${i}]`));
+  pack.masteryCheck.formB.forEach((it, i) => pushItem(it, `masteryCheck.formB[${i}]`));
+  push('puzzle.prompt', pack.puzzle.prompt);
+  push('puzzle.answer.value', pack.puzzle.answer.value, 'answer');
+  pack.puzzle.hintLadder.forEach((h, i) => push(`puzzle.hintLadder[${i}]`, h));
+  pack.mistakeBank.forEach((m, i) => {
+    push(`mistakeBank[${i}].description`, m.description);
+    push(`mistakeBank[${i}].exampleWrongAnswer`, m.exampleWrongAnswer);
+  });
+  const ps = pack.parentSummarySeed;
+  push('parentSummarySeed.whatWeWorkedOn', ps.whatWeWorkedOn);
+  push('parentSummarySeed.homeFocus.praiseLine', ps.homeFocus.praiseLine);
+  push('parentSummarySeed.homeFocus.questionForChild', ps.homeFocus.questionForChild);
+  return out;
+}
+
+function runSurfaceRealismScans(pack: WeeklyConceptPack, add: AddFn): void {
+  const band = pack.identity.level;
+  for (const { path, text, kind } of collectSurfaces(pack)) {
+    // --- QG-12a — currency rendering ---------------------------------------
+    if (MONEY_1DP.test(text)) {
+      add('QG-12a', path, `money written to one decimal — currency always renders 2 places: "${text.slice(0, 90)}"`);
+    }
+    if (MONEY_TOO_FINE.test(text)) {
+      add('QG-12a', path, `money written finer than a cent: "${text.slice(0, 90)}"`);
+    }
+    if (MONEY_OF_DOLLAR.test(text)) {
+      add('QG-12a', path, `"$x of a dollar" — the sign and the phrase are mutually exclusive: "${text.slice(0, 90)}"`);
+    }
+    // All-or-none cents within one string (denominations exempt).
+    let hasCents = false;
+    let bareAmount: string | null = null;
+    for (const m of text.matchAll(MONEY_AMOUNT_G)) {
+      if (m[2]) hasCents = true;
+      else if (!DENOMINATION_WORD.test(m[3] ?? '')) bareAmount = m[0];
+    }
+    if (hasCents && bareAmount) {
+      add('QG-12a', path, `mixes an amount with cents and a bare-dollar amount ("${bareAmount.trim()}") — render all money the same way: "${text.slice(0, 90)}"`);
+    }
+
+    // --- QG-12c — number/noun and article agreement ------------------------
+    for (const m of text.matchAll(ONE_PLURAL_G)) {
+      if (!NOT_A_PLURAL_NOUN.has(m[1])) {
+        add('QG-12c', path, `"1 ${m[1]}" — a count of one takes a singular noun: "${text.slice(0, 90)}"`);
+      }
+    }
+    if (ARTICLE_VOWEL.test(text)) {
+      add('QG-12c', path, `"a" before a vowel-sound numeral (an 8 / an 11 / an 18): "${text.slice(0, 90)}"`);
+    }
+    if (BROKEN_SINGULAR.test(text)) {
+      add('QG-12c', path, `broken singular from a naive plural strip — use unitFor(): "${text.slice(0, 90)}"`);
+    }
+
+    // --- QG-12d — large-number grouping (C+ bands) -------------------------
+    // Report-only while lib/format.ts GROUP_LARGE_NUMBERS is false (P6 ordering).
+    // PROSE only. `answer.value` stays the canonical computed form (QG-5
+    // re-derives it) and acceptableForms are accepted INPUT — grouping those
+    // would break the arithmetic audit for a display concern the UI owns.
+    if (GROUP_LARGE_NUMBERS && kind === 'prose' && band >= 'C' && BIG_BARE_INT.test(text)) {
+      add('QG-12d', path, `bare 5-digit number in child-facing prose — group it: "${text.slice(0, 90)}"`);
+    }
+  }
+
+  // --- QG-12b — context-sensitive fraction simplification ------------------
+  // Applies ONLY to fractions asserted as real-world QUANTITIES. Preserved where
+  // the fraction is the lesson object (rename/compare/convert) or where the prose
+  // states the partition it measures in — there the unreduced form is the honest
+  // name for that mark, and reducing would destroy the lesson.
+  const items: Array<{ it: PackItem; path: string }> = [];
+  pack.days.forEach((d, di) => d.items.forEach((it, ii) => items.push({ it, path: `days[${di}].items[${ii}]` })));
+  pack.masteryCheck.formA.forEach((it, i) => items.push({ it, path: `masteryCheck.formA[${i}]` }));
+  pack.masteryCheck.formB.forEach((it, i) => items.push({ it, path: `masteryCheck.formB[${i}]` }));
+  for (const { it, path } of items) {
+    if (it.type !== 'word-problem') continue;                       // bare arithmetic has no context to be unrealistic about
+    if (FRACTION_ROLE_PRESERVING.test(it.generator?.templateId ?? '')) continue;
+    if (RENAME_OR_COMPARE.test(it.prompt) || PARTITION_STATED.test(it.prompt)) continue;
+    for (const m of it.prompt.matchAll(FRACTION_G)) {
+      const n = Number(m[1]);
+      const d = Number(m[2]);
+      if (d > 1 && n < d && gcdInt(n, d) > 1) {
+        add('QG-12b', `${path}.prompt`, `unreduced fraction ${m[0]} stated as a real-world quantity — a recipe says 1/2 cup, never 2/4: "${it.prompt.slice(0, 90)}"`);
+      }
+    }
+  }
 }

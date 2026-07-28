@@ -110,7 +110,7 @@ const wpRateBase = situation({
 });
 const wpMultipleEstimate = withEstimateFirst(
   wpRateBase,
-  'a full sheet already holds many stickers, so several whole sheets should stack up to far more than a single sheet.',
+  'should the total be nearer to one sheet, or to many times a sheet?',
 );
 
 // --- Multi-step (compose a prior-week op onto a this-week factor/multiple skill) ---

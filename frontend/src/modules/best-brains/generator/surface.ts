@@ -13,11 +13,13 @@
 
 import type { PackItem } from '../types';
 
-const NUM_TOKEN = /\d+\s\d+\/\d+|\d+\/\d+|\d+\.\d+|\d+/g;
+// Comma-grouped forms are matched FIRST and normalised below, so a signature
+// is identical whether or not thousands separators are rendered (P6).
+const NUM_TOKEN = /\d+\s\d+\/\d+|\d+\/\d+|\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+\.\d+|\d+/g;
 
 /** Ordered numeric tokens of a prompt (includes [image: …] placeholder text). */
 export function numericTokens(prompt: string): string[] {
-  return prompt.match(NUM_TOKEN) ?? [];
+  return (prompt.match(NUM_TOKEN) ?? []).map((t) => t.replace(/,/g, ''));
 }
 
 /** Ordered surface signature, or null when the prompt has <2 numeric tokens. */

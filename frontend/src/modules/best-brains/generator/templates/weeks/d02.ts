@@ -30,6 +30,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { fmtInt, wholeMoney } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C3 = { level: 'C' as const, week: 3 };
@@ -56,7 +57,7 @@ const distTrip = situation({
     const name = r.pick(NAMES);
     const road = r.pick(['coastal highway', 'mountain route', 'cross-country trail', 'river road', 'ridge road']);
     return {
-      prompt: `The ${road} is ${a} km long. ${name} has already driven ${b} km. How many km are LEFT to drive?`,
+      prompt: `The ${road} is ${fmtInt(a)} km long. ${name} has already driven ${fmtInt(b)} km. How many km are LEFT to drive?`,
       answerValue: String(a - b), templateId: 'd_sub_v1', params: { a, b }, units: 'km',
       hints: ['Does the trip ask for the whole distance, or only the part still ahead?', 'Take the stretch already driven off the full length of the road.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -71,9 +72,9 @@ const moneySpend = situation({
     const name = r.pick(NAMES);
     const thing = r.pick(['a used car', 'new furniture', 'a laptop', 'a mountain bike', 'a big repair']);
     return {
-      prompt: `${name} had saved $${a} and spent $${b} on ${thing}. How much money is left?`,
+      prompt: `${name} had saved ${wholeMoney(a)} and spent ${wholeMoney(b)} on ${thing}. How much money is left?`,
       answerValue: String(a - b), templateId: 'd_sub_v1', params: { a, b }, units: 'dollars',
-      acceptableForms: [`$${a - b}`],
+      acceptableForms: [wholeMoney(a - b)],
       hints: ['When money is spent, does the amount saved grow or shrink?', 'Begin with what was saved and remove what was spent.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -100,7 +101,7 @@ const popCompare = situation({
     const a = r.int(40000, 95000); const b = r.int(10000, 39000);
     const [t1, t2] = twoTowns(r);
     return {
-      prompt: `${t1} has ${a} residents and ${t2} has ${b} residents. How many MORE residents does ${t1} have than ${t2}?`,
+      prompt: `${t1} has ${fmtInt(a)} residents and ${t2} has ${fmtInt(b)} residents. How many MORE residents does ${t1} have than ${t2}?`,
       answerValue: String(a - b), templateId: 'd_sub_v1', params: { a, b }, units: 'residents',
       hints: ['Does "how many more" ask for a combined total, or the gap between two counts?', 'Set the smaller population beside the larger and find the difference.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -114,15 +115,15 @@ const costCheck = situation({
   draw: (r) => {
     const a = r.int(1200, 8900); const b = r.int(1200, 8900);
     return {
-      prompt: `A shop's morning sales came to $${a} and its afternoon sales came to $${b}. What were the shop's total sales for the day?`,
+      prompt: `A shop's morning sales came to ${wholeMoney(a)} and its afternoon sales came to ${wholeMoney(b)}. What were the shop's total sales for the day?`,
       answerValue: String(a + b), templateId: 'd_add_v1', params: { a, b }, units: 'dollars',
-      acceptableForms: [`$${a + b}`],
+      acceptableForms: [wholeMoney(a + b)],
       hints: ['Are the morning and afternoon amounts being joined, or compared?', 'Add the two amounts, keeping ones over ones and tens over tens.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
 });
-const costEstimate = withEstimateFirst(costCheck, 'rounding each amount to a friendly nearby number gives a ballpark, so the total should land close to that rounded sum, not far above or below.');
+const costEstimate = withEstimateFirst(costCheck, 'roughly what does each amount round to, and about where should their total land?');
 
 // --- Multi-step chains (answer + step-count from the shipped op-chain) -----------
 const msPopChange = multiStep({
@@ -131,7 +132,7 @@ const msPopChange = multiStep({
     const a = r.int(30000, 95000); const b = r.int(2000, 9000); const c = r.int(1000, 8000);
     const town = r.pick(TOWNS);
     return {
-      prompt: `${town} had ${a} residents. During the year ${b} residents moved away, and then ${c} new residents arrived. What is the population NOW?`,
+      prompt: `${town} had ${fmtInt(a)} residents. During the year ${fmtInt(b)} residents moved away, and then ${fmtInt(c)} new residents arrived. What is the population NOW?`,
       initN: a, steps: [{ op: 'sub', n: b, d: 1 }, { op: 'add', n: c, d: 1 }], units: 'residents',
       hints: ['Which change shrinks the town, and which one grows it back?', 'Remove the departures from the start first, then bring in the arrivals.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -145,7 +146,7 @@ const msMoneyBudget = multiStep({
     const a = r.int(3000, 9000); const b = r.int(800, 2500); const c = r.int(700, 2500);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} started the month with $${a}. They spent $${b} on bills and later were paid $${c}. How much money do they have now?`,
+      prompt: `${name} started the month with ${wholeMoney(a)}. They spent ${wholeMoney(b)} on bills and later were paid ${wholeMoney(c)}. How much money do they have now?`,
       initN: a, steps: [{ op: 'sub', n: b, d: 1 }, { op: 'add', n: c, d: 1 }], units: 'dollars',
       hints: ['Before any arithmetic, which step lowers the balance and which lifts it?', 'Take the spending off the starting amount, then add the pay.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -174,7 +175,7 @@ const discrimGap = discrimination({
     const a = r.int(24000, 88000); const b = r.int(9000, 23000);
     const [t1, t2] = twoTowns(r);
     return {
-      prompt: `${t1} had ${a} visitors and ${t2} had ${b} visitors. To find how many MORE visitors ${t1} had, which operation do you use?`,
+      prompt: `${t1} had ${fmtInt(a)} visitors and ${t2} had ${fmtInt(b)} visitors. To find how many MORE visitors ${t1} had, which operation do you use?`,
       correct: 'subtract', correctForms: ['subtraction', 'find the difference'],
       distractors: [
         { text: 'add', errorTag: 'task-comprehension', rationale: 'The word "more" looks like an add word, but the gap between two amounts is a subtraction.' },
@@ -209,7 +210,7 @@ const eaWrongOp = errorAnalysis({
   verifyTemplateId: 'd_verify_binop_misconception_v1',
   drawParams: (r) => ({ a: r.int(4200, 8900), b: r.int(1100, 3900), op: '-', wrongOp: '+' }),
   build: (v, p) => ({
-    prompt: `A shop took in $${p.a} at the register and paid out $${p.b} in refunds during the day. To find how much money was LEFT, a student worked it out as ${v.wrong}.`,
+    prompt: `A shop took in ${wholeMoney(Number(p.a))} at the register and paid out ${wholeMoney(Number(p.b))} in refunds during the day. To find how much money was LEFT, a student worked it out as ${wholeMoney(Number(v.wrong))}.`,
     extension: 'Name the operation the "how much is left after paying out" story actually calls for, explain why, then give the correct amount.',
     hints: ['Does "how much is LEFT after paying out" build the amount up, or bring it down?', 'Picture the register emptying as refunds go out — money leaving means less, not more.'],
     errorTags: ['task-comprehension', 'concept-misconception'],

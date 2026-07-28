@@ -14,6 +14,7 @@ import type { AnswerValidation, ErrorTag } from '../../../types';
 import type { Rng } from '../../rng';
 import type { TupleGuard, ItemDraft } from '../shared';
 import { drawUniqueItem } from './guard';
+import { valueForms } from './format';
 import type { AuthorMeta, SituationType } from './meta';
 import type { ItemGen } from './multistep';
 
@@ -54,7 +55,10 @@ export function situation(cfg: SituationCfg): ItemGen {
         prompt: d.prompt,
         answer: {
           value: d.answerValue,
-          acceptableForms: d.acceptableForms ?? (d.units ? [`${d.answerValue} ${d.units}`] : []),
+          // valueForms, not `${value} ${units}` — a drawn count of 1 printed
+          // "1 marbles" into the accepted-answer list, and money answers need
+          // their 2-decimal surfaces enumerated (POLISH-PASS-SPEC §P1/§P5).
+          acceptableForms: d.acceptableForms ?? (d.units ? valueForms(d.answerValue, d.units) : []),
           validation: d.validation ?? 'exact-numeric',
           ...(d.units ? { units: d.units } : {}),
         },

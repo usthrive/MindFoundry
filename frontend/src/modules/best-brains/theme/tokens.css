@@ -168,6 +168,7 @@
 .mf-foundry .hover\:bg-gray-300:hover { background-color: var(--mf-line); }
 .mf-foundry .bg-error\/10 { background-color: var(--mf-attention-soft); }
 .mf-foundry .hover\:bg-error\/20:hover { background-color: rgba(139, 129, 155, 0.2); }
+.mf-foundry .border-error\/30 { border-color: rgba(139, 129, 155, 0.3); }
 .mf-foundry .focus\:ring-error\/40:focus { --tw-ring-color: rgba(139, 129, 155, 0.4); }
 .mf-foundry .hover\:bg-primary\/90:hover { background-color: var(--mf-primary-deep); }
 

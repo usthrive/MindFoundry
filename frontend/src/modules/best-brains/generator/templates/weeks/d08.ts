@@ -19,7 +19,7 @@
  *  - Distinct proper names drawn fresh per item — never a hardcoded pool name.
  */
 
-import { asWarmup, classify, divideRemainder, multiply, reasoning, storyMultiply } from '../lib/items';
+import { asWarmup, classify, divideRemainder, factorPair, multiply, reasoning, storyMultiply } from '../lib/items';
 import { situation } from '../lib/situations';
 import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
@@ -27,6 +27,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
+const D3 = { level: 'D' as const, week: 3 };
 const C12 = { level: 'C' as const, week: 12 };
 const D5 = { level: 'D' as const, week: 5 };
 const D6 = { level: 'D' as const, week: 6 };
@@ -37,6 +38,7 @@ const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Noor', 'Ken', 
 const wMulFact = asWarmup(multiply(2, 9, 2, 9), C12);
 const wArea = asWarmup(multiply(11, 49, 3, 9), D5); // 2-digit × 1-digit area-model
 const wDiv = asWarmup(divideRemainder(3, 9, 20, 89), D6);
+const wFactor = asWarmup(factorPair(), D3);                   // D3 missing-factor form (not a second bare product)
 
 // --- Single-step 2-digit × 2-digit situations (fixed, role-based, name-free hints) ---
 const sitArea = situation({
@@ -96,7 +98,7 @@ const sitOrder = situation({
     };
   },
 });
-const sitEstimate = withEstimateFirst(sitOrder, 'rounding each factor to the nearest ten gives a product in the right ballpark, so a good answer should land near that rounded product.');
+const sitEstimate = withEstimateFirst(sitOrder, 'round each factor to the nearest ten — about where should the real product land?');
 
 // --- Multi-step problems (the product is one step in a longer chain) ------------
 const msSeats = multiStep({
@@ -104,9 +106,9 @@ const msSeats = multiStep({
   draw: (r) => {
     const a = r.int(12, 30); const b = r.int(11, 25); const c = r.int(8, 40);
     return {
-      prompt: `An auditorium has ${a} rows with ${b} seats in each row, plus ${c} extra balcony seats. How many seats are there in all?`,
-      initN: a, steps: [{ op: 'mul', n: b, d: 1 }, { op: 'add', n: c, d: 1 }], units: 'seats',
-      hints: ['Does the balcony count come before or after you find the main block of seats?', 'Find the rows-times-seats product first, then add the balcony seats.'],
+      prompt: `A depot stacks ${a} pallets with ${b} cartons on each, plus ${c} loose cartons on the floor. How many cartons are there in all?`,
+      initN: a, steps: [{ op: 'mul', n: b, d: 1 }, { op: 'add', n: c, d: 1 }], units: 'cartons',
+      hints: ['Do the loose cartons come before or after you find the stacked block?', 'Find the pallets-times-cartons product first, then add the loose ones.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
@@ -117,9 +119,9 @@ const msParking = multiStep({
   draw: (r) => {
     const a = r.int(12, 28); const b = r.int(11, 24); const c = r.int(6, 30);
     return {
-      prompt: `A parking lot has ${a} rows that fit ${b} cars each, but ${c} spaces are blocked off today. How many cars can still park?`,
-      initN: a, steps: [{ op: 'mul', n: b, d: 1 }, { op: 'sub', n: c, d: 1 }], units: 'cars',
-      hints: ['Are you counting every space, or only the ones still open today?', 'Work out the full rows-times-cars total, then take away the blocked spaces.'],
+      prompt: `A packer fills ${a} crates with ${b} jars each, but ${c} jars arrive cracked and are set aside. How many good jars are packed?`,
+      initN: a, steps: [{ op: 'mul', n: b, d: 1 }, { op: 'sub', n: c, d: 1 }], units: 'jars',
+      hints: ['Are you counting every jar, or only the ones still fit to pack?', 'Work out the full crates-times-jars total, then take away the cracked ones.'],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
@@ -150,7 +152,7 @@ const discrimRooms = discrimination({
         { text: 'two', errorTag: 'concept-misconception', rationale: 'Splits only one factor, as in a two-digit by one-digit product — but here BOTH factors are split.' },
         { text: 'three', errorTag: 'concept-misconception', rationale: 'Drops one of the four place-pair products — a missing room.' },
       ],
-      hints: ['How many place-parts does each two-digit factor break into?', 'Rooms come from pairing every part of one factor with every part of the other: two times two.'],
+      hints: ['How many place-parts does each two-digit factor break into?', 'Pair every place-part of one factor with every place-part of the other, and count the pairings you make.'],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
   },
@@ -186,7 +188,7 @@ const eaRoomAdded = errorAnalysis({
   build: (v, p) => {
     const A = Number(p.A); const B = Number(p.B); const room = Number(p.a); const tens = Number(p.b);
     return {
-      prompt: `A student multiplied ${A} × ${B} with the four-rooms method. For the ones-by-tens room they wrote ${room} + ${tens} instead of ${room} × ${tens}, so they recorded that room as ${v.wrong}.`,
+      prompt: `A student multiplied ${A} × ${B} with the four-rooms method. For the ones-by-tens room they wrote ${room} and ${tens} in the corners and recorded that room as ${v.wrong}.`,
       extension: "Explain why that room needs a multiply, give the room's true value, and estimate the whole product to show the total is now sensible.",
       hints: ['Does that room show a product of two place-parts, or just their sum?', 'Picture the ones part copied across the whole tens part — that many, not one more group.'],
       errorTags: ['concept-misconception', 'procedure-slip'],
@@ -238,7 +240,7 @@ export const buildD08 = makeWeekBuilder({
   days: [
     // Day 1 — concept echo: single-step 2×2 products only, blocked (no interleaving)
     [
-      { gen: wMulFact, diff: 2 },
+      { gen: wFactor, diff: 2 },
       { gen: wArea, diff: 2 },
       { gen: wDiv, diff: 2 },
       { gen: sitArea, diff: 2 },
@@ -314,7 +316,7 @@ export const buildD08 = makeWeekBuilder({
     title: 'Puzzle Grove: The Missing Room',
     puzzleType: 'error-analysis',
     prompt: 'For 26 × 34, three of the four rooms come out to 600, 180, and 24, and the running total on the page is 804. One room was never added. Which room is missing, and what is the correct total?',
-    answer: { value: 'the missing room is ones-by-tens, six ones times thirty which is worth 80; correct total 884', acceptableForms: ['80', '884'], validation: 'short-text-keyword' },
+    answer: { value: 'the missing room is tens-by-ones, twenty times four, which is worth 80; correct total 884', acceptableForms: ['80', '884'], validation: 'short-text-keyword' },
     hintLadder: ['Which pairing of place-parts is NOT shown among the three rooms?', 'List all four rooms of 20+6 and 30+4, then compare them with the three given.'],
     errorTags: ['concept-misconception', 'procedure-slip'],
   }),
@@ -331,7 +333,7 @@ export const buildD08 = makeWeekBuilder({
   isomorphNotes:
     'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03: single-step 2-digit × 2-digit (four-room affordance preserved). 02/04/06: multi-step (product then combine / remove / combine-and-remove). 05: equal-groups multiplication story. No operand surface reused from Form A or the daily pages.',
   mistakeBank: [
-    { errorTag: 'concept-misconception', subtype: 'missing-partial', description: 'Uses only three of the four rooms (typically drops tens×ones or ones×tens), or adds within a room instead of multiplying.', exampleWrongAnswer: '32 × 21 with only 30×20, 2×20, 2×1 → 674 (missing 30×1)', distractorRationale: 'Offer a three-room total or an add-instead-of-multiply room.', reteachPointer: 'explanation/script[0] (the four rooms, always)' },
+    { errorTag: 'concept-misconception', subtype: 'missing-partial', description: 'Uses only three of the four rooms (typically drops tens×ones or ones×tens), or adds within a room instead of multiplying.', exampleWrongAnswer: '32 × 21 with only 30×20, 2×20, 2×1 → 642 (missing 30×1; the true product is 672)', distractorRationale: 'Offer a three-room total or an add-instead-of-multiply room.', reteachPointer: 'explanation/script[0] (the four rooms, always)' },
     { errorTag: 'procedure-slip', subtype: 'partial-sum-slip', description: 'Finds all four rooms but adds them incorrectly.', exampleWrongAnswer: '800+140+120+21 → 1,071', distractorRationale: 'Offer a near-miss total of the correct rooms.', reteachPointer: 'guidedExamples/D8-GE-01 (add all four rooms)' },
     { errorTag: 'representation-misread', subtype: 'place-shift', description: "Forgets a room's place value (writes tens×tens without its zeros).", exampleWrongAnswer: '20 × 40 → 80 instead of 800', distractorRationale: 'Offer the place-shifted room.', reteachPointer: 'explanation/script[2] (the estimate catches a place-shifted room)' },
     { errorTag: 'fact-recall', subtype: 'basic-fact-slip', description: 'A single-digit fact inside a room is wrong.', exampleWrongAnswer: '3 × 7 → 24', distractorRationale: 'Offer an adjacent product.', reteachPointer: '60-second multiplication-fact refresh; feeds the sprint pool' },

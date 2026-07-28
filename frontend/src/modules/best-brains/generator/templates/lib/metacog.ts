@@ -15,6 +15,15 @@ import type { ItemGen } from './multistep';
 
 const DIGIT = /[0-9]/;
 
+/**
+ * A causal clause IS the reasoning the child is supposed to supply. A probe
+ * containing one has already answered itself — which is exactly how the v2
+ * corpus satisfied the metacognition gate without the child ever estimating
+ * (PEDAGOGY-CEILING-REVIEW F1: "the wrapper narrates the insight instead of
+ * eliciting it"; LEARNINGS L25).
+ */
+const TELLS = /\b(because|since|so that|so a\b|so the\b|always|never|remember that|which means)\b/i;
+
 function markMetacog(meta: AuthorMeta | undefined): AuthorMeta {
   return meta ? { ...meta, isMetacog: true } : { stepCount: 1, cognitiveOp: 'reasoning', isMetacog: true };
 }
@@ -25,14 +34,40 @@ function assertVerbal(text: string, where: string): void {
   }
 }
 
-/** Prepend a verbal estimate-first prompt ("about how big should the answer be?"). */
-export function withEstimateFirst(base: ItemGen, benchmark: string): ItemGen {
-  assertVerbal(benchmark, 'estimate benchmark');
+/**
+ * A probe must ELICIT, not narrate: it asks a question the child answers before
+ * working, and it must not hand over the reason or name the move under test.
+ * Both checks are structural, so the failure mode cannot creep back in.
+ */
+function assertElicits(text: string, where: string): void {
+  if (!text.trim().endsWith('?')) {
+    throw new Error(`metacog ${where} must be a QUESTION the child answers (end it with '?'): "${text}"`);
+  }
+  const tell = TELLS.exec(text);
+  if (tell) {
+    throw new Error(
+      `metacog ${where} states the reasoning ("${tell[0]}") instead of asking for it — the child must supply the why: "${text}"`,
+    );
+  }
+}
+
+/** Deterministic lead-in variety: keyed off the drafted prompt, never a new rng draw. */
+const PROBE_LEAD = ['Before you solve —', 'Predict first —', 'Make a call before you work it out —'] as const;
+
+/**
+ * Prepend an eliciting estimate-first probe. `probe` is a QUESTION with a
+ * decidable answer ("will the answer land above or below an even split?"), not
+ * a statement of what the answer will be.
+ */
+export function withEstimateFirst(base: ItemGen, probe: string): ItemGen {
+  assertVerbal(probe, 'estimate probe');
+  assertElicits(probe, 'estimate probe');
   return (rng, guard, difficulty) => {
     const d = base(rng, guard, difficulty);
+    const lead = PROBE_LEAD[d.prompt.length % PROBE_LEAD.length];
     return {
       ...d,
-      prompt: `Estimate first — ${benchmark} Then solve: ${d.prompt}`,
+      prompt: `${lead} ${probe} Decide, then solve: ${d.prompt}`,
       authorMeta: markMetacog(d.authorMeta),
     };
   };

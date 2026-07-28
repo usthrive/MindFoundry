@@ -26,6 +26,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { addDec, subDec } from '../lib/compute';
+import { bill, money } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import type { Rng } from '../../rng';
 
@@ -77,13 +78,12 @@ const sLeftLen = situation({
 const sSpendMoney = situation({
   situationType: 'money-change', cognitiveOp: 'dec-sub',
   draw: (r) => {
-    const a = cents(r, 12, 40); const b = dec1(r, 2, 9); const name = r.pick(NAMES);
+    const a = cents(r, 12, 40); const b = cents(r, 2, 9); const name = r.pick(NAMES);
     const ans = subDec(a, b);
     return {
-      prompt: `${name} has $${a} and spends $${b} on lunch. How much money is left?`,
+      prompt: `${name} has ${money(a)} and spends ${money(b)} on lunch. How much money is left?`,
       answerValue: ans, templateId: 'd_dec_addsub_v1', params: { a, b, op: -1 }, units: 'dollars',
-      acceptableForms: [`$${ans}`, `${ans} dollars`],
-      hints: ['Does spending take money away, or add to what is left?', 'Line the dollars over dollars and cents over cents, filling in a zero if a number is short.'],
+      hints: ['Does spending take money away, or add to what is left?', 'Line the dollars over the dollars and the cents over the cents before you take one away.'],
       errorTags: ['representation-misread', 'task-comprehension'],
     };
   },
@@ -92,12 +92,11 @@ const sSpendMoney = situation({
 const sBuyTotal = situation({
   situationType: 'combine', cognitiveOp: 'dec-add',
   draw: (r) => {
-    const a = cents(r, 3, 12); const b = dec1(r, 1, 6); const name = r.pick(NAMES);
+    const a = cents(r, 3, 12); const b = cents(r, 1, 6); const name = r.pick(NAMES);
     const ans = addDec(a, b);
     return {
-      prompt: `${name} buys a book for $${a} and a pen for $${b}. What is the total cost?`,
+      prompt: `${name} buys a book for ${money(a)} and a pen for ${money(b)}. What is the total cost?`,
       answerValue: ans, templateId: 'd_dec_addsub_v1', params: { a, b, op: 1 }, units: 'dollars',
-      acceptableForms: [`$${ans}`, `${ans} dollars`],
       hints: ['Do the two prices combine into one total, or is one taken from the other?', 'Stack the two prices with the points aligned, keeping two cents places on each.'],
       errorTags: ['representation-misread', 'procedure-slip'],
     };
@@ -108,12 +107,11 @@ const sBuyTotal = situation({
 const sRateMoney = situation({
   situationType: 'rate', cognitiveOp: 'dec-add',
   draw: (r) => {
-    const a = cents(r, 5, 15); const b = dec1(r, 1, 6); const name = r.pick(NAMES);
+    const a = cents(r, 5, 15); const b = cents(r, 1, 6); const name = r.pick(NAMES);
     const ans = addDec(a, b);
     return {
-      prompt: `${name}'s basic plan costs $${a} a month. The bigger plan costs $${b} more each month. What does the bigger plan cost a month?`,
+      prompt: `${name}'s basic plan costs ${money(a)} a month. The bigger plan costs ${money(b)} more each month. What does the bigger plan cost a month?`,
       answerValue: ans, templateId: 'd_dec_addsub_v1', params: { a, b, op: 1 }, units: 'dollars',
-      acceptableForms: [`$${ans}`, `${ans} dollars`],
       hints: ['Does "more each month" add onto the base price, or take from it?', 'Align the two monthly prices by the point, then add place by place.'],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -121,18 +119,18 @@ const sRateMoney = situation({
 });
 const sRateEstimate = withEstimateFirst(
   sRateMoney,
-  'round each monthly price to the nearest dollar and add — the bigger plan should land a little above the base plan, never below it.',
+  'should the bigger plan come out above or below the basic plan?',
 );
 
 // --- Multi-step decimal problems (exact decimal op-chain; role-based hints) ------
 const mChange = multiStepDec({
   situationType: 'money-change', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const bill = r.pick(['10', '20']);
+    const billValue = r.pick([10, 20]);
     const p1 = cents(r, 1, 3); const p2 = cents(r, 1, 3); const name = r.pick(NAMES);
     return {
-      prompt: `${name} pays with a $${bill} bill for a book costing $${p1} and a pen costing $${p2}. How much change should ${name} get back?`,
-      init: bill, steps: [{ op: 'sub', v: p1 }, { op: 'sub', v: p2 }], units: 'dollars',
+      prompt: `${name} pays with a ${bill(billValue)} bill for a book costing ${money(p1)} and a pen costing ${money(p2)}. How much change should ${name} get back?`,
+      init: String(billValue), steps: [{ op: 'sub', v: p1 }, { op: 'sub', v: p2 }], units: 'dollars',
       hints: ['Does this ask for the total spent, or the change handed back?', 'Add the two prices with the points aligned, then take that total from the bill.'],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -142,9 +140,9 @@ const mChange = multiStepDec({
 const mThreeTotal = multiStepDec({
   situationType: 'combine', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const a = cents(r, 2, 6); const b = dec1(r, 1, 5); const c = cents(r, 1, 4); const name = r.pick(NAMES);
+    const a = cents(r, 2, 6); const b = cents(r, 1, 5); const c = cents(r, 1, 4); const name = r.pick(NAMES);
     return {
-      prompt: `${name} buys three snacks costing $${a}, $${b}, and $${c}. What is the total cost of all three?`,
+      prompt: `${name} buys three snacks costing ${money(a)}, ${money(b)}, and ${money(c)}. What is the total cost of all three?`,
       init: a, steps: [{ op: 'add', v: b }, { op: 'add', v: c }], units: 'dollars',
       hints: ['Do the three prices build one running total, or is something taken away?', 'Add the first two with the points aligned, then add the third onto that.'],
       errorTags: ['procedure-slip', 'representation-misread'],
@@ -212,7 +210,7 @@ const eaRightAlign = errorAnalysis({
     op: '+', wrongMode: 'right-align',
   }),
   build: (v, p) => ({
-    prompt: `A student added ${p.a} + ${p.b}. They lined the two numbers up by their right-hand edges instead of by the decimal points, and wrote ${v.wrong}.`,
+    prompt: `A student added ${p.a} + ${p.b}, stacking the two numbers with their right-hand edges in line, and wrote ${v.wrong}.`,
     extension: 'Show with a quick estimate and aligned columns why that is off, then write the true sum.',
     hints: ['Which feature of the two numbers has to line up before adding — the last digit, or the point?', 'Estimate by rounding each to the nearest whole; the true sum should sit near that.'],
     errorTags: ['representation-misread', 'concept-misconception'],

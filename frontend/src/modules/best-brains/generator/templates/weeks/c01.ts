@@ -22,6 +22,7 @@ import {
   numberWords,
   TupleGuard,
 } from '../shared';
+import { countNoun } from '../lib/format';
 
 const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Noor'] as const;
 
@@ -49,7 +50,7 @@ function compose3(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
   const { h, t, o } = drawHTO(rng, guard, 'compose3');
   return {
     type: 'computation',
-    prompt: `${h} hundreds, ${t} tens, and ${o} ones make what number?`,
+    prompt: `${countNoun(h, 'hundreds')}, ${countNoun(t, 'tens')}, and ${countNoun(o, 'ones')} make what number?`,
     answer: {
       value: String(100 * h + 10 * t + o),
       acceptableForms: [],

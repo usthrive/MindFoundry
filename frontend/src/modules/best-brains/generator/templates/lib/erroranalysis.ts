@@ -25,6 +25,18 @@ import type { ItemGen } from './multistep';
 
 const VERIFY = new Map(LIB_VERIFY_DEFS.map((d) => [d.id, d.verifyFor]));
 
+/**
+ * Phrases that hand the child the diagnosis (PEDAGOGY-CEILING-REVIEW F6).
+ *
+ * The prompt MAY show what the student did — a teacher shows the working. It may
+ * NOT say what they should have done, or label the move an error: once the
+ * prompt contains "ignoring that × outranks +", "explain what went wrong"
+ * collapses into paraphrase, and the analysis the item exists for never happens.
+ * The diagnosis is the child's ANSWER, so it cannot also be the question.
+ */
+const HANDS_OVER_DIAGNOSIS =
+  /\binstead of\b|\bignoring\b|\bforgetting\b|\bforgot to\b|\bby mistake\b|\bwrongly\b|\bfailed to\b|\bshould have\b|\brather than\b/i;
+
 export interface ErrorAnalysisProse {
   /** The worked-error prompt; MUST embed the shown wrong value and require a written explanation. */
   prompt: string;
@@ -60,6 +72,12 @@ export function errorAnalysis(cfg: ErrorAnalysisCfg): ItemGen {
         throw new Error(`errorAnalysis: verify "${cfg.verifyTemplateId}" produced no misconception value`);
       }
       const prose = cfg.build({ correct: v.correct, wrong: v.wrong }, params, r);
+      const tell = HANDS_OVER_DIAGNOSIS.exec(prose.prompt);
+      if (tell) {
+        throw new Error(
+          `errorAnalysis (${cfg.verifyTemplateId}): the prompt states the diagnosis ("${tell[0]}") — show the student's WORK and CLAIM only; the diagnosis is the child's answer. Prompt: "${prose.prompt.slice(0, 120)}"`,
+        );
+      }
       const meta: AuthorMeta = {
         stepCount: 1,
         cognitiveOp: cfg.cognitiveOp ?? 'error-analysis',

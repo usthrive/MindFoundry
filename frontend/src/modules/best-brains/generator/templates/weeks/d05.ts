@@ -25,6 +25,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { wholeMoney } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -89,9 +90,9 @@ const sPrice2d = situation({
     const qty = r.int(3, 9); const price = r.int(12, 49);
     const item = r.pick(['kite', 'book', 'game', 'plant', 'mug', 'lamp']); const name = r.pick(NAMES);
     return {
-      prompt: `One ${item} costs $${price}. ${name} buys ${qty} of them. What is the total cost?`,
+      prompt: `One ${item} costs ${wholeMoney(price)}. ${name} buys ${qty} of them. What is the total cost?`,
       answerValue: String(qty * price), templateId: 'd_mul_v1', params: { a: qty, b: price }, units: 'dollars',
-      acceptableForms: [`$${qty * price}`],
+      acceptableForms: [wholeMoney(qty * price)],
       hints: ['Does the total grow as equal-size copies of one price?', 'Split the price into tens and ones, scale each by the count, then combine.'],
       errorTags: ['procedure-slip', 'fact-recall'],
     };
@@ -99,7 +100,7 @@ const sPrice2d = situation({
 });
 const sEstimate = withEstimateFirst(
   sPrice2d,
-  'round the price up to the nearest ten and multiply by the count, so the true total should land a little below that friendly estimate.',
+  'if you round the price up, will the true total land above or below that estimate?',
 );
 
 // --- Multi-step area-model word problems ---------------------------------------
@@ -123,9 +124,9 @@ const msSeating = multiStep({
   draw: (r) => {
     const rows = r.int(3, 9); const per = r.int(12, 40); const taken = r.int(6, 30);
     return {
-      prompt: `A hall has ${rows} rows of ${per} seats. Already ${taken} of the seats are taken. How many seats are still empty?`,
-      initN: rows, steps: [{ op: 'mul', n: per, d: 1 }, { op: 'sub', n: taken, d: 1 }], units: 'seats',
-      hints: ['Are you counting every seat, or only the empty ones that are left?', 'Build the full seat count first, then take away the taken seats.'],
+      prompt: `A patio is laid with ${rows} rows of ${per} paving stones. So far ${taken} of the stones are down. How many are still to lay?`,
+      initN: rows, steps: [{ op: 'mul', n: per, d: 1 }, { op: 'sub', n: taken, d: 1 }], units: 'stones',
+      hints: ['Are you counting every stone, or only the ones still to go?', 'Build the full stone count first, then take away the ones already down.'],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
@@ -188,7 +189,7 @@ const dRooms = discrimination({
         { text: `two rooms`, errorTag: 'concept-misconception', rationale: 'Splits off only one place and drops a partial product.' },
         { text: `one room — no break-apart`, errorTag: 'concept-misconception', rationale: 'Leaves the factor whole, so the area model does no work.' },
       ],
-      hints: ['How many place-value parts does a three-digit number split into?', 'One room per place — hundreds, tens, and ones — so three partial products.'],
+      hints: ['How many place-value parts does a three-digit number split into?', 'Name each place inside the three-digit factor, then pair every one of them with the single-digit factor.'],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
   },
@@ -200,7 +201,7 @@ const eaTimesVsPlus = errorAnalysis({
   verifyTemplateId: 'd_verify_binop_misconception_v1', cognitiveOp: 'error-analysis',
   drawParams: (r) => ({ a: r.int(3, 9), b: r.int(12, 49), op: '*', wrongOp: '+' }),
   build: (v, p) => ({
-    prompt: `A student needed to work out ${p.a} rows of ${p.b} chairs. Instead of breaking the number apart and multiplying with the area model, the student added the two numbers and wrote ${v.wrong} chairs.`,
+    prompt: `A student needed to work out ${p.a} rows of ${p.b} chairs, and wrote ${v.wrong} chairs.`,
     extension: 'Use a labelled rectangle to show why that is wrong, then give the true number of chairs.',
     hints: ['Does "rows of" tell you to add the two numbers, or to copy one amount across the rows?', 'Picture the rows filling a rectangle; count the copies, not a single sum.'],
     errorTags: ['task-comprehension', 'concept-misconception'],

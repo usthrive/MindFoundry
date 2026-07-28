@@ -21,6 +21,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { coprimeNumerator } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import { addFrac, formatFrac, mulFrac } from '../lib/compute';
 
@@ -42,8 +43,8 @@ const wEquiv = asWarmup(fracEquivFill(), D9);
 const sitGardenArea = situation({
   situationType: 'area', cognitiveOp: 'frac-times-frac',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     return {
       prompt: `A garden bed is ${n1}/${d1} of a square metre. A gardener plants herbs in ${n2}/${d2} of the bed. What fraction of a square metre is herbs?`,
       answerValue: prod(n1, d1, n2, d2), templateId: 'd_frac_times_frac_v1', params: { n1, d1, n2, d2 },
@@ -57,8 +58,8 @@ const sitGardenArea = situation({
 const sitFieldPartWhole = situation({
   situationType: 'part-whole', cognitiveOp: 'frac-times-frac',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     return {
       prompt: `In a park, ${n1}/${d1} of a field is grass. Cows graze ${n2}/${d2} of the grassy part. What fraction of the whole field do the cows graze?`,
       answerValue: prod(n1, d1, n2, d2), templateId: 'd_frac_times_frac_v1', params: { n1, d1, n2, d2 },
@@ -72,8 +73,8 @@ const sitFieldPartWhole = situation({
 const sitClothMeasurement = situation({
   situationType: 'measurement', cognitiveOp: 'frac-times-frac',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     const name = r.pick(NAMES);
     return {
       prompt: `A ribbon is ${n1}/${d1} of a metre long. ${name} cuts off ${n2}/${d2} of the ribbon. How long is the cut piece, as a fraction of a metre?`,
@@ -89,8 +90,8 @@ const sitClothMeasurement = situation({
 const sitJuiceMeasure = situation({
   situationType: 'measurement', cognitiveOp: 'frac-times-frac',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     const name = r.pick(NAMES);
     return {
       prompt: `A jug holds ${n1}/${d1} of a litre. ${name} drinks ${n2}/${d2} of what is in the jug. What fraction of a litre did ${name} drink?`,
@@ -103,7 +104,7 @@ const sitJuiceMeasure = situation({
 });
 const sitEstimate = withEstimateFirst(
   sitJuiceMeasure,
-  'a part OF a part always lands smaller than either fraction you multiply, so a sensible answer sits below both of them.',
+  'will a part OF a part land above or below each of the two fractions?',
 );
 
 // --- Multi-step: fraction OF a fraction THEN of a whole quantity ----------------
@@ -111,8 +112,8 @@ const sitEstimate = withEstimateFirst(
 const msFieldCorn = multiStep({
   situationType: 'multi-stage', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     const W = d1 * d2 * r.int(1, 2);
     return {
       prompt: `A field is ${n1}/${d1} planted. Of the planted part, ${n2}/${d2} is corn. The whole field is ${W} hectares. How many hectares are corn?`,
@@ -127,8 +128,8 @@ const msFieldCorn = multiStep({
 const msWallPaint = multiStep({
   situationType: 'area', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     const W = d1 * d2 * r.int(1, 2);
     return {
       prompt: `A wall is ${n1}/${d1} painted. Of the painted area, ${n2}/${d2} gets a second coat. The whole wall is ${W} square metres. How many square metres get a second coat?`,
@@ -143,8 +144,8 @@ const msWallPaint = multiStep({
 const msRecipe = multiStep({
   situationType: 'combine', cognitiveOp: 'multi-step',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     const W = d1 * d2 * r.int(1, 2);
     return {
       prompt: `A recipe fills ${n1}/${d1} of a tray. A batch uses ${n2}/${d2} of the recipe. If a full tray holds ${W} cups, how many cups does the batch make?`,
@@ -160,8 +161,8 @@ const msRecipe = multiStep({
 const discrimOfAmount = discrimination({
   variant: 'cross-op',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     const product = prod(n1, d1, n2, d2);
     const sum = formatFrac(addFrac({ n: n1, d: d1 }, { n: n2, d: d2 }));
     const kept = formatFrac({ n: n2, d: d2 });
@@ -181,8 +182,8 @@ const discrimOfAmount = discrimination({
 const discrimOfOp = discrimination({
   variant: 'cross-op',
   draw: (r) => {
-    const d1 = r.pick([2, 3, 4, 5]); const n1 = r.int(1, d1 - 1);
-    const d2 = r.pick([2, 3, 4, 5]); const n2 = r.int(1, d2 - 1);
+    const d1 = r.pick([2, 3, 4, 5]); const n1 = coprimeNumerator(r, d1);
+    const d2 = r.pick([2, 3, 4, 5]); const n2 = coprimeNumerator(r, d2);
     return {
       prompt: `In "${n1}/${d1} of ${n2}/${d2}", what does the word "of" tell you to do with the two fractions?`,
       correct: 'multiply the two fractions',

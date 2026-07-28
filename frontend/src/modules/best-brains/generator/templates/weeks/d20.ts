@@ -30,6 +30,11 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { divDecByWhole, formatDec, mulDec } from '../lib/compute';
+import { money } from '../lib/format';
+import type { Rng } from '../../rng';
+
+/** A realistic shelf price to the cent, in 5-cent steps: "1.05"…"8.95". */
+const priceCents = (r: Rng) => (r.int(21, 179) * 5 / 100).toFixed(2);
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -48,14 +53,13 @@ const wDecRound = asWarmup(decRound(2), D13);
 const sMoneyMul = situation({
   situationType: 'money-change', cognitiveOp: 'dec-mul',
   draw: (r) => {
-    const price = (r.int(11, 89) / 10).toFixed(1);
+    const price = priceCents(r);
     const qty = r.int(3, 9);
     const item = r.pick(['notebooks', 'apples', 'pens', 'tickets', 'stamps', 'markers']);
     const name = r.pick(NAMES);
     return {
-      prompt: `${name} buys ${qty} ${item} at $${price} each. What is the total cost?`,
+      prompt: `${name} buys ${qty} ${item} at ${money(price)} each. What is the total cost?`,
       answerValue: mulDec(price, String(qty)), templateId: 'd_dec_mul_v1', params: { a: price, b: String(qty) }, units: 'dollars',
-      acceptableForms: [`$${mulDec(price, String(qty))}`],
       hints: ['Does the cost grow with each item bought, or stay the same?', 'Multiply the price by the number of items, then place the point.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -117,19 +121,18 @@ const sDivShare = situation({
 const sRateBudget = situation({
   situationType: 'rate', cognitiveOp: 'dec-mul',
   draw: (r) => {
-    const price = (r.int(11, 89) / 10).toFixed(1);
+    const price = priceCents(r);
     const qty = r.int(3, 9);
     const name = r.pick(NAMES);
     return {
-      prompt: `A day pass costs $${price}. ${name} buys one for each of ${qty} days. What is the total cost?`,
+      prompt: `A day pass costs ${money(price)}. ${name} buys one for each of ${qty} days. What is the total cost?`,
       answerValue: mulDec(price, String(qty)), templateId: 'd_dec_mul_v1', params: { a: price, b: String(qty) }, units: 'dollars',
-      acceptableForms: [`$${mulDec(price, String(qty))}`],
       hints: ['Should the total sit near one fare, or well above it?', 'Multiply the fare by the number of days, then place the point.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
 });
-const sRateBudgetEstimate = withEstimateFirst(sRateBudget, 'a day pass bought again and again stacks whole copies of one fare, so a sensible total lands well above a single pass.');
+const sRateBudgetEstimate = withEstimateFirst(sRateBudget, 'should the total sit near one fare, or well above it?');
 
 // --- Multi-step decimal problems -----------------------------------------------
 // cost × qty THEN ÷ among people (money 2-step). qty is a multiple of people, so
@@ -137,13 +140,13 @@ const sRateBudgetEstimate = withEstimateFirst(sRateBudget, 'a day pass bought ag
 const msCostShare = multiStepDec({
   situationType: 'money-change', cognitiveOp: 'dec-chain',
   draw: (r) => {
-    const price = (r.int(11, 89) / 10).toFixed(1);
+    const price = priceCents(r);
     const people = r.pick([2, 5]);
     const qty = people * r.int(2, 4);
     const item = r.pick(['snacks', 'tickets', 'gifts', 'meals', 'passes']);
     const name = r.pick(NAMES);
     return {
-      prompt: `At $${price} each, ${name} buys ${qty} ${item}, then shares the total cost equally among ${people} people. How much does each person pay?`,
+      prompt: `At ${money(price)} each, ${name} buys ${qty} ${item}, then shares the total cost equally among ${people} people. How much does each person pay?`,
       init: price, steps: [{ op: 'mul', v: String(qty) }, { op: 'div', v: String(people) }], units: 'dollars',
       hints: ['Does the question want the whole bill, or one person\'s share?', 'Find the total cost first, then split it into equal shares.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -202,7 +205,7 @@ const eaPointDrop = errorAnalysis({
     return { a: (aInt / 10).toFixed(1), b: String(r.int(3, 9)), op: '*', wrongMode: 'point-drop' };
   },
   build: (v, p) => ({
-    prompt: `A student multiplied ${p.a} × ${p.b}. They multiplied the digits correctly but wrote the answer as ${v.wrong}, forgetting the decimal point entirely.`,
+    prompt: `A student multiplied ${p.a} × ${p.b}. Every digit in their working is right, but they wrote the answer as ${v.wrong}.`,
     extension: 'Use estimation to show why that answer is far too big, then write the correct product.',
     hints: ['About how big should this product be — near the whole-number guess, or ten times bigger?', 'Estimate the size first, then count the decimal places the point needs.'],
     errorTags: ['concept-misconception', 'procedure-slip'],

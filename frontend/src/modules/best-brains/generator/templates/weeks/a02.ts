@@ -19,6 +19,7 @@ import {
   smallWord,
   TupleGuard,
 } from '../shared';
+import { unitFor } from '../lib/format';
 
 const NOUNS = [
   'ducks', 'stars', 'apples', 'bears', 'fish', 'leaves', 'buttons', 'shells',
@@ -60,7 +61,7 @@ function countObjects(
       seed: rng.uint(),
     },
     hintLadder: [
-      `Pick a starting ${noun.slice(0, -1)} so you don't lose your place.`,
+      `Pick a starting ${unitFor(1, noun)} so you don't lose your place.`,
       'Cross out each one as you count it.',
     ],
     errorTags:

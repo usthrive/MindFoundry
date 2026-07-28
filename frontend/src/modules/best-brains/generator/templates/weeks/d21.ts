@@ -22,7 +22,7 @@
  *    every core rung-1 is orienting (the library's own rung-1 is algorithmic).
  */
 
-import { addWhole, asWarmup, classify, evalExpr, multiply, reasoning, writeExprChoice, type ItemGen } from '../lib/items';
+import { addWhole, asWarmup, classify, evalExpr, multiply, reasoning, subWhole, type ItemGen, writeExprChoice } from '../lib/items';
 import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
@@ -43,6 +43,7 @@ const withHints = (base: ItemGen, hints: [string, string]): ItemGen =>
 const wMul = asWarmup(multiply(2, 9, 2, 9), C12);
 const wAdd = asWarmup(addWhole(1200, 88000), D2);
 const wArea = asWarmup(multiply(11, 49, 3, 9), D5);
+const wSub = asWarmup(subWhole(1200, 88000), D2);             // D2 subtraction — a different format from a product
 
 // --- Single-step expression evaluation (concept echo) ---------------------------
 const evalNoParen = withHints(evalExpr(false), [
@@ -68,7 +69,7 @@ const evalParenMetaBase = withHints(evalExpr(true), [
 ]);
 const evalParenMeta = withEstimateFirst(
   evalParenMetaBase,
-  'grouping the sum first and then multiplying builds whole copies of that total, so the answer should land well above either starting number.',
+  'which lands higher — grouping the sum first, or multiplying first?',
 );
 
 // --- Multi-step expression word problems (product THEN sum) --------------------
@@ -83,6 +84,25 @@ const msTickets = multiStep({
       initN: p, steps: [{ op: 'mul', n: q, d: 1 }, { op: 'add', n: c, d: 1 }], units: 'dollars',
       hints: ['Which costs get multiplied together before anything is added on?', 'Find the ticket total first (price × count), then add the one combo.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
+    };
+  },
+});
+
+// GROUPING-REQUIRED (PEDAGOGY-CEILING-REVIEW F5): every other D21 story is
+// a x b + c, so the parenthesis override — the actual point of the week — never
+// appeared in a real situation. Here the bundle must be totalled BEFORE it is
+// copied, so the expression genuinely needs brackets: k x (a + b).
+const msBundle = multiStep({
+  situationType: 'combine', cognitiveOp: 'eval-expr-grouped',
+  draw: (r) => {
+    const k = r.int(3, 9); const a = r.int(2, 8);
+    let b = r.int(2, 9); if (b === a) b = a === 9 ? 2 : b + 1;  // two visibly different addends
+    const [x, y] = r.shuffle(['pencils', 'stickers', 'erasers', 'badges', 'crayons']).slice(0, 2);
+    return {
+      prompt: `Each party bag holds ${a} ${x} and ${b} ${y}. ${k} bags are filled. Write ONE expression for the total number of items, using brackets, and find its value.`,
+      initN: a, steps: [{ op: 'add', n: b, d: 1 }, { op: 'mul', n: k, d: 1 }], units: 'items',
+      hints: ['Do you know what one bag holds before you can count all the bags?', 'Total one bag first, then copy that total for every bag.'],
+      errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
 });
@@ -172,8 +192,8 @@ const eaOrderOfOps = errorAnalysis({
   build: (v, p, r) => {
     const lead = r.int(2, 9);
     return {
-      prompt: `A student evaluated ${lead} + ${p.a} × ${p.b}. The order of operations says the product ${p.a} × ${p.b} is settled first — but, ignoring that × outranks +, the student added those two numbers instead and wrote ${p.a} × ${p.b} = ${v.wrong}.`,
-      extension: `Explain why ${p.a} × ${p.b} must be worked as a product before the addition, and give its correct value.`,
+      prompt: `A student evaluated ${lead} + ${p.a} × ${p.b}. Their working shows the step "${p.a} × ${p.b} = ${v.wrong}".`,
+      extension: `Explain what went wrong in that step, and give its correct value.`,
       hints: ['Which sign, × or +, tells you to work that part first?', 'A product means equal groups — multiply the two numbers, do not add them.'],
       errorTags: ['procedure-slip', 'concept-misconception'],
     };
@@ -225,7 +245,7 @@ export const buildD21 = makeWeekBuilder({
     [
       { gen: wMul, diff: 2 },
       { gen: wAdd, diff: 2 },
-      { gen: wArea, diff: 2 },
+      { gen: wSub, diff: 2 },
       { gen: evalNoParen, diff: 2 },
       { gen: evalParen, diff: 3 },
       { gen: writeExpr, diff: 3 },
@@ -244,14 +264,14 @@ export const buildD21 = makeWeekBuilder({
       { gen: wMul, diff: 2 },
       { gen: discrimPhrase, diff: 3 },
       { gen: discrimOrder, diff: 3 },
-      { gen: msTickets, diff: 3 },
+      { gen: msBundle, diff: 3 },
       { gen: msGarden, diff: 4 },
       { gen: evalParen, diff: 4 },
     ],
     // Day 4 — multi-step expression word problems (all multi-step; 4 situation types)
     [
       { gen: msTickets, diff: 4 },
-      { gen: msGarden, diff: 4 },
+      { gen: msBundle, diff: 4 },
       { gen: msLaps, diff: 5 },
       { gen: msSnacks, diff: 5 },
     ],
@@ -301,7 +321,7 @@ export const buildD21 = makeWeekBuilder({
     { gen: evalParen, diff: 3 },
     { gen: msGarden, diff: 3 },
     { gen: writeExpr, diff: 4 },
-    { gen: msLaps, diff: 4 },
+    { gen: msBundle, diff: 4 },
   ],
   isomorphNotes:
     'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step expression work (evaluate × before +, evaluate a grouping, translate a "sum" phrase). 02/04/06: two-step expression word problems (product THEN sum). No operand surface reused from Form A or the daily pages.',

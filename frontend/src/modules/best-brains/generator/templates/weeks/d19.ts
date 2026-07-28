@@ -25,6 +25,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { divFrac, formatFrac } from '../lib/compute';
+import { an, countNoun } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -50,7 +51,7 @@ const sitScoop = situation({
   draw: (r) => {
     const d = r.int(2, 9); const k = r.int(2, 12); const name = r.pick(NAMES);
     return {
-      prompt: `${name} empties a ${k}-cup tub of oats using a ${frac(1, d)}-cup scoop. How many scoops does that take?`,
+      prompt: `${name} empties ${an(k)} ${k}-cup tub of oats using a ${frac(1, d)}-cup scoop. How many scoops does that take?`,
       answerValue: divAns(k, 1, 1, d), templateId: 'd_frac_div_v1', params: { n1: k, d1: 1, n2: 1, d2: d }, units: 'scoops',
       validation: 'equivalent-fraction',
       hints: ['Does a smaller scoop fit more pieces into each cup, or fewer?', 'Count how many scoops fill one whole cup, then repeat for every cup.'],
@@ -64,7 +65,7 @@ const sitCut = situation({
   draw: (r) => {
     const d = r.int(2, 9); const k = r.int(2, 12); const name = r.pick(NAMES);
     return {
-      prompt: `${name} cuts a ${k}-metre rope into ${frac(1, d)}-metre pieces. How many pieces is that?`,
+      prompt: `${name} cuts ${an(k)} ${k}-metre rope into ${frac(1, d)}-metre pieces. How many pieces is that?`,
       answerValue: divAns(k, 1, 1, d), templateId: 'd_frac_div_v1', params: { n1: k, d1: 1, n2: 1, d2: d }, units: 'pieces',
       validation: 'equivalent-fraction',
       hints: ['How many small pieces do you picture fitting along the whole rope?', 'Find the pieces in one metre, then scale up to the full length.'],
@@ -119,7 +120,7 @@ const sitSplit = situation({
 // Metacognition base: estimate-first wrapper on the scoop-count situation.
 const sitScoopEstimate = withEstimateFirst(
   sitScoop,
-  'a smaller scoop fills a whole with many little pieces, so the answer should land well above the number of cups.',
+  'will the number of scoops be more or fewer than the number of cups?',
 );
 
 // --- Multi-step problems (count-then-share; count-per-whole-then-scale) ----------
@@ -132,7 +133,7 @@ const msShareOut = multiStep({
     for (let x = 2; x < total; x++) if (total % x === 0) divs.push(x);
     const m = r.pick(divs); const [n1, n2] = two(r);
     return {
-      prompt: `${n1} pours a ${k}-litre drum of juice with a ${frac(1, d)}-litre cup, then ${n2} shares the cupfuls equally into ${m} jugs. How many cupfuls go in each jug?`,
+      prompt: `${n1} pours ${an(k)} ${k}-litre drum of juice with a ${frac(1, d)}-litre cup, then ${n2} shares the cupfuls equally into ${countNoun(m, 'jugs')}. How many cupfuls go in each jug?`,
       initN: k, steps: [{ op: 'div', n: 1, d }, { op: 'div', n: m, d: 1 }], units: 'cupfuls',
       hints: ['Which happens first here — counting the cupfuls, or sharing them out?', 'First count how many cupfuls the drum makes, then split them between the jugs.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -159,7 +160,7 @@ const discrimMoreLess = discrimination({
   draw: (r) => {
     const d = r.int(2, 6); const k = r.int(2, 9);
     return {
-      prompt: `A ${frac(1, d)}-cup scoop is used to empty a ${k}-cup tub. Is the number of scoops MORE than ${k}, FEWER than ${k}, or exactly ${k}?`,
+      prompt: `A ${frac(1, d)}-cup scoop is used to empty ${an(k)} ${k}-cup tub. Is the number of scoops MORE than ${k}, FEWER than ${k}, or exactly ${k}?`,
       correct: `more than ${k}`,
       distractors: [
         { text: `fewer than ${k}`, errorTag: 'concept-misconception', rationale: 'Expects dividing to shrink the amount, but small scoops mean many fit, so the count grows.' },
@@ -176,7 +177,7 @@ const discrimWhichOp = discrimination({
   draw: (r) => {
     const d = r.int(2, 6); const k = r.int(2, 9);
     return {
-      prompt: `To find how many ${frac(1, d)}-litre glasses a ${k}-litre jug fills, which calculation fits?`,
+      prompt: `To find how many ${frac(1, d)}-litre glasses ${an(k)} ${k}-litre jug fills, which calculation fits?`,
       correct: `${k} ÷ ${frac(1, d)}`,
       distractors: [
         { text: `${frac(1, d)} ÷ ${k}`, errorTag: 'task-comprehension', rationale: 'Splits one glass among the litres — the reverse of counting how many glasses fit.' },
@@ -327,7 +328,7 @@ export const buildD19 = makeWeekBuilder({
     puzzleType: 'logic',
     prompt: 'A jar holds 3 cups. Filling it counts twelve scoops with a 1/4-cup scoop. Without dividing all over again, how many scoops would a 1/8-cup scoop take — and explain the pattern when the scoop is cut in half.',
     answer: { value: '24 scoops; halving the scoop doubles the count', acceptableForms: ['24'], validation: 'short-text-keyword' },
-    hintLadder: ['If each scoop is half as big, do you need more scoops or fewer?', 'Halving the scoop doubles the number of scoops.'],
+    hintLadder: ['If each scoop is half as big, do you need more scoops or fewer?', 'Picture one cup filled the old way, then re-fill that SAME cup with the smaller scoop — how many of the small ones sit where each big one did?'],
     errorTags: ['concept-misconception', 'task-comprehension'],
   }),
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
