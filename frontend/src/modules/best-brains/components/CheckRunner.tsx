@@ -18,6 +18,8 @@ import type { MasteryAnswerInput } from '../services/bbProgressService';
 import type { ErrorTag, PackItem, WeeklyConceptPack } from '../types';
 import WrenBubble from './WrenBubble';
 import AudioButton from './AudioButton';
+import { PromptFigure } from './figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from './AnswerEntry';
 import AnchorPanel from './AnchorPanel';
 import BBScratchPad from './BBScratchPad';
@@ -120,11 +122,12 @@ export default function CheckRunner({
         </button>
       </header>
 
-      <section aria-label="The problem" className="rounded-3xl bg-surface p-6 shadow-sm">
+      <section aria-label="The problem" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{item.prompt}</p>
-          <AudioButton text={item.prompt} band={band} autoplay={band === 'A'} />
+          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
+          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt)} band={band} autoplay={band === 'A'} />
         </div>
+        <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>
 
       {acked ? (

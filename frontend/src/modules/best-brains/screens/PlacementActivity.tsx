@@ -23,6 +23,8 @@ import { recordItemAttempt } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import { PromptFigure } from '../components/figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import type { BBLevel, PlacementClusterResult, PlacementResult } from '../types';
 
@@ -208,13 +210,14 @@ export default function PlacementActivity() {
         </p>
       )}
 
-      <section aria-label="The question" className="rounded-3xl bg-surface p-6 shadow-sm">
+      <section aria-label="The question" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
         <div className="flex items-start gap-3">
           <p className={band === 'A' ? 'flex-1 text-2xl text-text-primary' : 'flex-1 text-xl text-text-primary'}>
-            {item.prompt}
+            {promptText(item.prompt)}
           </p>
-          <AudioButton text={item.prompt} band={band} autoplay={band === 'A'} />
+          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt)} band={band} autoplay={band === 'A'} />
         </div>
+        <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>
 
       {phase === 'ack' ? (

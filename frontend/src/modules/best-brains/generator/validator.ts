@@ -24,12 +24,14 @@
  */
 
 import type {
+  BBFigure,
   BBLevel,
   PackDay,
   PackItem,
   WeekRef,
   WeeklyConceptPack,
 } from '../types';
+import { checkFigureShape, figureValue } from '../figures/assert';
 import {
   BB_LEVELS,
   DAILY_DOSE_MAX_MINUTES,
@@ -647,7 +649,123 @@ export function validatePack(
   const isPinnedFixture = /^MFM-(A15|B14|D17)$/.test(pack.packId);
   runSurfaceRealismScans(pack, isPinnedFixture ? () => {} : add);
 
+  // --- QG-13: FIGURE TRUTH (B1.0) ------------------------------------------
+  // Blocks for every pack including the fixtures: the `figure` field is new, so
+  // nothing pre-existing carries one and there is no legacy corpus to grandfather.
+  runFigureScans(pack, add);
+
   return { valid: v.length === 0, violations: v };
+}
+
+// ---------------------------------------------------------------------------
+// QG-13 — figure truth
+// ---------------------------------------------------------------------------
+
+/**
+ * A picture is content, and content gets audited. Two checks, mirroring what
+ * QG-5 does for answers and QG-11 does for embedded claims:
+ *
+ *  (a) the figure is internally possible — a mark inside its own number line, a
+ *      shaded count that fits its grid, a triangle whose angles sum to 180°;
+ *  (b) when the figure DECLARES what it depicts (`asserts`), that quantity is
+ *      recomputed from the figure's own params and must equal the item's
+ *      canonical answer or one of its generator params.
+ *
+ * (b) is the whole point of the schema: a figure built from the item's own
+ * drawn values cannot contradict its answer, and this proves it rather than
+ * trusting it. Note what is NOT covered — a figure with no `asserts` is checked
+ * only for possibility, so a picture that shows the wrong CONTEXT (six apples
+ * for a story about pears) still passes. That uncovered surface is where the
+ * next real bug lives (L30); the style gate reads figures for it.
+ */
+function runFigureScans(pack: WeeklyConceptPack, add: AddFn): void {
+  /** Loose equality: value first, punctuation never. */
+  const norm = (s: string) =>
+    s.trim().toLowerCase().replace(/[$¢°\s]/g, '').replace(/(\d),(?=\d{3}\b)/g, '$1');
+  /**
+   * A picture carries no units — a bar model of 40 metres draws 40 — so a
+   * unit-bearing answer ("40 m", "24 books") is compared on its numeral. This
+   * loosens punctuation and units, never VALUE: a picture showing 30 against an
+   * answer of "40 m" still fails, which is the contradiction we are hunting.
+   */
+  const leadingNumber = (s: string): string | null => {
+    const m = /^\s*-?\d+(?:,\d{3})*(?:\.\d+)?(?:\s+\d+\/\d+)?|^\s*-?\d+\/\d+/.exec(s);
+    return m ? m[0].trim() : null;
+  };
+  const eqLoose = (a: string, b: string): boolean => {
+    if (norm(a) === norm(b)) return true;
+    const x = numericValue(a) ?? numericValue(leadingNumber(a) ?? '');
+    const y = numericValue(b) ?? numericValue(leadingNumber(b) ?? '');
+    return x !== null && y !== null && Math.abs(x - y) < 1e-9;
+  };
+
+  const audit = (
+    figure: BBFigure | undefined,
+    path: string,
+    targets: { answer?: string[]; params?: Record<string, unknown> } | null,
+  ) => {
+    if (!figure) return;
+    for (const problem of checkFigureShape(figure)) add('QG-13', `${path}.figure`, problem);
+    const asserts = figure.asserts;
+    if (!asserts) return;
+    if (!targets) {
+      add('QG-13', `${path}.figure.asserts`, 'this surface has no answer or params to assert against — drop the assertion');
+      return;
+    }
+    const forms = figureValue(figure);
+    if (!forms || forms.length === 0) {
+      add('QG-13', `${path}.figure.asserts`, `selector "${asserts.of ?? '(default)'}" names no quantity a ${figure.type} can compute`);
+      return;
+    }
+    let expected: string[];
+    if (asserts.equals === 'answer') {
+      expected = targets.answer ?? [];
+      if (expected.length === 0) {
+        add('QG-13', `${path}.figure.asserts`, 'asserts "answer" but this surface carries no answer');
+        return;
+      }
+    } else {
+      const key = asserts.equals.slice('param:'.length);
+      const raw = targets.params?.[key];
+      if (raw === undefined) {
+        add('QG-13', `${path}.figure.asserts`, `asserts param "${key}" which the item's generator.params does not carry`);
+        return;
+      }
+      expected = [String(raw)];
+    }
+    if (!forms.some((f) => expected.some((e) => eqLoose(f, e)))) {
+      add(
+        'QG-13',
+        `${path}.figure`,
+        `the picture shows ${asserts.of ?? 'its default quantity'} = "${forms[0]}" but the item's ${asserts.equals} is "${expected[0]}" — the figure contradicts the item`,
+      );
+    }
+  };
+
+  const itemTargets = (item: PackItem) => ({
+    answer: [item.answer.value, ...(item.answer.acceptableForms ?? [])],
+    params: item.generator?.params,
+  });
+
+  const allItems: Array<{ item: PackItem; path: string }> = [
+    ...pack.days.flatMap((d, di) => d.items.map((item, i) => ({ item, path: `days[${di}].items[${i}]` }))),
+    ...pack.masteryCheck.formA.map((item, i) => ({ item, path: `masteryCheck.formA[${i}]` })),
+    ...pack.masteryCheck.formB.map((item, i) => ({ item, path: `masteryCheck.formB[${i}]` })),
+  ];
+  for (const { item, path } of allItems) audit(item.figure, path, itemTargets(item));
+
+  audit(pack.puzzle.figure, 'puzzle', {
+    answer: [pack.puzzle.answer.value, ...(pack.puzzle.answer.acceptableForms ?? [])],
+  });
+
+  pack.explanation.script.forEach((seg, i) => audit(seg.figure, `explanation.script[${i}]`, null));
+
+  pack.guidedExamples.forEach((g, i) => {
+    audit(g.figure, `guidedExamples[${i}]`, { answer: [g.answer] });
+    g.steps.forEach((st, j) => {
+      audit(st.figure, `guidedExamples[${i}].steps[${j}]`, st.expected ? { answer: [st.expected] } : null);
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------

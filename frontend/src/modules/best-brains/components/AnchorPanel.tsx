@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import type { InteractionBand } from '../copy';
 import type { WeeklyConceptPack } from '../types';
 import AudioButton from './AudioButton';
+import BBFigureView from './figures/BBFigureView';
+import { promptText } from '../figures/prompt';
 
 export type AnchorMode = 'full' | 'strategy-only' | 'empty';
 
@@ -81,10 +83,11 @@ export default function AnchorPanel({ pack, mode, band, open, onClose }: AnchorP
                 {pack.guidedExamples.map((ex) => (
                   <details key={ex.id} className="group rounded-2xl border border-gray-200 bg-white">
                     <summary className="cursor-pointer list-none px-4 py-3 font-medium text-text-primary min-h-[48px] flex items-center justify-between touch-manipulation">
-                      <span>{ex.prompt}</span>
+                      <span>{promptText(ex.prompt)}</span>
                       <span className="text-text-muted transition-transform group-open:rotate-90">›</span>
                     </summary>
                     <div className="space-y-2 border-t border-gray-100 px-4 py-3">
+                  {ex.figure && <BBFigureView figure={ex.figure} band={band} size="sm" />}
                       {ex.steps.map((step, i) => (
                         <p key={i} className="text-sm text-text-secondary">
                           {step.teacherSay && <span>{step.teacherSay} </span>}

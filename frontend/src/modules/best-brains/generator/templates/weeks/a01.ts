@@ -22,11 +22,9 @@ import {
   TupleGuard,
 } from '../shared';
 import { countNoun, unitFor } from '../lib/format';
+import { assertsAnswer, assertsParam, counterGroups, counters, DRAWABLE_NOUNS } from '../lib/figures';
 
-const NOUNS = [
-  'ducks', 'stars', 'apples', 'bears', 'fish', 'leaves', 'buttons', 'shells',
-  'kites', 'frogs', 'boats', 'acorns',
-] as const;
+const NOUNS = DRAWABLE_NOUNS;
 const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Ken'] as const;
 
 type Arrangement = 'in a row' | 'in two rows' | 'scattered';
@@ -63,6 +61,7 @@ function countObjects(
   return {
     type: 'computation',
     prompt: `[image: ${countNoun(n, noun)} ${arrangement}] Count the ${unitFor(n, noun)}. How many?`,
+    figure: counters(n, noun, { arrangement, alt: `${countNoun(n, noun)} ${arrangement}`, asserts: assertsAnswer }),
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -106,6 +105,7 @@ function numeralChoice(
   return {
     type: 'representation',
     prompt: `[image: ${n} ${noun}] Circle the number that shows how many.`,
+    figure: counters(n, noun, { alt: countNoun(n, noun), asserts: assertsParam('n') }),
     choices,
     answer: { value: correctKey, acceptableForms: [String(n)], validation: 'choice-key' },
     difficulty,
@@ -128,6 +128,7 @@ function lastNumber(
   return {
     type: 'computation',
     prompt: `[image: ${countNoun(n, noun)} in a row] Count out loud. What was the LAST number you said?`,
+    figure: counters(n, noun, { arrangement: 'in a row', alt: `${countNoun(n, noun)} in a row`, asserts: assertsAnswer }),
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -226,12 +227,16 @@ function matchSet(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
       text: `the ${nounB}`,
       errorTag: 'representation-misread',
       rationale:
-        'The wrong group is drawn larger and more spread out - traps judging by space instead of counting.',
+        'The other group in the picture - traps answering from a glance instead of counting.',
     },
   ]);
   return {
     type: 'classification',
     prompt: `[image: a group of ${countNoun(a, nounA)} and a group of ${countNoun(b, nounB)}] Circle the group that shows ${a}.`,
+    figure: counterGroups(
+      [{ count: a, noun: nounA, label: nounA }, { count: b, noun: nounB, label: nounB }],
+      { alt: `a group of ${countNoun(a, nounA)} and a group of ${countNoun(b, nounB)}`, asserts: assertsParam('a', 'group:0') },
+    ),
     choices,
     answer: { value: correctKey, acceptableForms: [`the ${nounA}`], validation: 'choice-key' },
     difficulty,
@@ -274,6 +279,13 @@ function groupChoice(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft
   return {
     type: 'classification',
     prompt: `[image: three groups: ${countNoun(counts[0], nouns[0])}, ${countNoun(counts[1], nouns[1])}, ${countNoun(counts[2], nouns[2])}] Circle the group that shows ${target}.`,
+    // No assertion: `counts` ships as an array, and the picture's claim here is
+    // "these three groups", not one number. The guarantee is structural — the
+    // figure is built from the very array the choices were built from.
+    figure: counterGroups(
+      counts.map((c, i) => ({ count: c, noun: nouns[i], label: nouns[i] })),
+      { alt: `three groups: ${countNoun(counts[0], nouns[0])}, ${countNoun(counts[1], nouns[1])}, ${countNoun(counts[2], nouns[2])}` },
+    ),
     choices,
     answer: {
       value: correctKey,
@@ -412,19 +424,23 @@ export function buildA01(packSeed: number, contentVersion: string): WeeklyConcep
       script: [
         {
           say: 'Watch me count these 3 apples. I touch each apple as I say its number: 1... 2... 3. One touch, one number.',
-          visual: 'Three apples; a finger taps each one as its numeral appears above it.',
+          visual: 'Three apples in a row.',
+          figure: counters(3, 'apples', { alt: 'three apples in a row' }),
         },
         {
           say: 'If I rush and touch an apple twice, I get 4 - but there are not 4 apples! Slow touching keeps the count true.',
-          visual: 'Double-tap mistake animation; the extra numeral wobbles and pops away.',
+          visual: 'The same three apples - still three, however fast I point.',
+          figure: counters(3, 'apples', { alt: 'the same three apples' }),
         },
         {
           say: "The LAST number I say is the answer. 1, 2, 3 - so there are 3 in all. I don't need to count again.",
-          visual: 'The final numeral grows big and glows over the whole group.',
+          visual: 'Three apples with the last one reached.',
+          figure: counters(3, 'apples', { alt: 'three apples, the last one reached' }),
         },
         {
           say: "Now five ducks, the same careful way: 1, 2, 3, 4, 5. Five ducks - and I knew when to stop, because I ran out of ducks to touch!",
-          visual: 'Five ducks waddle into a row; tap-count with numerals appearing one by one.',
+          visual: 'Five ducks in a row.',
+          figure: counters(5, 'ducks', { alt: 'five ducks in a row' }),
         },
       ],
       summary:
@@ -440,6 +456,10 @@ export function buildA01(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('A', 1, 'GE', 1),
         fadeLevel: 'modeled',
         prompt: '[image: 2 red balls and 1 blue ball in a basket] How many balls?',
+        visual: 'Two balls and one more ball.',
+        figure: counterGroups([{ count: 2, noun: 'balls' }, { count: 1, noun: 'balls' }], {
+          alt: 'two balls and one more ball', asserts: assertsAnswer,
+        }),
         steps: [
           {
             teacherSay: 'I touch each ball once: 1... 2... 3. Three balls in all!',
@@ -452,6 +472,8 @@ export function buildA01(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('A', 1, 'GE', 2),
         fadeLevel: 'completion',
         prompt: '[image: 4 stars in a row] Count the stars with me.',
+        visual: 'Four stars in a row.',
+        figure: counters(4, 'stars', { alt: 'four stars in a row', asserts: assertsAnswer }),
         steps: [
           { teacherSay: 'I start: 1... 2...' },
           { childDo: 'Touch the last two stars and keep counting.', expected: '3, 4' },
@@ -463,6 +485,8 @@ export function buildA01(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('A', 1, 'GE', 3),
         fadeLevel: 'prompted',
         prompt: '[image: 5 shells in a curvy line] Count the shells.',
+        visual: 'Five shells in a curvy line.',
+        figure: counters(5, 'shells', { arrangement: 'curvy', alt: 'five shells in a curvy line', asserts: assertsAnswer }),
         steps: [
           { teacherSay: 'Which shell will you touch first, so you don\'t lose your place?' },
           { childDo: 'Touch each shell once and say the numbers.', expected: '1, 2, 3, 4, 5' },
@@ -472,8 +496,10 @@ export function buildA01(packSeed: number, contentVersion: string): WeeklyConcep
       {
         id: contentId('A', 1, 'GE', 4),
         fadeLevel: 'independent',
-        prompt: '[image: 4 frogs on a log] How many frogs? Count and say the answer.',
-        steps: [{ childDo: 'Count each frog once. Say how many in all.', expected: '4' }],
+        prompt: '[image: 4 fish in a row] How many fish? Count and say the answer.',
+        visual: 'Four fish in a row.',
+        figure: counters(4, 'fish', { alt: 'four fish in a row', asserts: assertsAnswer }),
+        steps: [{ childDo: 'Count each fish once. Say how many in all.', expected: '4' }],
         answer: '4',
       },
     ],
@@ -483,16 +509,20 @@ export function buildA01(packSeed: number, contentVersion: string): WeeklyConcep
       title: 'Puzzle Grove: Count-and-Color Picnic',
       puzzleType: 'math-art',
       prompt:
-        `[image: picnic scene with ${pa} ants, ${pb} strawberries, and ${pc} cups] ` +
-        'Count each kind. Color the box that shows the number of ants RED, the number of ' +
-        'strawberries BLUE, and the number of cups GREEN.',
+        `[image: picnic scene with ${pa} apples, ${pb} leaves, and ${pc} shells] ` +
+        'Count each kind. Color the box that shows the number of apples GREEN, the number of ' +
+        'leaves YELLOW, and the number of shells BLUE.',
+      figure: counterGroups(
+        [{ count: pa, noun: 'apples', label: 'apples' }, { count: pb, noun: 'leaves', label: 'leaves' }, { count: pc, noun: 'shells', label: 'shells' }],
+        { alt: `a picnic scene with ${pa} apples, ${pb} leaves and ${pc} shells` },
+      ),
       answer: {
-        value: `ants: ${pa}; strawberries: ${pb}; cups: ${pc}`,
+        value: `apples: ${pa}; leaves: ${pb}; shells: ${pc}`,
         acceptableForms: [],
         validation: 'set',
       },
       hintLadder: [
-        'Count one kind at a time - ants first.',
+        'Count one kind at a time - apples first.',
         'Cross out each thing after you count it so nothing gets counted twice.',
       ],
       errorTags: ['representation-misread', 'task-comprehension'],

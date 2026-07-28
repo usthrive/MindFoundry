@@ -15,6 +15,8 @@ import { MODULE_COPY } from '../copy';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import BBFigureView from '../components/figures/BBFigureView';
+import type { BBFigure } from '../types';
 import type { ErrorTag, ExplanationSegment, GuidedExample, MistakeBankEntry } from '../types';
 
 interface ReteachContent {
@@ -73,9 +75,9 @@ export default function MicroReteach() {
   }
 
   // Slides: intro → segments → example walk-through → onward.
-  const slides: Array<{ say: string; visual?: string; steps?: GuidedExample['steps']; answer?: string }> = [
+  const slides: Array<{ say: string; visual?: string; figure?: BBFigure; steps?: GuidedExample['steps']; answer?: string }> = [
     { say: MODULE_COPY.reteachIntro[band] },
-    ...content.segments.map((s) => ({ say: s.say, visual: s.visual })),
+    ...content.segments.map((s) => ({ say: s.say, visual: s.visual, figure: s.figure })),
     ...(content.example
       ? [
           {
@@ -104,10 +106,16 @@ export default function MicroReteach() {
 
       <WrenBubble band={band} autoplay text={slide.say} emotion="curious" />
 
-      {slide.visual && (
-        <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-surface p-6 text-center">
-          <p className="italic text-text-secondary">{slide.visual}</p>
+      {slide.figure ? (
+        <div className="rounded-3xl bg-surface p-5 shadow-sm">
+          <BBFigureView figure={slide.figure} band={band} size="lg" />
         </div>
+      ) : (
+        slide.visual && (
+          <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-surface p-6 text-center">
+            <p className="italic text-text-secondary">{slide.visual}</p>
+          </div>
+        )
       )}
 
       {slide.steps && (

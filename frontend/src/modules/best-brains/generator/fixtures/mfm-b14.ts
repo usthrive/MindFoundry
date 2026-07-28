@@ -32,7 +32,14 @@ export const MFM_B14: WeeklyConceptPack = {
       { "say": "So I trade: one rod becomes ten loose ones. Now I have 4 rods and 12 ones. Still 52 - count it!", "visual": "One rod explodes into ten cubes; count confirms 52." },
       { "say": "NOW the ones can pay: 12 minus 7 leaves 5. And the tens: 4 rods minus 1 rod leaves 3. Answer: 35.", "visual": "Cubes and rods removed; 3 rods, 5 cubes remain." },
       { "say": "The written method is the same story in ink: cross out the 5, write 4, put a little 1 by the 2 to make 12. Every mark means a real trade.", "visual": "Column method animates beside the blocks, step-for-step." },
-      { "say": "Last habit: estimate first. 52 - 17 is about 50 - 20 = 30, so an answer near 30 makes sense - and 85 would smell wrong.", "visual": "Number line arc from 52 back about 20." }
+      { "say": "Last habit: estimate first. 52 - 17 is about 50 - 20 = 30, so an answer near 30 makes sense - and 85 would smell wrong.", "visual": "Number line arc from 52 back about 20.",
+        // The only drawable visual in this pack: rods and cubes have no primitive,
+        // but the estimate arc is exactly what `number-line` hops are for. No
+        // assertion — a script segment has no answer or params to assert against.
+        "figure": { "type": "number-line", "alt": "a number line with one arc jumping back about 20 from 52, landing near 30",
+          "params": { "min": 0, "max": 60, "step": 10, "labels": "majors",
+            "marks": [{ "at": 52, "label": "52", "style": "flag" }],
+            "hops": [{ "from": 52, "to": 32, "label": "back about 20" }] } } }
     ],
     "summary": "When the ones can't pay, trade one ten for ten ones. Subtract ones, then tens. Estimate first so wrong answers feel wrong.",
     "vocabulary": [

@@ -133,6 +133,75 @@ for (const cell of AVAILABLE_WEEKS) {
   console.log(`  ok (${cell.source})`);
 }
 
+// ---------------------------------------------------------------------------
+// Figure census (B1.0) — what the child actually SEES.
+//
+// The L27 defect was invisible because nothing counted it: a `visual` field
+// with a placeholder consumer looks identical to a rendered one in every gate.
+// So it gets counted, every run, per level. The Level-A row is an ASSERTION,
+// not a report: a pre-reader served an `[image: …]` with no picture behind it
+// is served literal bracket characters, which is why Level A was blocked on
+// this task at all.
+// ---------------------------------------------------------------------------
+console.log('\nFigure census — drawn pictures vs un-migrated [image: …] directions');
+{
+  const IMAGE = /\[image:/i;
+  type Row = { figures: number; unmigrated: number; scriptFigs: number; scriptSegs: number; geFigs: number; ges: number };
+  const rows = new Map<string, Row>();
+  const unmigratedA: string[] = [];
+
+  for (const cell of AVAILABLE_WEEKS) {
+    const pack = generatePack(cell.level, cell.week, SEEDS[0]);
+    const row = rows.get(cell.level) ?? { figures: 0, unmigrated: 0, scriptFigs: 0, scriptSegs: 0, geFigs: 0, ges: 0 };
+    for (const it of generatorItems(pack)) {
+      if (it.figure) row.figures++;
+      else if (IMAGE.test(it.prompt)) {
+        row.unmigrated++;
+        if (cell.level === 'A') unmigratedA.push(`${it.id}: ${it.prompt.slice(0, 60)}`);
+      }
+    }
+    if (pack.puzzle.figure) row.figures++;
+    else if (IMAGE.test(pack.puzzle.prompt)) {
+      row.unmigrated++;
+      if (cell.level === 'A') unmigratedA.push(`${pack.puzzle.id}: ${pack.puzzle.prompt.slice(0, 60)}`);
+    }
+    row.scriptSegs += pack.explanation.script.length;
+    row.scriptFigs += pack.explanation.script.filter((s) => s.figure).length;
+    row.ges += pack.guidedExamples.length;
+    row.geFigs += pack.guidedExamples.filter((g) => g.figure).length;
+    rows.set(cell.level, row);
+  }
+
+  for (const [lvl, r] of [...rows.entries()].sort()) {
+    console.log(
+      `  Level ${lvl}: items drawn ${r.figures}, un-migrated [image:] ${r.unmigrated} · ` +
+        `lesson script ${r.scriptFigs}/${r.scriptSegs} drawn · guided examples ${r.geFigs}/${r.ges} drawn`,
+    );
+  }
+  // The named residue. B1.0 shipped ten primitives; these eight Level-A surfaces
+  // want an eleventh, twelfth or thirteenth, so they are DECLARED rather than
+  // quietly tolerated. The renderer already prevents the L27 harm everywhere —
+  // `PromptFigure` shows the direction as a quiet caption, never raw bracket
+  // characters — so what is left here is missing ARTWORK, not broken output.
+  // The assertion is that this list does not GROW: any newly un-migrated
+  // Level-A item fails the gate.
+  const FIGURE_DEBT: Record<string, string> = {
+    'A2-D5-01': 'shape-pattern strip (AB/ABB/AAB) — not one of the ten primitives',
+    'A2-D5-02': 'shape-pattern strip',
+    'A2-D5-03': 'shape-pattern strip',
+    'A2-PZ-01': 'shape-pattern train — same strip primitive',
+    'A15-D2-01': 'hands/fingers manipulative; a five-frame would silently swap the authored manipulative',
+    'A15-D4-03': 'deliberately NOT drawn: the item\'s own rationale says one group is drawn larger and spread out, and a one-to-one compare figure would hand over the answer the conservation trap exists to withhold',
+    'A15-D5-04': 'a shape gallery (triangle/circle/square side by side) — angle-figure draws one polygon and no circle',
+    'A15-PZ-01': 'a labelled-sum garden — no primitive',
+  };
+  const undeclared = unmigratedA.filter((m) => !FIGURE_DEBT[m.split(':')[0]]);
+  for (const miss of undeclared) console.error(`  FAIL  Level A prints an UNDECLARED placeholder — ${miss}`);
+  assert(undeclared.length === 0, `Level A has no undeclared [image: …] prompts (${undeclared.length} found)`);
+  console.log(`  Level-A figure debt: ${unmigratedA.length} declared surfaces awaiting a primitive B1.0 does not have`);
+  for (const [id, why] of Object.entries(FIGURE_DEBT)) console.log(`    · ${id} — ${why}`);
+}
+
 // Level-D coverage summary (the proof level: 23 template weeks + 1 fixture = 24).
 const dCells = AVAILABLE_WEEKS.filter((w) => w.level === 'D');
 const dTemplate = dCells.filter((w) => w.source === 'template').length;

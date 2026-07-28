@@ -14,6 +14,7 @@ import { realizeSprintItems } from '../generator/sprintItems';
 import { SPRINT_DURATION_SECONDS } from '../constants';
 import { useFoundrySession } from '../session/FoundrySession';
 import AnswerEntry from '../components/AnswerEntry';
+import { promptText } from '../figures/prompt';
 import type { PackItem } from '../types';
 
 export default function SprintRun() {
@@ -97,7 +98,7 @@ export default function SprintRun() {
       </div>
 
       <section aria-label="The fact" className="rounded-3xl bg-surface p-8 text-center shadow-sm">
-        <p className="text-3xl font-bold text-text-primary">{item.prompt}</p>
+        <p className="text-3xl font-bold text-text-primary">{promptText(item.prompt)}</p>
       </section>
 
       <AnswerEntry item={asItem} band={band} onSubmit={submit} />

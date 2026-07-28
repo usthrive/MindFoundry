@@ -16,6 +16,8 @@ import { LESSON_KEY } from '../session/weekLogic';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import BBFigureView, { PromptFigure } from '../components/figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import BBScratchPad from '../components/BBScratchPad';
 
 const FADE_LABELS: Record<string, string> = {
@@ -209,13 +211,20 @@ export default function GuidedPractice() {
         ))}
       </div>
 
-      <section aria-label="The problem" className="rounded-3xl bg-surface p-6 shadow-sm">
+      <section aria-label="The problem" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
         <div className="flex items-start gap-3">
           <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
-            {example.prompt}
+            {promptText(example.prompt)}
           </p>
-          <AudioButton text={example.prompt} band={band} autoplay={band === 'A'} />
+          <AudioButton text={speakablePrompt(example.prompt, example.figure?.alt)} band={band} autoplay={band === 'A'} />
         </div>
+        {/* A worked example is exactly where a teacher draws; the step's own
+            picture wins over the example's while that step is in focus. */}
+        {step.figure ? (
+          <BBFigureView figure={step.figure} band={band} />
+        ) : (
+          <PromptFigure prompt={example.prompt} figure={example.figure} band={band} />
+        )}
       </section>
 
       {missLine ? (

@@ -20,11 +20,9 @@ import {
   TupleGuard,
 } from '../shared';
 import { unitFor } from '../lib/format';
+import { assertsAnswer, assertsParam, counters, DRAWABLE_NOUNS, tenFrame } from '../lib/figures';
 
-const NOUNS = [
-  'ducks', 'stars', 'apples', 'bears', 'fish', 'leaves', 'buttons', 'shells',
-  'kites', 'frogs', 'pebbles', 'crayons',
-] as const;
+const NOUNS = DRAWABLE_NOUNS;
 const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ella', 'Omar'] as const;
 const SHAPES = ['circle', 'square', 'triangle', 'star', 'heart', 'moon'] as const;
 
@@ -51,6 +49,7 @@ function countObjects(
   return {
     type: 'computation',
     prompt: `[image: ${n} ${noun} ${arrangement}] Count the ${noun}. How many?`,
+    figure: counters(n, noun, { arrangement, alt: `${n} ${noun} ${arrangement}`, asserts: assertsAnswer }),
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -76,6 +75,7 @@ function tenFrameCount(rng: Rng, guard: TupleGuard, difficulty: number): ItemDra
   return {
     type: 'representation',
     prompt: `[image: ten-frame with ${n} counters] How many counters are in the frame?`,
+    figure: tenFrame(n, { alt: `a ten-frame holding ${n} counters`, asserts: assertsAnswer }),
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -94,6 +94,7 @@ function lastNumber(rng: Rng, guard: TupleGuard, min: number, max: number, diffi
   return {
     type: 'computation',
     prompt: `[image: ${n} ${noun} in a row] Count out loud. What was the LAST number you said?`,
+    figure: counters(n, noun, { arrangement: 'in a row', alt: `${n} ${noun} in a row`, asserts: assertsAnswer }),
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -124,6 +125,9 @@ function numeralChoice(rng: Rng, guard: TupleGuard, min: number, max: number, di
   return {
     type: 'representation',
     prompt: `[image: ${n} ${noun}] Circle the number that shows how many.`,
+    // The answer is a choice key, so the picture is checked against the drawn
+    // count itself.
+    figure: counters(n, noun, { alt: `${n} ${noun}`, asserts: assertsParam('n') }),
     choices,
     answer: { value: correctKey, acceptableForms: [String(n)], validation: 'choice-key' },
     difficulty,
@@ -187,6 +191,7 @@ function retrCountSmall(rng: Rng, guard: TupleGuard, difficulty: number): ItemDr
   return {
     type: 'computation',
     prompt: `Warm-up! [image: ${n} ${noun} in a row] How many ${noun}?`,
+    figure: counters(n, noun, { arrangement: 'in a row', alt: `${n} ${noun} in a row`, asserts: assertsAnswer }),
     answer: { value: String(n), acceptableForms: [smallWord(n)], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
@@ -211,6 +216,7 @@ function retrNumeralSmall(rng: Rng, guard: TupleGuard, difficulty: number): Item
   return {
     type: 'representation',
     prompt: `Warm-up! [image: ${n} ${noun}] Circle the number that shows how many.`,
+    figure: counters(n, noun, { alt: `${n} ${noun}`, asserts: assertsParam('n') }),
     choices,
     answer: { value: correctKey, acceptableForms: [String(n)], validation: 'choice-key' },
     difficulty,
@@ -223,7 +229,11 @@ function retrNumeralSmall(rng: Rng, guard: TupleGuard, difficulty: number): Item
   };
 }
 
-/** Day-5 noncomputational: AB / ABB pattern spotting (map's Day-5 focus). */
+/**
+ * Day-5 noncomputational: AB / ABB pattern spotting (map's Day-5 focus).
+ * No figure: a shape-pattern strip is not one of the ten B1.0 primitives, and
+ * counters would draw a count where the item asks about a repeating shape.
+ */
 function patternNext(rng: Rng, guard: TupleGuard, kind: 'AB' | 'ABB', difficulty: number): ItemDraft {
   const draw = drawFresh(
     rng,
@@ -388,19 +398,23 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
       script: [
         {
           say: 'Watch me count 7 buttons. I pick the top-left button first, and I follow a path: 1, 2, 3, 4, 5, 6, 7.',
-          visual: 'Seven buttons; a dotted path appears as each is tapped and numbered.',
+          visual: 'Seven buttons in a row.',
+          figure: counters(7, 'buttons', { arrangement: 'in a row', alt: 'seven buttons in a row' }),
         },
         {
           say: 'When buttons are scattered, I cross each one out as I count it. No button gets skipped, none gets counted twice.',
-          visual: 'Scattered buttons gain check marks one by one.',
+          visual: 'The same seven buttons, scattered about.',
+          figure: counters(7, 'buttons', { arrangement: 'scattered', alt: 'the same seven buttons, scattered' }),
         },
         {
           say: 'A ten-frame makes big counts fast: the top row is 5 when full. 5... then 6, 7, 8. Eight!',
-          visual: 'Ten-frame fills; the full top row flashes as "5" before counting on.',
+          visual: 'A ten-frame with 8 counters: the top row of five is full, and three sit below it.',
+          figure: tenFrame(8, { alt: 'a ten-frame with eight counters - a full top row of five and three more' }),
         },
         {
           say: 'And the last number I say still tells how many in all. 8 counters - I do not need to recount.',
-          visual: 'Numeral 8 glows above the frame.',
+          visual: 'The same ten-frame - still eight counters.',
+          figure: tenFrame(8, { alt: 'the same ten-frame with eight counters' }),
         },
       ],
       summary:
@@ -417,6 +431,8 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('A', 2, 'GE', 1),
         fadeLevel: 'modeled',
         prompt: '[image: 6 fish in a row] How many fish?',
+        visual: 'Six fish in a row.',
+        figure: counters(6, 'fish', { arrangement: 'in a row', alt: 'six fish in a row', asserts: assertsAnswer }),
         steps: [
           {
             teacherSay: 'I start at the left and touch each fish: 1, 2, 3, 4, 5, 6. Six fish!',
@@ -429,6 +445,8 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('A', 2, 'GE', 2),
         fadeLevel: 'completion',
         prompt: '[image: 8 leaves in two rows] Count the leaves with me.',
+        visual: 'Eight leaves in two rows of four.',
+        figure: counters(8, 'leaves', { arrangement: 'in two rows', alt: 'eight leaves in two rows', asserts: assertsAnswer }),
         steps: [
           { teacherSay: 'Top row first: 1, 2, 3, 4.' },
           { childDo: 'Count the bottom row, continuing where I stopped.', expected: '5, 6, 7, 8' },
@@ -438,10 +456,12 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
       {
         id: contentId('A', 2, 'GE', 3),
         fadeLevel: 'prompted',
-        prompt: '[image: 9 pebbles scattered] Count the pebbles.',
+        prompt: '[image: 9 shells scattered] Count the shells.',
+        visual: 'Nine shells scattered about.',
+        figure: counters(9, 'shells', { arrangement: 'scattered', alt: 'nine shells scattered', asserts: assertsAnswer }),
         steps: [
-          { teacherSay: 'Scattered! What will you do so no pebble is missed?' },
-          { childDo: 'Cross out each pebble as you count it.', expected: '1 through 9' },
+          { teacherSay: 'Scattered! What will you do so no shell is missed?' },
+          { childDo: 'Cross out each shell as you count it.', expected: '1 through 9' },
         ],
         answer: '9',
       },
@@ -449,11 +469,15 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('A', 2, 'GE', 4),
         fadeLevel: 'independent',
         prompt: '[image: ten-frame with 10 counters] How many counters? Count and say the answer.',
+        visual: 'A ten-frame with both rows full.',
+        figure: tenFrame(10, { alt: 'a ten-frame with ten counters - both rows full', asserts: assertsAnswer }),
         steps: [{ childDo: 'Use the full rows to count fast.', expected: '10' }],
         answer: '10',
       },
     ],
     days,
+    // No figure on the puzzle: the train is a repeating shape strip, which none
+    // of the ten primitives draws (see patternNext).
     puzzle: {
       id: contentId('A', 2, 'PZ', 1),
       title: 'Puzzle Grove: Shape Train',
@@ -491,7 +515,7 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
         errorTag: 'representation-misread',
         subtype: 'lost-place-scattered',
         description: 'Loses track in scattered groups past six - skips or double-counts.',
-        exampleWrongAnswer: 'counts 9 pebbles as 8',
+        exampleWrongAnswer: 'counts 9 shells as 8',
         distractorRationale: 'Offer (correct +/- 1) on scattered-count items.',
         reteachPointer: 'explanation/script[1] (cross out as you count)',
       },
@@ -546,7 +570,7 @@ export function buildA02(packSeed: number, contentVersion: string): WeeklyConcep
       ],
       homeFocus: {
         praiseLine:
-          'You crossed off every pebble as you counted - that is exactly how careful counters handle big groups.',
+          'You crossed off every shell as you counted - that is exactly how careful counters handle big groups.',
         questionForChild: 'Can you count out 8 blocks - and how do you make sure you don\'t count one twice?',
       },
       vocabularyForParent: [

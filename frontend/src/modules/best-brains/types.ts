@@ -15,6 +15,10 @@
 // Part 1 — WeeklyConceptPack (mirror of the JSON schema)
 // ===========================================================================
 
+import type { BBFigure } from './figures/types';
+
+export type { BBFigure } from './figures/types';
+
 /** Neutral level codes (DD2). Distinct from KumonLevel — never mix the ladders. */
 export type BBLevel = 'A' | 'B' | 'C' | 'D' | 'E';
 
@@ -129,14 +133,28 @@ export interface PackItem {
   /** 1–3 unique tags from the closed DD7 enum. */
   errorTags: ErrorTag[];
   generator?: GeneratorSpec;
+  /**
+   * The item's picture, drawn from the item's OWN computed values so it cannot
+   * contradict its answer (QG-13 re-derives what the picture asserts, exactly as
+   * QG-5 re-derives the answer). Presentation only — never load-bearing for
+   * identity; the authored `[image: …]` direction stays in `prompt`.
+   */
+  figure?: BBFigure;
 }
 
 // --- Teacher explanation -----------------------------------------------------
 
 export interface ExplanationSegment {
   say: string;
-  /** Asset/manipulative direction; visual-first per E60. */
+  /**
+   * Asset/manipulative direction; visual-first per E60. When `figure` is set
+   * this is the picture's caption/accessible name rather than a stage direction
+   * to an artist — until B1.0 it was the ONLY thing here, and it rendered as
+   * italic prose in a dashed box (LEARNINGS L27).
+   */
   visual?: string;
+  /** The drawn picture for this segment of the lesson. */
+  figure?: BBFigure;
 }
 
 export interface VocabularyEntry {
@@ -165,6 +183,8 @@ export interface GuidedExampleStep {
   teacherSay?: string;
   childDo?: string;
   expected?: string;
+  /** Picture for THIS step — how a teacher builds the model as they narrate. */
+  figure?: BBFigure;
 }
 
 export interface GuidedExample {
@@ -174,6 +194,14 @@ export interface GuidedExample {
   /** 1–8 steps. */
   steps: GuidedExampleStep[];
   answer: string;
+  /**
+   * The example's picture caption / accessible name. Before B1.0 the schema had
+   * no visual slot at all (0/96 guided examples carried one) — the worst gap in
+   * the corpus, since a worked example is exactly where a teacher draws.
+   */
+  visual?: string;
+  /** The drawn picture pinned beside the worked example. */
+  figure?: BBFigure;
 }
 
 // --- Days --------------------------------------------------------------------
@@ -218,6 +246,8 @@ export interface Puzzle {
   answer: AnswerSpec;
   hintLadder: HintLadder;
   errorTags?: ErrorTag[];
+  /** The puzzle's picture (grids, paths, nets), same law as PackItem.figure. */
+  figure?: BBFigure;
 }
 
 // --- Fluency sprint ----------------------------------------------------------

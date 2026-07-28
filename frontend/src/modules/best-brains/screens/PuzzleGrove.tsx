@@ -19,6 +19,8 @@ import { recordItemAttempt, updateDayProgress } from '../services/bbProgressServ
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import { PromptFigure } from '../components/figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import AnchorPanel from '../components/AnchorPanel';
 import HintLadderView from '../components/HintLadder';
@@ -90,6 +92,7 @@ export default function PuzzleGrove() {
 
   const current = stage.kind === 'item' ? stage.item : stage.puzzle;
   const prompt = stage.kind === 'item' ? stage.item.prompt : `${stage.puzzle.title} — ${stage.puzzle.prompt}`;
+  const figure = stage.kind === 'item' ? stage.item.figure : stage.puzzle.figure;
   const hintLadder = current.hintLadder;
   const isPuzzle = stage.kind === 'puzzle';
 
@@ -175,8 +178,11 @@ export default function PuzzleGrove() {
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-secondary-700">🌳 Puzzle Grove</p>
         )}
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{prompt}</p>
-          <AudioButton text={prompt} band={band} autoplay={band === 'A'} />
+          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(prompt)}</p>
+          <AudioButton text={speakablePrompt(prompt, figure?.alt)} band={band} autoplay={band === 'A'} />
+        </div>
+        <div className="mt-4">
+          <PromptFigure prompt={prompt} figure={figure} band={band} />
         </div>
       </section>
 

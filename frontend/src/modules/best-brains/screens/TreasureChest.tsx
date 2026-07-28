@@ -30,6 +30,8 @@ import { PASSED_STATES } from '../constants';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import { PromptFigure } from '../components/figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import type { ErrorTag, PackItem } from '../types';
 
@@ -165,13 +167,14 @@ export default function TreasureChest() {
           </div>
         ) : (
           <div className="flex flex-col gap-5">
-            <section aria-label="The problem" className="rounded-3xl bg-surface p-6 shadow-sm">
+            <section aria-label="The problem" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
               <div className="flex items-start gap-3">
                 <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
-                  {openItem.prompt}
+                  {promptText(openItem.prompt)}
                 </p>
-                <AudioButton text={openItem.prompt} band={band} autoplay={band === 'A'} />
+                <AudioButton text={speakablePrompt(openItem.prompt, openItem.figure?.alt)} band={band} autoplay={band === 'A'} />
               </div>
+              <PromptFigure prompt={openItem.prompt} figure={openItem.figure} band={band} />
             </section>
             {openItem.hintLadder[0] && (
               <p className="rounded-xl bg-warning-light/60 px-4 py-3 text-sm text-text-secondary">

@@ -23,6 +23,8 @@ import { useFoundrySession } from '../session/FoundrySession';
 import { isDayActionable } from '../session/weekLogic';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import { PromptFigure } from '../components/figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 
 export default function WarmUp() {
@@ -191,11 +193,12 @@ export default function WarmUp() {
 
       {idx === 0 && <WrenBubble band={band} autoplay text={COPY.warmupOpen[band]} emotion="warm" />}
 
-      <section aria-label="The question" className="rounded-3xl bg-surface p-6 shadow-sm">
+      <section aria-label="The question" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{item.prompt}</p>
-          <AudioButton text={item.prompt} band={band} autoplay={band === 'A'} />
+          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
+          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt)} band={band} autoplay={band === 'A'} />
         </div>
+        <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>
 
       {feedback ? (

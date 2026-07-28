@@ -28,6 +28,8 @@ import {
 } from '../constants';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import { PromptFigure } from '../components/figures/BBFigureView';
+import { promptText, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import AnchorPanel from '../components/AnchorPanel';
 import HintLadderView from '../components/HintLadder';
@@ -377,15 +379,16 @@ export default function PracticePage() {
         </div>
       </header>
 
-      <section aria-label="The problem" className="mf-card-quiet p-6">
+      <section aria-label="The problem" className="mf-card-quiet flex flex-col gap-4 p-6">
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{item.prompt}</p>
+          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
           <AudioButton
-            text={item.prompt}
+            text={speakablePrompt(item.prompt, item.figure?.alt)}
             band={band}
             autoplay={band === 'A' || (packDay.focus === 'word-problems' && item.type === 'word-problem')}
           />
         </div>
+        <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>
 
       {feedback?.kind === 'confirm' && (
@@ -438,7 +441,7 @@ export default function PracticePage() {
             emotion="curious"
           />
           <section aria-label="A fresh one" className="mf-card-quiet p-6">
-            <p className={cn('text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{fixit.variant.prompt}</p>
+            <p className={cn('text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(fixit.variant.prompt)}</p>
           </section>
           <AnswerEntry
             item={{

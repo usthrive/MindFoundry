@@ -12,6 +12,8 @@ import { type ReactNode, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { generatePack, AVAILABLE_WEEKS } from '@/modules/best-brains/generator/packGenerator'
 import type { BBLevel, PackItem, WeeklyConceptPack } from '@/modules/best-brains/types'
+import BBFigureView from '@/modules/best-brains/components/figures/BBFigureView'
+import { promptText } from '@/modules/best-brains/figures/prompt'
 
 // ---------------------------------------------------------------------------
 // Three distinct visual styles to toggle between.
@@ -86,7 +88,8 @@ function ItemCard({ item, t }: { item: PackItem; t: Theme }) {
         {item.isRetrieval && badge(t, 'warm-up', 'retr')}
         {item.strand === 'noncomputational' && badge(t, 'reasoning strand', 'noncomp')}
       </div>
-      <div style={{ color: t.ink, fontSize: 15, lineHeight: 1.5 }}>{item.prompt}</div>
+      <div style={{ color: t.ink, fontSize: 15, lineHeight: 1.5 }}>{promptText(item.prompt)}</div>
+      {item.figure && <BBFigureView figure={item.figure} size="md" />}
       {item.choices && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {item.choices.map((c) => (
@@ -213,12 +216,24 @@ export default function FoundryPreviewPage() {
               </div>
             </Section>
 
+            <Section title="The lesson — Ms. Wren's script" t={t}>
+              {pack.explanation.script.map((seg, i) => (
+                <div key={i} style={{ background: t.card, border: `1px solid ${t.line}`, borderRadius: t.cardRadius, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 14.5, lineHeight: 1.55 }}>🗣 {seg.say}</div>
+                  {seg.figure
+                    ? <div style={{ marginTop: 10 }}><BBFigureView figure={seg.figure} size="lg" /></div>
+                    : seg.visual && <div style={{ marginTop: 8, fontSize: 13, fontStyle: 'italic', color: t.muted }}>🖼 {seg.visual}</div>}
+                </div>
+              ))}
+            </Section>
+
             <Section title="Worked examples (fading support)" t={t}>
               {pack.guidedExamples.map((ge) => (
                 <div key={ge.id} style={{ background: t.card, border: `1px solid ${t.line}`, borderRadius: t.cardRadius, padding: '12px 14px' }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-                    {badge(t, ge.fadeLevel)}<span style={{ fontSize: 14, fontWeight: 600 }}>{ge.prompt}</span>
+                    {badge(t, ge.fadeLevel)}<span style={{ fontSize: 14, fontWeight: 600 }}>{promptText(ge.prompt)}</span>
                   </div>
+                  {ge.figure && <div style={{ margin: '6px 0 10px' }}><BBFigureView figure={ge.figure} size="md" /></div>}
                   {ge.steps.map((s, i) => (
                     <div key={i} style={{ fontSize: 14, color: t.muted, lineHeight: 1.5, paddingLeft: 10,
                       borderLeft: `2px solid ${t.line}`, margin: '4px 0' }}>
@@ -239,7 +254,8 @@ export default function FoundryPreviewPage() {
 
             <Section title={`Puzzle — ${pack.puzzle.title}`} t={t}>
               <div style={{ background: t.card, border: `1px solid ${t.line}`, borderRadius: t.cardRadius, padding: '14px 16px' }}>
-                <div style={{ fontSize: 15, lineHeight: 1.55 }}>{pack.puzzle.prompt}</div>
+                <div style={{ fontSize: 15, lineHeight: 1.55 }}>{promptText(pack.puzzle.prompt)}</div>
+                {pack.puzzle.figure && <div style={{ marginTop: 10 }}><BBFigureView figure={pack.puzzle.figure} size="md" /></div>}
                 <div style={{ marginTop: 8, fontFamily: 'ui-monospace, monospace', fontSize: 13, color: t.muted }}>
                   answer: <b style={{ color: t.ink }}>{pack.puzzle.answer.value}</b></div>
               </div>
@@ -252,7 +268,9 @@ export default function FoundryPreviewPage() {
                     <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: t.muted }}>{f === 'formA' ? 'Form A' : 'Form B'}</div>
                     {pack.masteryCheck[f].map((it) => (
                       <div key={it.id} style={{ background: t.card, border: `1px solid ${t.line}`, borderRadius: t.cardRadius, padding: '8px 10px', fontSize: 13.5 }}>
-                        {it.prompt}<div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: t.good, marginTop: 3 }}>{it.answer.value}</div>
+                        {promptText(it.prompt)}
+                        {it.figure && <BBFigureView figure={it.figure} size="sm" />}
+                        <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12, color: t.good, marginTop: 3 }}>{it.answer.value}</div>
                       </div>
                     ))}
                   </div>

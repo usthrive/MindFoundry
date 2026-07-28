@@ -26,6 +26,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { wholeMoney } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
+import { assertsAnswer, barModel } from '../lib/figures';
 
 const C12 = { level: 'C' as const, week: 12 };
 const D2 = { level: 'D' as const, week: 2 };
@@ -207,9 +208,39 @@ export const buildD04 = makeWeekBuilder({
     whyBeforeHow:
       'A multiplicative comparison scales one amount into a whole number of copies, so "times as many" is a multiply and not an add — that is why a bar model settles it every time: draw one bar for the first amount, then repeat the whole bar that many times, and the copies are impossible to miss. "More than" only stretches a single bar by a little; "times as many" stacks whole bars, which is a far bigger jump.',
     script: [
-      { say: 'Watch: Maya\'s bar shows her amount. "Ben has 3 times as many" means I copy Maya\'s whole bar three times — one, two, three. Three copies is a multiply.', visual: 'One short bar; three identical bars stack beside it.' },
-      { say: '"3 more than Maya" is a different picture: keep Maya\'s one bar and add a small piece. Same word "three", very different bars.', visual: 'A single bar with a small +3 tail.' },
-      { say: 'Before you compute, estimate: "times as many" always makes the amount grow by whole copies, so a sensible answer is clearly bigger — if it barely changed, you probably added by mistake.', visual: 'Benchmark: one bar vs several stacked bars, the gap obvious.' },
+      {
+        say: 'Watch: Maya\'s bar shows her amount. "Ben has 3 times as many" means I copy Maya\'s whole bar three times — one, two, three. Three copies is a multiply.',
+        visual: 'One short bar for Maya; three copies of it for Ben.',
+        figure: barModel(
+          [
+            { label: 'Maya', segments: [{ value: 6, label: '6' }] },
+            { label: 'Ben', segments: [{ value: 6 }, { value: 6 }, { value: 6 }], total: '18' },
+          ],
+          { scaleMax: 18, alt: 'one bar of 6 for Maya, and three copies of it for Ben' },
+        ),
+      },
+      {
+        say: '"3 more than Maya" is a different picture: keep Maya\'s one bar and add a small piece. Same word "three", very different bars.',
+        visual: 'Maya\'s bar with a small piece of 3 added on the end.',
+        figure: barModel(
+          [
+            { label: 'Maya', segments: [{ value: 6, label: '6' }] },
+            { label: '3 more', segments: [{ value: 6, label: '6' }, { value: 3, label: '3', fill: 'hatch' }], total: '9' },
+          ],
+          { scaleMax: 18, alt: 'Maya\'s bar of 6, and beside it the same bar with a short piece of 3 added, making 9' },
+        ),
+      },
+      {
+        say: 'Before you compute, estimate: "times as many" always makes the amount grow by whole copies, so a sensible answer is clearly bigger — if it barely changed, you probably added by mistake.',
+        visual: 'The two answers side by side: 9 from adding, 18 from copying.',
+        figure: barModel(
+          [
+            { label: '3 more', segments: [{ value: 6, label: '6' }, { value: 3, label: '3', fill: 'hatch' }], total: '9' },
+            { label: '3 times', segments: [{ value: 6 }, { value: 6 }, { value: 6 }], total: '18' },
+          ],
+          { scaleMax: 18, alt: 'a bar of 9 from adding three, above a bar of 18 from three whole copies' },
+        ),
+      },
     ],
     summary: '"Times as many" copies an amount (multiply); "more than" adds a difference (add). Draw the bars, estimate the size, then compute.',
     vocabulary: [
@@ -219,20 +250,53 @@ export const buildD04 = makeWeekBuilder({
     ],
   },
   guidedExamples: [
-    ge(4, 1, 'modeled', 'Maya read 6 books. Leo read 4 times as many. How many did Leo read?', [
-      { teacherSay: 'I see "times as many" — that is a copy word, not a sum word, so I know I will multiply, not add. Let me picture Maya\'s 6 as one bar.' },
-      { teacherSay: 'Four copies of 6: watch me count 6, 12, 18, 24 as the bar stacks four times.', expected: '24' },
-    ], '24'),
-    ge(4, 2, 'completion', 'A ribbon is 8 m. A second ribbon is 5 times as long. How long is the second ribbon?', [
-      { teacherSay: 'Which operation does "times as long" signal — add or multiply?', expected: 'multiply' },
-      { childDo: 'Scale 8 by 5.', expected: '40' },
-    ], '40 m'),
+    {
+      ...ge(4, 1, 'modeled', 'Maya read 6 books. Leo read 4 times as many. How many did Leo read?', [
+        { teacherSay: 'I see "times as many" — that is a copy word, not a sum word, so I know I will multiply, not add. Let me picture Maya\'s 6 as one bar.' },
+        { teacherSay: 'Four copies of 6: watch me count 6, 12, 18, 24 as the bar stacks four times.', expected: '24' },
+      ], '24'),
+      visual: 'Maya\'s bar of 6, and four copies of it for Leo.',
+      figure: barModel(
+        [
+          { label: 'Maya', segments: [{ value: 6, label: '6' }] },
+          { label: 'Leo', segments: [{ value: 6 }, { value: 6 }, { value: 6 }, { value: 6 }], total: '?' },
+        ],
+        { scaleMax: 24, alt: 'one bar of 6 for Maya, and four copies of it for Leo', asserts: { of: 'bar:1', ...assertsAnswer } },
+      ),
+    },
+    {
+      ...ge(4, 2, 'completion', 'A ribbon is 8 m. A second ribbon is 5 times as long. How long is the second ribbon?', [
+        { teacherSay: 'Which operation does "times as long" signal — add or multiply?', expected: 'multiply' },
+        { childDo: 'Scale 8 by 5.', expected: '40' },
+      ], '40 m'),
+      visual: 'A short ribbon of 8, and five copies of it laid end to end.',
+      figure: barModel(
+        [
+          { label: 'first', segments: [{ value: 8, label: '8' }] },
+          { label: 'second', segments: [{ value: 8 }, { value: 8 }, { value: 8 }, { value: 8 }, { value: 8 }], total: '?' },
+        ],
+        { scaleMax: 40, alt: 'a bar of 8 for the first ribbon, and five copies of it for the second', asserts: { of: 'bar:1', ...assertsAnswer } },
+      ),
+    },
     ge(4, 3, 'prompted', 'Ben has 7 stickers. Ria has 6 times as many. How many does Ria have?', [
       { childDo: 'Estimate first, then multiply the copies.', expected: '42' },
     ], '42'),
-    ge(4, 4, 'independent', 'Sam has 9 marbles. Pia has 3 times as many, then finds 4 more. How many does Pia have? Solve cold.', [
-      { childDo: 'Copies first, then the extra.', expected: '31' },
-    ], '31'),
+    {
+      // Independent stage: Sam's bar ONLY. Deciding "copies first, then the
+      // extra" IS the task here, so drawing Pia's decomposition would hand the
+      // child the plan the item exists to ask for (L33).
+      ...ge(4, 4, 'independent', 'Sam has 9 marbles. Pia has 3 times as many, then finds 4 more. How many does Pia have? Solve cold.', [
+        { childDo: 'Copies first, then the extra.', expected: '31' },
+      ], '31'),
+      visual: 'Sam\'s bar of 9. Pia\'s bar is for you to work out.',
+      figure: barModel(
+        [
+          { label: 'Sam', segments: [{ value: 9, label: '9' }] },
+          { label: 'Pia', segments: [{ value: 9, fill: 'none' }], total: '?' },
+        ],
+        { scaleMax: 31, alt: 'a bar of 9 for Sam, and an empty bar for Pia with an unknown total' },
+      ),
+    },
   ],
   days: [
     // Day 1 — concept echo: single-step scaling only, blocked (no premature interleaving)

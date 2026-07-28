@@ -14,10 +14,13 @@ import { isLessonComplete } from '../session/weekLogic';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
+import BBFigureView from '../components/figures/BBFigureView';
+import type { BBFigure } from '../types';
 
 interface Segment {
   say: string;
   visual?: string;
+  figure?: BBFigure;
 }
 
 export default function LessonRoom() {
@@ -110,11 +113,19 @@ export default function LessonRoom() {
 
       <WrenBubble band={band} autoplay text={segment.say} emotion="curious" />
 
-      {segment.visual && (
-        <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-surface p-6 text-center">
-          {/* Visual direction placeholder — the design pass renders real visuals. */}
-          <p className="text-text-secondary italic">{segment.visual}</p>
+      {/* B1.0: the picture the lesson always described but never drew (L27). A
+          segment with no figure falls back to its written direction rather than
+          showing nothing — a visible marker of un-migrated content. */}
+      {segment.figure ? (
+        <div className="rounded-3xl bg-surface p-5 shadow-sm">
+          <BBFigureView figure={segment.figure} band={band} size="lg" />
         </div>
+      ) : (
+        segment.visual && (
+          <div className="rounded-3xl border-2 border-dashed border-gray-200 bg-surface p-6 text-center">
+            <p className="text-text-secondary italic">{segment.visual}</p>
+          </div>
+        )
       )}
 
       {isLast && pack.explanation.vocabulary.length > 0 && (

@@ -28,10 +28,18 @@ export const MFM_A15: WeeklyConceptPack = {
     "hook": "Two little duck teams are swimming to the SAME pond. Splash! When groups join, a new bigger group is born. How big? That's what adding tells us.",
     "whyBeforeHow": "Adding means JOINING two groups. We could count every single one from the start each time - but that is slow. If we start with the bigger group and count on, we get there faster. The why: the big group is already counted, so we don't count it again.",
     "script": [
-      { "say": "Watch me join 4 ducks and 3 ducks. I count ALL of them: 1, 2, 3, 4, 5, 6, 7. Seven ducks in all!", "visual": "Two duck groups slide together into one pond." },
-      { "say": "Now the fast way. The 4-duck team is ALREADY counted. I hold 4 in my head... and count on: 5, 6, 7. Same answer, fewer counts!", "visual": "Number 4 glows; three hops animate: 5, 6, 7." },
+      { "say": "Watch me join 4 ducks and 3 ducks. I count ALL of them: 1, 2, 3, 4, 5, 6, 7. Seven ducks in all!", "visual": "Two duck groups slide together into one pond.",
+        "figure": { "type": "counters", "alt": "four ducks and three ducks sliding together into one pond, seven ducks in all",
+          "params": { "groups": [{ "count": 4, "icon": "duck" }, { "count": 3, "icon": "duck" }], "relation": "join" } } },
+      { "say": "Now the fast way. The 4-duck team is ALREADY counted. I hold 4 in my head... and count on: 5, 6, 7. Same answer, fewer counts!", "visual": "Number 4 glows; three hops animate: 5, 6, 7.",
+        "figure": { "type": "number-line", "alt": "a number line: 4 is held, then three hops land on 5, then 6, then 7",
+          "params": { "min": 0, "max": 10, "step": 1, "labels": "all",
+            "marks": [{ "at": 4, "label": "4", "style": "flag" }, { "at": 7, "style": "unknown" }],
+            "hops": [{ "from": 4, "to": 5 }, { "from": 5, "to": 6 }, { "from": 6, "to": 7 }] } } },
       { "say": "We can write the story as a number sentence: 4 + 3 = 7. Plus means join. Equals means 'in all'.", "visual": "4 + 3 = 7 builds symbol by symbol under the ducks." },
-      { "say": "Secret: 4 + 3 and 3 + 4 land on the same number. Joining is fair - it doesn't care who came first. So always start with the BIG number.", "visual": "The two groups swap sides; total stays 7." }
+      { "say": "Secret: 4 + 3 and 3 + 4 land on the same number. Joining is fair - it doesn't care who came first. So always start with the BIG number.", "visual": "The two groups swap sides; total stays 7.",
+        "figure": { "type": "counters", "alt": "the same two groups swapped over: three ducks and four ducks, still seven in all",
+          "params": { "groups": [{ "count": 3, "icon": "duck" }, { "count": 4, "icon": "duck" }], "relation": "join" } } }
     ],
     "summary": "Adding joins two groups. Start big, count on. Write it as a number sentence with + and =.",
     "vocabulary": [
@@ -45,6 +53,9 @@ export const MFM_A15: WeeklyConceptPack = {
     {
       "id": "A15-GE-01", "fadeLevel": "modeled",
       "prompt": "[image: 4 ducks in a pond, 3 ducks arriving] How many ducks in all?",
+      "figure": { "type": "counters", "alt": "four ducks and three more ducks arriving",
+        "params": { "groups": [{ "count": 4, "icon": "duck" }, { "count": 3, "icon": "duck" }], "relation": "join" },
+        "asserts": { "equals": "answer" } },
       "steps": [
         { "teacherSay": "I join the groups and count every duck: 1, 2, 3, 4, 5, 6, 7.", "expected": "7" },
         { "teacherSay": "Seven in all. Now watch the fast way on the next one." }
@@ -54,6 +65,13 @@ export const MFM_A15: WeeklyConceptPack = {
     {
       "id": "A15-GE-02", "fadeLevel": "completion",
       "prompt": "Same ducks: 4 + 3. This time we start big and count on.",
+      // The count-on move itself, drawn: hold 4, hop three times. The asserted
+      // mark is the LANDING mark (mark:1), which is the example's answer.
+      "figure": { "type": "number-line", "alt": "a number line: hold 4, then hop on to 5, 6 and 7",
+        "params": { "min": 0, "max": 10, "step": 1, "labels": "all",
+          "marks": [{ "at": 4, "label": "4", "style": "flag" }, { "at": 7, "style": "unknown" }],
+          "hops": [{ "from": 4, "to": 5 }, { "from": 5, "to": 6 }, { "from": 6, "to": 7 }] },
+        "asserts": { "of": "mark:1", "equals": "answer" } },
       "steps": [
         { "teacherSay": "The 4 is done - hold it in your head." },
         { "childDo": "Tap each new duck and count on from 4.", "expected": "5, 6, 7" },
@@ -64,6 +82,11 @@ export const MFM_A15: WeeklyConceptPack = {
     {
       "id": "A15-GE-03", "fadeLevel": "prompted",
       "prompt": "[image: 5 ladybugs, 2 ladybugs] The number sentence is started: 5 + 2 = ?",
+      // No ladybug glyph exists, so the picture is plain counters and the alt says
+      // so — the story noun stays in the words, never in a glyph that isn't drawn.
+      "figure": { "type": "counters", "alt": "five counters for the ladybugs and two more counters",
+        "params": { "groups": [{ "count": 5, "icon": "dot" }, { "count": 2, "icon": "dot" }], "relation": "join" },
+        "asserts": { "equals": "answer" } },
       "steps": [
         { "teacherSay": "Which number do we start with?", "expected": "5" },
         { "childDo": "Count on 2 from 5 and fill the box.", "expected": "6, 7 -> 7" }
@@ -73,6 +96,10 @@ export const MFM_A15: WeeklyConceptPack = {
     {
       "id": "A15-GE-04", "fadeLevel": "independent",
       "prompt": "[image: 6 snails, 3 snails] Build the whole number sentence yourself and solve.",
+      // No assertion: the answer here is the SENTENCE "6 + 3 = 9", not the count the
+      // picture shows, so there is nothing QG-13 could honestly compare it against.
+      "figure": { "type": "counters", "alt": "six counters for the snails and three more counters",
+        "params": { "groups": [{ "count": 6, "icon": "dot" }, { "count": 3, "icon": "dot" }], "relation": "join" } },
       "steps": [
         { "childDo": "Write the number sentence and the total.", "expected": "6 + 3 = 9" }
       ],
@@ -88,14 +115,23 @@ export const MFM_A15: WeeklyConceptPack = {
           "difficulty": 1, "strand": "computational", "isRetrieval": true, "retrievalSource": { "level": "A", "week": 3 },
           "hintLadder": ["Say it slowly: sev-en. Which numeral says that?"], "errorTags": ["fact-recall"] },
         { "id": "A15-D1-02", "type": "representation", "prompt": "Warm-up! [image: 5-frame with 2 dots shown, rest hidden] 5 is 2 and how many hiding?",
+          "figure": { "type": "ten-frame", "alt": "a five frame with two dots showing and three cells hidden under a cover",
+            "params": { "size": 5, "filled": 2, "hidden": 3, "icon": "dot", "coverStyle": "single" },
+            "asserts": { "of": "hidden", "equals": "answer" } },
           "answer": { "value": "3", "acceptableForms": [], "validation": "exact-numeric" },
           "difficulty": 1, "strand": "computational", "isRetrieval": true, "retrievalSource": { "level": "A", "week": 12 },
           "hintLadder": ["Count up from 2 until you reach 5."], "errorTags": ["fact-recall"] },
         { "id": "A15-D1-03", "type": "computation", "prompt": "[image: 3 red apples, 2 green apples] How many apples in all?",
+          "figure": { "type": "counters", "alt": "three apples and two more apples",
+            "params": { "groups": [{ "count": 3, "icon": "apple" }, { "count": 2, "icon": "apple" }], "relation": "join" },
+            "asserts": { "equals": "answer" } },
           "answer": { "value": "5", "acceptableForms": ["five"], "validation": "exact-numeric" },
           "difficulty": 2, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["Touch each apple as you count.", "Start at 3, count on: 4... ?"], "errorTags": ["representation-misread"] },
         { "id": "A15-D1-04", "type": "representation", "prompt": "[image: 2 stars, 4 stars] Write the number sentence.",
+          // No assertion: the answer is the sentence "2+4=6", not a bare count.
+          "figure": { "type": "counters", "alt": "two stars and four more stars",
+            "params": { "groups": [{ "count": 2, "icon": "star" }, { "count": 4, "icon": "star" }], "relation": "join" } },
           "answer": { "value": "2+4=6", "acceptableForms": ["4+2=6"], "validation": "number-sentence" },
           "difficulty": 3, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["How many in the first group? The second?", "Groups... plus... equals in all."], "errorTags": ["concept-misconception"] },
@@ -105,6 +141,9 @@ export const MFM_A15: WeeklyConceptPack = {
           "generator": { "templateId": "count_on_v1", "params": { "start": 6, "hop": 2 }, "seed": 4151 },
           "hintLadder": ["Hold 6 in your head. Hop twice: 7... ?"], "errorTags": ["procedure-slip"] },
         { "id": "A15-D1-06", "type": "computation", "prompt": "[image: 5 buttons, 4 buttons] How many in all?",
+          "figure": { "type": "counters", "alt": "five buttons and four more buttons",
+            "params": { "groups": [{ "count": 5, "icon": "dot" }, { "count": 4, "icon": "dot" }], "relation": "join" },
+            "asserts": { "equals": "answer" } },
           "answer": { "value": "9", "acceptableForms": ["nine"], "validation": "exact-numeric" },
           "difficulty": 3, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["Which group is bigger? Start there.", "Hold 5, count on: 6, 7, 8... ?"], "errorTags": ["procedure-slip", "representation-misread"] }
@@ -118,6 +157,10 @@ export const MFM_A15: WeeklyConceptPack = {
           "difficulty": 1, "strand": "computational", "isRetrieval": true, "retrievalSource": { "level": "A", "week": 12 },
           "hintLadder": ["Count up from 1 to 5 on your fingers."], "errorTags": ["fact-recall"] },
         { "id": "A15-D2-02", "type": "computation", "prompt": "[image: ten-frame with 7 counters] 7 + 2 = ?",
+          // NO assertion on purpose: the frame shows the 7 the child counts ON FROM.
+          // The answer is 9, so asserting the frame would claim 7 = 9 — a false claim
+          // is exactly the failure this schema exists to prevent.
+          "figure": { "type": "ten-frame", "alt": "a ten frame with seven counters", "params": { "filled": 7 } },
           "answer": { "value": "9", "acceptableForms": [], "validation": "exact-numeric" },
           "difficulty": 2, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["The frame already shows 7. Count on: 8... ?"], "errorTags": ["procedure-slip"] },
@@ -130,10 +173,15 @@ export const MFM_A15: WeeklyConceptPack = {
           "difficulty": 3, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["6 is bigger than 2 - start at 6.", "Hold 6: 7... ?"], "errorTags": ["procedure-slip"] },
         { "id": "A15-D2-05", "type": "computation", "prompt": "[image: ten-frame with 5 counters] 5 + 3 = ?",
+          // No assertion: the frame is the 5 to count on from, not the answer 8.
+          "figure": { "type": "ten-frame", "alt": "a ten frame with five counters filling the top row", "params": { "filled": 5 } },
           "answer": { "value": "8", "acceptableForms": [], "validation": "exact-numeric" },
           "difficulty": 3, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["The top row is full - that's 5. Count on 3."], "errorTags": ["procedure-slip"] },
         { "id": "A15-D2-06", "type": "representation", "prompt": "Warm-up! [image: 13 dots in a scatter] Count the dots.",
+          "figure": { "type": "counters", "alt": "thirteen dots scattered across the box",
+            "params": { "groups": [{ "count": 13, "icon": "dot" }], "arrangement": "scatter" },
+            "asserts": { "equals": "answer" } },
           "answer": { "value": "13", "acceptableForms": ["thirteen"], "validation": "exact-numeric" },
           "difficulty": 2, "strand": "computational", "isRetrieval": true, "retrievalSource": { "level": "A", "week": 9 },
           "hintLadder": ["Cross out each dot as you count it."], "errorTags": ["representation-misread"] }
@@ -151,6 +199,11 @@ export const MFM_A15: WeeklyConceptPack = {
           "difficulty": 2, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["Twins! Hold 3, count on 3."], "errorTags": ["fact-recall"] },
         { "id": "A15-D3-03", "type": "computation", "prompt": "[image: 4 striped fish, 4 spotted fish] How many fish in all?",
+          // The two groups are told apart by their grouping, not by a pattern the
+          // fish glyph does not carry — so the alt does not claim stripes or spots.
+          "figure": { "type": "counters", "alt": "four fish and four more fish",
+            "params": { "groups": [{ "count": 4, "icon": "fish" }, { "count": 4, "icon": "fish" }], "relation": "join" },
+            "asserts": { "equals": "answer" } },
           "answer": { "value": "8", "acceptableForms": [], "validation": "exact-numeric" },
           "difficulty": 2, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["Hold 4 in your head and count the spotted ones on."], "errorTags": ["representation-misread"] },
@@ -159,6 +212,9 @@ export const MFM_A15: WeeklyConceptPack = {
           "difficulty": 3, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["Starting at 1 means counting 8 hops - too many! Start at 8."], "errorTags": ["procedure-slip"] },
         { "id": "A15-D3-05", "type": "representation", "prompt": "[image: 3 red kites, 5 blue kites] Write the number sentence and solve.",
+          // No assertion: the answer is the sentence "3+5=8", not a bare count.
+          "figure": { "type": "counters", "alt": "three counters for the red kites and five counters for the blue kites",
+            "params": { "groups": [{ "count": 3, "icon": "dot" }, { "count": 5, "icon": "dot" }], "relation": "join" } },
           "answer": { "value": "3+5=8", "acceptableForms": ["5+3=8"], "validation": "number-sentence" },
           "difficulty": 3, "strand": "computational", "isRetrieval": false,
           "hintLadder": ["Count each kite group first.", "Groups plus groups equals in all."], "errorTags": ["concept-misconception"] },
@@ -197,10 +253,16 @@ export const MFM_A15: WeeklyConceptPack = {
       "day": 5, "focus": "noncomputational", "pageCount": 2,
       "items": [
         { "id": "A15-D5-01", "type": "representation", "prompt": "[image: 3 bunnies eating, 4 bunnies hopping] Write a number sentence and solve.",
+          // No assertion: the answer is the sentence "3+4=7", not a bare count.
+          "figure": { "type": "counters", "alt": "three counters for the bunnies eating and four counters for the bunnies hopping",
+            "params": { "groups": [{ "count": 3, "icon": "dot" }, { "count": 4, "icon": "dot" }], "relation": "join" } },
           "answer": { "value": "3+4=7", "acceptableForms": ["4+3=7"], "validation": "number-sentence" },
           "difficulty": 3, "strand": "noncomputational", "isRetrieval": false,
           "hintLadder": ["Two bunny groups. Count each one first."], "errorTags": ["concept-misconception"] },
         { "id": "A15-D5-02", "type": "representation", "prompt": "[image: 6 ants on a leaf, 4 ants marching over] Write a number sentence and solve.",
+          // No assertion: the answer is the sentence "6+4=10", not a bare count.
+          "figure": { "type": "counters", "alt": "six counters for the ants on the leaf and four counters marching over",
+            "params": { "groups": [{ "count": 6, "icon": "dot" }, { "count": 4, "icon": "dot" }], "relation": "join" } },
           "answer": { "value": "6+4=10", "acceptableForms": ["4+6=10"], "validation": "number-sentence" },
           "difficulty": 3, "strand": "noncomputational", "isRetrieval": false,
           "hintLadder": ["Which group is bigger? Put it first if you like - both ways work."], "errorTags": ["concept-misconception"] },
@@ -240,6 +302,9 @@ export const MFM_A15: WeeklyConceptPack = {
     "fastTrackPct": 95,
     "formA": [
       { "id": "A15-MA-01", "type": "computation", "prompt": "[image: 2 cats, 5 cats] How many cats in all?",
+        "figure": { "type": "counters", "alt": "two counters for the cats and five more counters",
+          "params": { "groups": [{ "count": 2, "icon": "dot" }, { "count": 5, "icon": "dot" }], "relation": "join" },
+          "asserts": { "equals": "answer" } },
         "answer": { "value": "7", "acceptableForms": [], "validation": "exact-numeric" },
         "difficulty": 2, "strand": "computational", "isRetrieval": false,
         "hintLadder": ["Start with the bigger group and count on."], "errorTags": ["representation-misread"] },
@@ -256,6 +321,9 @@ export const MFM_A15: WeeklyConceptPack = {
         "difficulty": 3, "strand": "computational", "isRetrieval": false,
         "hintLadder": ["Hold 8: 9... ?"], "errorTags": ["procedure-slip"] },
       { "id": "A15-MA-05", "type": "representation", "prompt": "[image: 6 pears, 3 pears] Write the number sentence and solve.",
+        // No assertion: the answer is the sentence "6+3=9", not a bare count.
+        "figure": { "type": "counters", "alt": "six counters for the pears and three more counters",
+          "params": { "groups": [{ "count": 6, "icon": "dot" }, { "count": 3, "icon": "dot" }], "relation": "join" } },
         "answer": { "value": "6+3=9", "acceptableForms": ["3+6=9"], "validation": "number-sentence" },
         "difficulty": 3, "strand": "computational", "isRetrieval": false,
         "hintLadder": ["Two groups, a plus, an equals, a total."], "errorTags": ["concept-misconception"] },
@@ -266,6 +334,9 @@ export const MFM_A15: WeeklyConceptPack = {
     ],
     "formB": [
       { "id": "A15-MB-01", "type": "computation", "prompt": "[image: 3 hens, 4 chicks] How many birds in all?",
+        "figure": { "type": "counters", "alt": "three counters for the hens and four counters for the chicks",
+          "params": { "groups": [{ "count": 3, "icon": "dot" }, { "count": 4, "icon": "dot" }], "relation": "join" },
+          "asserts": { "equals": "answer" } },
         "answer": { "value": "7", "acceptableForms": [], "validation": "exact-numeric" },
         "difficulty": 2, "strand": "computational", "isRetrieval": false,
         "hintLadder": ["Start with the bigger group and count on."], "errorTags": ["representation-misread"] },
@@ -282,6 +353,9 @@ export const MFM_A15: WeeklyConceptPack = {
         "difficulty": 3, "strand": "computational", "isRetrieval": false,
         "hintLadder": ["Hold 6: 7... ?"], "errorTags": ["procedure-slip"] },
       { "id": "A15-MB-05", "type": "representation", "prompt": "[image: 5 red cups, 3 blue cups] Write the number sentence and solve.",
+        // No assertion: the answer is the sentence "5+3=8", not a bare count.
+        "figure": { "type": "counters", "alt": "five counters for the red cups and three counters for the blue cups",
+          "params": { "groups": [{ "count": 5, "icon": "dot" }, { "count": 3, "icon": "dot" }], "relation": "join" } },
         "answer": { "value": "5+3=8", "acceptableForms": ["3+5=8"], "validation": "number-sentence" },
         "difficulty": 3, "strand": "computational", "isRetrieval": false,
         "hintLadder": ["Two groups, a plus, an equals, a total."], "errorTags": ["concept-misconception"] },

@@ -4,9 +4,54 @@
 
 ---
 
-## ⭐⭐ CURRENT STATUS 2026-07-28 — PHASE B0 COMPLETE AND COMMITTED (`bbb9105`). NEXT = **B1.0, THE FIGURE RENDERER**
+## ⭐⭐⭐ CURRENT STATUS 2026-07-28 — **B1.0 (THE FIGURE RENDERER) IS DONE.** NEXT = B1.1 onward in `PHASE-B-BUILD-PLAN.md`
 
 **Read this banner, then `build/PHASE-B-BUILD-PLAN.md`. Everything below it is older history kept for context.**
+
+### B1.0 — the curriculum draws now
+Ten parameterised SVG primitives in `frontend/src/modules/best-brains/components/figures/`
+(number-line · bar-model · area-grid · ten-frame · counters · place-value-chart · clock · coin-set ·
+coordinate-grid · angle-figure), a typed `figure` field on `PackItem` / `GuidedExample` /
+`GuidedExampleStep` / `ExplanationSegment` / `Puzzle`, and one dispatcher (`BBFigureView` +
+`PromptFigure`) wired into **every** child surface that shows a prompt, plus `/test-foundry`.
+
+- `LessonRoom.tsx`'s dashed-box placeholder is **gone**; guided examples have the visual slot they
+  never had; **Level A prints no `[image: …]` to a pre-reader on any surface**.
+- **The law:** a figure is built from the item's OWN drawn values, so it cannot contradict its answer.
+  `figures/types.ts` is the schema, `figures/assert.ts` the truth functions, **QG-13** the audit —
+  it recomputes what a picture *asserts* from the figure's own params and compares it with
+  `answer.value` or a named `generator.params` key. This is `answerFor`, applied to pictures.
+- **Gates are now four + a render suite** — run all of them from `frontend/`:
+  `npx tsx scripts/bb-verify-packs.ts` · `bb-qg11-test.ts` · `bb-qg12-test.ts` · **`bb-qg13-test.ts`** ·
+  **`bb-figure-render-test.ts`** · `npx tsc --noEmit`.
+  Green at handover: 7,878 assertions / 0 failures · QG-11 pass · QG-12 26/26 · QG-13 54/54 ·
+  40 figures × 3 sizes pass · tsc clean.
+- **`bb-figure-render-test.ts` exists because QG-13 could not see the worst bug** (L32): every
+  labelled triangle drew equilateral while the data was honest. **A data gate cannot see a drawing
+  that disagrees with its own parameters — render it and measure the render.**
+- **Declared figure debt (8 Level-A surfaces)** is printed by `bb-verify-packs` every run and the gate
+  FAILS on any *undeclared* placeholder. They need a shape-pattern strip, a base-ten-blocks primitive,
+  a hands/fingers manipulative and a shape gallery — plus one item (A15-D4-03) that is deliberately
+  never drawn because the correct picture would hand over the conservation trap's answer (L33).
+- **Not done, deliberately:** figures for Levels B/C and the other 22 Level-D weeks. d04 is the proven
+  **exemplar** (its bar model, drawn) and a01 the proven Level-A exemplar — copy their shape. Figure
+  authoring belongs with B1.1 and the level fills, per exemplar-first (L23).
+- **A scaffold inside a figure is opt-in** (`showPairs` / `markExtra` / `coverStyle`). A picture that
+  pairs the rows, rings the extras, or gives each hidden counter its own countable cover is TRUE and
+  still deletes the assessment. QG-13 cannot see this — it checks whether a figure is true, never
+  whether it is fair. Ask of every figure you author: **what does this let the child skip?** (L33)
+- **Primitives B1.1 will need and the ten cannot draw** (from the Fable review): per-group spacing on
+  `counters` — without it A5's conservation trap ("six spread long vs seven packed short") is
+  literally inexpressible; base-ten blocks; data displays (pictograph / bar chart / tally); a ruler
+  incl. the not-starting-at-zero trap; a protractor overlay; fraction circles; side-length labels on
+  shapes; a mirror line for E7 reflections. Plus a shape-pattern strip and a shape gallery, which the
+  declared Level-A debt already names.
+
+### What to read before touching figures
+`build/FILL-ARCHITECTURE.md` §2a (why), `figures/types.ts` (the schema, with the pedagogy in the doc
+comments), `components/figures/shared.ts` (the drawing contract: palette, purity, the colour law),
+`generator/templates/lib/figures.ts` (the builders week templates must use), and LEARNINGS **L27,
+L32, L33**.
 
 ### Where the build actually is
 - **Level D re-certified: 23/23 clean ACCEPT at `CONTENT_VERSION 1.2.0`.** Coverage is UNCHANGED at
@@ -29,12 +74,12 @@
 - Surfaces intentionally CHANGE at 1.2.0; every computed answer is unchanged. `answer.value` and
   `generator.params` stay canonical — **format prose, never the canonical value** (QG-5 re-derives it).
 
-### ⚠ B1.0 IS THE NEXT TASK AND IT BLOCKS EVERY LEVEL FILL
-No component in the app draws a figure. Measured: **76/76** Level-D lesson-script `visual` fields
-render as *italic placeholder text* (`LessonRoom.tsx:113`, whose comment promises a design pass that
-never ran); **0/96** guided examples have a visual field at all; **0/610** day items carry a figure;
-and **Level A has 18 `[image: …]` prompts that print literally to a pre-reader**. Level A cannot ship
-without this. Scope + rationale: `build/FILL-ARCHITECTURE.md` §2a; task: `PHASE-B-BUILD-PLAN.md` B1.0.
+### ~~⚠ B1.0 IS THE NEXT TASK~~ — DONE 2026-07-28, see the banner above
+*(kept for the measurement it records)* No component in the app drew a figure. Measured before B1.0:
+**76/76** Level-D lesson-script `visual` fields rendered as *italic placeholder text*
+(`LessonRoom.tsx:113`, whose comment promised a design pass that never ran); **0/96** guided examples
+had a visual field at all; **0/610** day items carried a figure; and **Level A had 18 `[image: …]`
+prompts that printed literally to a pre-reader**. Scope + rationale: `build/FILL-ARCHITECTURE.md` §2a.
 
 ### Standing debts recorded, deliberately not done
 - **`has-distractor` items** need ONE proven exemplar through the style gate before adopting — an
