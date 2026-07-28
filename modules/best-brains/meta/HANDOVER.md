@@ -4,6 +4,57 @@
 
 ---
 
+## ⭐⭐ CURRENT STATUS 2026-07-28 — PHASE B0 COMPLETE AND COMMITTED (`bbb9105`). NEXT = **B1.0, THE FIGURE RENDERER**
+
+**Read this banner, then `build/PHASE-B-BUILD-PLAN.md`. Everything below it is older history kept for context.**
+
+### Where the build actually is
+- **Level D re-certified: 23/23 clean ACCEPT at `CONTENT_VERSION 1.2.0`.** Coverage is UNCHANGED at
+  **32/120 cells** — B0 hardened the engine, it did not add content.
+- **Committed** `bbb9105` on `best-brains-content-engine` (52 files). **NOT merged, NOT pushed** —
+  `origin/main` is still at the pre-pipeline state. Merge and push remain the user's calls (R4/R6).
+- **Green:** 7,877 assertions / 0 failures · QG-11 pass · QG-12 26/26 · `tsc` clean · `npm run build`
+  clean · 24 weeks × 200 seeds = 4,800 packs, 0 throws / 0 invalid · 0 `authorMeta` leaks.
+
+### What B0 added that you must not undo
+- **`lib/format.ts` is the single interpolation authority.** A prompt NEVER interpolates a raw
+  quantity, price, unit or article with a bare `${…}` — it calls `money/bill/wholeMoney/countNoun/
+  unitFor/an/article/fmtFrac/fmtInt/valueForms`. This is the guarantee; QG-12 is only the backstop.
+- **`lib/contexts.ts`** — 29 context frames binding nouns to predicates true of them, a per-family
+  rotation ledger (`WEEK_PRIMARY_FRAMES`), and `boundAttribute` pairs.
+- **QG-12a–d** in `validator.ts` + `scripts/bb-qg12-test.ts` (26 cases). Run it alongside
+  `bb-verify-packs.ts` and `bb-qg11-test.ts` — **all three are the correctness bar now.**
+- **New preflight 6.14** (warm-up format variety); metacog probes must be questions with no causal
+  marker; error-analysis prompts show work + claim only, never the diagnosis.
+- Surfaces intentionally CHANGE at 1.2.0; every computed answer is unchanged. `answer.value` and
+  `generator.params` stay canonical — **format prose, never the canonical value** (QG-5 re-derives it).
+
+### ⚠ B1.0 IS THE NEXT TASK AND IT BLOCKS EVERY LEVEL FILL
+No component in the app draws a figure. Measured: **76/76** Level-D lesson-script `visual` fields
+render as *italic placeholder text* (`LessonRoom.tsx:113`, whose comment promises a design pass that
+never ran); **0/96** guided examples have a visual field at all; **0/610** day items carry a figure;
+and **Level A has 18 `[image: …]` prompts that print literally to a pre-reader**. Level A cannot ship
+without this. Scope + rationale: `build/FILL-ARCHITECTURE.md` §2a; task: `PHASE-B-BUILD-PLAN.md` B1.0.
+
+### Standing debts recorded, deliberately not done
+- **`has-distractor` items** need ONE proven exemplar through the style gate before adopting — an
+  unused number in a prompt is the variant a judge may read as an authoring bug (L23 exemplar-first).
+- **Day-4 pages across most weeks are re-runs of Day-2/3 sentence templates** with fresh numbers
+  (BB-W5 = 3). Real authoring debt; belongs with the context-frame work in the fill.
+- **Before ANY deploy:** `bb_item_attempts` are keyed by positional item id, so attempts recorded at
+  1.1.0 map onto different items at 1.2.0. Harmless today (nothing pushed); **unverified**.
+- Dangling reteach pointers (D15 "D8 review", D16 stale buses/adults); D16 GE-01 skips the
+  trial-adjust loop and rounds 14→15 against its own taught rule.
+
+### The lesson B0 exists to encode (read `LEARNINGS.md` L25–L31)
+Both gates passed content that was **visibly wrong to a reader** — money at one decimal, "Each buse
+holds 6", and two pieces of genuinely wrong mathematics (D7 taught 45÷6 "rounds up to 7"; it is 8) —
+because each gate measured whether the VALUE was right and neither read the page. An LLM judge told
+to **RECOMPUTE** rather than verify-by-reading is what found them. Keep that instruction in every
+future gate run.
+
+---
+
 ## ⭐ STATUS UPDATE 2026-07-21 — GENERATOR REBUILT; LEVEL D PASSES BOTH GATES (100%)
 
 **The Step-2 generator rebuild is COMPLETE and PROVEN.** The Level-D style-gate FAIL described below (1/24) has been resolved by rebuilding the generator per the 9 fixes (NOT hand-patching weeks). Current state:
