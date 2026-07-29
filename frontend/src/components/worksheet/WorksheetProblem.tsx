@@ -18,7 +18,8 @@ export interface WorksheetProblemProps {
   onColumnClick?: (column: number) => void  // Handler when a column box is tapped
   /** When true, carry boxes are tappable inputs (child enters carry manually) */
   manualCarryMode?: boolean
-  /** Total answer columns (to identify last column for 2-digit entry) */
+  /** Total answer columns — one per place value the answer can reach.
+   *  May exceed the operand digit count (e.g. 3 for a 2-digit × 1-digit product). */
   answerColumnCount?: number
   // ── Subtraction regroup (borrow) annotations ──
   /** Replacement digit for the donor column (e.g., "3" written above a slashed "4"). */
@@ -103,24 +104,44 @@ export default function WorksheetProblem({
   const fontSize = compact ? 'text-xl sm:text-2xl md:text-xl' : 'text-2xl sm:text-3xl md:text-2xl'
   const smallFontSize = compact ? 'text-lg sm:text-xl md:text-lg' : 'text-xl sm:text-2xl md:text-xl'
 
-  // Column cell sizing for vertical problems
-  // md: rolls back sm: cell width and font to mobile sizes on iPad+
-  const cellSize = compact
-    ? 'w-10 h-11 text-xl sm:w-11 sm:h-12 sm:text-2xl md:w-10 md:h-11 md:text-xl'
-    : 'w-12 h-14 text-2xl sm:w-14 sm:h-14 sm:text-3xl md:w-12 md:h-14 md:text-2xl'
+  // ── Column sizing for vertical problems ──
+  // Every column is the SAME width. Each holds exactly one digit, so there is no
+  // "wide last column" any more: the answer grid has one box per place value
+  // (see getAnswerColumnCount in WorksheetView), which is what keeps the digits of a
+  // number reading as one number and keeps the place-value labels honest.
+  //
+  // Wide problems (Level D's 3-digit × 2-digit reaches 5 places) step down a size so
+  // the problem still fits inside its card instead of bursting out of it.
+  const columnCount = problem.displayFormat === 'vertical'
+    ? Math.max(
+        answerColumnCount ?? 0,
+        ...(problem.operands ?? []).map(op => String(Math.abs(op)).length)
+      )
+    : 0
+  const narrowColumns = columnCount >= 5
+
   const cellGap = compact ? 'gap-1' : 'gap-1.5'
+  const cellGapPx = compact ? 4 : 6
 
-  // Regular-column width (width classes only, no height/font)
-  const regularColWidth = compact
-    ? 'w-10 sm:w-11 md:w-10'
-    : 'w-12 sm:w-14 md:w-12'
+  // Width in rem at the mobile / sm: / md: breakpoints — kept in one place so the
+  // divider-width calculation below can never drift out of sync with the boxes.
+  const colWidthRem = compact
+    ? (narrowColumns ? 2 : 2.5)
+    : (narrowColumns ? 2.5 : 3)
+  const colWidthClass = compact
+    ? (narrowColumns ? 'w-8 sm:w-9 md:w-8' : 'w-10 sm:w-11 md:w-10')
+    : (narrowColumns ? 'w-10 sm:w-12 md:w-10' : 'w-12 sm:w-14 md:w-12')
+  const cellSize = compact
+    ? (narrowColumns
+        ? 'w-8 h-11 text-lg sm:w-9 sm:h-12 sm:text-xl md:w-8 md:h-11 md:text-lg'
+        : 'w-10 h-11 text-xl sm:w-11 sm:h-12 sm:text-2xl md:w-10 md:h-11 md:text-xl')
+    : (narrowColumns
+        ? 'w-10 h-14 text-xl sm:w-12 sm:h-14 sm:text-2xl md:w-10 md:h-14 md:text-xl'
+        : 'w-12 h-14 text-2xl sm:w-14 sm:h-14 sm:text-3xl md:w-12 md:h-14 md:text-2xl')
 
-  // Wider "last column" width — used consistently across label/carry/operand/answer
-  // rows so every cell in the last column aligns vertically with the wider answer box.
-  // This prevents the 14px tens-digit-vs-answer-box misalignment that made iPad look bad.
-  const lastColWidth = compact
-    ? 'w-[3.5rem] sm:w-[3.75rem] md:w-[3.5rem]'
-    : 'w-[4.75rem] sm:w-[5rem] md:w-[4.75rem]'
+  // Operator gutter (the "×" / "+" column to the left of the digits)
+  const operatorWidthClass = compact ? 'w-5' : 'w-6'
+  const operatorWidthRem = compact ? 1.25 : 1.5
 
   // Render horizontal format problem
   const renderHorizontalProblem = () => {
@@ -204,13 +225,8 @@ export default function WorksheetProblem({
     // Place value labels
     const placeLabels = ['O', 'T', 'H', 'Th', 'TTh']
 
-    // Determine which visual index is the "last column" (wider for 2-digit overflow)
-    const answerCols = answerColumnCount ?? maxDigits
-    const getColWidth = (visualIdx: number): string => {
-      const colIdx = maxDigits - 1 - visualIdx
-      const isLast = colIdx === answerCols - 1
-      return isLast ? lastColWidth : regularColWidth
-    }
+    // Every column is the same width — one digit per place value.
+    const getColWidth = (_visualIdx: number): string => colWidthClass
 
     return (
       <div className="flex flex-col items-end">
@@ -240,7 +256,7 @@ export default function WorksheetProblem({
         {problem.type !== 'subtraction' && (
           <div className={cn('flex justify-end', cellGap)} style={{ minHeight: compact ? '1.25rem' : '1.5rem' }}>
             {/* Empty space for operator column */}
-            <div className={compact ? 'w-5' : 'w-6'} />
+            <div className={operatorWidthClass} />
             {Array.from({ length: maxDigits }, (_, visualIdx) => {
               const colIndex = maxDigits - 1 - visualIdx
               const carry = carries?.[colIndex]
@@ -282,7 +298,7 @@ export default function WorksheetProblem({
             shows a diagonal strike to indicate "this value is replaced by the row below". */}
         <div className={cn('flex justify-end font-mono font-bold tabular-nums', cellGap)}>
           {/* Empty space for operator column */}
-          <div className={compact ? 'w-5' : 'w-6'} />
+          <div className={operatorWidthClass} />
           {Array.from({ length: maxDigits }, (_, visualIdx) => {
             const colIndex = maxDigits - 1 - visualIdx
             const digitChar = padded1[visualIdx] !== ' ' ? padded1[visualIdx] : ''
@@ -328,7 +344,7 @@ export default function WorksheetProblem({
           <div className={cn('flex justify-end font-mono font-bold tabular-nums', cellGap)}
                style={{ minHeight: compact ? '1.5rem' : '1.75rem' }}>
             {/* Empty space for operator column */}
-            <div className={compact ? 'w-5' : 'w-6'} />
+            <div className={operatorWidthClass} />
             {Array.from({ length: maxDigits }, (_, visualIdx) => {
               const colIndex = maxDigits - 1 - visualIdx
               const strike = regroupStrikes?.[colIndex]
@@ -417,7 +433,8 @@ export default function WorksheetProblem({
         {/* Second operand row with operator */}
         <div className={cn('flex items-center font-mono font-bold tabular-nums', cellGap)}>
           <div className={cn(
-            compact ? 'w-5 text-base' : 'w-6 text-lg',
+            operatorWidthClass,
+            compact ? 'text-base' : 'text-lg',
             'text-primary text-center flex-shrink-0'
           )}>
             {operator}
@@ -436,36 +453,23 @@ export default function WorksheetProblem({
           ))}
         </div>
 
-        {/* Divider line - sized to match the answer row (last col is wider)
-            All rows now use consistent column widths, so this formula is exact at
-            mobile (<640) and md: (≥768) breakpoints. The sm: breakpoint (640-767px,
-            phone landscape) has a small imperceptible mismatch. */}
+        {/* Divider line — spans the operator gutter plus every digit column and the
+            gaps between them, so it lines up exactly with the answer boxes below.
+            All columns are the same width now, so this is a single clean sum. It is
+            exact at the mobile (<640) and md: (≥768) breakpoints; the sm: breakpoint
+            (640-767px, phone landscape) has a small imperceptible mismatch. */}
         <div className={cn('my-1 h-0.5 bg-primary', cellGap)} style={{
-          width: `calc(${compact ? '1.25rem' : '1.5rem'} + ${compact ? '3.5rem' : '4.75rem'} + ${Math.max(0, maxDigits - 1)} * ${compact ? '2.5rem' : '3rem'} + ${maxDigits * (compact ? 4 : 6)}px)`
+          width: `calc(${operatorWidthRem}rem + ${maxDigits} * ${colWidthRem}rem + ${maxDigits * cellGapPx}px)`
         }} />
 
         {/* Answer row - individual digit boxes */}
         <div className={cn('flex justify-end', cellGap)}>
           {/* Empty space for operator column */}
-          <div className={compact ? 'w-5' : 'w-6'} />
+          <div className={operatorWidthClass} />
           {Array.from({ length: maxDigits }, (_, visualIdx) => {
             const colIndex = maxDigits - 1 - visualIdx // Visual L→R to column index (ones=0)
             const digit = columnDigits[colIndex]
             const isActiveCol = activeColumn === colIndex && isActive
-            const isLastCol = colIndex === (answerColumnCount ?? maxDigits) - 1
-
-            // Last column uses wider box with letter-spacing to fit 2-digit overflow
-            // (e.g., 70+90=160 shows "16" in tens column with breathing room, "0" in ones).
-            // The width classes come from lastColWidth (shared with all other rows above
-            // so every cell in this column aligns vertically).
-            const answerCellSize = isLastCol
-              ? cn(
-                  lastColWidth,
-                  compact
-                    ? 'h-11 text-xl tracking-widest px-1 sm:h-12 sm:text-2xl md:h-11 md:text-xl'
-                    : 'h-14 text-2xl tracking-widest px-1.5 sm:h-14 sm:text-3xl md:h-14 md:text-2xl'
-                )
-              : cellSize
 
             return (
               <div
@@ -476,7 +480,7 @@ export default function WorksheetProblem({
                   onColumnClick?.(colIndex)  // Focus the tapped column
                 }}
                 className={cn(
-                  answerCellSize,
+                  cellSize,
                   'flex items-center justify-center',
                   'font-mono font-bold tabular-nums text-center',
                   'border-2 rounded-md cursor-pointer transition-all',

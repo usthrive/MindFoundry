@@ -374,6 +374,13 @@ export default function StudyPage() {
   const supportsNegatives = () => {
     return ['G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].includes(currentLevel)
   }
+  const supportsRemainder = () => {
+    // Division answers are written "13 R 1" from Level C's division section (worksheet
+    // 111 onward) through Level D's long division. Gated on the LEVEL, never on whether
+    // this particular problem happens to have a remainder — that would give the answer away.
+    if (currentLevel === 'C') return currentWorksheet >= 111
+    return currentLevel === 'D'
+  }
 
   // FIXED: Dynamic age group based on level (per Kumon requirements)
   const getAgeGroup = () => {
@@ -673,6 +680,13 @@ export default function StudyPage() {
         } else if (!inputValue.includes('/')) {
           setInputValue(prev => prev + '/')
         }
+      } else if ((e.key === 'r' || e.key === 'R') && supportsRemainder()) {
+        e.preventDefault()
+        if (worksheetModeActive) {
+          handleWorksheetInput('remainder')
+        } else if (inputValue.length > 0 && !/r/i.test(inputValue)) {
+          setInputValue(prev => prev + ' R ')
+        }
       } else if (e.key === '-' && supportsNegatives()) {
         e.preventDefault()
         if (worksheetModeActive) {
@@ -727,6 +741,10 @@ export default function StudyPage() {
     } else if (num === -3) { // Fraction slash signal
       if (supportsFractions() && !inputValue.includes('/')) {
         setInputValue(prev => prev + '/')
+      }
+    } else if (num === -4) { // Remainder signal (division answers: "13 R 1")
+      if (supportsRemainder() && inputValue.length > 0 && !/r/i.test(inputValue)) {
+        setInputValue(prev => prev + ' R ')
       }
     } else if (num >= 0) {
       setInputValue((prev) => prev + num.toString())
@@ -849,8 +867,10 @@ export default function StudyPage() {
       const correctAnswer = currentProblem.correctAnswer
 
       if (typeof correctAnswer === 'string') {
-        // String answer (exact match, case insensitive)
-        isCorrect = inputValue.toLowerCase() === correctAnswer.toLowerCase()
+        // String answer — whitespace is presentation, not maths, so "13R1",
+        // "13 R 1" and "13 r 1" all count as the same remainder answer.
+        const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase()
+        isCorrect = normalize(inputValue) === normalize(correctAnswer)
       } else if (typeof correctAnswer === 'number') {
         // Numeric answer
         isCorrect = parseFloat(inputValue) === correctAnswer
@@ -1803,6 +1823,7 @@ export default function StudyPage() {
                 allowDecimal={supportsDecimals()}
                 allowFraction={supportsFractions()}
                 allowNegative={supportsNegatives()}
+                allowRemainder={supportsRemainder()}
                 disabled={!sessionActive}
                 submitDisabled={!canSubmitWorksheet}
                 fixed={true}
@@ -1959,6 +1980,7 @@ export default function StudyPage() {
                         allowDecimal={supportsDecimals()}
                         allowFraction={supportsFractions()}
                         allowNegative={supportsNegatives()}
+                        allowRemainder={supportsRemainder()}
                       />
                     </>
                   )}

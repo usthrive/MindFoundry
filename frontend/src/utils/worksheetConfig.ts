@@ -21,11 +21,15 @@ export function getStandardProblemsPerPage(level: KumonLevel): number {
   // Early sequences: 5 per page
   if (['5A', '4A'].includes(level)) return 5
 
-  // Basic arithmetic (3A through D): 10 per page
-  if (['3A', '2A', 'A', 'C', 'D'].includes(level)) return 10
+  // Single-digit arithmetic (3A, 2A, A): 10 per page — the problems are narrow.
+  if (['3A', '2A', 'A'].includes(level)) return 10
 
-  // Level B (2-digit addition with carry): 5 per page for clearer vertical layout
-  if (['B'].includes(level)) return 5
+  // Multi-digit COLUMN work (B: 2-digit addition with carry; C: 2-4 digit × 1-digit;
+  // D: 2-digit × 2-digit and long division): 5 per page. These problems are several
+  // place-value columns wide, and at 10 per page the grid drops to 2 columns on a
+  // phone / 5 on an iPad, which is narrower than the problem itself — the working
+  // and the answer boxes spill outside the card.
+  if (['B', 'C', 'D'].includes(level)) return 5
 
   // Long operations and fractions: 5 per page
   if (['E', 'F'].includes(level)) return 5
@@ -45,7 +49,8 @@ export function getStandardProblemsPerPage(level: KumonLevel): number {
  *
  * Configuration based on Kumon requirements and problem complexity:
  * - Pre-K (7A-4A): 5 problems per page - simple recognition/sequences
- * - Basic arithmetic (3A-D): 10 problems per page - straightforward problems
+ * - Single-digit arithmetic (3A-A): 10 problems per page - narrow problems
+ * - Multi-digit column work (B-D): 5 problems per page - needs room for the columns
  * - Complex operations (E-F): 5 problems per page - long ×÷, fractions
  * - Algebra (G-I): 3 problems per page - word problems, variables
  * - Advanced algebra (J-K): 2 problems per page - complex expressions

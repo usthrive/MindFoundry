@@ -121,33 +121,70 @@ function getDigitAtPlace(num: number, place: number): number {
 
 /**
  * Compute the number of answer columns needed for a vertical problem.
- * Uses max OPERAND digit count (not answer digit count).
- * The last column (highest place value) allows 2-digit entry to capture overflow
- * (e.g., 55+67=122 uses 2 columns: ones="2", tens="12").
+ *
+ * ONE COLUMN PER PLACE VALUE. This is the whole point of the vertical algorithm:
+ * the child lines up ones under ones, tens under tens, and the answer gets a box for
+ * every place it can possibly reach. A box must never hold two digits — writing "12"
+ * under a column labelled "T" teaches the opposite of place value.
+ *
+ * The width is a property of the problem SHAPE, not of the answer, so it never leaks
+ * how big the answer is (every 2-digit × 1-digit problem gets 3 boxes whether the
+ * product is 24 or 891; the child leaves the leading box empty, exactly as on paper).
+ *
+ *   addition       max operand digits + 1   (a sum carries out at most one place)
+ *   multiplication digits(a) + digits(b)    (the standard bound on a product's width)
+ *   subtraction    max operand digits       (a difference can never grow)
  */
 function getAnswerColumnCount(problem: Problem): number {
   if (problem.displayFormat !== 'vertical' || !problem.operands?.length) return 0
-  return Math.max(...problem.operands.map(op => String(Math.abs(op)).length))
+  const digits = problem.operands.map(op => String(Math.abs(op)).length)
+  const maxDigits = Math.max(...digits)
+
+  switch (problem.type) {
+    case 'multiplication':
+      return digits.reduce((sum, d) => sum + d, 0)
+    case 'addition':
+      return maxDigits + 1
+    default:
+      return maxDigits
+  }
 }
 
 /**
- * Compute carry values for addition based on entered column digits.
+ * Compute carry values for a vertical problem based on entered column digits.
  * Returns an array where index = column position, value = carry digit string or null.
- * Only computes carries up to the last column the child has filled.
+ * Only computes carries up to the last column the child has filled, so the carry
+ * appears as a consequence of their own work rather than as a pre-filled answer.
+ *
+ * Addition:       carry = tens part of (d1 + d2 + carry_in).
+ * Multiplication: carry = tens part of (multiplicand digit × multiplier + carry_in).
+ *                 Only defined for a SINGLE-digit multiplier (Level C). A 2-digit
+ *                 multiplier needs partial-product rows, which this layout does not
+ *                 have, so no carries are shown there.
  */
 function computeCarries(problem: Problem, columns: (string | null)[]): (string | null)[] {
-  if (!problem.operands || problem.type !== 'addition') return new Array(columns.length).fill(null)
+  const none = () => new Array(columns.length).fill(null)
+  if (!problem.operands || problem.operands.length < 2) return none()
 
   const [num1, num2] = problem.operands
-  const carries: (string | null)[] = new Array(columns.length).fill(null)
+  const isAddition = problem.type === 'addition'
+  const isSingleDigitMultiplication =
+    problem.type === 'multiplication' && Math.abs(num2) < 10
+  if (!isAddition && !isSingleDigitMultiplication) return none()
+
+  const operandDigits = String(Math.abs(num1)).length
+  const carries: (string | null)[] = none()
 
   let carry = 0
   for (let col = 0; col < columns.length; col++) {
     if (columns[col] === null) break // Stop computing past where child has entered
+    // Past the top number's own digits there is nothing left to carry out of.
+    if (!isAddition && col >= operandDigits) break
     const d1 = getDigitAtPlace(num1, col)
-    const d2 = getDigitAtPlace(num2, col)
-    const sum = d1 + d2 + carry
-    carry = Math.floor(sum / 10)
+    const result = isAddition
+      ? d1 + getDigitAtPlace(num2, col) + carry
+      : d1 * Math.abs(num2) + carry
+    carry = Math.floor(result / 10)
     if (carry > 0 && col + 1 < columns.length) {
       carries[col + 1] = String(carry)
     }
@@ -499,24 +536,24 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         scratchPadStrokes: initialPageState.scratchPadStrokes ?? {},
       }
 
-      // Backfill column state for vertical problems missing it (legacy sessions)
+      // Backfill column state for vertical problems missing it (legacy sessions).
+      // Arrays saved before the column count widened are padded rather than replaced,
+      // so a session restored mid-worksheet keeps its digits AND gets the full set of
+      // place-value boxes.
+      const padTo = (arr: (string | null)[] | undefined, n: number): (string | null)[] => {
+        const out = arr ? [...arr] : []
+        while (out.length < n) out.push(null)
+        return out
+      }
       normalizedProblems.forEach((problem, index) => {
-        if (problem.displayFormat === 'vertical' && !normalized.columnDigits[index]) {
-          const colCount = getAnswerColumnCount(problem)
-          if (colCount > 0) {
-            normalized.columnDigits[index] = new Array(colCount).fill(null)
-            normalized.activeColumns[index] = normalized.activeColumns[index] ?? 0
-            normalized.carries[index] = normalized.carries[index] ?? new Array(colCount).fill(null)
-          }
-        }
-        // Backfill regroup arrays separately (legacy sessions before this feature)
-        if (problem.displayFormat === 'vertical') {
-          const colCount = getAnswerColumnCount(problem)
-          if (colCount > 0) {
-            normalized.regroupStrikes![index] = normalized.regroupStrikes?.[index] ?? new Array(colCount).fill(null)
-            normalized.regroupAdds![index] = normalized.regroupAdds?.[index] ?? new Array(colCount).fill(null)
-          }
-        }
+        if (problem.displayFormat !== 'vertical') return
+        const colCount = getAnswerColumnCount(problem)
+        if (colCount <= 0) return
+        normalized.columnDigits[index] = padTo(normalized.columnDigits[index], colCount)
+        normalized.activeColumns[index] = normalized.activeColumns[index] ?? 0
+        normalized.carries[index] = padTo(normalized.carries[index], colCount)
+        normalized.regroupStrikes![index] = padTo(normalized.regroupStrikes?.[index], colCount)
+        normalized.regroupAdds![index] = padTo(normalized.regroupAdds?.[index], colCount)
       })
 
       // Mark as consumed so we don't re-use on subsequent renders
@@ -722,7 +759,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     if (typeof correctAnswer === 'number') {
       return parseFloat(answer) === correctAnswer
     } else if (typeof correctAnswer === 'string') {
-      return answer.toLowerCase() === correctAnswer.toLowerCase()
+      // Whitespace is presentation, not maths: "13R1", "13 R 1" and "13 r1" are the
+      // same answer. Division-with-remainder answers are stored as "13 R 1".
+      const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase()
+      return normalize(answer) === normalize(correctAnswer)
     } else if (typeof correctAnswer === 'object' && 'numerator' in correctAnswer) {
       const frac = correctAnswer as { numerator: number; denominator: number }
 
@@ -1132,20 +1172,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             }
           }
 
-          if (isLastColumn) {
-            // Last column (highest place value): allow up to 2 digits (captures overflow)
-            const existing = newColumns[newActiveCol]
-            if (existing === null) {
-              newColumns[newActiveCol] = digit
-            } else if (existing.length < 2) {
-              newColumns[newActiveCol] = existing + digit
-            }
-            // No auto-advance — this is the last column
-          } else {
-            // Non-last columns: single digit, auto-advance immediately
-            newColumns[newActiveCol] = digit
-            newActiveCol = newActiveCol + 1
-          }
+          // One digit per place-value column, always. The grid is now wide enough for
+          // every place the answer can reach (see getAnswerColumnCount), so a column
+          // never has to swallow two digits.
+          newColumns[newActiveCol] = digit
+          if (!isLastColumn) newActiveCol = newActiveCol + 1
         }
         // Ignore 'negative', 'decimal', 'fraction' for vertical problems
 
@@ -1198,6 +1229,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       } else if (num === 'fraction') {
         if (!currentAnswer.includes('/')) {
           newAnswer = currentAnswer + '/'
+        }
+      } else if (num === 'remainder') {
+        // "13 R 1" — only once, and only after a quotient has been entered.
+        if (currentAnswer.length > 0 && !/r/i.test(currentAnswer)) {
+          newAnswer = currentAnswer + ' R '
         }
       } else {
         newAnswer = currentAnswer + String(num)

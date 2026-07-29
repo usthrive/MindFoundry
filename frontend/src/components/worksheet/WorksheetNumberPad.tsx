@@ -7,6 +7,8 @@ export interface WorksheetNumberPadProps {
   allowNegative?: boolean
   allowDecimal?: boolean
   allowFraction?: boolean
+  /** Show the "R" key for division answers written as quotient + remainder (e.g. 13 R 1) */
+  allowRemainder?: boolean
   disabled?: boolean
   /** Disable only the submit button (when not all questions answered) */
   submitDisabled?: boolean
@@ -39,6 +41,7 @@ export default function WorksheetNumberPad({
   allowNegative = false,
   allowDecimal = false,
   allowFraction = false,
+  allowRemainder = false,
   disabled = false,
   submitDisabled = false,
   className,
@@ -193,7 +196,18 @@ export default function WorksheetNumberPad({
         ))}
 
         {/* Bottom row: special buttons */}
-        {allowNegative ? (
+        {allowRemainder ? (
+          <button
+            onClick={() => onInput('remainder')}
+            disabled={disabled}
+            className={cn(specialButtonBase, buttonSizeClasses)}
+            type="button"
+            title="Remainder (e.g. 13 R 1)"
+            aria-label="Remainder"
+          >
+            R
+          </button>
+        ) : allowNegative ? (
           <button
             onClick={() => onInput('negative')}
             disabled={disabled}
