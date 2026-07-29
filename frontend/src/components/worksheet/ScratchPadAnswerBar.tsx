@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import HandwritingAnswerStrip from './HandwritingAnswerStrip'
 
 interface ScratchPadAnswerBarProps {
   /** Current answer value */
@@ -11,6 +12,14 @@ interface ScratchPadAnswerBarProps {
   /** Whether the answer can be edited */
   disabled?: boolean
   className?: string
+  /** Offer handwriting as well as the buttons. */
+  allowHandwriting?: boolean
+  /** How many characters the answer may have (one writing box each). */
+  handwritingCells?: number
+  /** Characters the recogniser should consider. */
+  handwritingChars?: string[]
+  /** Keys the per-child learned handwriting. */
+  childId?: string
 }
 
 /**
@@ -25,8 +34,15 @@ export default function ScratchPadAnswerBar({
   onDone,
   disabled = false,
   className,
+  allowHandwriting = false,
+  handwritingCells = 4,
+  handwritingChars,
+  childId = 'default',
 }: ScratchPadAnswerBarProps) {
   const [localAnswer, setLocalAnswer] = useState(answer)
+  // Handwriting is the default when it is offered — a child doing their working with
+  // a finger or a pencil should not have to switch to buttons to write the answer.
+  const [mode, setMode] = useState<'write' | 'keys'>(allowHandwriting ? 'write' : 'keys')
 
   // Sync with external answer
   useEffect(() => {
@@ -60,8 +76,36 @@ export default function ScratchPadAnswerBar({
     'min-h-[40px] h-[40px]'
   )
 
+  if (allowHandwriting && mode === 'write') {
+    return (
+      <div className={cn('flex flex-col gap-2', className)}>
+        <HandwritingAnswerStrip
+          cellCount={handwritingCells}
+          allowedChars={handwritingChars}
+          childId={childId}
+          disabled={disabled}
+          onUseKeypad={() => setMode('keys')}
+          onConfirm={(text) => {
+            setLocalAnswer(text)
+            onAnswerChange(text)
+            onDone()
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className={cn('flex flex-col gap-2', className)}>
+      {allowHandwriting && (
+        <button
+          type="button"
+          onClick={() => setMode('write')}
+          className="self-center text-xs font-semibold text-primary underline touch-manipulation"
+        >
+          ✎ Write it instead
+        </button>
+      )}
       {/* Answer display */}
       <div className="flex items-center justify-center gap-2">
         <span className="text-sm text-gray-500 font-medium">Answer:</span>

@@ -140,6 +140,18 @@ export class EdgeFunctionAIService implements MsGuideServiceInterface {
   }
 
   /**
+   * Read a handwritten answer strip. Second tier only — the on-device recogniser
+   * handles most answers, and a child whose handwriting the app has learned rarely
+   * reaches this at all.
+   */
+  async recognizeInk(
+    image: string,
+    allowedChars: string[]
+  ): Promise<{ text: string; confidence: number; characters: { value: string; confidence: number }[] }> {
+    return this.callEdgeFunction('recognizeInk', { image, allowedChars })
+  }
+
+  /**
    * Verify extracted problems by re-examining images
    * Applies mathematical reasoning to connect visual elements to questions
    */

@@ -8,6 +8,7 @@
  *
  * Supported operations:
  * - extractProblems: Extract math problems from images (Haiku)
+ * - recognizeInk: Read a handwritten answer strip (Haiku, ~120 image tokens)
  * - verifyExtraction: Verify extracted problems by re-examining images (Haiku)
  * - explainConcept: Generate Ms. Guide explanations (Sonnet)
  * - chat: Ms. Guide chat responses (Sonnet)
@@ -351,6 +352,99 @@ async function handleExtractProblems(
 
   return {
     data: parsed.problems || [],
+    model: MODELS.haiku,
+    usage: {
+      input_tokens: response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens,
+    },
+  }
+}
+
+
+/**
+ * Read a handwritten answer from the writing strip.
+ *
+ * This is the second tier of answer recognition: the app matches the child's ink
+ * on-device first, and only asks here for characters it could not read confidently.
+ * The image is a small monochrome strip (roughly 670x140, ~120 image tokens), not a
+ * photograph of a page, so the call is cheap and the model has very little to do —
+ * read N characters, left to right, one per marked box.
+ *
+ * It must never guess. A low confidence sends the child a confirmation prompt, which
+ * costs one tap; a confident wrong answer is recorded as a mistake in arithmetic the
+ * child actually got right.
+ */
+async function handleRecognizeInk(
+  anthropic: Anthropic,
+  params: { image: string; allowedChars?: string[] }
+): Promise<AIResult> {
+  const { image, allowedChars } = params
+  if (!image) {
+    throw new Error('No ink image provided')
+  }
+
+  const matches = image.match(/^data:([^;]+);base64,(.+)$/)
+  if (!matches) {
+    throw new Error('Ink image must be a base64 data URL')
+  }
+  const [, mediaType, base64Data] = matches
+
+  const charset = allowedChars && allowedChars.length > 0
+    ? allowedChars.join(' ')
+    : '0 1 2 3 4 5 6 7 8 9'
+
+  const prompt = `This image shows a child's handwritten answer to a maths question.
+The strip is divided into boxes by faint vertical lines, and the child was asked to
+write ONE character in each box, left to right. Some boxes may be empty.
+
+Read what is written. The only characters that can appear are: ${charset}
+
+Children's handwriting is uneven and often large or slanted. Common confusions to
+weigh carefully: 1 and 7, 4 and 9, 5 and 6, 0 and 6, 3 and 8, 2 and Z-shaped 7s.
+
+Do NOT guess. If a character is genuinely ambiguous, give it a low confidence — the
+child will be asked to confirm it, which is cheap. A confident wrong reading is
+recorded as a maths mistake the child did not make, which is not.
+
+Respond with JSON only:
+{
+  "text": "the characters you read, in order, with no spaces",
+  "confidence": 0.0-1.0 overall,
+  "characters": [{ "value": "single character", "confidence": 0.0-1.0 }]
+}`
+
+  const response = await anthropic.messages.create({
+    model: MODELS.haiku,
+    max_tokens: 300,
+    temperature: 0,
+    messages: [{
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+            data: base64Data,
+          },
+        },
+        { type: 'text', text: prompt },
+      ],
+    }],
+  })
+
+  const textContent = response.content.find((c) => c.type === 'text')
+  if (!textContent || textContent.type !== 'text') {
+    throw new Error('No text response from AI')
+  }
+  const parsed = parseJsonResponse(textContent.text)
+
+  return {
+    data: {
+      text: typeof parsed.text === 'string' ? parsed.text : '',
+      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0,
+      characters: Array.isArray(parsed.characters) ? parsed.characters : [],
+    },
     model: MODELS.haiku,
     usage: {
       input_tokens: response.usage.input_tokens,
@@ -1047,6 +1141,13 @@ Deno.serve(async (req) => {
     switch (operation) {
       case 'extractProblems':
         result = await handleExtractProblems(anthropic, params as { imageUrls: string[] })
+        break
+
+      case 'recognizeInk':
+        result = await handleRecognizeInk(
+          anthropic,
+          params as { image: string; allowedChars?: string[] }
+        )
         break
 
       case 'assessImageQuality':
