@@ -21,6 +21,22 @@ export interface WorksheetProblemProps {
   /** Total answer columns — one per place value the answer can reach.
    *  May exceed the operand digit count (e.g. 3 for a 2-digit × 1-digit product). */
   answerColumnCount?: number
+  // ── Partial products (multiplication by a 2-digit-or-wider multiplier, Level D) ──
+  /** partialProducts[row][col] — row 0 is the ones-digit product, row 1 the tens-digit
+   *  product (written one place further left), and so on. Undefined for single-digit
+   *  multipliers, which have no separate working to show. */
+  partialProducts?: (string | null)[][]
+  /** How far left each partial row starts: row r occupies columns r and above. */
+  partialRowShift?: (row: number) => number
+  /** Highest column partial row r can reach (multiplicand × one digit is at most
+   *  digits(multiplicand)+1 wide). Cells above it are structurally unusable. */
+  partialRowSpanTo?: (row: number) => number
+  /** After submitting: was each partial row written correctly? null = not attempted. */
+  partialRowResults?: (boolean | null)[]
+  /** Which row the child is working in: 0..N-1 are partial rows, N is the final total. */
+  activeRow?: number
+  /** Tap handler for a partial-product cell. */
+  onPartialCellClick?: (row: number, column: number) => void
   // ── Subtraction regroup (borrow) annotations ──
   /** Replacement digit for the donor column (e.g., "3" written above a slashed "4"). */
   regroupStrikes?: (string | null)[]
@@ -65,6 +81,12 @@ export default function WorksheetProblem({
   onColumnClick,
   manualCarryMode = false,
   answerColumnCount,
+  partialProducts,
+  partialRowShift,
+  partialRowSpanTo,
+  partialRowResults,
+  activeRow,
+  onPartialCellClick,
   regroupStrikes,
   regroupAdds,
   manualRegroupMode = false,
@@ -462,6 +484,80 @@ export default function WorksheetProblem({
           width: `calc(${operatorWidthRem}rem + ${maxDigits} * ${colWidthRem}rem + ${maxDigits * cellGapPx}px)`
         }} />
 
+        {/* ── Partial-product rows (2-digit-or-wider multiplier) ──
+            You cannot do 81 × 63 in one step, so the child writes the working the way
+            the algorithm goes: 81 × 3 on the first row, then 81 × 60 on the second,
+            shifted one place left, then adds the two. Row r starts at column r; the
+            columns to its right are the shift and stay empty, exactly as on paper. */}
+        {partialProducts && partialProducts.length > 0 && (
+          <>
+            {partialProducts.map((row, rowIdx) => {
+              const shift = partialRowShift?.(rowIdx) ?? rowIdx
+              const spanTo = partialRowSpanTo?.(rowIdx) ?? maxDigits - 1
+              const rowIsActive = isActive && activeRow === rowIdx
+              const rowResult = partialRowResults?.[rowIdx]
+              return (
+                <div key={`partial-${rowIdx}`} className={cn('flex justify-end', cellGap, 'mb-1')}>
+                  <div className={operatorWidthClass} />
+                  {Array.from({ length: maxDigits }, (_, visualIdx) => {
+                    const colIndex = maxDigits - 1 - visualIdx
+                    // Below the shift is the place-value shift itself; above the span
+                    // the row cannot reach. Neither gets a box.
+                    if (colIndex < shift || colIndex > spanTo) {
+                      return (
+                        <div
+                          key={`partial-${rowIdx}-${visualIdx}`}
+                          className={cn(getColWidth(visualIdx), compact ? 'h-9' : 'h-11')}
+                        />
+                      )
+                    }
+                    const digit = row[colIndex]
+                    const isActiveCell = rowIsActive && activeColumn === colIndex
+
+                    return (
+                      <div
+                        key={`partial-${rowIdx}-${visualIdx}`}
+                        data-testid="wp-partial-cell"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onClick()
+                          onPartialCellClick?.(rowIdx, colIndex)
+                        }}
+                        className={cn(
+                          getColWidth(visualIdx),
+                          compact ? 'h-9 text-base' : 'h-11 text-lg',
+                          'flex items-center justify-center',
+                          'font-mono font-bold tabular-nums text-center',
+                          'border rounded cursor-pointer transition-all',
+                          'touch-manipulation select-none',
+                          rowResult === false
+                            ? 'border-red-400 bg-red-50 text-red-700'
+                            : rowResult === true
+                              ? 'border-green-400 bg-green-50 text-green-700'
+                              : isActiveCell
+                                ? 'border-secondary bg-teal-50 ring-2 ring-secondary/40 text-gray-900'
+                                : digit !== null
+                                  ? 'border-gray-300 bg-white text-gray-700'
+                                  : rowIsActive
+                                    ? 'border-dashed border-gray-300 bg-white text-gray-400'
+                                    : 'border-dashed border-gray-200 bg-gray-50/60 text-gray-400'
+                        )}
+                      >
+                        {digit ?? ''}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+
+            {/* Second divider: below it goes the sum of the partial products */}
+            <div className={cn('my-1 h-0.5 bg-primary', cellGap)} style={{
+              width: `calc(${operatorWidthRem}rem + ${maxDigits} * ${colWidthRem}rem + ${maxDigits * cellGapPx}px)`
+            }} />
+          </>
+        )}
+
         {/* Answer row - individual digit boxes */}
         <div className={cn('flex justify-end', cellGap)}>
           {/* Empty space for operator column */}
@@ -474,6 +570,7 @@ export default function WorksheetProblem({
             return (
               <div
                 key={`ans-${visualIdx}`}
+                data-testid="wp-answer-cell"
                 onClick={(e) => {
                   e.stopPropagation()
                   onClick()                  // Activate this problem card
@@ -570,6 +667,7 @@ export default function WorksheetProblem({
   return (
     <div
       onClick={onClick}
+      data-testid="wp-card"
       className={cn(
         'relative rounded-lg border-2 p-4 cursor-pointer touch-manipulation transition-colors duration-100',
         getContainerStyles()
