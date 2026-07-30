@@ -1204,7 +1204,11 @@ export const buildB24 = makeWeekBuilder({
   conceptId: 'ready-for-level-c',
   conceptName: 'Ready for Level C (consolidation)',
   strandTags: ['number-sense-counting', 'addition-subtraction'],
-  prerequisiteWeeks: [B2, B14, B17],
+  // B13 belongs here: two of its warm-up slots and the fluency sprint draw from it.
+  // The header already listed it as a retrieval source, so the metadata was the
+  // half that was wrong, and this is the level-EXIT week — its ledger is what a
+  // parent report and the next level read.
+  prerequisiteWeeks: [B2, B13, B14, B17],
   pedagogyContract: 'v2',
   conceptualAnchor: 'the job before the numbers',
   conceptFamily: 'operation',

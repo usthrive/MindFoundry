@@ -15,6 +15,7 @@ import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import BBFigureView from '../components/figures/BBFigureView';
+import BBScratchPad from '../components/BBScratchPad';
 import type { BBFigure } from '../types';
 
 interface Segment {
@@ -56,6 +57,8 @@ export default function LessonRoom() {
   const clamped = Math.min(segIdx, segments.length - 1);
   const segment = segments[clamped];
   const isLast = clamped === segments.length - 1;
+  /** From the first worked-example segment onward (0 = hook, 1 = why). */
+  const showPad = clamped >= 2;
 
   // Completion moment: the pin animation → GuidedPractice (first encounter).
   if (pinned) {
@@ -126,6 +129,27 @@ export default function LessonRoom() {
             <p className="text-text-secondary italic">{segment.visual}</p>
           </div>
         )
+      )}
+
+      {/* A PENCIL DURING THE CONVERSATION.
+          Segments run [hook, whyBeforeHow, ...script, summary], so index 2 is where
+          Ms. Wren starts working an example — which is the moment a child should
+          have something to write on. The first two segments are her framing and
+          need no working.
+
+          It opens by default here, unlike on a practice item. During the lesson
+          nothing is being assessed, so an open pad cannot leak the structure of a
+          question; on an assessed page it could, which is why that default is off.
+          One key for the whole lesson, so working accumulates as she goes rather
+          than vanishing at each Continue. */}
+      {showPad && (
+        <BBScratchPad
+          itemKey={`lesson-${weekState.level}${weekState.week}`}
+          band={band}
+          title="Try it with me"
+          defaultOpen
+          invitation="Have a go here while we talk. Nobody marks this."
+        />
       )}
 
       {isLast && pack.explanation.vocabulary.length > 0 && (

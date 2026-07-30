@@ -106,10 +106,16 @@
  *     coloured, one quarter coloured, two halves of different shapes held
  *     against each other — live in the lesson script and the guided examples,
  *     where the answer is already on the page and watching the fold IS the
- *     teaching. Both chains, both discriminations, the metacognition item and
- *     every Day-5 page carry NO picture on purpose: a drawn row of squares
- *     beside "how many squares does one part hold?" is answered by counting, and
- *     a drawn fold beside "who has made halves?" is answered by looking.
+ *     teaching. Both chains, both discriminations and the metacognition item carry
+ *     NO picture on purpose: a drawn row of squares beside "how many squares does
+ *     one part hold?" is answered by counting, and a drawn fold beside "who has
+ *     made halves?" is answered by looking. Day 5 is the one exception, and it is
+ *     the error-analysis named in point 1 above: its bar shows the UNFAIR cut,
+ *     which is the claim the child is asked to judge rather than the answer they
+ *     are asked to find. (This sentence used to read "every Day-5 page carries no
+ *     picture", which contradicted point 1 and the code both — the kind of stale
+ *     line that invites the next author to delete a correct figure on the
+ *     header's authority.)
  *
  * ONE THING THE PRIMITIVES GENUINELY CANNOT DRAW, said out loud because a
  * missing picture in a week about pictures reads as an oversight: a NON-CONGRUENT
@@ -606,11 +612,35 @@ const sitQuarterShare = situation({
   cognitiveOp: 'quarter-share',
   draw: (r) => {
     const s = r.pick(CUT_WHOLES);
-    const drawn = 4 * r.int(3, 8);
-    // A share of exactly five makes the probe unanswerable: it is neither over
-    // five nor under, and the child would be right whatever they said (kit
-    // §E2.7). Nudged by one DETERMINISTIC step, never a redraw (kit §E2.4).
-    const w = drawn / 4 === 5 ? drawn + 4 : drawn;
+    // THE PROBE'S SIDE IS DRAWN FIRST, so its answer is an exact coin flip.
+    //
+    // This was `4 * r.int(3, 8)` with a nudge off a share of five, which left
+    // shares of {3,4,6,6,7,8} — "over five" on four of six draws, about 67%. A
+    // child meeting the page twice per pack learns to say yes, which is the
+    // recorded b16 defect (70/30) repeating: the scaffold then teaches the guess
+    // instead of the commitment it exists to demand. No gate can catch it, because
+    // a probe has no answer key. Found by reading, not measuring.
+    //
+    // Same ranges as before and the same single `r.int` after the side, so a share
+    // of exactly five stays unreachable — it would make the probe unanswerable,
+    // since the child would be right whatever they said (kit §E2.7) — and the seed
+    // stream lands in the same place on either branch (kit §E2.4).
+    // DRAWING THE SIDE FIRST IS NOT BY ITSELF PROOF — the split was measured, and
+    // the first two attempts were not coin flips.
+    //
+    // `drawUniqueItem` retries when an item's operand surface collides with another
+    // in the same pack, and a retry is not neutral: it discards the draw and takes
+    // the next. Wholes that collide often are therefore suppressed. Measured per
+    // share value, a whole of 8 came out at 85 draws against 125-167 for the rest,
+    // because 8 and 4 are everywhere in a halves-and-quarters pack — which pushed
+    // "over five" to 58% even with the side drawn first and both sides offering the
+    // same number of values. So both sides now use mid-range wholes only (12, 16 and
+    // 24, 28), which collide at similar rates. The lesson generalises: a balanced
+    // draw can still yield an unbalanced page once a uniqueness filter sits between
+    // them, so measure the SERVED distribution, never the intended one.
+    const overFive = r.chance(0.5);
+    const share = overFive ? r.int(6, 7) : r.int(3, 4);
+    const w = 4 * share;
     const name = one(r);
     return {
       prompt: `${name} cuts a ${s.whole} into ${countNoun(w, s.part)}. Then 4 children share it fairly, part for part. How many ${s.piece} does each child get?`,
