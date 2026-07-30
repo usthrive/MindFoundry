@@ -721,18 +721,41 @@ const discrimWhichTotal = discrimination({
     return {
       prompt: `Only one of these totals can be right for ${a} + ${b}. Count the tens each one has, and pick the total the trade allows.`,
       correct: String(total),
-      distractors: [
-        {
-          text: String(total - 10),
-          errorTag: 'concept-misconception',
-          rationale: 'The total a sum lands on when the ten built in the ones column never reaches the tens — the answer comes out one whole ten light.',
-        },
-        {
-          text: `${t1 + t2}${onesSum}`,
-          errorTag: 'representation-misread',
-          rationale: 'The total a sum lands on when the whole ones amount is written inside the ones column, so a two-digit column result is squeezed into one place.',
-        },
-      ],
+      // WHICH PAIR OF WRONG TOTALS IS OFFERED ROTATES.
+      //
+      // The pair was always {total − 10, the concatenation}: one below the answer
+      // and one far above it, so the right total was the MIDDLE number on every
+      // draw and "pick the middle" scored 100% — in a mastery slot. Found once the
+      // entropy gate learned to measure rank rather than only the extremes.
+      //
+      // Two further wrong totals are added, both real and both computed from this
+      // item's own digits: the traded ten counted twice, and the tens added with
+      // the ones forgotten. Any pair of the four is honest, so the pairing rotates
+      // and the answer sits low, middle and high in turn. The both-below pairing is
+      // skipped when the ones column makes exactly ten, because the tens-only total
+      // and the dropped-carry total coincide there — checked, not assumed.
+      distractors: (() => {
+        const dropped = total - 10;                 // the traded ten never lands
+        const twice = total + 10;                   // the traded ten counted in both columns
+        const tensOnly = (t1 + t2) * 10;            // tens added, ones forgotten
+        const squeezed = `${t1 + t2}${onesSum}`;    // the whole ones amount written in the ones place
+        const WHY: Record<string, { tag: 'concept-misconception' | 'representation-misread'; why: string }> = {
+          [String(dropped)]: { tag: 'concept-misconception', why: 'The total a sum lands on when the ten built in the ones column never reaches the tens — the answer comes out one whole ten light.' },
+          [String(twice)]: { tag: 'concept-misconception', why: 'The total a sum lands on when the traded ten is counted twice — once where it was built and again where it arrived.' },
+          [String(tensOnly)]: { tag: 'concept-misconception', why: 'The total a sum lands on when the tens are added and the ones are left out of the count altogether.' },
+          [squeezed]: { tag: 'representation-misread', why: 'The total a sum lands on when the whole ones amount is written inside the ones column, so a two-digit column result is squeezed into one place.' },
+        };
+        const canBothBelow = tensOnly !== dropped;
+        const pairing = canBothBelow ? (total % 3) : (total % 2);
+        const pair: string[] = pairing === 0 ? [String(dropped), squeezed]
+          : pairing === 1 ? [String(twice), squeezed]
+          : [String(dropped), String(tensOnly)];
+        return pair.map((textValue) => ({
+          text: textValue,
+          errorTag: WHY[textValue].tag,
+          rationale: WHY[textValue].why,
+        }));
+      })(),
       hints: [
         'About how many tens should this total carry, before any adding is done?',
         'Total the two tens digits. Then ask whether the ones column owes them one more.',

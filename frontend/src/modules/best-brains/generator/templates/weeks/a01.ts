@@ -90,18 +90,26 @@ function numeralChoice(
   difficulty: number,
 ): ItemDraft {
   const { n, noun } = drawCount(rng, guard, 'numchoice', min, max);
-  const { choices, correctKey } = makeChoices(rng, String(n), [
-    {
-      text: String(n - 1),
-      errorTag: 'representation-misread',
-      rationale: 'One too few - traps skipping an object while counting.',
-    },
-    {
-      text: String(n + 1),
-      errorTag: 'representation-misread',
-      rationale: 'One too many - traps double-counting an object.',
-    },
-  ]);
+  // WHICH PAIR OF WRONG COUNTS IS OFFERED DEPENDS ON THE COUNT ITSELF.
+  //
+  // It used to be n-1 and n+1 on every draw, which put the right number in the
+  // MIDDLE of the three options every time — so "circle the middle number" was a
+  // free pass, in a mastery slot, for the youngest children in the product.
+  // Measured at 100% of draws in A1 and A2 before this changed.
+  //
+  // All four wrong counts are the same two real errors, made once or twice:
+  // skipping objects while counting, or counting one twice. The pairing is derived
+  // from n rather than drawn, so no rng call is added and the rest of the pack is
+  // unchanged. Both-below needs n-2 to stay a countable number.
+  const pairing = n >= 3 ? n % 3 : 0;
+  const lower = { errorTag: 'representation-misread' as const, rationale: 'Too few - traps skipping an object while counting.' };
+  const upper = { errorTag: 'representation-misread' as const, rationale: 'Too many - traps counting an object twice.' };
+  const wrongPair = pairing === 0
+    ? [{ text: String(n - 1), ...lower }, { text: String(n + 1), ...upper }]
+    : pairing === 1
+      ? [{ text: String(n + 1), ...upper }, { text: String(n + 2), ...upper }]
+      : [{ text: String(n - 2), ...lower }, { text: String(n - 1), ...lower }];
+  const { choices, correctKey } = makeChoices(rng, String(n), wrongPair);
   return {
     type: 'representation',
     prompt: `[image: ${n} ${noun}] Circle the number that shows how many.`,

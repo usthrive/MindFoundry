@@ -23,6 +23,7 @@
  * The tells it measures, per slot, over N seeds:
  *   CONSTANT_ANSWER      one keyed text across every draw
  *   ALWAYS_MAX / _MIN    the keyed option is the largest/smallest number
+ *   CONSTANT_NUMERIC_RANK the keyed option always sits at one rank (incl. the middle)
  *   CONSTANT_POSITION    the key sits at the same index every time
  *   NEVER_CORRECT        an option is offered often and keyed never
  *   CONSTANT_VERDICT     a true/false or yes/no item with one answer
@@ -96,6 +97,9 @@ interface Slot {
   kind: string;
   /** Rank of the keyed option's first mention in the prompt, one entry per draw. */
   mentionRanks: number[];
+  /** How often the keyed option had each rank among the numeric options. */
+  rankHits: Map<number, number>;
+  optionCount: number;
 }
 
 const num = (t: string): number | null => {
@@ -170,6 +174,8 @@ function record(weekId: string, container: string, index: number, it: Item) {
       key, keyed: new Map(), keyedIndex: new Map(), offered: new Map(),
       maxHits: 0, minHits: 0, numericDraws: 0, draws: 0, sample: it.prompt ?? '', kind,
       mentionRanks: [],
+      rankHits: new Map(),
+      optionCount: it.choices.length,
     };
     slots.set(key, s);
   }
@@ -227,6 +233,8 @@ function record(weekId: string, container: string, index: number, it: Item) {
     s.numericDraws++;
     if (nums[ki] === Math.max(...numeric)) s.maxHits++;
     if (nums[ki] === Math.min(...numeric)) s.minHits++;
+    const rank = numeric.slice().sort((a, b) => a - b).indexOf(nums[ki] as number);
+    s.rankHits.set(rank, (s.rankHits.get(rank) ?? 0) + 1);
   }
 }
 
@@ -284,6 +292,29 @@ for (const s of slots.values()) {
     const minPct = s.minHits / s.numericDraws;
     if (maxPct >= 0.95 && !asksLargest) add('ALWAYS_MAX', `keyed is the largest option in ${(maxPct * 100).toFixed(0)}% of ${s.numericDraws} numeric draws`);
     else if (minPct >= 0.95 && !asksSmallest) add('ALWAYS_MIN', `keyed is the smallest option in ${(minPct * 100).toFixed(0)}% of ${s.numericDraws} numeric draws`);
+    else {
+      // CONSTANT RANK AT ANY POSITION, not just the extremes.
+      //
+      // ALWAYS_MAX and ALWAYS_MIN between them miss the middle, and "pick the
+      // middle number" is exactly as free as "pick the biggest". b04's two-hop
+      // discrimination keyed the middle option on 100% of draws while sitting in
+      // a MASTERY slot, and this gate passed it — the author measured it and said
+      // so, which is the only reason it was caught. The shape is structural: with
+      // distractors "did only the first move" (start+a) and "did only the second"
+      // (start−b), the net start+a−b lies between them by construction, so the
+      // whole item is decided by position.
+      //
+      // Ranking generalises both extremes, so this arm also catches a 4-option
+      // item pinned to rank 2 — which neither extreme check would ever see.
+      const ranks = [...s.rankHits.entries()];
+      if (ranks.length) {
+        const [topRank, hits] = ranks.sort((a, b) => b[1] - a[1])[0];
+        const pct = hits / s.numericDraws;
+        if (pct >= 0.95) {
+          add('CONSTANT_NUMERIC_RANK', `keyed is always the #${topRank + 1} smallest of the ${s.optionCount} numbers on offer (${(pct * 100).toFixed(0)}% of ${s.numericDraws} draws)`);
+        }
+      }
+    }
   }
 
   // THE ORDINAL TELL. b12 listed three events and always drew a half-past clock
@@ -325,7 +356,7 @@ if (buildFailures.length) {
   for (const f of buildFailures.slice(0, 8)) console.log(`    ${f}`);
 }
 
-const ORDER = ['ALWAYS_MAX', 'ALWAYS_MIN', 'ORDINAL_TELL', 'CONSTANT_ANSWER', 'CONSTANT_VERDICT', 'NEVER_CORRECT', 'CONSTANT_POSITION'];
+const ORDER = ['ALWAYS_MAX', 'ALWAYS_MIN', 'CONSTANT_NUMERIC_RANK', 'ORDINAL_TELL', 'CONSTANT_ANSWER', 'CONSTANT_VERDICT', 'NEVER_CORRECT', 'CONSTANT_POSITION'];
 for (const tell of ORDER) {
   const list = byTell.get(tell);
   if (!list?.length) continue;
@@ -358,7 +389,7 @@ if (posAll.length > slots.size * 0.5) {
  * the keyed option is the extreme NUMBER on offer, or it is always the Nth thing
  * named. Both have a concrete fix, which is why they are worth printing.
  */
-const ACTIONABLE_IN_TEACHING = new Set(['ALWAYS_MAX', 'ALWAYS_MIN', 'ORDINAL_TELL']);
+const ACTIONABLE_IN_TEACHING = new Set(['ALWAYS_MAX', 'ALWAYS_MIN', 'CONSTANT_NUMERIC_RANK', 'ORDINAL_TELL']);
 
 if (teaching.some((f) => ACTIONABLE_IN_TEACHING.has(f.tell))) {
   const byT = new Map<string, Finding[]>();

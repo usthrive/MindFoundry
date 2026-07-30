@@ -213,13 +213,44 @@ unregistered id silently skips the QG-5 audit, so `bb-verify-packs` asserts ever
    - **A relational invariant.** The keyed text can vary on every seed and the item still be guessable:
      b12 named three events and always drew a half-past clock, so the answer was the second event on the
      page 800 times out of 800. Rotate the *relation*, not just the numbers.
-   - **Every distractor undershooting.** This is the commonest one and 23 slots still carry it. If your
-     misconceptions are all of the "stop early" or "add instead of multiply" family, each one is SMALLER
-     than the answer, so "pick the biggest number" scores 100% — measured in C6, C7, C11, C20, C23, D4 and
-     others. At least one distractor must **overshoot**. Real misconceptions that land above the answer:
-     using a factor twice (6×6 for 6×5), counting an edge row twice ((9+1)×5 for 9×5), doubling and then
-     also adding the original (12+24 for double 12). A comparison item ("which is greater?") is exempt —
-     it keys the extreme by definition, and the gate knows that.
+   - **The answer sitting at a FIXED RANK among the numbers on offer.** State it as rank, not as
+     "undershooting" — the first version of this rule said undershooting, an author correctly defended
+     against it by making the distractors BRACKET the answer on every draw, and that made "pick the
+     middle" score 100% in a mastery slot. Same defect, mirrored.
+     - all distractors below → "pick the biggest" wins. The commonest case, because "stop early" and
+       "add instead of multiply" misconceptions are all smaller than a product. 23 slots still carry it
+       (C6, C7, C11, C20, C23, D4 and others).
+     - one below and one above on EVERY draw → "pick the middle" wins.
+     The fix for both is the same: have **enough honest wrong values that the PAIRING can rotate**, so
+     the answer lands low, middle and high in turn. Two more named misconceptions is usually all it takes
+     — b04 added "counted only the first move" and "counted only the second" beside its two turn-round
+     slips; b13 added "the traded ten counted twice" and "the tens added with the ones forgotten". Then
+     measure: `bb-answer-entropy-test` reports `CONSTANT_NUMERIC_RANK` at any position, not just the ends.
+     A comparison item ("which is greater?") is exempt — it keys the extreme by definition, and the gate
+     knows that.
+
+12. **Two verify-library facts already proved, so you do not have to.** Both came from authors who
+   proved impossibility properly (L36) instead of reframing on reflex:
+   - **`e_verify_int_compare_v1` is a structural NULL at Level B.** It is the library's only
+     comparison-misconception transform, but for positive `a, b` the larger magnitude IS the larger
+     number, so its own `wrong === correct` guard throws on every draw a two-digit week can make.
+   - **A "picks the wrong one of the two givens" misconception is not derivable from
+     `d_verify_binop_misconception_v1`.** It varies the OPERATION over a fixed pair, so producing a
+     given pair `{A, B}` as `{correct, wrong}` forces operands `((A+B)/2, (A−B)/2)` — for 39 and 41
+     that is `(40, 1)`, a pair with no referent in the story. That is fabrication with extra steps.
+     Relocate the misconception to a discrimination option, an ASN claim and the mistakeBank (§E2.3),
+     and give Day 5 a *derivable complementary* slip instead — b03 used `{op:'+', wrongOp:'-'}` on a
+     ±10 step, constructed so repairing the arithmetic FLIPS the comparison, which is why it earns its
+     place in a comparing week rather than sitting beside it.
+
+13. **The strongest plagiarism attractor is the same recipe cell ONE LEVEL UP, and `--strict` cannot see
+   it.** `bb-cross-week-test --strict` compares hint ladders and prompt shapes. It does not compare
+   `reteachPointer`s, header declarations, parent lines or rationale phrasing — and that is exactly
+   where borrowing lands: b24 found 16 borrowed formulas mostly pulled from **c24**, one verbatim at
+   1.00 similarity; b03 found 10 including a 1.00 match with b24. Every author who ran their own
+   token-overlap scan of their strings against the whole weeks directory found something; every author
+   who relied on `--strict` alone would have shipped it. Run your own scan, and judge each hit as voice
+   (rewrite) or API shape (keep).
 
 ## F. The rules that do not change (from the Level-D kit §A)
 
