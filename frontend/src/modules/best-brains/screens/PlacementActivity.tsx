@@ -12,7 +12,7 @@
  * (front-block mastery → week 13) is deferred with them — entryWeek is 1.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generatePack } from '../generator/packGenerator';
 import { getCatalogWeek } from '../content/catalog';
@@ -21,6 +21,11 @@ import { bandForLevel, MODULE_COPY } from '../copy';
 import { checkAnswer } from '../answers';
 import { recordItemAttempt } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
+import {
+  clearPlacementProgress,
+  loadPlacementProgress,
+  savePlacementProgress,
+} from '../session/placementProgress';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import { PromptFigure } from '../components/figures/BBFigureView';
@@ -60,6 +65,14 @@ export default function PlacementActivity() {
   const navigate = useNavigate();
   const { childId, childAge, band: childBand } = useFoundrySession();
 
+  // A HALF-FINISHED WALK IS RESUMED, ITEM FOR ITEM.
+  //
+  // Every piece of state below used to start from scratch on any re-mount, so a
+  // closed tab threw the whole placement away. The saved walk now comes from
+  // Supabase, so it also survives a different device — and it carries the seed,
+  // because `generatePack` is pure in it and resuming without it would rebuild a
+  // different set of items, dropping the child into an assessment they never
+  // started.
   const walkSeed = useRef(Math.floor(Math.random() * 0x7fffffff));
   const [level, setLevel] = useState<BBLevel>(() => startLevelForAge(childAge));
   const [visited, setVisited] = useState<BBLevel[]>([]);
@@ -68,6 +81,43 @@ export default function PlacementActivity() {
   const [clusterCorrect, setClusterCorrect] = useState(0);
   const [totalServed, setTotalServed] = useState(0);
   const [phase, setPhase] = useState<'item' | 'ack' | 'pause'>('item');
+  /** Set when the walk has placed the child, so the last save is not re-written. */
+  const finished = useRef(false);
+  /**
+   * The saved walk is fetched, so nothing may be SAVED until it has been read.
+   * Without this gate the save effect below fires on mount with default state and
+   * overwrites the very walk it is about to load — losing exactly what this
+   * feature exists to keep.
+   */
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void loadPlacementProgress(childId).then((saved) => {
+      if (!alive) return;
+      if (saved) {
+        walkSeed.current = saved.walkSeed;
+        setLevel(saved.level);
+        setVisited(saved.visited);
+        setClusters(saved.clusters);
+        setItemIdx(saved.itemIdx);
+        setClusterCorrect(saved.clusterCorrect);
+        setTotalServed(saved.totalServed);
+      }
+      setHydrated(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [childId]);
+
+  // Save after every change to the walk. Cheap (one small JSON write), and it
+  // means the resume point is the child's ACTUAL last answer rather than the last
+  // milestone — losing four items still stings at six years old.
+  useEffect(() => {
+    if (!hydrated || finished.current) return;
+    savePlacementProgress(childId, { walkSeed: walkSeed.current, level, visited, clusters, itemIdx, clusterCorrect, totalServed });
+  }, [hydrated, childId, level, visited, clusters, itemIdx, clusterCorrect, totalServed]);
 
   // The cluster's items: exit-skill slice of the level's entry-week pack.
   const pack = useMemo(() => generatePack(level, 1, walkSeed.current), [level]);
@@ -104,6 +154,9 @@ export default function PlacementActivity() {
       completedAt: new Date().toISOString(),
       isRecheck: false,
     };
+    // Placed: the saved walk has served its purpose and must not be offered back.
+    finished.current = true;
+    void clearPlacementProgress(childId);
     navigate('/foundry/placement/result', { state: { result }, replace: true });
   }
 
@@ -177,6 +230,12 @@ export default function PlacementActivity() {
     }, 800);
   }
 
+  // Nothing is shown until the saved walk has been read, so a resuming child never
+  // sees item one flash past before jumping to item eight.
+  if (!hydrated) {
+    return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
+  }
+
   if (phase === 'pause') {
     return (
       <div className="flex min-h-[70vh] flex-col justify-center gap-8">
@@ -195,6 +254,19 @@ export default function PlacementActivity() {
             className="min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white px-6 text-lg font-medium text-text-secondary hover:bg-gray-50 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
           >
             I stretched — ready!
+          </button>
+          {/* STOPPING IS A REAL CHOICE, not something that only happens by
+              accident. Both buttons above carry on, so the "soft pause" offered a
+              rest and no way to take one — a child who had had enough could only
+              close the tab, which until now discarded the whole walk. The save has
+              already happened on every answer, so this navigates away and says so
+              plainly. */}
+          <button
+            type="button"
+            onClick={() => navigate('/foundry')}
+            className="min-h-[56px] rounded-2xl px-6 text-base font-medium text-text-secondary underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
+          >
+            Stop for now — we'll keep your place
           </button>
         </div>
       </div>

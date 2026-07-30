@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { COPY } from '../copy';
 import { isLessonComplete } from '../session/weekLogic';
 import { useFoundrySession } from '../session/FoundrySession';
+import { saveLessonSegment } from '../services/bbProgressService';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import BBFigureView from '../components/figures/BBFigureView';
@@ -29,10 +30,15 @@ export default function LessonRoom() {
   const { loading, enrollment, weekState, pack, band } = useFoundrySession();
 
   const replayMode = !!weekState && isLessonComplete(weekState.dayProgress);
-  const resumeKey = weekState ? `bb-lesson-${weekState.level}${weekState.week}` : 'bb-lesson';
+  // WHERE THE LESSON GOT TO NOW LIVES IN SUPABASE.
+  //
+  // This was `sessionStorage`, which dies with the tab — so a child who closed the
+  // app half way through Ms. Wren's explanation began again at the hook, and a
+  // child who moved from the tablet to the laptop did too. `bb_week_state`
+  // already travels with them, so the segment rides along with it.
   const [segIdx, setSegIdx] = useState(() => {
-    const saved = Number(sessionStorage.getItem(resumeKey) ?? '0');
-    return Number.isInteger(saved) && saved >= 0 ? saved : 0;
+    const saved = weekState?.lessonSegment;
+    return typeof saved === 'number' && Number.isInteger(saved) && saved >= 0 ? saved : 0;
   });
   const [pinned, setPinned] = useState(false);
 
@@ -46,10 +52,15 @@ export default function LessonRoom() {
     ];
   }, [pack]);
 
-  // Resume at segment boundary (Flow 2 edge rule).
+  // Resume at segment boundary (Flow 2 edge rule). Fire-and-forget: a slow write
+  // must never sit between a child and the next thing Ms. Wren says, and the worst
+  // case of a dropped write is resuming one segment earlier.
   useEffect(() => {
-    if (!replayMode) sessionStorage.setItem(resumeKey, String(segIdx));
-  }, [segIdx, replayMode, resumeKey]);
+    if (replayMode || !weekState) return;
+    void saveLessonSegment(weekState, segIdx).catch(() => {
+      /* the lesson continues; the child simply resumes a little earlier */
+    });
+  }, [segIdx, replayMode, weekState]);
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;
@@ -187,7 +198,8 @@ export default function LessonRoom() {
             } else if (replayMode) {
               navigate('/foundry/hub');
             } else {
-              sessionStorage.removeItem(resumeKey);
+              // Pinned: the lesson is done, so nothing is left to resume into.
+              if (weekState) void saveLessonSegment(weekState, null).catch(() => {});
               setPinned(true);
             }
           }}
