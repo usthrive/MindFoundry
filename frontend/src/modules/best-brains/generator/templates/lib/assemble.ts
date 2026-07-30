@@ -17,6 +17,7 @@
 
 import type {
   BBBand,
+  BBLevel,
   Explanation,
   FluencySprint,
   GuidedExample,
@@ -35,15 +36,38 @@ import type {
 import { FAST_TRACK_PCT, MASTERY_THRESHOLD_PCT, SPRINT_DURATION_SECONDS } from '../../../constants';
 import { streamRng, type Rng } from '../../rng';
 import { contentId, makeDay, makeMasteryItems, TupleGuard } from '../shared';
+import { numericTokens } from '../../surface';
 import type { ItemDraft } from '../shared';
 import type { ItemGen } from './items';
 import type { AuthorMeta } from './meta';
 import { pedagogicalPreflight } from './pedagogy';
 
-const LEVEL = 'D' as const;
+/**
+ * The DD3 day template is the same shape at every level — what changes with the
+ * level is the dose, the page count and the presentation defaults, not the arc.
+ */
 const FOCI = ['concept-echo', 'fluency-application', 'fluency-application', 'word-problems', 'noncomputational'] as const;
 const BAND_MINUTES_BASE: Record<string, number> = { beginner: 0.8, intermediate: 1.0, transition: 1.1, advanced: 1.2 };
 const DAY_OVERHEAD = 2.5;
+
+/** Level → its presentation band (mirrors content/catalog.ts LEVEL_BANDS). */
+const DEFAULT_BAND: Record<BBLevel, BBBand> = {
+  A: 'beginner', B: 'intermediate', C: 'intermediate', D: 'transition', E: 'advanced',
+};
+
+/** Band A works one operation to a page (E62); the rest carry two. */
+const PAGE_COUNT: Record<BBBand, number> = { beginner: 1, intermediate: 2, transition: 2, advanced: 2 };
+
+const SCAFFOLD_NOTES: Record<BBBand, string> = {
+  beginner:
+    'All prompts read aloud; oversized tap targets and answer boxes; every page carries its picture; one operation per page; mascot present.',
+  intermediate:
+    'Concrete models shown beside the symbols and faded within the week; gloss audio available on every prompt; numeric pad with choice support.',
+  transition:
+    'Transition band: models/number-line scaffolds introduced then explicitly faded within the week; written explanation on Day 5.',
+  advanced:
+    'Advanced band: precise vocabulary unglossed, ruled explanation lines, symbolic and graphical answer forms; decoration minimal.',
+};
 
 export interface SlotGen {
   gen: ItemGen;
@@ -60,6 +84,12 @@ export interface SprintConfig {
 }
 
 export interface WeekBlueprint {
+  /**
+   * Which level this week belongs to. Defaults to 'D' so the 23 Level-D
+   * blueprints written before the assembler was level-parameterised are
+   * byte-for-byte unaffected (verified against a pack-hash baseline).
+   */
+  level?: BBLevel;
   week: number;
   conceptId: string;
   conceptName: string;
@@ -74,8 +104,10 @@ export interface WeekBlueprint {
   mistakeBank: MistakeBankEntry[];
   parentSummarySeed: ParentSummarySeed;
   isomorphNotes: string;
-  /** Exactly 5 day plans; each an ordered list of {gen, diff}. Sizes 6/6/6/4/4. */
+  /** Exactly 5 day plans; each an ordered list of {gen, diff}. D sizes 6/6/6/4/4; band A runs 3–4. */
   days: SlotGen[][];
+  /** Optional per-day parent strip. Band A carries one EVERY day (E57 / W7 A-form). */
+  teacherNoteStrips?: Array<string | undefined>;
   /** Exactly 6 mastery slot generators (Form A & Form B share these). */
   mastery: SlotGen[];
   // --- v2 pedagogy contract (CONTENT-GENERATOR-FIX-SPEC) ---------------------
@@ -85,21 +117,29 @@ export interface WeekBlueprint {
   conceptualAnchor?: string;
   /** The explicit advance vs a shared-family prior week (BB-G1 §6.13). */
   deepeningDelta?: string;
+  /** Which §6.1 multi-step row applies; defaults to the D-era conceptId lookup. */
+  conceptFamily?: 'operation' | 'place-value';
   /** The puzzle's cognitive-op/step-count for the remove-the-concept check (§6.10). Required for v2. */
   puzzleMeta?: AuthorMeta;
 }
 
-/** Guided-example builder with the correct `D<week>-GE-0n` id. */
-export function ge(
-  week: number,
-  n: number,
-  fadeLevel: FadeLevel,
-  prompt: string,
-  steps: GuidedExampleStep[],
-  answer: string,
-): GuidedExample {
-  return { id: contentId(LEVEL, week, 'GE', n), fadeLevel, prompt, steps, answer };
+/**
+ * Guided-example builder bound to a level, so ids read `E13-GE-02`.
+ * `ge` stays bound to 'D' — every Level-D week imports it by that name.
+ * A new level's week opens with `const ge = makeGe('E');`.
+ */
+export function makeGe(level: BBLevel) {
+  return (
+    week: number,
+    n: number,
+    fadeLevel: FadeLevel,
+    prompt: string,
+    steps: GuidedExampleStep[],
+    answer: string,
+  ): GuidedExample => ({ id: contentId(level, week, 'GE', n), fadeLevel, prompt, steps, answer });
 }
+
+export const ge = makeGe('D');
 
 function dosePasses(band: string, items: PackItem[]): number {
   const base = BAND_MINUTES_BASE[band] ?? 1.0;
@@ -107,9 +147,13 @@ function dosePasses(band: string, items: PackItem[]): number {
 }
 
 export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVersion: string) => WeeklyConceptPack {
-  if (bp.days.length !== 5) throw new Error(`D${bp.week}: needs 5 day plans, has ${bp.days.length}`);
-  if (bp.mastery.length !== 6) throw new Error(`D${bp.week}: needs 6 mastery slots, has ${bp.mastery.length}`);
-  const band: BBBand = bp.band ?? 'transition';
+  const LEVEL: BBLevel = bp.level ?? 'D';
+  const tag0 = `${LEVEL}${bp.week}`;
+  if (bp.days.length !== 5) throw new Error(`${tag0}: needs 5 day plans, has ${bp.days.length}`);
+  if (bp.mastery.length !== 6) throw new Error(`${tag0}: needs 6 mastery slots, has ${bp.mastery.length}`);
+  const band: BBBand = bp.band ?? DEFAULT_BAND[LEVEL];
+  // Band-A law (FILL-ARCHITECTURE §1): any timed element is a hard fail at A.
+  if (LEVEL === 'A' && bp.sprint) throw new Error(`${tag0}: Level A must not carry a fluency sprint (no timers at band A)`);
 
   return (packSeed, contentVersion) => {
     const guard = new TupleGuard();
@@ -118,14 +162,74 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
     // Generate all drafts FIRST (authorMeta intact), preserving the exact draw
     // order days1–5 → puzzle → formA → formB so the shared guard/stream
     // consumption — and thus v1 output — stays bit-stable (review M3).
+    /**
+     * An assessed item may not be the guided example worked on the same page.
+     *
+     * Guided examples are AUTHORED prose, so their operands never enter the
+     * draw guard — and the style gate duly found a Day-1 item that was GE-01's
+     * solved problem with the name changed, the answer sitting a few
+     * centimetres above it. Compared on the prompt's numeric tokens, which is
+     * what makes two items read as the same question to a child.
+     *
+     * Redrawing advances the seeded stream and fires only on a real collision,
+     * so a pack without the defect is unchanged.
+     */
+    // TWO tokens minimum, matching `drawUniqueItem`'s own rule: a single shared
+    // number is a coincidence, not the same question, and guarding on it would
+    // redraw constantly for no pedagogical gain.
+    const geTokens = new Set(
+      bp.guidedExamples
+        .map((g) => numericTokens(g.prompt))
+        .filter((t) => t.length >= 2)
+        .map((t) => t.join(',')),
+    );
+    const echoesAGuidedExample = (d: ItemDraft): boolean => {
+      const t = numericTokens(d.prompt);
+      return t.length >= 2 && geTokens.has(t.join(','));
+    };
     const dayDrafts: ItemDraft[][] = bp.days.map((plan, i) =>
-      plan.map(({ gen, diff }) => gen(dayStreams[i], guard, diff)),
+      plan.map(({ gen, diff }) => {
+        let draft = gen(dayStreams[i], guard, diff);
+        for (let k = 0; k < 12 && echoesAGuidedExample(draft); k++) {
+          draft = gen(dayStreams[i], guard, diff);
+        }
+        return draft;
+      }),
     );
     const puzzle = bp.puzzle(streamRng(packSeed, 'pz'), guard);
     const maRng = streamRng(packSeed, 'ma');
     const mbRng = streamRng(packSeed, 'mb');
     const formADrafts = bp.mastery.map(({ gen, diff }) => gen(maRng, guard, diff));
-    const formBDrafts = bp.mastery.map(({ gen, diff }) => gen(mbRng, guard, diff));
+
+    /**
+     * Form B must differ from Form A in its MATHEMATICAL CORE, not merely its
+     * surface.
+     *
+     * `drawUniqueItem` guards on the prompt's numeric tokens, which is right for
+     * QG-1 but too weak here: two mastery items can share every operand that
+     * determines the answer and still look distinct because an UNUSED decoy
+     * quantity differs. The style gate found the consequence — a Form-B slot
+     * re-serving Form A's item verbatim, on the corrective path, to a child who
+     * had just failed it. Every pack also asserts in `isomorphNotes` that no
+     * operand surface is reused from Form A, so the collision made that
+     * teacher-facing claim false.
+     *
+     * Redrawing advances the seeded stream, so this stays deterministic; it
+     * fires ONLY on a genuine core collision, so a pack without the defect is
+     * unchanged byte-for-byte.
+     */
+    const coreOf = (d: ItemDraft): string | null =>
+      d.generator ? `${d.generator.templateId}|${JSON.stringify(d.generator.params)}` : null;
+    const formACores = new Set(formADrafts.map(coreOf).filter((c): c is string => c !== null));
+    const formBDrafts = bp.mastery.map(({ gen, diff }) => {
+      let draft = gen(mbRng, guard, diff);
+      for (let i = 0; i < 12; i++) {
+        const core = coreOf(draft);
+        if (core === null || !formACores.has(core)) break;
+        draft = gen(mbRng, guard, diff);
+      }
+      return draft;
+    });
 
     // v2 pedagogical preflight over the drafts (authorMeta present, pre-strip).
     if ((bp.pedagogyContract ?? 'v1') === 'v2') {
@@ -133,6 +237,7 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
         level: LEVEL,
         week: bp.week,
         conceptId: bp.conceptId,
+        conceptFamily: bp.conceptFamily,
         conceptualAnchor: bp.conceptualAnchor,
         deepeningDelta: bp.deepeningDelta,
         explanation: bp.explanation,
@@ -146,7 +251,7 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
 
     // Assemble (makeDay / makeMasteryItems strip authorMeta on emit).
     const days: PackDay[] = dayDrafts.map((drafts, i) =>
-      makeDay(LEVEL, bp.week, i + 1, FOCI[i], 2, drafts),
+      makeDay(LEVEL, bp.week, i + 1, FOCI[i], PAGE_COUNT[band], drafts, bp.teacherNoteStrips?.[i]),
     );
     const formA = makeMasteryItems(LEVEL, bp.week, 'MA', formADrafts);
     const formB = makeMasteryItems(LEVEL, bp.week, 'MB', formBDrafts);
@@ -168,7 +273,7 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
     }
 
     // --- Preflight: mechanical gates, thrown early with a precise message ----
-    preflight(bp, band, days, [...formA, ...formB]);
+    preflight(bp, LEVEL, band, days, [...formA, ...formB]);
 
     return {
       schemaVersion: '1.0',
@@ -184,9 +289,9 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
         prerequisiteWeeks: bp.prerequisiteWeeks,
       },
       presentation: bp.presentation ?? {
-        audioFirst: false,
-        oneOperationPerPage: false,
-        scaffoldNotes: 'Transition band: models/number-line scaffolds introduced then explicitly faded within the week; written explanation on Day 5.',
+        audioFirst: LEVEL === 'A',
+        oneOperationPerPage: LEVEL === 'A',
+        scaffoldNotes: SCAFFOLD_NOTES[band],
       },
       explanation: bp.explanation,
       guidedExamples: bp.guidedExamples,
@@ -206,12 +311,15 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
   };
 }
 
-function preflight(bp: WeekBlueprint, band: string, days: PackDay[], masteryItems: PackItem[]): void {
-  const tag = `D${bp.week}`;
+function preflight(bp: WeekBlueprint, level: BBLevel, band: string, days: PackDay[], masteryItems: PackItem[]): void {
+  const tag = `${level}${bp.week}`;
   const dailyItems = days.flatMap((d) => d.items);
   const retrieval = dailyItems.filter((it) => it.isRetrieval).length;
   const share = retrieval / dailyItems.length;
-  if (share < 0.2 - 1e-9 || share > 0.3 + 1e-9) {
+  // A·W1 is the curriculum-graph origin: there is no earlier week to retrieve
+  // from, so a zero share is legal there and only there (mirrors QG-2).
+  const isOrigin = level === 'A' && bp.week === 1;
+  if (!isOrigin && (share < 0.2 - 1e-9 || share > 0.3 + 1e-9)) {
     throw new Error(`${tag}: retrieval share ${(share * 100).toFixed(1)}% outside 20–30% (${retrieval}/${dailyItems.length})`);
   }
   days.forEach((d, i) => {

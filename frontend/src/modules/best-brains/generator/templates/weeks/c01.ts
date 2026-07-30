@@ -1,775 +1,929 @@
 /**
  * Level C · Week 1 — "Place value to 1,000" (conceptId: place-value-to-1000).
- * CURRICULUM-MAP Level C row 1: read/write/expand 3-digit numbers;
- * hundreds|tens|ones columns (scaffold per E53). Day-5 focus: number riddles
- * with place-value clues.
  *
- * Retrieval (QG-2): cross-level backward from Level B (placement guarantees the
- * Level B exit profile): B2 tens and ones, B13 addition within 100, B14
- * subtraction within 100, B18 skip counting.
+ * FILL-ARCHITECTURE §5 row C1: anchor "the hundreds-tens-ones chart";
+ * multi-step "build then compare"; error-analysis "reads 407 as forty-seven";
+ * discrimination "face value vs place value"; Day-5 signature "number riddles
+ * ('I have 4 hundreds, 0 tens…')".
+ *
+ * WHAT THIS WEEK IS ABOUT, AND WHAT THE PAGES ARE BUILT FROM. A digit has two
+ * numbers attached to it — the one you see (its FACE) and the one it is worth
+ * (its VALUE) — and the only thing that separates them is which column the digit
+ * is standing in. So every core item on these pages turns on a column rather
+ * than on an arithmetic move:
+ *   - two ways of BUILDING a three-digit number, one from bundle counts
+ *     ("3 boxes of a hundred, 4 bags of ten, 6 loose") and one from the column
+ *     VALUES themselves ("600 and 50 and 7"), which is the same number said in
+ *     the two languages this week has to keep straight;
+ *   - the EMPTY column, which is where the concept either lands or collapses —
+ *     a story with hundreds and ones and nothing in between, and a number
+ *     written from its spoken name where the words never mention the tens;
+ *   - the digit's WORTH, asked directly, then again as a choice whose wrong
+ *     options are both computed from the item's own digits.
+ *
+ * ⚠ THE VERIFY-LIBRARY LIMIT, DECLARED (FANOUT kit §E2.3). The recipe's
+ * error-analysis is "reads 407 as forty-seven" — a number whose empty column is
+ * not counted, so the digits close up and 100h + o is read as 10h + o. That
+ * value is not derivable from any registered verify. The only whole-number
+ * misconception template varies the OPERATION over ONE fixed operand pair, and
+ * solving `a op b = 100h + o` together with `a op' b = 10h + o` over {+,−,×,÷}
+ * has exactly one family of solutions: `b = 45h`, `a = 55h + o` with op '+' and
+ * wrongOp '−' (for 407: 227 + 180 and 227 − 180). Those operands are not the
+ * story's own numbers and the transform is "subtracted where the story joins" —
+ * i.e. a C3/C4 arithmetic item wearing this week's answer. Fabricating the
+ * number is forbidden, so per the kit's §E2.3 order:
+ *   - the 407-as-forty-seven misread is shown where it CAN be computed honestly:
+ *     it is the second option in `discrimWorthOfDigit`, derived from that item's
+ *     own hundreds digit (h × 10 is exactly what the hundreds digit is worth
+ *     once a column has been lost); it is the subject of the Day-5
+ *     Always/Sometimes/Never claim; and it is named in the mistake bank;
+ *   - Day 5's GENERATED error-analysis carries the same number's sibling slip,
+ *     which IS derivable and is the same misconception one step along: the
+ *     hundreds and ones digits written into each other's columns across the
+ *     empty tens ("six hundred four" set down as 406). `a_verify_teen_write_v1`
+ *     re-derives it from the item's own number by reversing its digits, so the
+ *     zero stays in the tens column in both readings and only the two spoken
+ *     digits move. It is the A10 "writes 31 for thirteen" slip at three digits,
+ *     which is the documented ancestor of this week's trap (FILL-ARCHITECTURE
+ *     A22 "24 vs 42", B1 "106 vs 160", B2 "3t2o vs 2t3o").
+ *
+ * FIGURE LAW as applied here (FANOUT kit §F.7 / §E2.5). The `place-value-chart`
+ * primitive was built for this week, and the discipline it needs is precise,
+ * because on a place-value page the chart can BE the answer:
+ *   - on "how much is this digit worth?" the chart holds the number the story
+ *     already stated and `showValues` stays OFF — printing each column's value
+ *     under it would print the answer;
+ *   - on the multi-step tally, `showValues` is ON, because there the chart holds
+ *     the count the board ALREADY SHOWS and the answer is two changes further
+ *     on: the face-vs-value display is a given, not a giveaway;
+ *   - the charts that hold a finished, built number live in the lesson script
+ *     and the modeled example, where the answer is already on the page.
+ * Every chart is built from the item's own `generator.params` and asserts
+ * against them, so QG-13 re-derives what each picture claims.
+ *
+ * Retrieval is Level B ONLY — C1 is the first week of the level, so there is no
+ * earlier Level-C cell to draw on. B2 (tens and ones) is the direct ancestor,
+ * B3 (comparing) is what the multi-step's second half runs on, and B13/B14 keep
+ * the two-digit arithmetic underneath the three-digit stories quick.
  */
 
-import type { WeeklyConceptPack } from '../../../types';
-import { FAST_TRACK_PCT, MASTERY_THRESHOLD_PCT, SPRINT_DURATION_SECONDS } from '../../../constants';
-import { streamRng, Rng } from '../../rng';
-import {
-  contentId,
-  drawFresh,
-  ItemDraft,
-  makeChoices,
-  makeDay,
-  makeMasteryItems,
-  numberWords,
-  TupleGuard,
-} from '../shared';
-import { countNoun } from '../lib/format';
+import { addWhole, asWarmup, classify, compareWhole, subWhole } from '../lib/items';
+import type { ItemGen } from '../lib/items';
+import { situation } from '../lib/situations';
+import { multiStep } from '../lib/multistep';
+import { discrimination } from '../lib/discrimination';
+import { errorAnalysis } from '../lib/erroranalysis';
+import { withEstimateFirst } from '../lib/metacog';
+import { an, countNoun } from '../lib/format';
+import { makeGe, makeWeekBuilder } from '../lib/assemble';
+import { assertsAnswer, assertsParam } from '../lib/figures';
+import { drawUniqueItem } from '../lib/guard';
+import { drawFresh, numberWords } from '../shared';
+import type { ItemDraft } from '../shared';
+import type { BBFigure, FigureAssertion, PlaceName } from '../../../figures/types';
 
-const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Noor'] as const;
+const ge = makeGe('C');
 
-interface HTO {
-  h: number;
-  t: number;
-  o: number;
-}
+const B2 = { level: 'B' as const, week: 2 };
+const B3 = { level: 'B' as const, week: 3 };
+const B13 = { level: 'B' as const, week: 13 };
+const B14 = { level: 'B' as const, week: 14 };
 
-/** Distinct nonzero digits so digit-value questions are unambiguous. */
-function drawHTO(rng: Rng, guard: TupleGuard, kind: string): HTO {
-  return drawFresh(
-    rng,
-    guard,
-    (r) => {
-      const digits = r.shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3);
-      return { h: digits[0], t: digits[1], o: digits[2] };
-    },
-    // Order-insensitive: permuted digit triples read as the same surface.
-    (v) => `${kind}:${[v.h, v.t, v.o].sort((a, b) => a - b).join('')}`,
-  );
-}
+const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
-function compose3(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const { h, t, o } = drawHTO(rng, guard, 'compose3');
-  return {
-    type: 'computation',
-    prompt: `${countNoun(h, 'hundreds')}, ${countNoun(t, 'tens')}, and ${countNoun(o, 'ones')} make what number?`,
-    answer: {
-      value: String(100 * h + 10 * t + o),
-      acceptableForms: [],
-      validation: 'exact-numeric',
-    },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: { templateId: 'compose_3digit_v1', params: { h, t, o }, seed: rng.uint() },
-    hintLadder: [
-      'Fill the seats left to right: hundreds, tens, ones.',
-      'Each digit goes in its own seat - no seat stays empty here.',
-    ],
-    errorTags: ['concept-misconception'],
+// ---------------------------------------------------------------------------
+// withFigure / placeValueChart
+//
+// The shipped primitives (situation / multiStep) carry no figure slot and lib/
+// is not ours to edit, so the wrapper does what `withEstimateFirst` does: all of
+// it happens inside the returned closure, it takes no new rng draw, and it
+// leaves the prompt — and therefore the QG-1/QG-4 surface signature — untouched.
+// It reads the drafted item's `generator.params`, the very numbers the answer
+// was computed from, so "built from the item's own drawn values" holds by
+// construction. `placeValueChart` is the local builder for the one figure family
+// lib/figures.ts exposes no helper for; it emits the same schema and the same
+// `asserts` clause QG-13 re-derives. (Pattern established by c03/c04/c14.)
+// ---------------------------------------------------------------------------
+
+type Params = Record<string, unknown>;
+const numOf = (p: Params, k: string): number => Number(p[k]);
+
+function withFigure(base: ItemGen, build: (params: Params) => BBFigure): ItemGen {
+  return (rng, guard, difficulty) => {
+    const d = base(rng, guard, difficulty);
+    return d.generator ? { ...d, figure: build(d.generator.params) } : d;
   };
 }
 
-function expanded3(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const { h, t, o } = drawHTO(rng, guard, 'expanded3');
+function placeValueChart(
+  value: number,
+  opts: { highlight?: PlaceName; showValues?: boolean; alt: string; asserts?: FigureAssertion },
+): BBFigure {
   return {
-    type: 'computation',
-    prompt: `${h * 100} + ${t * 10} + ${o} = ?`,
-    answer: {
-      value: String(100 * h + 10 * t + o),
-      acceptableForms: [],
-      validation: 'exact-numeric',
+    type: 'place-value-chart',
+    alt: opts.alt,
+    params: {
+      digits: String(value),
+      ...(opts.highlight ? { highlight: opts.highlight } : {}),
+      ...(opts.showValues !== undefined ? { showValues: opts.showValues } : {}),
     },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: { templateId: 'expanded_3digit_v1', params: { h, t, o }, seed: rng.uint() },
-    hintLadder: ['Each part already names its seat - slide them together.'],
-    errorTags: ['fact-recall'],
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
   };
 }
 
-function digitValue(rng: Rng, guard: TupleGuard, place: 10 | 100, difficulty: number): ItemDraft {
-  const { h, t, o } = drawHTO(rng, guard, `dv${place}`);
-  const n = 100 * h + 10 * t + o;
-  const digit = place === 100 ? h : t;
-  const placeName = place === 100 ? 'hundreds' : 'tens';
-  return {
-    type: 'computation',
-    prompt: `What is the VALUE of the digit ${digit} in ${n}?`,
-    answer: { value: String(digit * place), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: {
-      templateId: 'digit_value_v1',
-      params: { n, digit, place },
-      seed: rng.uint(),
-    },
-    hintLadder: [
-      `Find which seat the ${digit} sits in.`,
-      `A digit in the ${placeName} seat counts ${placeName}, not ones.`,
-    ],
-    errorTags: ['concept-misconception'],
-  };
+/** The columns of a stated count, named in order — the chart's spoken form. */
+function columnsAlt(value: number, noun: string): string {
+  const s = String(value);
+  return `a hundreds-tens-ones chart with the ${countNoun(value, noun)} set out column by column: ${s[0]} in the hundreds, ${s[1]} in the tens, ${s[2]} in the ones`;
 }
 
-function digitValueChoice(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const { h, t, o } = drawHTO(rng, guard, 'dvmc');
-  const n = 100 * h + 10 * t + o;
-  const { choices, correctKey } = makeChoices(rng, String(t * 10), [
-    {
-      text: String(t),
-      errorTag: 'concept-misconception',
-      rationale: 'The digit itself, not its value - the seat was ignored.',
-    },
-    {
-      text: String(t * 100),
-      errorTag: 'representation-misread',
-      rationale: 'Right idea, wrong seat - the digit was read as hundreds.',
-    },
-  ]);
-  return {
-    type: 'representation',
-    prompt: `In ${n}, what is the value of the digit ${t}?`,
-    choices,
-    answer: { value: correctKey, acceptableForms: [String(t * 10)], validation: 'choice-key' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: {
-      templateId: 'digit_value_choice_v1',
-      params: { n, digit: t, place: 10 },
-      seed: rng.uint(),
-    },
-    hintLadder: [
-      `Point to the ${t} - which seat is it sitting in?`,
-      'The seat multiplies the digit.',
-    ],
-    errorTags: ['concept-misconception', 'representation-misread'],
-  };
+/** The same chart with each column's WORTH printed under its digit. */
+function columnsWorthAlt(value: number, noun: string): string {
+  const s = String(value);
+  return `a hundreds-tens-ones chart with the ${countNoun(value, noun)} set out column by column, each column's worth printed beneath its digit: ${s[0]} in the hundreds over ${Number(s[0]) * 100}, ${s[1]} in the tens over ${Number(s[1]) * 10}, ${s[2]} in the ones over ${s[2]}`;
 }
 
-function writeWords3(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
+// ---------------------------------------------------------------------------
+// Retrieval warm-ups — Level B only (C1 opens the level), and exempt from the
+// pedagogy gates. Four formats, so no day ever runs two of a kind.
+// ---------------------------------------------------------------------------
+
+/**
+ * B2 — tens and ones, the ancestor of everything on these pages. Two columns is
+ * the whole idea the week widens to three, so this is the warm-up that carries
+ * the concept rather than the arithmetic.
+ */
+const wTensOnes = asWarmup(
+  (rng, guard, difficulty): ItemDraft =>
+    drawUniqueItem(rng, guard, (r) => {
+      const t = r.int(2, 9);
+      const o = r.int(1, 9);
+      return {
+        type: 'computation',
+        prompt: `${countNoun(t, 'tens')} and ${countNoun(o, 'ones')} make what number?`,
+        answer: { value: String(10 * t + o), acceptableForms: [], validation: 'exact-numeric' },
+        difficulty,
+        strand: 'computational',
+        isRetrieval: false,
+        generator: { templateId: 'tens_ones_compose_v1', params: { t, o }, seed: r.uint() },
+        hintLadder: [
+          'Which of these two amounts belongs in the column on the left?',
+          'Count the tens in tens first, then put the loose ones on the end.',
+        ],
+        errorTags: ['fact-recall'],
+      };
+    }),
+  B2,
+);
+
+/** B3 — comparing two-digit numbers, the move the week's multi-step ends on. */
+const wCompareTwoDigit = asWarmup(compareWhole(2), B3);
+
+/** B13 — addition within 100, so the tally stories never stall on the sum. */
+const wAddWithin100 = asWarmup(addWhole(14, 78), B13);
+
+/** B14 — subtraction within 100, the gap-finding half of "how many more". */
+const wSubWithin100 = asWarmup(subWhole(23, 96), B14);
+
+// ---------------------------------------------------------------------------
+// Single-step core — five angles on one claim: the column sets the worth
+// ---------------------------------------------------------------------------
+
+/**
+ * BUILD FROM BUNDLES. The story hands over three COUNTS ("3 boxes, 4 bags, 6
+ * loose") and the child has to hear each count as a column. This is the plainest
+ * form of the week and it opens Day 1.
+ *
+ * No figure: the answer IS the number laid out in its columns, so a chart here
+ * would be the answer key with a border around it.
+ */
+const sitBuildFromBundles = situation({
+  situationType: 'combine',
+  cognitiveOp: 'pv-compose',
+  draw: (r) => {
+    const h = r.int(2, 9);
+    const t = r.int(1, 9);
+    const o = r.int(1, 9);
+    return {
+      prompt: `A play crate of toy bricks arrives in three sizes of pack: ${countNoun(h, 'boxes')} of 100 bricks, ${countNoun(t, 'bags')} of 10 bricks, and ${countNoun(o, 'loose bricks')}. How many bricks are in the crate altogether?`,
+      answerValue: String(100 * h + 10 * t + o),
+      templateId: 'compose_3digit_v1',
+      params: { h, t, o },
+      units: 'bricks',
+      hints: [
+        'Which of the three packs is worth the most, and which column does each one fill?',
+        'Give every pack size its own column — hundreds, tens, ones — then read the three digits straight across.',
+      ],
+      errorTags: ['concept-misconception', 'representation-misread'],
+    };
+  },
+});
+
+/**
+ * THE EMPTY COLUMN. Hundreds and ones, and nothing at all between them — the
+ * shape the whole week is built to survive. A child who writes only what the
+ * story mentions writes a two-digit number and loses a hundred from every
+ * digit standing left of the gap.
+ */
+const sitZeroTens = situation({
+  situationType: 'part-whole',
+  cognitiveOp: 'pv-placeholder',
+  draw: (r) => {
+    const h = r.int(2, 9);
+    const o = r.int(1, 9);
+    return {
+      prompt: `The bags of ten in a sewing room were all used up last week, so nobody could open one. The button jar was filled from ${countNoun(h, 'sealed tubes')} of 100 and topped up with ${countNoun(o, 'single buttons')}. What count goes on the jar's label?`,
+      answerValue: String(100 * h + o),
+      templateId: 'compose_3digit_v1',
+      params: { h, t: 0, o },
+      units: 'buttons',
+      hints: [
+        'What happens to the digits on either side if a column with nothing in it is simply left out?',
+        'Stand a zero in the column the story never mentions, so the digits around it keep the columns they earned.',
+      ],
+      errorTags: ['concept-misconception', 'procedure-slip'],
+    };
+  },
+});
+
+/**
+ * BUILD FROM COLUMN VALUES. The same build, said in the other language: the
+ * story states 600 and 50 and 7 rather than six, five and seven of something.
+ * Holding both languages against one number is the face-and-value pair the week
+ * exists to separate.
+ */
+const sitBuildFromValues = situation({
+  situationType: 'combine',
+  cognitiveOp: 'pv-expand',
+  draw: (r) => {
+    const h = r.int(1, 9);
+    const t = r.int(1, 9);
+    const o = r.int(1, 9);
+    return {
+      prompt: `A cafe counts up its straws before opening. The big box still has ${countNoun(h * 100, 'straws')} in it, a part-used packet has ${countNoun(t * 10, 'straws')}, and the jar by the till holds ${countNoun(o, 'straws')}. How many straws does the cafe have in all?`,
+      answerValue: String(100 * h + 10 * t + o),
+      templateId: 'expanded_3digit_v1',
+      params: { h, t, o },
+      units: 'straws',
+      hints: [
+        'What size is each of these three amounts made of — hundreds, tens, or ones?',
+        'Slot each amount into the column its size names, then read the columns across as one count.',
+      ],
+      errorTags: ['concept-misconception', 'fact-recall'],
+    };
+  },
+});
+
+/**
+ * THE DIGIT'S WORTH, asked straight. The number is given, the digit is named,
+ * and the only thing left to do is find its column and say what that column
+ * makes it worth.
+ *
+ * Figure = the chart holding the count the story already stated, with
+ * `showValues` OFF. The picture puts the three column names on the page beside
+ * the digits; it cannot hand over the answer, because the answer is the number
+ * that would be PRINTED UNDER a column and no column has anything printed under
+ * it here.
+ */
+const sitDigitWorth = withFigure(
+  situation({
+    situationType: 'measurement',
+    cognitiveOp: 'pv-digit-value',
+    draw: (r) => {
+      const digit = r.int(1, 9);
+      const place = r.pick([10, 100] as const);
+      // The named digit must appear EXACTLY ONCE, or "the 7" names two columns.
+      const others = DIGITS.filter((d) => d !== digit);
+      const nonZero = others.filter((d) => d !== 0);
+      const h = place === 100 ? digit : r.pick(nonZero);
+      const t = place === 10 ? digit : r.pick(others);
+      const o = r.pick(others);
+      const n = 100 * h + 10 * t + o;
+      return {
+        prompt: `[image: a hundreds-tens-ones chart holding the count the run gave out] A fun run gave out ${countNoun(n, 'wristbands')}. How much is the ${digit} in that count worth?`,
+        answerValue: String(digit * place),
+        templateId: 'digit_value_v1',
+        params: { n, digit, place },
+        hints: [
+          'Which of the three columns is this digit standing in?',
+          'Name the column out loud first, then say how many of that column\'s size the digit is counting.',
+        ],
+        errorTags: ['concept-misconception', 'representation-misread'],
+      };
+    },
+  }),
+  (p) => {
+    const n = numOf(p, 'n');
+    return placeValueChart(n, {
+      alt: columnsAlt(n, 'wristbands'),
+      asserts: assertsParam('n', 'value'),
+    });
+  },
+);
+
+/**
+ * SPOKEN NAME → NUMERAL. The one item where the child has to supply a digit the
+ * words never say: "six hundred four" names two columns and leaves the third to
+ * be worked out.
+ *
+ * Drawn through `drawFresh` on the VALUE rather than through the prompt-token
+ * guard, because this prompt carries its number in words and therefore has no
+ * numeric tokens at all — nothing for the surface guard to hold on to, and Form
+ * A and Form B could otherwise land on the same number.
+ */
+const sitNameToNumeral: ItemGen = (rng, guard, difficulty) => {
   const n = drawFresh(
     rng,
     guard,
-    (r) => {
-      const h = r.int(1, 9);
-      const rest = r.int(1, 99);
-      return 100 * h + rest;
-    },
-    (v) => `words3:${v}`,
+    // Half the draws leave the tens column empty on purpose: a spoken name that
+    // never mentions the tens is the week's trap, and a uniform draw would put
+    // it in front of the child only one page in ten.
+    (r) => 100 * r.int(1, 9) + (r.chance(0.5) ? 0 : 10 * r.int(1, 9)) + r.int(0, 9),
+    (v) => `c1-name-to-numeral:${v}`,
   );
   return {
     type: 'representation',
-    prompt: `Write the numeral for: "${numberWords(n)}".`,
+    prompt: `A stationery office writes every stock count into its book in words. The paper-clip page reads "${numberWords(n)}". Write that count as a numeral for the shelf label.`,
     answer: { value: String(n), acceptableForms: [], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',
     isRetrieval: false,
     generator: { templateId: 'write_words_3digit_v1', params: { n }, seed: rng.uint() },
     hintLadder: [
-      'Split the words: hundreds part, then the rest.',
-      'Three seats total - a silent seat still needs its 0.',
+      'How many columns does a count with a hundreds part need before any digit is written?',
+      'Set the hundreds part down first, fill in whatever the rest of the words name, and give any column the words skip a zero of its own.',
     ],
-    errorTags: ['concept-misconception', 'representation-misread'],
+    errorTags: ['representation-misread', 'procedure-slip'],
   };
-}
+};
 
-function zeroTens(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => ({ h: r.int(2, 9), o: r.int(1, 9) }),
-    // Shared "digit pair" namespace with the tens-and-ones warm-up: both render
-    // two single-digit tokens, so they must stay mutually fresh (QG-1).
-    (v) => `digitpair:${[v.h, v.o].sort((a, b) => a - b).join(':')}`,
-  );
-  const { h, o } = draw;
-  return {
-    type: 'computation',
-    prompt: `${h} hundreds and ${o} ones - no tens at all. What number is that?`,
-    answer: { value: String(100 * h + o), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: {
-      templateId: 'compose_3digit_v1',
-      params: { h, t: 0, o },
-      seed: rng.uint(),
+// ---------------------------------------------------------------------------
+// Multi-step — the recipe's "build then compare", and the count that ripples
+// ---------------------------------------------------------------------------
+
+/**
+ * BUILD THEN COMPARE (the C1 multi-step). The board is filled in by column, so
+ * the first move is to turn three column values into one count; the second is to
+ * hold that count against a number from a year ago. `usesPriorSkill` because the
+ * comparison is B3's move and the subtraction underneath it is B14's — a
+ * place-value-family week composes with a strictly-prior skill by design.
+ *
+ * Served ONLY through the estimate-first wrapper (kit §E2.2): the same generator
+ * offered raw as well would ship two identical hint ladders. The probe asks for
+ * the SIZE of the gap, not its direction — this year's board is always the
+ * larger, so "above or below?" would have one answer for every seed and the
+ * child would learn the answer instead of the estimate. The drawn gap straddles
+ * a hundred, so the call is real and it can only be made by building the count
+ * and sizing it against the earlier one.
+ */
+const msBuildThenCompare = multiStep({
+  situationType: 'comparison',
+  cognitiveOp: 'build-then-compare',
+  usesPriorSkill: true,
+  draw: (r) => {
+    const h = r.int(3, 9);
+    const t = r.int(1, 9);
+    const o = r.int(1, 9);
+    const built = 100 * h + 10 * t + o;
+    const gap = r.int(24, 168);
+    return {
+      prompt: `A library keeps its reading-challenge total on a hundreds-tens-ones board and fills it in one column at a time. This year the hundreds column is worth ${countNoun(h * 100, 'bookmarks')}, the tens column ${countNoun(t * 10, 'bookmarks')}, and the ones column ${countNoun(o, 'bookmarks')}. Last year the challenge finished on ${countNoun(built - gap, 'bookmarks')}. How many more bookmarks does this year's board show than last year's?`,
+      initN: h * 100,
+      steps: [
+        { op: 'add', n: t * 10, d: 1 },
+        { op: 'add', n: o, d: 1 },
+        { op: 'sub', n: built - gap, d: 1 },
+      ],
+      units: 'bookmarks',
+      hints: [
+        'Which count in this story has to be built before the two years can stand side by side?',
+        'Gather the three columns into one count first, then measure the distance between that count and the earlier one.',
+      ],
+      errorTags: ['task-comprehension', 'concept-misconception'],
+    };
+  },
+});
+const msBuildThenCompareEstimate = withEstimateFirst(
+  msBuildThenCompare,
+  'will the two boards turn out to be more than a hundred apart, or less than that?',
+);
+
+/**
+ * THE COUNT THAT RIPPLES. The board already stands at nine tens and a high ones
+ * digit, so a handful more sales fills the ones, which fills the tens, which
+ * changes the HUNDREDS digit — a column a child would swear nobody had touched.
+ * Two changes, so the ripple has to be carried through both.
+ *
+ * Figure = the chart of the count the board ALREADY SHOWS, with `showValues` on.
+ * That is the one place in the week where printing each column's worth is safe
+ * and useful: it is a given the story states outright, and the answer is two
+ * changes further down the page.
+ */
+const msRippleCount = withFigure(
+  multiStep({
+    situationType: 'multi-stage',
+    cognitiveOp: 'pv-ripple',
+    usesPriorSkill: true,
+    draw: (r) => {
+      const h = r.int(2, 8);
+      const o = r.int(4, 8);
+      const n = 100 * h + 90 + o;
+      const k = r.int(10 - o, 9);
+      const j = r.int(11, 40);
+      return {
+        prompt: `[image: a hundreds-tens-ones chart holding the count the board already shows] A fruit stall's tally board shows ${countNoun(n, 'punnets')} sold so far today. In the last hour another ${countNoun(k, 'punnets')} are sold at the front counter, and then another ${countNoun(j, 'punnets')} at the gate stall. What does the tally board show once both are added on?`,
+        initN: n,
+        steps: [
+          { op: 'add', n: k, d: 1 },
+          { op: 'add', n: j, d: 1 },
+        ],
+        units: 'punnets',
+        hints: [
+          'Which column of this count is already filled right up to its top digit?',
+          'Take the first amount on and watch what the ones column hands to its neighbour, then bring the second amount to whatever the board reads by then.',
+        ],
+        errorTags: ['procedure-slip', 'concept-misconception'],
+      };
     },
-    hintLadder: [
-      'Three seats: hundreds, tens, ones. What fills the empty tens seat?',
-      'A zero holds the seat so the other digits keep their worth.',
-    ],
-    errorTags: ['procedure-slip', 'concept-misconception'],
-  };
-}
+  }),
+  (p) => {
+    const n = numOf(p, 'initN');
+    return placeValueChart(n, {
+      showValues: true,
+      alt: columnsWorthAlt(n, 'punnets'),
+      asserts: assertsParam('initN', 'value'),
+    });
+  },
+);
 
-/** Day-5 place-value riddles (map's Day-5 focus). */
-function pvRiddleDouble(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
+// ---------------------------------------------------------------------------
+// Discrimination — face value against place value, twice
+// ---------------------------------------------------------------------------
+
+/**
+ * THE RECIPE'S DISCRIMINATION. The digit is named, its column is named, and the
+ * only question is what the two together make it worth. Both wrong options are
+ * computed from this item's own hundreds digit and both are real:
+ *   - the bare digit is the face-value read, the answer of a child for whom a
+ *     column is decoration;
+ *   - the digit times ten is the 407-as-forty-seven read — a hundreds digit
+ *     counted one column too far right, which is exactly what a lost column
+ *     costs. It is shown here, computed, rather than asserted about anyone's
+ *     working (see the file header on why Day 5 cannot generate it).
+ */
+const discrimWorthOfDigit = discrimination({
+  variant: 'structural',
+  cognitiveOp: 'structural-contrast',
+  draw: (r) => {
+    const h = r.int(2, 9);
+    const others = DIGITS.filter((d) => d !== h);
+    const t = r.pick(others);
+    const o = r.pick(others);
+    return {
+      prompt: `In the number ${100 * h + 10 * t + o}, the digit ${h} is standing in the hundreds column. Which of these is what that digit is WORTH?`,
+      correct: String(h * 100),
+      distractors: [
+        {
+          text: String(h),
+          errorTag: 'concept-misconception',
+          rationale: 'Reads the digit\'s face as its worth, so the column it is standing in never enters the answer at all.',
+        },
+        {
+          text: String(h * 10),
+          errorTag: 'representation-misread',
+          rationale: 'Counts the digit in the column to its right — the read that turns a three-column number into a two-column one when a column has been lost.',
+        },
+      ],
+      hints: [
+        'How many of what does one digit in the hundreds column stand for?',
+        'Say the column\'s name, then say how many of that size the digit is counting, and let the two together give the worth.',
+      ],
+      errorTags: ['concept-misconception', 'representation-misread'],
+    };
+  },
+});
+
+/**
+ * The same contrast turned inside out: the WORTH is fixed and the child hunts
+ * for the number in which the digit earns it. Every option carries the same
+ * digit, so nothing about the digits' faces can decide it — only the columns
+ * can. Both wrong numbers are built from the item's own drawn digit.
+ */
+const discrimWhichNumber = discrimination({
+  variant: 'structural',
+  cognitiveOp: 'column-hunt',
+  draw: (r) => {
+    const d = r.int(2, 9);
+    const others = DIGITS.filter((x) => x !== d);
+    const nonZero = others.filter((x) => x !== 0);
+    return {
+      prompt: `Which of these three numbers holds ${an(d)} ${d} that is worth ${d * 10}?`,
+      correct: String(100 * r.pick(nonZero) + 10 * d + r.pick(others)),
+      distractors: [
+        {
+          text: String(100 * d + 10 * r.pick(others) + r.pick(others)),
+          errorTag: 'concept-misconception',
+          rationale: 'Picks the number where the digit sits one column further left, so it is worth ten times what the question asked for.',
+        },
+        {
+          text: String(100 * r.pick(nonZero) + 10 * r.pick(others) + d),
+          errorTag: 'representation-misread',
+          rationale: 'Picks the number where the digit stands in the ones column and is therefore worth only its face.',
+        },
+      ],
+      hints: [
+        'Which column would a digit have to be standing in to be worth ten of itself?',
+        'Point at the named digit in each number in turn and say the column underneath it before you choose.',
+      ],
+      errorTags: ['concept-misconception', 'representation-misread'],
+    };
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Day-5 non-computational items
+// ---------------------------------------------------------------------------
+
+/**
+ * THE NUMBER RIDDLE (the C1 Day-5 signature). Two columns are named outright and
+ * the third has to be deduced from the digit total, so the child works from
+ * clues about columns rather than from an arithmetic instruction. The empty tens
+ * column is stated as a clue, which is what makes the deduction possible at all.
+ *
+ * `drawFresh` on the digit pair, because two riddles sharing digits would read
+ * as the same riddle even when the totals differ.
+ */
+const riddleEmptyColumn: ItemGen = (rng, guard, difficulty) => {
+  const { h, o } = drawFresh(
     rng,
     guard,
-    (r) => ({ h: r.int(1, 9), o: r.int(1, 4) }),
-    (v) => `riddle2:${v.h}:${v.o}`,
+    (r) => ({ h: r.int(1, 9), o: r.int(1, 9) }),
+    (v) => `c1-riddle:${v.h}:${v.o}`,
   );
-  const { h, o } = draw;
-  const n = 100 * h + 10 * (2 * o) + o;
   return {
     type: 'reasoning',
-    prompt:
-      `Riddle: I am a three-digit number. My hundreds digit is ${h}. My tens digit is ` +
-      `DOUBLE my ones digit. My ones digit is ${o}. Who am I?`,
-    answer: { value: String(n), acceptableForms: [], validation: 'exact-numeric' },
+    prompt: `Riddle: I am a three-digit number. My tens column is empty. My hundreds digit is ${h}. All my digits together add up to ${h + o}. Which number am I?`,
+    answer: { value: String(100 * h + o), acceptableForms: [], validation: 'exact-numeric' },
     difficulty,
     strand: 'noncomputational',
     isRetrieval: false,
-    generator: { templateId: 'pv_riddle_v1', params: { n }, seed: rng.uint() },
+    generator: { templateId: 'pv_riddle_v1', params: { n: 100 * h + o }, seed: rng.uint() },
     hintLadder: [
-      'Work out each digit first, then seat them.',
-      'Start with the ones clue - the tens clue depends on it.',
+      'Which of my three columns have I already told you about, and which one is still a secret?',
+      'Take the digits you have been handed away from the total I gave you, and put whatever is left in the column that is still open.',
     ],
     errorTags: ['task-comprehension', 'concept-misconception'],
   };
-}
+};
 
-function pvRiddleSum(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const { h, t, o } = drawHTO(rng, guard, 'riddlesum');
-  const n = 100 * h + 10 * t + o;
-  return {
-    type: 'reasoning',
-    prompt:
-      `Riddle: my hundreds digit is ${h} and my tens digit is ${t}. All three of my digits ` +
-      `add up to ${h + t + o}. Who am I?`,
-    answer: { value: String(n), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'noncomputational',
-    isRetrieval: false,
-    generator: { templateId: 'pv_riddle_v1', params: { n }, seed: rng.uint() },
-    hintLadder: [
-      'Two digits are given. Which seat is still empty?',
-      'What must the missing digit be so the three add up right?',
+/**
+ * DAY-5 ERROR-ANALYSIS (generated; QG-11 re-derives both numbers). See the file
+ * header for why the shown slip is the two spoken digits written into each
+ * other's columns rather than a column simply closing up: only the former is
+ * derivable from a registered verify, and its transform — the digits of a
+ * spoken number set down in the wrong order — is the same misconception the
+ * child brought up from Level A, now with an empty column between the two
+ * digits that moved.
+ */
+const eaSwappedColumns = errorAnalysis({
+  verifyTemplateId: 'a_verify_teen_write_v1',
+  cognitiveOp: 'error-analysis',
+  drawParams: (r) => {
+    const h = r.int(1, 9);
+    const drawnO = r.int(1, 9);
+    // Two equal digits would reverse to the same number, and the verify template
+    // refuses to certify a slip that is really the truth. One deterministic step
+    // rather than a redraw loop (kit §E2.4).
+    const o = drawnO === h ? (h === 9 ? 1 : h + 1) : drawnO;
+    return { n: 100 * h + o, h, o };
+  },
+  build: (v, p) => ({
+    prompt: `The sequin drawer in a costume room carries a numeral label on its front, and the stock book behind it spells the same count out. The book's line reads "${numberWords(Number(p.n))}" sequins. Setting the label to match, a student wrote ${v.wrong} on it.`,
+    extension: 'Write the numeral those words really name, and say in one sentence which column each of the two spoken digits belongs in.',
+    hints: [
+      'Which columns do these words actually name, and which column do they leave unmentioned?',
+      'Draw three empty columns, fill only the ones the words name, and then decide what has to stand in the column they walked straight past.',
     ],
-    errorTags: ['task-comprehension', 'fact-recall'],
-  };
-}
+    errorTags: ['representation-misread', 'concept-misconception'],
+    answerKeywords: ['hundreds column', 'ones column', 'the zero holds the tens'],
+  }),
+});
 
-function whichWorthMore(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => {
-      const d = r.int(2, 9);
-      const others = r.shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9].filter((x) => x !== d));
-      // d sits in the hundreds seat of n1 and in the tens seat of n2 — nowhere else.
-      const n1 = 100 * d + 10 * others[0] + others[1];
-      const n2 = 100 * others[2] + 10 * d + others[3];
-      return { d, n1, n2 };
-    },
-    (v) => `worth:${v.n1}:${v.n2}`,
-  );
-  const { d, n1, n2 } = draw;
-  return {
-    type: 'reasoning',
-    prompt:
-      `The digit ${d} appears in both ${n1} and ${n2}. In which number is that ${d} worth ` +
-      'MORE? Explain with seats.',
-    answer: {
-      value: `in ${n1}, because there the ${d} sits in the hundreds seat`,
-      acceptableForms: [String(n1), 'hundreds'],
-      validation: 'short-text-keyword',
-    },
-    difficulty,
-    strand: 'noncomputational',
-    isRetrieval: false,
-    generator: { templateId: 'pv_riddle_v1', params: { n: n1 }, seed: rng.uint() },
-    hintLadder: [
-      `Find the seat of the ${d} in each number.`,
-      'Hundreds seats beat tens seats, whatever the digit.',
-    ],
-    errorTags: ['concept-misconception'],
-  };
-}
+// ---------------------------------------------------------------------------
+// The week
+// ---------------------------------------------------------------------------
 
-// --- Day-4 stories ----------------------------------------------------------
-
-function packStory(rng: Rng, guard: TupleGuard, difficulty: number, zeroTensTwist: boolean): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => ({
-      h: r.int(2, 8),
-      t: zeroTensTwist ? 0 : r.int(2, 9),
-      o: r.int(2, 9),
-      name: r.pick(NAMES),
-    }),
-    (v) => `pack:${[v.h, v.t, v.o].sort((a, b) => a - b).join(':')}`,
-  );
-  const { h, t, o, name } = draw;
-  const n = 100 * h + 10 * t + o;
-  const middle = zeroTensTwist ? '' : ` ${t} packs of 10 pencils,`;
-  return {
-    type: 'word-problem',
-    prompt:
-      `${name}'s school orders ${h} boxes of 100 pencils,${middle} and ${o} loose pencils. ` +
-      'How many pencils is that in all?',
-    answer: {
-      value: String(n),
-      acceptableForms: [`${n} pencils`],
-      validation: 'exact-numeric',
-      units: 'pencils',
-    },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: { templateId: 'compose_3digit_v1', params: { h, t, o }, seed: rng.uint() },
-    hintLadder: [
-      'Boxes of 100 fill the hundreds seat; packs of 10 fill the tens seat.',
-      zeroTensTwist
-        ? 'No packs of ten at all - what holds the tens seat?'
-        : 'Read the three amounts straight into their seats.',
-    ],
-    errorTags: zeroTensTwist ? ['procedure-slip', 'task-comprehension'] : ['task-comprehension'],
-  };
-}
-
-function shelfStory(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => ({ h: r.int(2, 7), t: r.int(2, 9), o: r.int(2, 9), name: r.pick(NAMES) }),
-    (v) => `shelf:${v.h}:${v.t}:${v.o}`,
-  );
-  const { h, t, o, name } = draw;
-  const n = 100 * h + 10 * t + o;
-  return {
-    type: 'word-problem',
-    prompt:
-      `A library shelf note says: "${numberWords(n)} books." ${name} must write the count ` +
-      'as a numeral on the label. What should the label say?',
-    answer: {
-      value: String(n),
-      acceptableForms: [`${n} books`],
-      validation: 'exact-numeric',
-      units: 'books',
-    },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: false,
-    generator: { templateId: 'write_words_3digit_v1', params: { n }, seed: rng.uint() },
-    hintLadder: ['Split the words: hundreds part first, then the rest.'],
-    errorTags: ['concept-misconception', 'representation-misread'],
-  };
-}
-
-// --- Retrieval warm-ups (Level B sources) -----------------------------------
-
-function retrTensOnes(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => ({ t: r.int(2, 9), o: r.int(1, 9) }),
-    (v) => `digitpair:${[v.t, v.o].sort((a, b) => a - b).join(':')}`,
-  );
-  const { t, o } = draw;
-  return {
-    type: 'computation',
-    prompt: `Warm-up! ${t} tens and ${o} ones make what number?`,
-    answer: { value: String(10 * t + o), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: true,
-    retrievalSource: { level: 'B', week: 2 },
-    generator: { templateId: 'retr_tens_ones_v1', params: { t, o }, seed: rng.uint() },
-    hintLadder: ['Count the tens by ten, then the ones on.'],
-    errorTags: ['fact-recall'],
-  };
-}
-
-function retrAdd100(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => {
-      const a = r.int(24, 58);
-      const b = r.int(13, 39);
-      return { a, b: a % 10 + (b % 10) >= 10 ? b : b - (b % 10) + Math.min(9, 10 - (a % 10)) };
-    },
-    // Shared "2-digit pair" namespace with the subtraction warm-up: the same
-    // ordered (a, b) tuple must not reappear across adjacent days (QG-1).
-    (v) => `pair100:${v.a}:${v.b}`,
-  );
-  const { a, b } = draw;
-  return {
-    type: 'computation',
-    prompt: `Warm-up! ${a} + ${b} = ?`,
-    answer: { value: String(a + b), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: true,
-    retrievalSource: { level: 'B', week: 13 },
-    generator: { templateId: 'retr_add_within_100_v1', params: { a, b }, seed: rng.uint() },
-    hintLadder: ['Ones first - carry the new ten if they cross.'],
-    errorTags: ['procedure-slip'],
-  };
-}
-
-function retrSub100(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => {
-      const a = r.int(41, 92);
-      const bOnes = Math.min(9, (a % 10) + r.int(1, 4));
-      const bTens = r.int(1, Math.floor(a / 10) - 1);
-      return { a, b: 10 * bTens + bOnes };
-    },
-    (v) => `pair100:${v.a}:${v.b}`,
-  );
-  const { a, b } = draw;
-  return {
-    type: 'computation',
-    prompt: `Warm-up! ${a} - ${b} = ?`,
-    answer: { value: String(a - b), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: true,
-    retrievalSource: { level: 'B', week: 14 },
-    generator: { templateId: 'retr_sub_within_100_v1', params: { a, b }, seed: rng.uint() },
-    hintLadder: ['Can the ones pay? If not, trade a ten first.'],
-    errorTags: ['procedure-slip'],
-  };
-}
-
-function retrSkip(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
-  const draw = drawFresh(
-    rng,
-    guard,
-    (r) => {
-      const k = r.pick([2, 5, 10] as const) as number;
-      const start = k * r.int(3, 8);
-      return { k, start };
-    },
-    (v) => `rskip:${v.k}:${v.start}`,
-  );
-  const { k, start } = draw;
-  return {
-    type: 'computation',
-    prompt: `Warm-up! Count by ${k}s: ${start}, ${start + k}, ▢`,
-    answer: { value: String(start + 2 * k), acceptableForms: [], validation: 'exact-numeric' },
-    difficulty,
-    strand: 'computational',
-    isRetrieval: true,
-    retrievalSource: { level: 'B', week: 18 },
-    generator: { templateId: 'retr_skip_count_v1', params: { start, k }, seed: rng.uint() },
-    hintLadder: [`${k} more each time.`],
-    errorTags: ['fact-recall'],
-  };
-}
-
-export function buildC01(packSeed: number, contentVersion: string): WeeklyConceptPack {
-  const guard = new TupleGuard();
-  const d1 = streamRng(packSeed, 'd1');
-  const d2 = streamRng(packSeed, 'd2');
-  const d3 = streamRng(packSeed, 'd3');
-  const d4 = streamRng(packSeed, 'd4');
-  const d5 = streamRng(packSeed, 'd5');
-  const pz = streamRng(packSeed, 'pz');
-  const fs = streamRng(packSeed, 'fs');
-  const ma = streamRng(packSeed, 'ma');
-  const mb = streamRng(packSeed, 'mb');
-
-  const days = [
-    makeDay('C', 1, 1, 'concept-echo', 3, [
-      retrTensOnes(d1, guard, 2),
-      retrAdd100(d1, guard, 2),
-      compose3(d1, guard, 2),
-      expanded3(d1, guard, 2),
-      digitValue(d1, guard, 100, 3),
-      compose3(d1, guard, 3),
-    ]),
-    makeDay('C', 1, 2, 'fluency-application', 2, [
-      retrSub100(d2, guard, 3),
-      compose3(d2, guard, 2),
-      expanded3(d2, guard, 3),
-      digitValue(d2, guard, 10, 3),
-      writeWords3(d2, guard, 3),
-      zeroTens(d2, guard, 4),
-    ]),
-    makeDay('C', 1, 3, 'fluency-application', 2, [
-      retrSkip(d3, guard, 2),
-      expanded3(d3, guard, 2),
-      digitValue(d3, guard, 10, 3),
-      writeWords3(d3, guard, 3),
-      zeroTens(d3, guard, 4),
-      digitValueChoice(d3, guard, 4),
-    ]),
-    makeDay('C', 1, 4, 'word-problems', 2, [
-      packStory(d4, guard, 3, false),
-      shelfStory(d4, guard, 3),
-      retrSub100(d4, guard, 3),
-      packStory(d4, guard, 4, true),
-    ]),
-    makeDay('C', 1, 5, 'noncomputational', 2, [
-      pvRiddleDouble(d5, guard, 3),
-      pvRiddleSum(d5, guard, 3),
-      whichWorthMore(d5, guard, 4),
-      retrTensOnes(d5, guard, 2),
-    ]),
-  ];
-
-  const pzDigits = drawFresh(
-    pz,
-    guard,
-    (r) => r.shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3),
-    (v) => `pz:${v.join('')}`,
-  );
-  const sorted = pzDigits.slice().sort((a, b) => b - a);
-  const largest = Number(sorted.join(''));
-  const smallest = Number(sorted.slice().reverse().join(''));
-
-  const formA = makeMasteryItems('C', 1, 'MA', [
-    compose3(ma, guard, 2),
-    expanded3(ma, guard, 3),
-    digitValue(ma, guard, 10, 3),
-    writeWords3(ma, guard, 3),
-    zeroTens(ma, guard, 4),
-    digitValueChoice(ma, guard, 3),
-  ]);
-  const formB = makeMasteryItems('C', 1, 'MB', [
-    compose3(mb, guard, 2),
-    expanded3(mb, guard, 3),
-    digitValue(mb, guard, 10, 3),
-    writeWords3(mb, guard, 3),
-    zeroTens(mb, guard, 4),
-    digitValueChoice(mb, guard, 3),
-  ]);
-
-  return {
-    schemaVersion: '1.0',
-    packId: 'MFM-C1',
-    contentVersion,
-    identity: {
-      level: 'C',
-      week: 1,
-      conceptId: 'place-value-to-1000',
-      conceptName: 'Place value to 1,000',
-      band: 'intermediate',
-      strandTags: ['number-sense-counting'],
-      prerequisiteWeeks: [
-        { level: 'B', week: 2 },
-        { level: 'B', week: 13 },
-        { level: 'B', week: 14 },
-      ],
-    },
-    presentation: {
-      audioFirst: false,
-      oneOperationPerPage: false,
-      scaffoldNotes:
-        'Labeled hundreds|tens|ones columns with color headers on Days 1-2 (per E53); ' +
-        'base-ten flat/rod/cube imagery on Day 1; scaffold optional from Day 3.',
-    },
-    explanation: {
-      hook:
-        'One little digit - 4 - can mean four, forty, or four hundred. Same symbol, wildly ' +
-        'different worth. What changed? Only its SEAT.',
-      whyBeforeHow:
-        'We write every number - even huge ones - with just ten digits, because the seat a ' +
-        'digit sits in multiplies it. Ten ones make a ten; ten tens make a hundred; the ' +
-        'seats grow by tens forever. The why: without seats we would need a new symbol for ' +
-        'every number. With them, 3 digits can say anything up to 999.',
-      script: [
-        {
-          say: 'Ten rods snap into one flat square: a hundred. Flats, rods, cubes - hundreds, tens, ones.',
-          visual: 'Ten rods merge into one flat labeled 100; the three block types line up.',
-        },
-        {
-          say: 'Watch me build 452: 4 flats - 100, 200, 300, 400 - then 5 rods - 410, 420... 450 - then 2 cubes: 451, 452.',
-          visual: 'Hundreds|tens|ones columns fill left to right; numeral 452 forms above.',
-        },
-        {
-          say: 'The digit 4 in 452 is worth 400. The digit 4 in 245 is worth only 40. The seat multiplies the digit!',
-          visual: 'The two 4s highlighted; blocks show 400 vs 40 beneath them.',
-        },
-        {
-          say: 'Trap: six hundred four. No tens! The tens seat cannot stay empty - a 0 holds it: 604, never 64.',
-          visual: 'Empty tens column flashes; a 0 slides in; 604 vs 64 comparison.',
-        },
-      ],
-      summary:
-        'Three seats - hundreds, tens, ones - and the seat multiplies the digit. Empty ' +
-        'seats get a 0 so every other digit keeps its worth.',
-      vocabulary: [
-        { term: 'hundred', kidGloss: 'ten tens bundled into one flat' },
-        { term: 'place / seat', kidGloss: 'where a digit sits; it multiplies the digit' },
-        { term: 'expanded form', kidGloss: 'a number stretched into its parts: 452 = 400 + 50 + 2' },
-        { term: 'placeholder zero', kidGloss: 'the 0 that holds an empty seat' },
-      ],
-    },
-    guidedExamples: [
+export const buildC01 = makeWeekBuilder({
+  level: 'C',
+  week: 1,
+  conceptId: 'place-value-to-1000',
+  conceptName: 'Place value to 1,000',
+  strandTags: ['number-sense-counting'],
+  prerequisiteWeeks: [B2, B3, B13],
+  pedagogyContract: 'v2',
+  conceptualAnchor: 'the hundreds-tens-ones chart',
+  conceptFamily: 'place-value',
+  deepeningDelta:
+    'B2 built two-digit numbers out of bundles and sticks, where a digit only ever had two jobs to choose between and a written number never had a gap in it. C1 opens a third column, and with it the two things two columns can hide: a digit can now be worth a hundred times its face, and a number can have a column with nothing counted in it at all. So the question stops being "how many tens and how many ones?" and becomes "which column is this digit standing in, and what does the column with nothing in it still have to say?"',
+  presentation: {
+    audioFirst: false,
+    oneOperationPerPage: false,
+    scaffoldNotes:
+      'Labelled hundreds-tens-ones columns beside the symbols on Days 1-2 (E53), with each column\'s worth printed underneath only where the worth is a given and not the question; bundle imagery (box of a hundred, bag of ten, loose one) on Day 1; the column labels fade from Day 3, and the chart returns unlabelled on Day 5.',
+  },
+  explanation: {
+    hook:
+      'The digit 4 can be worth four, or forty, or four hundred. Nothing about the 4 has changed in any of those — the only thing that moved is which column it was standing in.',
+    whyBeforeHow:
+      'Ten ones bundle into one ten and ten tens bundle into one hundred, and because every bundle is worth exactly ten of the bundle on its right, the hundreds-tens-ones chart can give each size a column of its own and let the position of a digit do all the work. That is why ten digits are enough to name every number up to a thousand: a digit has a face, which is the mark you see, and a worth, which is its face times whatever the column is holding. It is also why a column with nothing counted in it still needs a zero written into it. The zero is not an empty space and it is not nothing — it is what keeps every digit to its left in the column it earned. Rub it out and those digits slide one column to the right, and a four hundred quietly becomes a forty.',
+    script: [
       {
-        id: contentId('C', 1, 'GE', 1),
-        fadeLevel: 'modeled',
-        prompt: 'Build 327 with flats, rods, and cubes.',
-        steps: [
-          {
-            teacherSay:
-              'I take 3 flats - 100, 200, 300 - then 2 rods - 310, 320 - then 7 cubes: 321 up to 327. Three seats, three digits: 327.',
-            expected: '327',
-          },
-        ],
-        answer: '327',
+        say: 'Watch me build a number one column at a time. Three hundreds go in the left column, four tens in the middle, six ones on the right. Look at what happened to my 3 the moment I put it down: on its own it means three, but standing in that column it means three hundred. I say that out loud every time, because it is the only thing this whole week is about.',
+        visual: 'A hundreds-tens-ones chart filling from the left, with each column\'s worth appearing beneath its digit.',
+        figure: placeValueChart(346, {
+          showValues: true,
+          alt: 'a hundreds-tens-ones chart holding 346, with 3 in the hundreds over 300, 4 in the tens over 40 and 6 in the ones over 6',
+        }),
       },
       {
-        id: contentId('C', 1, 'GE', 2),
-        fadeLevel: 'completion',
-        prompt: 'Stretch 581 into expanded form.',
-        steps: [
-          { teacherSay: 'The 5 sits in the hundreds seat: 500.' },
-          { childDo: 'Stretch the other two digits.', expected: '80 and 1' },
-          { teacherSay: 'So 581 = 500 + 80 + 1.' },
-        ],
-        answer: '500 + 80 + 1',
+        say: 'Now here is a number with two of the same digit in it: 484. Both 4s look identical, and one of them is worth a hundred times the other. The 4 on the left is four hundred and the 4 on the right is four. Neither digit is bigger than the other — one of them is just standing somewhere better.',
+        visual: 'The two 4s of 484 lit in turn, with the worth of each column printed beneath.',
+        figure: placeValueChart(484, {
+          showValues: true,
+          highlight: 'hundreds',
+          alt: 'a hundreds-tens-ones chart holding 484 with the hundreds column ringed, 4 in the hundreds over 400, 8 in the tens over 80 and 4 in the ones over 4',
+        }),
       },
       {
-        id: contentId('C', 1, 'GE', 3),
-        fadeLevel: 'prompted',
-        prompt: 'What is the value of the 9 in 792?',
-        steps: [
-          { teacherSay: 'Which seat is the 9 sitting in?', expected: 'the tens seat' },
-          { childDo: 'Multiply the digit by its seat.', expected: '90' },
-        ],
-        answer: '90',
+        say: 'Here is the one that catches people. Four hundred seven. I have four hundreds and seven ones and absolutely nothing in the tens — and the tens column still has to be filled in, with a zero. If I skip it and write just the 4 and the 7 side by side, my four hundred has walked into the tens column and turned into forty.',
+        visual: 'An empty tens column with a zero sliding into it; the digits either side stay where they are.',
+        figure: placeValueChart(407, {
+          showValues: true,
+          alt: 'a hundreds-tens-ones chart holding 407, with 4 in the hundreds over 400, 0 in the tens over 0 and 7 in the ones over 7',
+        }),
       },
       {
-        id: contentId('C', 1, 'GE', 4),
-        fadeLevel: 'independent',
-        prompt: 'Write "seven hundred six" as a numeral. Solve cold.',
-        steps: [
-          { childDo: 'Three seats - fill each one, use a placeholder if needed.', expected: '706' },
-        ],
-        answer: '706',
+        say: 'One habit before I write any three-digit number down. I check roughly how big it ought to be from its hundreds column alone: four hundreds and a few tens has to land somewhere near four hundred and fifty. So if my answer came out as forty-seven I would not go hunting for a slip in my digits — I would go and count my columns.',
+        visual: 'Two labelled bars side by side, one about four hundred and fifty long, one only forty-seven.',
       },
     ],
-    days,
-    puzzle: {
-      id: contentId('C', 1, 'PZ', 1),
-      title: 'Puzzle Grove: Three-Card Builder',
+    summary:
+      'Three columns — hundreds, tens, ones — and the column a digit stands in decides what the digit is worth. Read a digit\'s face and its worth as two different things. Every column gets a digit even when nothing was counted in it, because the zero is what holds the other digits in place.',
+    vocabulary: [
+      { term: 'column (place)', kidGloss: 'hundreds, tens or ones — where a digit stands, which decides what it is worth' },
+      { term: 'face', kidGloss: 'the mark you see: the 4 in 407 has a face of four' },
+      { term: 'worth (value)', kidGloss: 'what a digit really counts: the 4 in 407 is worth four hundred' },
+      { term: 'placeholder zero', kidGloss: 'the 0 that fills a column nothing was counted in, so the other digits stay put' },
+    ],
+  },
+  guidedExamples: [
+    {
+      ...ge(1, 1, 'modeled', 'Build the number that is 3 hundreds, 4 tens and 6 ones, and say what each digit is worth.', [
+        {
+          teacherSay:
+            'Watch me before I write a single digit. I do not start with the number — I start with the columns, and I say what each one is going to hold: hundreds on the left, tens in the middle, ones on the right. I do that first because the moment a digit lands in a column it stops being a mark and starts being an amount, and I want to know which amount before I commit.',
+        },
+        {
+          teacherSay: 'Three hundreds, four tens, six ones. How many columns is this number going to need?',
+          expected: '3',
+        },
+      ], '346'),
+      visual: 'The finished number in a hundreds-tens-ones chart, with each column\'s worth printed beneath its digit.',
+      figure: placeValueChart(346, {
+        showValues: true,
+        alt: 'a hundreds-tens-ones chart holding the finished number 346, with 3 in the hundreds over 300, 4 in the tens over 40 and 6 in the ones over 6',
+        asserts: assertsAnswer,
+      }),
+    },
+    ge(1, 2, 'completion', 'Write the number that is 5 hundreds and 2 ones, with nothing at all counted in the tens.', [
+      { teacherSay: 'The tens column has nothing to put in it. Does that mean this number only needs two columns?', expected: 'no' },
+      { childDo: 'Stand a zero in the column nothing was counted in, then read all three digits across.', expected: '502' },
+    ], '502'),
+    {
+      ...ge(1, 3, 'prompted', 'How much is the 7 in 273 worth?', [
+        { childDo: 'Name the column the digit is standing in, then say how many of that column\'s size it counts.', expected: '70' },
+      ], '70'),
+      // The chart holds the number the question GIVES and prints no worths: the
+      // worth of a column is precisely what is being asked for here (L33).
+      visual: 'A hundreds-tens-ones chart holding 273, with the tens column ringed.',
+      figure: placeValueChart(273, {
+        highlight: 'tens',
+        alt: 'a hundreds-tens-ones chart holding 273 with the tens column ringed: 2 in the hundreds, 7 in the tens, 3 in the ones',
+      }),
+    },
+    ge(1, 4, 'independent', 'Write "eight hundred nine" as a numeral. Solve cold.', [
+      { childDo: 'Give every column a digit, then check that no column has been left out on the way.', expected: '809' },
+    ], '809'),
+  ],
+  days: [
+    // Day 1 — concept echo: the four single-step readings of one idea, in the
+    // order a column is met — build it, say it in worths, weigh one digit, and
+    // then the column with nothing in it.
+    [
+      { gen: wTensOnes, diff: 2 },
+      { gen: wAddWithin100, diff: 2 },
+      { gen: sitBuildFromBundles, diff: 2 },
+      { gen: sitBuildFromValues, diff: 2 },
+      { gen: sitDigitWorth, diff: 3 },
+      { gen: sitZeroTens, diff: 3 },
+    ],
+    // Day 2 — fluency + application: the face-versus-worth choice, the
+    // predict-first two-step, and the number that arrives spoken rather than
+    // written.
+    [
+      { gen: wCompareTwoDigit, diff: 2 },
+      { gen: wSubWithin100, diff: 2 },
+      { gen: discrimWorthOfDigit, diff: 3 },
+      { gen: msBuildThenCompareEstimate, diff: 4 },
+      { gen: sitNameToNumeral, diff: 3 },
+      { gen: sitDigitWorth, diff: 3 },
+    ],
+    // Day 3 — interleave: both discriminations against the rippling count, so
+    // the page shape never says whether a column is about to be weighed or
+    // crossed.
+    [
+      { gen: wTensOnes, diff: 2 },
+      { gen: discrimWhichNumber, diff: 3 },
+      { gen: discrimWorthOfDigit, diff: 4 },
+      { gen: msRippleCount, diff: 4 },
+      { gen: sitZeroTens, diff: 3 },
+      { gen: sitBuildFromBundles, diff: 3 },
+    ],
+    // Day 4 — word problems: both multi-steps beside the two single-step builds
+    // that are most easily mis-columned, so "it must be two steps" never becomes
+    // the cue.
+    [
+      { gen: wAddWithin100, diff: 2 },
+      { gen: msRippleCount, diff: 4 },
+      { gen: msBuildThenCompareEstimate, diff: 5 },
+      { gen: sitNameToNumeral, diff: 3 },
+      { gen: sitBuildFromValues, diff: 3 },
+    ],
+    // Day 5 — non-computational: the swapped columns, the number riddle, and the
+    // claim that settles what a placeholder zero is actually for.
+    [
+      { gen: wCompareTwoDigit, diff: 2 },
+      { gen: eaSwappedColumns, diff: 4 },
+      { gen: riddleEmptyColumn, diff: 3 },
+      {
+        gen: classify({
+          prompt:
+            'Always, sometimes, or never true: a three-digit number with a 0 in its tens column can have that 0 rubbed out and still name the same amount. In one sentence, say how you know.',
+          correct: 'never',
+          distractors: [
+            {
+              text: 'sometimes',
+              errorTag: 'concept-misconception',
+              rationale: 'Treats the zero as decoration on some numbers but not others, though every digit standing left of it loses a whole column the moment it goes.',
+            },
+            {
+              text: 'always',
+              errorTag: 'representation-misread',
+              rationale: 'Reads a zero as nothing at all, so rubbing it out looks harmless — but the hundreds digit then finds itself standing in the tens column.',
+            },
+          ],
+          hints: [
+            'What is a zero doing in a column where nothing was counted?',
+            'Write one such number down, rub the zero out, and read both of them aloud before you decide.',
+          ],
+          errorTags: ['concept-misconception', 'representation-misread'],
+        }),
+        diff: 4,
+      },
+    ],
+  ],
+  teacherNoteStrips: [
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    'For grown-ups: when a three-digit number comes out wrong, ask how far off it is before you look at the digits. Ten times too small, or a whole hundred adrift, and the counting was almost certainly fine; it was a column that went missing. The question that fixes it is not "count it again" but "which column is that digit standing in?", and a child who can answer that out loud can usually repair the rest alone.',
+  ],
+  puzzle: (r) => {
+    // Two nonzero cards and a zero. The zero cannot lead, so the search is not
+    // "all six arrangements" — and saying WHY it cannot lead is the argument the
+    // puzzle is really asking for. A search plus a completeness claim; nothing
+    // on Day 1 asks for either.
+    const [a, b] = r.shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 2);
+    const built = [100 * a + 10 * b, 100 * a + b, 100 * b + 10 * a, 100 * b + a].sort((x, y) => x - y);
+    return {
+      id: 'C1-PZ-01',
+      title: 'Puzzle Grove: The Card That Cannot Lead',
       puzzleType: 'logic',
-      prompt:
-        `You have three digit cards: ${pzDigits.join(', ')}. Using each card exactly once, ` +
-        'build the LARGEST 3-digit number you can, and then the SMALLEST. What is your rule ' +
-        'for choosing the hundreds card?',
+      prompt: `You have three digit cards: ${a}, ${b} and 0. Using each card exactly once, build EVERY three-digit number you can. List them all, then say how you know that none is missing from your list.`,
       answer: {
-        value: `largest ${largest}; smallest ${smallest}`,
-        acceptableForms: [String(largest), String(smallest)],
+        value: built.join(', '),
+        acceptableForms: built.map(String),
         validation: 'short-text-keyword',
       },
       hintLadder: [
-        'The hundreds seat multiplies its digit the most.',
-        'Biggest number: spend the biggest card on the biggest seat. Smallest: opposite.',
+        'Which one of your three cards can never take the left-hand column, and what would the number turn into if it did?',
+        'Settle the left-hand column first: put one card there, list what the other two can do behind it, then swap the leading card and do the same again.',
       ],
-      errorTags: ['concept-misconception'],
+      errorTags: ['concept-misconception', 'task-comprehension'],
+    };
+  },
+  puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
+  sprint: {
+    skill: 'Addition within 100 — the two-column arithmetic under every three-digit story',
+    sourceWeek: B13,
+    itemCount: 16,
+    scheduledDay: 3,
+    templateId: 'add_within_100_facts_v1',
+    params: { min: 11, max: 88, regroup: 'mixed' },
+  },
+  mastery: [
+    { gen: sitBuildFromBundles, diff: 3 },
+    { gen: msRippleCount, diff: 4 },
+    { gen: sitDigitWorth, diff: 3 },
+    { gen: msBuildThenCompare, diff: 4 },
+    { gen: sitZeroTens, diff: 3 },
+    { gen: sitNameToNumeral, diff: 3 },
+  ],
+  isomorphNotes:
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step readings of one number — built from bundle counts, one named digit weighed against its column (place-value-chart affordance preserved), and the count whose tens column holds nothing. 02/04/06: the two multi-steps (a count built column by column then measured against an earlier one, and a count whose ripple crosses two columns, with its worth-printing chart preserved) and the spoken name written as a numeral. No operand surface reused from Form A or the daily pages.',
+  mistakeBank: [
+    {
+      errorTag: 'concept-misconception',
+      subtype: 'face-for-worth',
+      description: 'Answers with the digit itself instead of what its column makes it worth, so the 4 in 465 is reported as "4" rather than as four hundred.',
+      exampleWrongAnswer: 'the worth of the 4 in 465 given as 4',
+      distractorRationale: 'Offer the bare digit wherever an item asks what a digit is worth.',
+      reteachPointer: 'explanation/script[1] (two identical digits, one worth a hundred times the other)',
     },
-    fluencySprint: {
-      id: contentId('C', 1, 'FS', 1),
-      skill: 'Addition within 100 (with and without regrouping)',
-      sourceWeek: { level: 'B', week: 13 },
-      durationSeconds: SPRINT_DURATION_SECONDS,
-      itemCount: 16,
-      scheduledDay: 3,
-      selfReferenced: true,
-      graded: false,
-      generator: {
-        templateId: 'add_within_100_facts_v1',
-        params: { min: 11, max: 88, regroup: 'mixed' },
-        seed: fs.uint(),
-      },
+    {
+      errorTag: 'representation-misread',
+      subtype: 'column-lost',
+      description: 'Reads or writes a number with a column missing, so the digits close up and every digit left of the gap is counted one column too far right — 407 read as forty-seven, or the two spoken digits of a number set down in each other\'s columns.',
+      exampleWrongAnswer: '407 read aloud as forty-seven',
+      distractorRationale: 'Offer the digit counted in the column to its right, which is what a lost column costs it.',
+      reteachPointer: 'explanation/script[2] (skip the tens column and four hundred walks into it and becomes forty)',
     },
-    masteryCheck: {
-      passThresholdPct: MASTERY_THRESHOLD_PCT,
-      fastTrackPct: FAST_TRACK_PCT,
-      formA,
-      formB,
-      isomorphNotes:
-        'Pairs by index; same template and difficulty per slot. 01: compose from ' +
-        'hundreds/tens/ones. 02: expanded form to numeral. 03: value of the tens digit ' +
-        '(digit-vs-value affordance preserved). 04: word form to numeral. 05: zero-tens ' +
-        'trap (placeholder affordance preserved). 06: digit-value multiple choice with ' +
-        'digit-itself and wrong-seat distractors. All digit triples distinct; no triple ' +
-        'reused from Form A or the daily pages.',
+    {
+      errorTag: 'procedure-slip',
+      subtype: 'placeholder-dropped',
+      description: 'Writes only the columns the story or the words happen to mention, leaving a column with nothing counted in it with no digit at all.',
+      exampleWrongAnswer: '"six hundred four" written as 64',
+      distractorRationale: 'Offer the numeral with the unmentioned column simply omitted.',
+      reteachPointer: 'guidedExamples/C1-GE-02 (a column nothing was counted in still needs its zero)',
     },
-    mistakeBank: [
+    {
+      errorTag: 'task-comprehension',
+      subtype: 'wrong-quantity-answered',
+      description: 'Answers with a count the story mentions rather than the one the question names — one column instead of the whole number, or this year\'s total when the question asked how much bigger it is than last year\'s.',
+      exampleWrongAnswer: 'a "how many more than last year?" board story answered with this year\'s total',
+      distractorRationale: 'Offer a count the story genuinely states, but not the one the question points at.',
+      reteachPointer: 'explanation/summary (read what the question is pointing at before writing the count down)',
+    },
+    {
+      errorTag: 'fact-recall',
+      subtype: 'column-value-slip',
+      description: 'Loses hold of what a stated column amount is made of, so six hundred is slotted back into a chart as a six or as a sixty.',
+      exampleWrongAnswer: 'the six hundred in "six hundred and fifty and seven" put into the tens column',
+      distractorRationale: 'Offer the stated amount slotted into a neighbouring column.',
+      reteachPointer: 'explanation/script[0] (a digit stops being a mark and starts being an amount the moment it lands in a column)',
+    },
+  ],
+  parentSummarySeed: {
+    whatWeWorkedOn:
+      'Place value to 1,000 — building three-digit numbers from hundreds, tens and ones and from the column amounts themselves, telling a digit\'s face apart from what it is worth (the 4 in 407 is worth four hundred, not four), writing a spoken number as a numeral, and the column that has nothing counted in it and still needs its zero.',
+    improvingCandidates: [
+      'naming what a digit is worth from the column it stands in',
+      'writing a zero into a column nothing was counted in',
+      'building one count from three column amounts before comparing it with another',
+    ],
+    strengtheningByTag: [
       {
         errorTag: 'concept-misconception',
-        subtype: 'digit-vs-value',
-        description:
-          'Answers with the digit itself instead of its seat-multiplied value (the 7 in 472 is "7").',
-        exampleWrongAnswer: 'value of 7 in 472 -> 7',
-        distractorRationale: 'Offer the bare digit as a distractor on digit-value items.',
-        reteachPointer: 'explanation/script[2] (the seat multiplies the digit)',
-      },
-      {
-        errorTag: 'procedure-slip',
-        subtype: 'placeholder-zero-skip',
-        description: 'Drops the zero that holds an empty seat: six hundred four becomes 64.',
-        exampleWrongAnswer: 'six hundred four -> 64',
-        distractorRationale: 'Offer the zero-dropped numeral on zero-seat items.',
-        reteachPointer: 'explanation/script[3] + guidedExamples/C1-GE-04 (a 0 holds the seat)',
+        text: 'the face-and-worth pair — a digit\'s worth comes from its column, and two identical digits in one number are almost never worth the same',
       },
       {
         errorTag: 'representation-misread',
-        subtype: 'wrong-seat-read',
-        description: 'Reads a digit from the wrong column, or reads the value into the wrong seat.',
-        exampleWrongAnswer: 'value of 9 in 792 -> 900',
-        distractorRationale: 'Offer the digit multiplied by the neighboring seat.',
-        reteachPointer: 'guidedExamples/C1-GE-03 (point to the seat before multiplying)',
+        text: 'keeping every digit in its own column when a number is read aloud, which is what stops 407 being heard as forty-seven',
+      },
+      {
+        errorTag: 'procedure-slip',
+        text: 'writing the placeholder zero where a column was never counted into',
+      },
+      {
+        errorTag: 'task-comprehension',
+        text: 'answering the count the question names, rather than one the story happens to mention on the way',
       },
       {
         errorTag: 'fact-recall',
-        subtype: 'expanded-slip',
-        description: 'Adds expanded-form parts carelessly (500 + 80 + 1 = 586).',
-        exampleWrongAnswer: '500 + 80 + 1 -> 586',
-        distractorRationale: 'Offer near-miss sums on expanded-form items.',
-        reteachPointer: '60-second expanded-form snap-together drill; feed the sprint pool',
+        text: 'holding on to what a stated column amount is made of when it is slotted back into a chart',
       },
     ],
-    parentSummarySeed: {
-      whatWeWorkedOn:
-        'Place value to 1,000 - building and reading 3-digit numbers as hundreds, tens and ' +
-        'ones, telling a digit apart from its value (the 4 in 452 is worth 400), and the ' +
-        'placeholder zero (six hundred four is 604, never 64).',
-      improvingCandidates: [
-        'naming the value of a digit from its seat, not its face',
-        'writing spoken hundreds with a placeholder zero where a seat is empty',
-        'stretching numbers into expanded form and snapping them back',
-      ],
-      strengtheningByTag: [
-        {
-          errorTag: 'concept-misconception',
-          text: 'the digit-versus-value distinction (the 7 in 472 is worth 70) - seat-pointing stays in the warm-ups',
-        },
-        {
-          errorTag: 'procedure-slip',
-          text: 'keeping the placeholder zero when a seat is empty - one zero-seat number will keep visiting',
-        },
-        {
-          errorTag: 'representation-misread',
-          text: 'reading digits from the correct column before multiplying by the seat',
-        },
-      ],
-      homeFocus: {
-        praiseLine:
-          'You caught that "six hundred four" needs a zero in the tens seat - placeholder thinking is real place-value mastery.',
-        questionForChild: 'In the number 452, which digit is worth the most - and how do you know?',
-        schoolSyncHook:
-          'If you share how big the numbers are in your child\'s class right now, we will lean the warm-ups toward that range.',
-      },
-      vocabularyForParent: [
-        'place value (the seat multiplies the digit)',
-        'expanded form (452 = 400 + 50 + 2)',
-        'placeholder zero (holds an empty seat)',
-      ],
+    homeFocus: {
+      praiseLine:
+        'You noticed that the same digit is not worth the same in two different numbers, and you checked which column each one was standing in before you wrote anything down — that noticing is the whole of this week.',
+      questionForChild: 'In the number 484, both digits on the outside are 4s. Is one of them worth more than the other, and how can you tell?',
+      schoolSyncHook: 'If your child\'s class calls these columns "places" or "seats" rather than columns, tell us and we will use the same word here.',
     },
-  };
-}
+    vocabularyForParent: [
+      'place value (the column a digit stands in decides what it is worth)',
+      'face and worth (the 4 you see, versus the four hundred it counts)',
+      'placeholder zero (fills a column nothing was counted in, so the other digits stay put)',
+    ],
+  },
+});

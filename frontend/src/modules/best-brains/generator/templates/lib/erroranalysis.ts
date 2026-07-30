@@ -20,10 +20,26 @@ import type { Rng } from '../../rng';
 import type { ItemDraft } from '../shared';
 import { drawUniqueItem } from './guard';
 import { LIB_VERIFY_DEFS, type VerifyResult } from './compute';
+import { getTemplate } from '../registry';
 import type { AuthorMeta } from './meta';
 import type { ItemGen } from './multistep';
 
-const VERIFY = new Map(LIB_VERIFY_DEFS.map((d) => [d.id, d.verifyFor]));
+/**
+ * Verify-truth lookup.
+ *
+ * This used to be a Map built eagerly from `LIB_VERIFY_DEFS` alone, which meant
+ * only Level-D's own compute module could supply an error-analysis truth — the
+ * A/B/C/E generator families registered theirs in the registry and were told
+ * their templateId was unknown. Resolution therefore goes through the REGISTRY,
+ * and it is deliberately LAZY: `registry.ts` imports the families and the
+ * families import this file, so reading the registry at module-evaluation time
+ * would see a half-built map. Reading it at call time sees the finished one.
+ */
+function verifyTruth(id: string): ((p: Record<string, unknown>) => VerifyResult) | undefined {
+  const fromRegistry = getTemplate(id)?.verifyFor;
+  if (fromRegistry) return fromRegistry;
+  return LIB_VERIFY_DEFS.find((d) => d.id === id)?.verifyFor;
+}
 
 /**
  * Phrases that hand the child the diagnosis (PEDAGOGY-CEILING-REVIEW F6).
@@ -60,7 +76,10 @@ export interface ErrorAnalysisCfg {
 }
 
 export function errorAnalysis(cfg: ErrorAnalysisCfg): ItemGen {
-  const verifyFor = VERIFY.get(cfg.verifyTemplateId);
+  // Resolved per invocation, not at factory time — see `verifyTruth`. An
+  // unknown id still throws loudly, just at the first draw rather than at
+  // import, and both the 200-seed week check and bb-verify-packs catch it.
+  const verifyFor = verifyTruth(cfg.verifyTemplateId);
   if (!verifyFor) {
     throw new Error(`errorAnalysis: unknown verify templateId "${cfg.verifyTemplateId}"`);
   }

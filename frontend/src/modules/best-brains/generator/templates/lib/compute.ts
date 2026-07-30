@@ -52,12 +52,28 @@ export interface Frac {
   d: number;
 }
 
-/** Reduce to lowest terms with a positive denominator. */
+/** Canonical signed number: −0 collapses to 0, so no surface ever renders "-0". */
+export function canonicalSigned(n: number): number {
+  return n === 0 ? 0 : n;
+}
+
+/**
+ * Reduce to lowest terms with a positive denominator — the NORMALISATION every
+ * signed result funnels through, which is why "-3/4" is the only surface the
+ * library can produce and "3/-4" is unrepresentable.
+ *
+ * `canonicalSigned` on the numerator kills negative zero: `(-1 * 0) / g` is −0
+ * in JS, so reduceFrac(0, −5) and mulFrac(anything, 0/−d) used to hand back a
+ * Frac whose numerator was −0. Every STRING surface hid it (`String(-0)` is
+ * "0"), but the value compared unequal under `Object.is` and inverted to
+ * −Infinity — a trap laid for the first caller to divide by it. Unreachable for
+ * non-negative inputs (a positive denominator never sets sign = −1).
+ */
 export function reduceFrac(n: number, d: number): Frac {
   if (d === 0) throw new Error('zero denominator');
   const sign = d < 0 ? -1 : 1;
   const g = gcd(n, d);
-  return { n: (sign * n) / g, d: (sign * d) / g };
+  return { n: canonicalSigned((sign * n) / g), d: (sign * d) / g };
 }
 
 export function addFrac(a: Frac, b: Frac): Frac {
@@ -73,7 +89,31 @@ export function mulFrac(a: Frac, b: Frac): Frac {
 }
 
 export function divFrac(a: Frac, b: Frac): Frac {
+  // Named before the generic 'zero denominator' throw fires: dividing BY zero and
+  // constructing a fraction OVER zero are different authoring mistakes, and the
+  // signed audit made the difference matter (a sign-flip bug and a divide-by-zero
+  // bug produce the same reduceFrac message otherwise).
+  if (b.n === 0) throw new Error('division by a zero fraction');
   return reduceFrac(a.n * b.d, a.d * b.n);
+}
+
+/**
+ * Exact three-way comparison of two rationals — the operation the library was
+ * MISSING (signed audit, G5). Comparison is where signed arithmetic breaks in
+ * practice: `a.n * b.d - b.n * a.d` reads correctly only once both denominators
+ * are positive, so a fraction carrying its sign on the denominator (3/-4) would
+ * otherwise compare backwards. Normalising through `reduceFrac` first makes that
+ * impossible, and the comparison itself stays on integers — never a float.
+ *
+ * Returns -1 (a < b), 0 (equal), 1 (a > b), so `sort(cmpFrac)` orders ascending
+ * and −8 < −3 comes out of the same code path that says 8 > 3.
+ */
+export function cmpFrac(a: Frac, b: Frac): -1 | 0 | 1 {
+  const x = reduceFrac(a.n, a.d);
+  const y = reduceFrac(b.n, b.d);
+  const left = x.n * y.d;
+  const right = y.n * x.d;
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 /**
@@ -171,19 +211,44 @@ export function decToFrac(value: string): string {
   return formatFrac(reduceFrac(d.int, 10 ** d.scale));
 }
 
+/**
+ * SIGNED-SAFE rounding (audit fix, G5). `Math.round` breaks the tie toward +∞
+ * (`Math.round(-2.5) === -2`), so the old body rounded +0.25 AWAY from zero and
+ * −0.25 TOWARD it — two different rules on the two sides of the number line,
+ * which is not the rule any school teaches and would have made "round −2.5" a
+ * coin flip in Level E. Rounding the MAGNITUDE and re-applying the sign gives
+ * one rule ("half away from zero") on both sides.
+ *
+ * Non-negative inputs are untouched: for n ≥ 0, `Math.abs(n) === n`, so this is
+ * `Math.round` exactly as before (proved bit-for-bit by the audit's regression
+ * grid and by the corpus hash check).
+ */
 export function roundDec(value: string, places: number): string {
   const d = parseDec(value);
   if (d.scale <= places) return formatDec(d.int * 10 ** (places - d.scale), places);
   const drop = d.scale - places;
   const factor = 10 ** drop;
-  const q = Math.round(d.int / factor);
-  return formatDec(q, places);
+  const q = Math.round(Math.abs(d.int) / factor);
+  return formatDec(d.int < 0 ? -q : q, places);
 }
 
-/** Round an integer to the nearest 10^k (k = "place": 1,2,3,...). */
+/** Round an integer to the nearest 10^k (k = "place": 1,2,3,...), half away from zero. */
 export function roundInt(n: number, place: number): number {
   const unit = 10 ** place;
-  return Math.round(n / unit) * unit;
+  const q = Math.round(Math.abs(n) / unit) * unit;
+  // `-q` when q is 0 would hand back negative zero, which renders as "-0" through
+  // some surfaces and compares equal through others; canonicalise it here.
+  return q === 0 ? 0 : n < 0 ? -q : q;
+}
+
+/**
+ * Exact three-way comparison of two decimal strings — the decimal twin of
+ * `cmpFrac`, and likewise previously missing. Compares on the aligned scaled
+ * INTEGERS, so "-0.30" vs "-0.3" is equality and "-8" < "-3" needs no float.
+ */
+export function cmpDec(a: string, b: string): -1 | 0 | 1 {
+  const [ai, bi] = align(parseDec(a), parseDec(b));
+  return ai < bi ? -1 : ai > bi ? 1 : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -302,6 +367,14 @@ function verifyDec(p: Params): VerifyResult {
       // strip points, operate as integers, then reattach the LONGER scale.
       const da = parseDec(a);
       const db = parseDec(b);
+      // SIGNED GUARD (audit): this mode models a DIGIT-STRING slip, so it works on
+      // magnitudes — with a negative operand it silently returned a sign-free value
+      // (verifyDec('-1.5','0.25','+') gave "0.4"), i.e. a "misconception output" no
+      // child could produce. There is no honest signed reading of right-justifying
+      // a signed decimal, so the mode refuses the input instead of inventing one.
+      if (da.int < 0 || db.int < 0) {
+        throw new Error(`dec wrongMode 'right-align' models a digit-string slip and is undefined for signed operands (${a}, ${b})`);
+      }
       const scale = Math.max(da.scale, db.scale);
       const ai = Math.abs(da.int);
       const bi = Math.abs(db.int);
@@ -339,13 +412,29 @@ export interface AnswerDef {
 function divRem(p: Params): string {
   const a = num(p, 'a');
   const b = num(p, 'b');
+  assertSharingOperands(a, b, 'd_div_rem_v1');
   return `${Math.floor(a / b)}, ${a % b}`;
+}
+
+/**
+ * SIGNED GUARD (audit) for the two remainder templates. `Math.floor(a/b)` is
+ * FLOOR division while JS `%` is TRUNCATED remainder — agreeing only when both
+ * operands are non-negative. Fed a = −7, b = 2 they returned "−4, −1", a (q, r)
+ * pair that satisfies no division identity (−4 × 2 + −1 = −9, not −7) and a
+ * "leftover" no sharing story can mean. Both templates model fair-sharing of
+ * real objects, so a signed operand is an authoring error, and it says so.
+ */
+function assertSharingOperands(a: number, b: number, id: string): void {
+  if (a < 0 || b <= 0) {
+    throw new Error(`${id}: remainder templates model fair sharing of whole objects — need a ≥ 0 and b > 0, got a=${a}, b=${b}`);
+  }
 }
 
 /** Interpreted-remainder word answer: mode picks how the remainder is used. */
 function interpretRemainder(p: Params): string {
   const a = num(p, 'a');
   const b = num(p, 'b');
+  assertSharingOperands(a, b, 'd_interpret_rem_v1');
   const q = Math.floor(a / b);
   const r = a % b;
   switch (str(p, 'mode')) {
@@ -413,6 +502,125 @@ function binop(a: number, b: number, op: string): number {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Signed / integer misconception verifies (G5 — E6…E9).
+//
+// WHY THEY LIVE HERE and not in lib/integers.ts with the rest of the family:
+// `erroranalysis.ts` resolves `verifyTemplateId` against LIB_VERIFY_DEFS ONLY
+// (`const VERIFY = new Map(LIB_VERIFY_DEFS…)`), so a verify template registered
+// anywhere else is invisible to the error-analysis primitive. The family's
+// `answerFor` templates stay in integers.ts; only these four truths have to sit
+// on the shared list. Each one REFUSES params that do not actually exhibit its
+// misconception (wrong === correct throws), so an error-analysis item can never
+// show a "student error" that is really the right answer.
+// ---------------------------------------------------------------------------
+
+/** The ordered-pair surface every coordinate template renders: "(-3, 2)". */
+export function formatPoint(x: number, y: number): string {
+  return `(${canonicalSigned(x)}, ${canonicalSigned(y)})`;
+}
+
+/** Order comparison vs the "bigger digits win" misconception (−8 > −3). */
+function verifyIntCompare(p: Params): VerifyResult {
+  const a = num(p, 'a');
+  const b = num(p, 'b');
+  if (a === b) throw new Error('e_verify_int_compare_v1: the two values are equal — nothing to order');
+  if (Math.abs(a) === Math.abs(b)) {
+    throw new Error(`e_verify_int_compare_v1: |${a}| = |${b}|, so the magnitude misconception has no output`);
+  }
+  const correct = cmpFrac({ n: a, d: 1 }, { n: b, d: 1 }) > 0 ? a : b;
+  const wrong = Math.abs(a) > Math.abs(b) ? a : b;
+  if (wrong === correct) {
+    throw new Error(`e_verify_int_compare_v1: (${a}, ${b}) does not exhibit the misconception — the bigger magnitude IS the bigger number`);
+  }
+  return { correct: String(canonicalSigned(correct)), wrong: String(canonicalSigned(wrong)) };
+}
+
+/** Signed add/sub vs a named misconception. Modes:
+ *  add-magnitudes = ignored the signs and combined the digits, keeping the first
+ *  sign (−5 + 3 → −8); minus-negative-as-minus = read −(−n) as one subtraction
+ *  (5 − (−3) → 2); sign-dropped = computed the size and lost the sign. */
+function verifyIntAddSub(p: Params): VerifyResult {
+  const a = num(p, 'a');
+  const b = num(p, 'b');
+  const op = str(p, 'op');
+  if (op !== '+' && op !== '-') throw new Error(`e_verify_int_addsub_v1: op must be '+' or '-', got '${op}'`);
+  const correct = op === '+' ? a + b : a - b;
+  const mode = str(p, 'wrongMode');
+  let wrong: number;
+  switch (mode) {
+    case 'add-magnitudes':
+      if (op !== '+') throw new Error("e_verify_int_addsub_v1: 'add-magnitudes' describes an addition");
+      wrong = (a < 0 ? -1 : 1) * (Math.abs(a) + Math.abs(b));
+      break;
+    case 'minus-negative-as-minus':
+      if (op !== '-' || b >= 0) {
+        throw new Error("e_verify_int_addsub_v1: 'minus-negative-as-minus' needs a subtraction of a negative");
+      }
+      wrong = a - Math.abs(b);
+      break;
+    case 'sign-dropped':
+      wrong = Math.abs(correct);
+      break;
+    default:
+      throw new Error(`e_verify_int_addsub_v1: bad wrongMode '${mode}'`);
+  }
+  if (wrong === correct) {
+    throw new Error(`e_verify_int_addsub_v1: mode '${mode}' returns the TRUE answer for (${a}, ${b}) — pick operands that exhibit it`);
+  }
+  return { correct: String(canonicalSigned(correct)), wrong: String(canonicalSigned(wrong)) };
+}
+
+/** Signed × / ÷ vs a named misconception (neg × neg kept negative; sign dropped). */
+function verifyIntMulDiv(p: Params): VerifyResult {
+  const a = num(p, 'a');
+  const b = num(p, 'b');
+  const op = str(p, 'op');
+  if (op !== '*' && op !== '/') throw new Error(`e_verify_int_mul_v1: op must be '*' or '/', got '${op}'`);
+  if (op === '/') {
+    if (b === 0) throw new Error('e_verify_int_mul_v1: division by zero');
+    if (a % b !== 0) throw new Error(`e_verify_int_mul_v1: ${a} ÷ ${b} is not exact — integer templates divide exactly`);
+  }
+  const correct = op === '*' ? a * b : a / b;
+  const mode = str(p, 'wrongMode');
+  let wrong: number;
+  switch (mode) {
+    case 'neg-times-neg-is-neg':
+      if (!(a < 0 && b < 0)) throw new Error('e_verify_int_mul_v1: this misconception needs two negative operands');
+      wrong = -Math.abs(correct);
+      break;
+    case 'sign-dropped':
+      wrong = Math.abs(correct);
+      break;
+    default:
+      throw new Error(`e_verify_int_mul_v1: bad wrongMode '${mode}'`);
+  }
+  if (wrong === correct) {
+    throw new Error(`e_verify_int_mul_v1: mode '${mode}' returns the TRUE answer for (${a}, ${b}) — pick operands that exhibit it`);
+  }
+  return { correct: String(canonicalSigned(correct)), wrong: String(canonicalSigned(wrong)) };
+}
+
+/** Coordinate-pair truths: the x/y swap, and reflecting the wrong coordinate. */
+function verifyPoint(p: Params): VerifyResult {
+  const x = num(p, 'x');
+  const y = num(p, 'y');
+  const mode = str(p, 'mode');
+  switch (mode) {
+    case 'swap':
+      if (x === y) throw new Error('e_verify_point_v1: a point on y = x cannot show the swap');
+      return { correct: formatPoint(x, y), wrong: formatPoint(y, x) };
+    case 'reflect-x':
+      if (y === 0 || x === 0) throw new Error('e_verify_point_v1: reflection needs a point off both axes');
+      return { correct: formatPoint(x, -y), wrong: formatPoint(-x, y) };
+    case 'reflect-y':
+      if (y === 0 || x === 0) throw new Error('e_verify_point_v1: reflection needs a point off both axes');
+      return { correct: formatPoint(-x, y), wrong: formatPoint(x, -y) };
+    default:
+      throw new Error(`e_verify_point_v1: bad mode '${mode}'`);
+  }
+}
+
 /** All verify (QG-11 truth) templates, keyed by templateId. */
 export const LIB_VERIFY_DEFS: VerifyDef[] = [
   // Single binary operation truth (discrimination: which op applies?).
@@ -450,6 +658,15 @@ export const LIB_VERIFY_DEFS: VerifyDef[] = [
   { id: 'd_verify_frac_v1', verifyFor: verifyFrac },
   // Decimal misconception truth (right-align, wrong-op, point-drop).
   { id: 'd_verify_dec_v1', verifyFor: verifyDec },
+  // --- Signed / integer truths (G5, E6–E9) ---------------------------------
+  // Integer order vs "bigger digits win" (−8 > −3).
+  { id: 'e_verify_int_compare_v1', verifyFor: verifyIntCompare },
+  // Signed ± vs adding magnitudes (−5 + 3 = −8) / minus-a-negative.
+  { id: 'e_verify_int_addsub_v1', verifyFor: verifyIntAddSub },
+  // Signed × ÷ vs neg × neg = neg / sign dropped.
+  { id: 'e_verify_int_mul_v1', verifyFor: verifyIntMulDiv },
+  // Coordinate pair vs the x/y swap and the wrong-coordinate reflection.
+  { id: 'e_verify_point_v1', verifyFor: verifyPoint },
 ];
 
 /** All Level-D deterministic templates, keyed by templateId. */

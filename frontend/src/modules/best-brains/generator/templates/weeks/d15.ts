@@ -27,7 +27,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
-import { fmtInt, wholeMoney } from '../lib/format';
+import { article, fmtInt, wholeMoney } from '../lib/format';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const D3 = { level: 'D' as const, week: 3 };
@@ -69,13 +69,18 @@ const sSeat = situation({
     const a = r.int(102, 389); const b = r.int(13, 49);
     const place = r.pick(['library', 'archive', 'bookshop', 'reading room', 'store room']);
     return {
-      prompt: `A ${place} has ${a} shelves holding ${b} books each. How many books are there in all?`,
+      // `article()` rather than a hardcoded "A": the pool contains "archive",
+      // which needs "an". Capitalised because the sentence opens here.
+      prompt: `${cap(article(place))} has ${a} shelves holding ${b} books each. How many books are there in all?`,
       answerValue: String(a * b), templateId: 'd_mul_v1', params: { a, b }, units: 'books',
       hints: ['Picture the books as a grid of shelves and columns — what finds the whole array?', 'Multiply the number of shelves by the books on each shelf.'],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
   },
 });
+
+/** Sentence-initial capital for an article-led opener. */
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 const sTrip = situation({
   situationType: 'measurement', cognitiveOp: 'mul',

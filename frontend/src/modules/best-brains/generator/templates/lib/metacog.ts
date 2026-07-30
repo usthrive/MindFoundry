@@ -51,8 +51,20 @@ function assertElicits(text: string, where: string): void {
   }
 }
 
-/** Deterministic lead-in variety: keyed off the drafted prompt, never a new rng draw. */
-const PROBE_LEAD = ['Before you solve —', 'Predict first —', 'Make a call before you work it out —'] as const;
+/**
+ * Deterministic lead-in variety: keyed off the drafted prompt, never a new rng
+ * draw. Each lead is a COMPLETE sentence, because the band-B/C length law
+ * (FILL-ARCHITECTURE §2, ≤15 words) counts an em-dash as a separator inside one
+ * sentence: "Make a call before you work it out — <probe>" welded eight words
+ * onto every probe and put whole weeks over the ceiling. A short closed
+ * sentence leaves the probe to stand on its own word count.
+ */
+const PROBE_LEAD = ['Think before you solve.', 'Predict first.', 'Make a call first.'] as const;
+
+/** Probes are authored lowercase (mid-sentence style); they now open a sentence. */
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 /**
  * Prepend an eliciting estimate-first probe. `probe` is a QUESTION with a
@@ -67,7 +79,10 @@ export function withEstimateFirst(base: ItemGen, probe: string): ItemGen {
     const lead = PROBE_LEAD[d.prompt.length % PROBE_LEAD.length];
     return {
       ...d,
-      prompt: `${lead} ${probe} Decide, then solve: ${d.prompt}`,
+      // "Decide, then solve." closes with a period, not a colon: a colon would
+      // weld its three words onto the inner prompt's first sentence, which is
+      // exactly the length-law failure the leads above were rebuilt to avoid.
+      prompt: `${lead} ${sentenceCase(probe)} Decide, then solve. ${d.prompt}`,
       authorMeta: markMetacog(d.authorMeta),
     };
   };

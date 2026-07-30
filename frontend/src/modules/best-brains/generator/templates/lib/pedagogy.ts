@@ -43,10 +43,57 @@ const PRAISE_BANNED = /\bfast\b|\brecord\b|\bsmart\b|\bgenius\b|\bclever\b|good 
 const PRAISE_MOVE = /drew|estimat|checked|traded|renamed|split|noticed|compared|counted|found|caught|lined up|regroup|pictured|reasoned|explained|sorted|matched|broke|shared/i;
 const METACOG_SCRIPT = /estimate|about\b|reasonable|near\b|benchmark|check\b|sensible|roughly|ballpark/i;
 
+/**
+ * Per-level gate settings (FILL-ARCHITECTURE §1).
+ *
+ * The spec called for `GATE_PROFILE[band]`; this keys on LEVEL instead, because
+ * B and C share the 'intermediate' band while the spec's own table gives them
+ * different thresholds (C carries the D multi-step rows, B a gentler one). Level
+ * is what a blueprint knows, so nothing is lost.
+ *
+ * **D and E rows reproduce the pre-B1.2 behaviour exactly** — proved against a
+ * pack-hash baseline over every servable cell × 5 seeds. Do not weaken them.
+ */
+export interface GateProfile {
+  /** §6.1 multi-step density. `null` = OFF: at band A a single-step pictorial
+   *  real-world item is the correct form, not a watered-down two-step. */
+  multiStep: { weekWide: number; day4: number } | null;
+  /** §6.3 ≥N discrimination items in Days 2–3 (perceptual at band A). */
+  discrimination: number;
+  /** §6.6 ≥N distinct structure-distinct situationTypes among word problems. */
+  situationTypes: number;
+  /** §6.7 an error-analysis item is required (puppet form at band A). */
+  errorAnalysis: boolean;
+  /** §6.8 a metacognition item in Days 2–4 AND estimate-first modeled in script. */
+  metacog: boolean;
+  /** §6.5 rung-1 must be an algorithm-free orienting question. The seed-invariant
+   *  ladder DEDUP runs at every level regardless — it guards a real breakage. */
+  hintOrienting: boolean;
+  /** §6.14 ≥N distinct warm-up formats week-wide (0 = off; A·W1 has no retrieval). */
+  warmupFormats: number;
+  /** §6.10 the puzzle may not collapse to a Day-1 structure. Off at band A, where
+   *  a sanctioned solve-and-colour puzzle is the band-appropriate form. */
+  puzzleRemoveConcept: boolean;
+  /** Band-A replacement for the multi-step row: ≥N items carrying a FIGURE per
+   *  day (Days 1–4). At 3–5 the concrete model is the content, so this is the
+   *  gate that bites — and it is what makes the B1.0 renderer load-bearing. */
+  pictorialPerDay: number;
+}
+
+export const GATE_PROFILE: Record<BBLevel, GateProfile> = {
+  A: { multiStep: null, discrimination: 1, situationTypes: 0, errorAnalysis: true, metacog: false, hintOrienting: false, warmupFormats: 0, puzzleRemoveConcept: false, pictorialPerDay: 1 },
+  B: { multiStep: { weekWide: 2, day4: 0 }, discrimination: 1, situationTypes: 2, errorAnalysis: true, metacog: true, hintOrienting: true, warmupFormats: 3, puzzleRemoveConcept: true, pictorialPerDay: 0 },
+  C: { multiStep: { weekWide: 2, day4: 0 }, discrimination: 1, situationTypes: 3, errorAnalysis: true, metacog: true, hintOrienting: true, warmupFormats: 3, puzzleRemoveConcept: true, pictorialPerDay: 0 },
+  D: { multiStep: { weekWide: 2, day4: 1 }, discrimination: 1, situationTypes: 3, errorAnalysis: true, metacog: true, hintOrienting: true, warmupFormats: 3, puzzleRemoveConcept: true, pictorialPerDay: 0 },
+  E: { multiStep: { weekWide: 2, day4: 1 }, discrimination: 1, situationTypes: 3, errorAnalysis: true, metacog: true, hintOrienting: true, warmupFormats: 3, puzzleRemoveConcept: true, pictorialPerDay: 0 },
+};
+
 export interface PedagogyContext {
   level: BBLevel;
   week: number;
   conceptId: string;
+  /** Which §6.1 row applies. Defaults to the D-era conceptId lookup. */
+  conceptFamily?: 'operation' | 'place-value';
   conceptualAnchor?: string;
   deepeningDelta?: string;
   explanation: Explanation;
@@ -63,7 +110,8 @@ function meta(d: ItemDraft): AuthorMeta {
 }
 
 export function pedagogicalPreflight(ctx: PedagogyContext): void {
-  const tag = `D${ctx.week}`;
+  const tag = `${ctx.level}${ctx.week}`;
+  const P = GATE_PROFILE[ctx.level];
   const fail = (msg: string): never => {
     throw new Error(`${tag} [v2 pedagogy]: ${msg}`);
   };
@@ -76,19 +124,26 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
   const wordProblems = core.filter((d) => d.type === 'word-problem');
 
   // 6.1 — Multi-step density (week-wide + concept-conditional) -----------------
-  const multiStep = core.filter((d) => meta(d).stepCount >= 2);
-  const day4Multi = day(4).filter((d) => !d.isRetrieval && meta(d).stepCount >= 2);
-  const placeValueFamily = PLACE_VALUE_FAMILY.has(ctx.conceptId);
-  if (placeValueFamily) {
-    if (multiStep.length < 1) {
-      fail(`place-value-family concept needs ≥1 week-wide multi-step item (composed with a prior-week op); found 0`);
+  if (P.multiStep) {
+    const multiStep = core.filter((d) => meta(d).stepCount >= 2);
+    const day4Multi = day(4).filter((d) => !d.isRetrieval && meta(d).stepCount >= 2);
+    const placeValueFamily = (ctx.conceptFamily ?? (PLACE_VALUE_FAMILY.has(ctx.conceptId) ? 'place-value' : 'operation')) === 'place-value';
+    const wantWeek = placeValueFamily ? 1 : P.multiStep.weekWide;
+    const wantDay4 = placeValueFamily ? 0 : P.multiStep.day4;
+    if (multiStep.length < wantWeek) {
+      fail(`${placeValueFamily ? 'place-value' : 'operation'}-family concept needs ≥${wantWeek} genuine multi-step item(s) week-wide; found ${multiStep.length}`);
+    }
+    if (day4Multi.length < wantDay4) {
+      fail(`Day 4 needs ≥${wantDay4} genuine multi-step item (stepCount≥2); found ${day4Multi.length}`);
     }
   } else {
-    if (multiStep.length < 2) {
-      fail(`operation-family concept needs ≥2 genuine multi-step items week-wide; found ${multiStep.length}`);
-    }
-    if (day4Multi.length < 1) {
-      fail(`Day 4 needs ≥1 genuine multi-step item (stepCount≥2); found ${day4Multi.length}`);
+    // Band A: the multi-step row is replaced by "the concrete model IS the
+    // content" — every working day must show the child a picture.
+    for (let n = 1; n <= 4; n++) {
+      const pictorial = day(n).filter((d) => !d.isRetrieval && d.figure);
+      if (pictorial.length < P.pictorialPerDay) {
+        fail(`Day ${n} needs ≥${P.pictorialPerDay} item(s) carrying a figure; found ${pictorial.length} (band-A law: the picture is the question)`);
+      }
     }
   }
 
@@ -100,7 +155,7 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
 
   // 6.3 — Discrimination trap by Day 3 ----------------------------------------
   const discrim23 = [...day(2), ...day(3)].filter((d) => meta(d).isDiscrimination);
-  if (discrim23.length < 1) {
+  if (discrim23.length < P.discrimination) {
     fail(`no discrimination trap in Days 2–3 (BB-W5); need ≥1 (cross-op or within-concept structural)`);
   }
 
@@ -136,7 +191,7 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
   for (const d of core) {
     const rung1 = (d.hintLadder[0] ?? '').trim();
     const orienting = rung1.endsWith('?') || ORIENTING_START.test(rung1);
-    if (!orienting || ALGORITHM_VERB_START.test(rung1)) {
+    if (P.hintOrienting && (!orienting || ALGORITHM_VERB_START.test(rung1))) {
       fail(`hint rung-1 must be an algorithm-free orienting question — offending item prompts with "${rung1.slice(0, 60)}"`);
     }
     const key = d.hintLadder.map(normHint).join(' | ');
@@ -148,23 +203,25 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
 
   // 6.6 — Situation variety ---------------------------------------------------
   const sitTypes = new Set(wordProblems.map((d) => meta(d).situationType).filter(Boolean));
-  if (sitTypes.size < 3) {
-    fail(`only ${sitTypes.size} distinct situationType(s) among word problems; need ≥3 (BB-W5). Types: ${[...sitTypes].join(', ')}`);
+  if (P.situationTypes > 0 && sitTypes.size < P.situationTypes) {
+    fail(`only ${sitTypes.size} distinct situationType(s) among word problems; need ≥${P.situationTypes} (BB-W5). Types: ${[...sitTypes].join(', ')}`);
   }
 
   // 6.7 — Error-analysis present ----------------------------------------------
   const errorAnalysis = allDayItems.filter((d) => d.type === 'error-analysis' && d.strand === 'noncomputational');
-  if (errorAnalysis.length < 1) {
+  if (P.errorAnalysis && errorAnalysis.length < 1) {
     fail(`no error-analysis item (BB-W7); need ≥1 (noncomputational, with a written-argument answer)`);
   }
 
   // 6.8 — Metacognition woven -------------------------------------------------
-  const metacog24 = coreDays24.filter((d) => meta(d).isMetacog);
-  if (metacog24.length < 1) {
-    fail(`no metacognition (estimate-first / reasonableness / check-back) in Days 2–4 core (BB-W12)`);
-  }
-  if (!ctx.explanation.script.some((seg) => METACOG_SCRIPT.test(seg.say))) {
-    fail(`estimate-first / reasonableness is not modeled in any explanation.script segment (BB-W12 ceiling)`);
+  if (P.metacog) {
+    const metacog24 = coreDays24.filter((d) => meta(d).isMetacog);
+    if (metacog24.length < 1) {
+      fail(`no metacognition (estimate-first / reasonableness / check-back) in Days 2–4 core (BB-W12)`);
+    }
+    if (!ctx.explanation.script.some((seg) => METACOG_SCRIPT.test(seg.say))) {
+      fail(`estimate-first / reasonableness is not modeled in any explanation.script segment (BB-W12 ceiling)`);
+    }
   }
 
   // 6.9 — Concept-first "why" -------------------------------------------------
@@ -194,7 +251,7 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
   // fill. Until then the whole-week judgment stays with the style gate, which
   // demonstrably catches it.
   const day1Keys = new Set(day(1).filter((d) => !d.isRetrieval).map((d) => `${meta(d).cognitiveOp}|${meta(d).stepCount}`));
-  if (day1Keys.has(pKey)) {
+  if (P.puzzleRemoveConcept && day1Keys.has(pKey)) {
     fail(`puzzle collapses to a Day-1 core structure (${pKey}) — it must apply the concept a genuinely new way (BB-G7 remove-the-concept)`);
   }
 
@@ -231,8 +288,8 @@ export function pedagogicalPreflight(ctx: PedagogyContext): void {
     }
   }
   const weekWarmupFormats = new Set(allDayItems.filter((d) => d.isRetrieval).map(warmupKey));
-  if (weekWarmupFormats.size < 3) {
-    fail(`only ${weekWarmupFormats.size} distinct warm-up format(s) across the week; need ≥3 (P4). Formats: ${[...weekWarmupFormats].join(', ')}`);
+  if (P.warmupFormats > 0 && weekWarmupFormats.size < P.warmupFormats) {
+    fail(`only ${weekWarmupFormats.size} distinct warm-up format(s) across the week; need ≥${P.warmupFormats} (P4). Formats: ${[...weekWarmupFormats].join(', ')}`);
   }
 
   // 6.13 — Ledger precondition (deepening delta) ------------------------------

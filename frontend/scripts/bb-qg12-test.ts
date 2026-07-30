@@ -87,6 +87,14 @@ check('"1 litre" is NOT caught', !withPrompt('Tom pours 1 litre of juice into th
 check('"an 8 cm strip" is NOT caught', !withPrompt('Zoe tapes an 8 cm strip onto the rope.').includes('QG-12c'), '');
 check('"1 km" (invariant unit) is NOT caught', !withPrompt('The trail is 1 km long from the gate.').includes('QG-12c'), '');
 check('a decimal ending in .1 is NOT caught', !withPrompt('The jug holds 4.1 litres of water.').includes('QG-12c'), '"4.1 litres" is not a count of one');
+check('"a obstacle course" is caught', withPrompt('Ava sets up a obstacle course in the hall.').includes('QG-12c'), 'word-level article');
+check('"an ribbon" is caught', withPrompt('Ken cuts an ribbon for the display.').includes('QG-12c'), 'reverse direction');
+check('"an obstacle course" is NOT caught', !withPrompt('Ava sets up an obstacle course in the hall.').includes('QG-12c'), 'false-positive guard');
+check('"a university" is NOT caught', !withPrompt('The class visits a university open day.').includes('QG-12c'), 'vowel letter, consonant sound');
+check('"a one-way street" is NOT caught', !withPrompt('They walk down a one-way street to the park.').includes('QG-12c'), '/wʌ/ onset');
+check('"an hour" is NOT caught', !withPrompt('The trip takes an hour and ten minutes.').includes('QG-12c'), 'silent h');
+check('a class LABEL "Class A and Class B" is NOT caught', !withPrompt('Class A and Class B collected 586 bottle tops altogether.').includes('QG-12c'), 'a capital A mid-sentence is a label');
+check('sentence-initial "A archive" IS caught', withPrompt('A archive has 351 shelves holding 46 books each.').includes('QG-12c'), 'capitalised article still checked');
 check('a NAMED digit is NOT caught', !withPrompt('Find which place the 1 sits in.').includes('QG-12c'), 'digit reference, not a count');
 check('an enumerated 1 is NOT caught', !withPrompt('Benchmark number line with 0, 1/2, 1 flags.').includes('QG-12c'), 'list element, not a count');
 

@@ -12,6 +12,13 @@
  */
 
 import { LIB_TEMPLATE_DEFS, LIB_VERIFY_DEFS } from './lib/compute';
+import { CLOCK_TEMPLATE_DEFS } from './lib/clock';
+import { MONEY_TEMPLATE_DEFS } from './lib/money';
+import { RATIO_TEMPLATE_DEFS } from './lib/ratio';
+import { INTEGER_TEMPLATE_DEFS } from './lib/integers';
+import { ALGEBRA_TEMPLATE_DEFS } from './lib/algebra';
+import { STATS_TEMPLATE_DEFS } from './lib/stats';
+import { EARLYNUMBER_TEMPLATE_DEFS } from './lib/earlynumber';
 import type { VerifyResult } from './lib/compute';
 
 type Params = Record<string, unknown>;
@@ -56,7 +63,25 @@ function fracAddSub(params: Params): string {
   return `${num}/${lcm}`;
 }
 
-const DEFS: TemplateDef[] = [
+/**
+ * Built LAZILY, on first lookup.
+ *
+ * The families import `erroranalysis.ts`, which imports this file — a cycle. If
+ * this array were evaluated at module scope (it was), then importing ANY family
+ * module before the registry threw
+ * `ReferenceError: Cannot access 'X_TEMPLATE_DEFS' before initialization`,
+ * because the family's `const` is still in its temporal dead zone while the
+ * spread runs. Two independent authors hit it, and one worked around it by
+ * ordering imports inside a week file — a fix that has to be remembered by
+ * every future consumer, which is not a fix.
+ *
+ * Deferring the spread to first call closes it: by the time anything asks for a
+ * template, every family module has finished evaluating. `erroranalysis.ts`
+ * already made its half of the cycle lazy for the same reason; this is the
+ * other half.
+ */
+function allDefs(): TemplateDef[] {
+  return [
   // --- Templates named in the spec's worked packs -------------------------
   { id: 'count_on_v1', answerFor: (p) => String(n(p, 'start') + n(p, 'hop')) },
   { id: 'add_within_10_pictures_v1', answerFor: (p) => String(n(p, 'a') + n(p, 'b')) },
@@ -154,12 +179,42 @@ const DEFS: TemplateDef[] = [
   // and the verify (QG-11 truth) definitions for embedded-claim item types.
   ...LIB_TEMPLATE_DEFS,
   ...LIB_VERIFY_DEFS,
-];
 
-export const TEMPLATE_REGISTRY: ReadonlyMap<string, TemplateDef> = new Map(
-  DEFS.map((d) => [d.id, d]),
-);
+  // --- Level A/B/C/E generator families (FILL-ARCHITECTURE §2) -------------
+  // Each family owns its own defs array and is spread here exactly once, so a
+  // new family never needs a second file edited — and families can be built in
+  // parallel without colliding on this one.
+  ...CLOCK_TEMPLATE_DEFS,
+  ...MONEY_TEMPLATE_DEFS,
+  ...RATIO_TEMPLATE_DEFS,
+  ...INTEGER_TEMPLATE_DEFS,
+  ...ALGEBRA_TEMPLATE_DEFS,
+  ...STATS_TEMPLATE_DEFS,
+  ...EARLYNUMBER_TEMPLATE_DEFS,
+  ];
+}
+
+let registry: ReadonlyMap<string, TemplateDef> | null = null;
+
+function templates(): ReadonlyMap<string, TemplateDef> {
+  if (!registry) registry = new Map(allDefs().map((d) => [d.id, d]));
+  return registry;
+}
+
+/** The whole registry. Prefer `getTemplate`; this exists for enumeration. */
+export const TEMPLATE_REGISTRY: ReadonlyMap<string, TemplateDef> = {
+  get size() { return templates().size; },
+  get(id: string) { return templates().get(id); },
+  has(id: string) { return templates().has(id); },
+  keys() { return templates().keys(); },
+  values() { return templates().values(); },
+  entries() { return templates().entries(); },
+  forEach(cb: (v: TemplateDef, k: string, m: ReadonlyMap<string, TemplateDef>) => void, thisArg?: unknown) {
+    templates().forEach(cb, thisArg);
+  },
+  [Symbol.iterator]() { return templates()[Symbol.iterator](); },
+} as ReadonlyMap<string, TemplateDef>;
 
 export function getTemplate(id: string): TemplateDef | undefined {
-  return TEMPLATE_REGISTRY.get(id);
+  return templates().get(id);
 }

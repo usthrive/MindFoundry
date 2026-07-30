@@ -154,14 +154,34 @@ const ODD_COMPOSITES = [9, 15, 21, 25, 27, 33, 35, 39, 45, 49, 51] as const;
 const discrimPrime = discrimination({
   variant: 'structural', cognitiveOp: 'prime-composite',
   draw: (r) => {
-    const p = r.pick(PRIMES); const c = r.pick(ODD_COMPOSITES);
+    // THE STEM NO LONGER GIVES THE ANSWER AWAY. It used to open "One of these is
+    // prime and one is composite", which made the third option ("both are
+    // composite") contradict the question itself — a child who read carefully
+    // eliminated it for free, and it was correct on none of 60 exposures. So the
+    // stem now states only what is on the page, and one draw in four really does
+    // put two composites there. The intended misconception (every odd number must
+    // be composite) is still exactly what the wrong options catch.
+    const p = r.pick(PRIMES);
+    const c = r.pick(ODD_COMPOSITES);
+    const bothComposite = r.int(1, 4) === 1;
+    // Computed from `c`, never re-drawn, so the rng stream lands identically.
+    const otherRaw = r.pick(ODD_COMPOSITES);
+    const second = bothComposite ? (otherRaw === c ? ODD_COMPOSITES[(ODD_COMPOSITES.indexOf(c) + 1) % ODD_COMPOSITES.length] : otherRaw) : p;
+    // Order rotates, so the composite is not always the number written second.
+    const compFirst = r.int(0, 1) === 0;
+    const [shownA, shownB] = compFirst ? [c, second] : [second, c];
     return {
-      prompt: `One of these is prime and one is composite: ${p} and ${c}. Which one is the COMPOSITE number?`,
-      correct: String(c),
-      distractors: [
-        { text: String(p), errorTag: 'concept-misconception', rationale: 'Chose the prime — assumed an odd number must break into factors, but this one has only 1 and itself.' },
-        { text: 'both are composite', errorTag: 'task-comprehension', rationale: 'Treats every odd number as composite, missing that one of them has no factor pair.' },
-      ],
+      prompt: `Look at these two numbers: ${shownA} and ${shownB}. Which one is the COMPOSITE number?`,
+      correct: bothComposite ? 'both are composite' : String(c),
+      distractors: bothComposite
+        ? [
+          { text: String(shownA), errorTag: 'task-comprehension' as const, rationale: 'Names one number and stops, though both of these break into equal groups bigger than one.' },
+          { text: String(shownB), errorTag: 'task-comprehension' as const, rationale: 'Names one number and stops, though both of these break into equal groups bigger than one.' },
+        ]
+        : [
+          { text: String(p), errorTag: 'concept-misconception' as const, rationale: 'Chose the prime — assumed an odd number must break into factors, but this one has only 1 and itself.' },
+          { text: 'both are composite', errorTag: 'task-comprehension' as const, rationale: 'Treats every odd number as composite, missing that one of them has no factor pair.' },
+        ],
       hints: [
         'Being odd does not settle it — can each number be split into equal groups bigger than one?',
         'Try a small factor such as three on each number before you choose.',

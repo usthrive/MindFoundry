@@ -793,6 +793,32 @@ const NOT_A_PLURAL_NOUN = new Set([
 ]);
 /** "a" before a numeral whose spoken form begins with a vowel ("a 8 cm strip"). */
 const ARTICLE_VOWEL = /\ba (8|11|18|8\d|8\d{2,}|11\d{2,}|18\d{2,})\b/;
+
+/**
+ * Article agreement before a WORD, not just a numeral.
+ *
+ * The numeral arm above has been here since B0; the word arm had not, so
+ * "a obstacle course" shipped past it — found by an author reading their own
+ * week, not by any gate. English keys the article to the SOUND, so both
+ * exception classes are carved out explicitly rather than approximated:
+ *   - vowel-LETTER, consonant-sound: "a university", "a uniform", "a one-way
+ *     street", "a euro", "a ewe" — the /juː/ and /wʌ/ onsets;
+ *   - consonant-LETTER, vowel-sound: "an hour", "an honest answer", "an heir".
+ * Anything outside those is decidable from the first letter.
+ */
+// CASE MATTERS. A lowercase "a" mid-sentence is an article; a capital "A" is
+// only an article at a sentence start, and elsewhere it is a LABEL — "Class A
+// and Class B", "Row A is longer". Matching case-insensitively flagged those as
+// article errors, which is how a gate starts crying wolf.
+const A_BEFORE_VOWEL_WORD = /\ba ([aeiou][a-z]{2,})\b/;
+const A_SENTENCE_INITIAL = /(?:^|[.!?]\s+|\]\s*)A ([aeiou][a-z]{2,})\b/;
+const AN_BEFORE_CONSONANT_WORD = /\ban ([b-df-hj-np-tv-z][a-z]{2,})\b/;
+const AN_SENTENCE_INITIAL = /(?:^|[.!?]\s+|\]\s*)An ([b-df-hj-np-tv-z][a-z]{2,})\b/;
+/** Vowel-letter words that begin with a consonant SOUND — "a", not "an". */
+const CONSONANT_SOUND_VOWEL_WORD =
+  /^(uni|use|usu|ufo|euro|eul|eur|ewe|one|once|utens|ukul|urin|usa)/i;
+/** Consonant-letter words that begin with a vowel SOUND — "an", not "a". */
+const VOWEL_SOUND_CONSONANT_WORD = /^(hour|honest|honou?r|heir)/i;
 /** A naive `.slice(0,-1)` singular that produced "Each buse holds 6". */
 const BROKEN_SINGULAR = /\b(buse|boxe|dishe|batche|benche|inche|glasse|watche|brushe)\b/i;
 /** A bare 5+ digit integer in child-facing prose (grouped form expected at C+). */
@@ -903,6 +929,14 @@ function runSurfaceRealismScans(pack: WeeklyConceptPack, add: AddFn): void {
     }
     if (ARTICLE_VOWEL.test(text)) {
       add('QG-12c', path, `"a" before a vowel-sound numeral (an 8 / an 11 / an 18): "${text.slice(0, 90)}"`);
+    }
+    const aWord = A_BEFORE_VOWEL_WORD.exec(text) ?? A_SENTENCE_INITIAL.exec(text);
+    if (aWord && !CONSONANT_SOUND_VOWEL_WORD.test(aWord[1])) {
+      add('QG-12c', path, `"a ${aWord[1]}" — a vowel-sound word takes "an": "${text.slice(0, 90)}"`);
+    }
+    const anWord = AN_BEFORE_CONSONANT_WORD.exec(text) ?? AN_SENTENCE_INITIAL.exec(text);
+    if (anWord && !VOWEL_SOUND_CONSONANT_WORD.test(anWord[1])) {
+      add('QG-12c', path, `"an ${anWord[1]}" — a consonant-sound word takes "a": "${text.slice(0, 90)}"`);
     }
     if (BROKEN_SINGULAR.test(text)) {
       add('QG-12c', path, `broken singular from a naive plural strip — use unitFor(): "${text.slice(0, 90)}"`);

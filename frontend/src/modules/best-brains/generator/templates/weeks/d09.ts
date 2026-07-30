@@ -205,21 +205,48 @@ const discrimGreater = discrimination({
   variant: 'structural', cognitiveOp: 'structural-contrast',
   draw: (r) => {
     const denoms = [2, 3, 4, 5, 6, 8];
+    // ONE DRAW IN FIVE IS A PAIR OF EQUIVALENT FRACTIONS, so "they are equal" can
+    // actually be the answer. The loop below used to REQUIRE the two fractions to
+    // differ, which made that option dead: offered on every exposure, correct on
+    // none, so a child who met the item twice struck it out and chose between two.
+    // Worse than a guessing shortcut here, because recognising 2/4 as 1/2 is the
+    // very skill the week is building. Found by scripts/bb-answer-entropy-test.ts
+    // over the certified corpus.
+    const EQUIV: ReadonlyArray<readonly [number, number, number, number]> = [
+      [1, 2, 2, 4], [1, 2, 3, 6], [1, 2, 4, 8], [1, 3, 2, 6],
+      [2, 3, 4, 6], [1, 4, 2, 8], [3, 4, 6, 8],
+    ];
+    const equalDraw = r.int(1, 5) === 1;
     let d1 = 2, d2 = 3, n1 = 1, n2 = 1;
-    for (let t = 0; t < 40; t++) {
-      d1 = r.pick(denoms); d2 = r.pick(denoms); n1 = r.int(1, d1 - 1); n2 = r.int(1, d2 - 1);
-      if (d1 !== d2 && Math.abs(n1 / d1 - n2 / d2) > 1e-9) break;
+    if (equalDraw) {
+      const [en1, ed1, en2, ed2] = r.pick([...EQUIV]);
+      // Either way round, so the equal pair is not always written simplest-first.
+      const flip = r.int(0, 1) === 1;
+      [n1, d1, n2, d2] = flip ? [en2, ed2, en1, ed1] : [en1, ed1, en2, ed2];
+    } else {
+      for (let t = 0; t < 40; t++) {
+        d1 = r.pick(denoms); d2 = r.pick(denoms); n1 = r.int(1, d1 - 1); n2 = r.int(1, d2 - 1);
+        if (d1 !== d2 && Math.abs(n1 / d1 - n2 / d2) > 1e-9) break;
+      }
     }
+    const same = Math.abs(n1 / d1 - n2 / d2) < 1e-9;
     const g1 = n1 / d1 > n2 / d2;
     const greater = g1 ? `${n1}/${d1}` : `${n2}/${d2}`;
     const lesser = g1 ? `${n2}/${d2}` : `${n1}/${d1}`;
     return {
-      prompt: `Which is greater: ${n1}/${d1} or ${n2}/${d2}? Decide with a benchmark or a shared piece-size — not by the bottom number.`,
-      correct: greater,
-      distractors: [
-        { text: lesser, errorTag: 'concept-misconception', rationale: 'Picks the fraction with the bigger bottom number — more pieces means smaller pieces, not a bigger amount.' },
-        { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Skips finding a shared size, so treats two different amounts as the same.' },
-      ],
+      // "or are they equal?" is asked out loud, so the third door is part of the
+      // question rather than a surprise (the same rule b05 and b18 follow).
+      prompt: `Which is greater: ${n1}/${d1} or ${n2}/${d2} — or are they equal? Decide with a benchmark or a shared piece-size — not by the bottom number.`,
+      correct: same ? 'they are equal' : greater,
+      distractors: same
+        ? [
+          { text: `${n1}/${d1}`, errorTag: 'representation-misread' as const, rationale: 'Reads two different-looking fractions as two different amounts, though re-cutting one gives the other exactly.' },
+          { text: `${n2}/${d2}`, errorTag: 'concept-misconception' as const, rationale: 'Picks the fraction with the bigger bottom number — more pieces means smaller pieces, and here the two amounts match.' },
+        ]
+        : [
+          { text: lesser, errorTag: 'concept-misconception' as const, rationale: 'Picks the fraction with the bigger bottom number — more pieces means smaller pieces, not a bigger amount.' },
+          { text: 'they are equal', errorTag: 'representation-misread' as const, rationale: 'Skips finding a shared size, so treats two different amounts as the same.' },
+        ],
       hints: ['Which fraction reaches past the one-half mark — or do they share a side?', 'Re-cut both into the same size pieces, or lean each on a landmark.'],
       errorTags: ['concept-misconception', 'representation-misread'],
     };

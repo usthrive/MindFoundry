@@ -125,7 +125,7 @@ function fillPath(rng: Rng, guard: TupleGuard, kind: 'plain' | 'decade' | 'hundr
     hintLadder: [
       'Say the numbers in order and listen for the missing one.',
       kind === 'hundred'
-        ? 'The count crosses a whole hundred inside this path - say it out loud and keep going.'
+        ? 'The count crosses a whole hundred inside this path. Say it out loud and keep going.'
         : 'Each step goes up by exactly one.',
     ],
     errorTags: kind === 'plain' ? ['fact-recall'] : ['procedure-slip'],
@@ -371,8 +371,8 @@ function chartColumn(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft
   return {
     type: 'reasoning',
     prompt:
-      `${name} shades ${a}, ${a + 10}, ${a + 20}, and ${a + 30} on the hundred chart - ` +
-      'a straight line of squares going down. What number does the line hit next?',
+      `${name} shades ${a}, ${a + 10}, ${a + 20}, and ${a + 30} on the hundred chart. ` +
+      'The shaded squares make a straight line going down. What number does the line hit next?',
     answer: { value: String(a + 40), acceptableForms: [], validation: 'exact-numeric' },
     difficulty,
     strand: 'noncomputational',
@@ -524,7 +524,7 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
           visual: 'Number path with 37-41; the 39→40 hop glows as the tens digit flips.',
         },
         {
-          say: 'The hundred chart shows the song as rows. Every row is ten numbers; the end of a row is where the new ten begins.',
+          say: 'The hundred chart shows the song as rows. Every row is ten numbers. The end of a row is where the new ten begins.',
           visual: 'Hundred chart; one full row highlights, then the first square of the next row.',
         },
         {
@@ -532,7 +532,7 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
           visual: 'Chart extends past 100 to 120; the 99→100→101 squares light in sequence.',
         },
         {
-          say: 'Number words are the same code: "one hundred twelve" means 1 hundred, 1 ten, 2 ones - written 112, not 10012.',
+          say: 'Number words are the same code. "One hundred twelve" means 1 hundred, 1 ten, 2 ones. We write 112, not 10012.',
           visual: '"one hundred twelve" splits into 100 + 12 and snaps together as 112.',
         },
       ],

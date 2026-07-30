@@ -148,14 +148,29 @@ export function compareWhole(digits = 6): ItemGen {
   const lo = 10 ** (digits - 1);
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      let a = r.int(lo, hi);
-      let b = r.int(lo, hi);
-      if (a === b) b += 1;
-      const correct = a > b ? '>' : '<';
-      const { choices, correctKey } = makeChoices(r, correct, [
-        { text: a > b ? '<' : '>', errorTag: 'concept-misconception', rationale: 'Symbol reversed — the open mouth must face the larger number.' },
-        { text: '=', errorTag: 'representation-misread', rationale: 'Treats the two numbers as equal without comparing place by place.' },
-      ]);
+      const a = r.int(lo, hi);
+      const bRaw = r.int(lo, hi);
+      // ONE DRAW IN FIVE MAKES THE TWO NUMBERS EQUAL, so `=` can actually be the
+      // answer. This line used to read `if (a === b) b += 1`, which prevented
+      // equality outright: `=` was offered on every exposure and correct on none,
+      // so a child who met the item twice learnt to strike it out and compare two
+      // options instead of three. Found by scripts/bb-answer-entropy-test.ts
+      // sweeping the CERTIFIED Level D corpus — no per-pack gate can see it,
+      // because every individual item was correct.
+      const equalDraw = r.int(1, 5) === 1;
+      const b = equalDraw ? a : bRaw === a ? bRaw + 1 : bRaw;
+      const correct = a === b ? '=' : a > b ? '>' : '<';
+      const wrongSymbols: Array<{ text: string; errorTag: 'concept-misconception' | 'representation-misread'; rationale: string }> =
+        a === b
+          ? [
+            { text: '>', errorTag: 'representation-misread', rationale: 'Reads the two numbers as different without checking every place — these two agree in all six.' },
+            { text: '<', errorTag: 'representation-misread', rationale: 'Reads the two numbers as different without checking every place — these two agree in all six.' },
+          ]
+          : [
+            { text: a > b ? '<' : '>', errorTag: 'concept-misconception', rationale: 'Symbol reversed — the open mouth must face the larger number.' },
+            { text: '=', errorTag: 'representation-misread', rationale: 'Treats the two numbers as equal without comparing place by place.' },
+          ];
+      const { choices, correctKey } = makeChoices(r, correct, wrongSymbols);
       return {
         type: 'representation',
         prompt: `Compare: ${fmtInt(a)} __ ${fmtInt(b)}. Which symbol makes it true?`,
@@ -968,7 +983,13 @@ export function rectArea(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       const l = r.int(4, 19);
-      const w = r.int(3, 12);
+      let w = r.int(3, 12);
+      // Length and width were drawn independently, so the prompt could read "9
+      // units long and 11 units wide" — a rectangle whose width exceeds its
+      // length. The arithmetic was always right, which is why every gate passed
+      // it; it is the WORDS that were wrong. Reflected deterministically rather
+      // than redrawn (a loop would shift every later draw in the pack).
+      if (w > l) w = Math.max(3, l - 1);
       return {
         type: 'computation',
         prompt: `A rectangle is ${l} units long and ${w} units wide. What is its area in square units?`,
