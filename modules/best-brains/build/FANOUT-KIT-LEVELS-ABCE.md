@@ -190,6 +190,25 @@ unregistered id silently skips the QG-5 audit, so `bb-verify-packs` asserts ever
    real-world frame across two weeks is the corpus's documented weakness (L24), and it is invisible
    to every per-pack gate.
 
+9a. **A metacognition probe must be near a coin flip, and DRAWING THE SIDE FIRST IS NOT PROOF.**
+   b16 shipped a probe that was 70/30, so the scaffold taught the guess instead of the commitment it
+   exists to demand. No gate can catch this — a probe has no answer key — so measure the SERVED split
+   yourself and report it. Two weeks drew the side first and were still biased:
+   - **b22** measured 67%, then 56%, then 57.6% over three attempts. `drawUniqueItem` retries when an
+     item's operand surface collides with another in the same pack, and a retry is not neutral: it
+     discards the draw and takes the next, so values that collide often are suppressed. A whole of 8 was
+     served 85 times against 125–167 for the rest, because 8 and 4 are everywhere in a halves week. It
+     settled at 53.4% by using mid-range wholes only — dodging the mechanism.
+   - **b09** measured 47.9% for the same reason and found the better fix: **make both sides print the
+     SAME NUMERALS.** It replaced two pools with one (`[start, bigStep, smallStep]`) and let the probe
+     choose only *which* change arrives. With identical numerals on both branches the freshness guard has
+     nothing to prefer, so the mechanism is removed rather than avoided: 50.1% over 5000 draws. It then
+     found the same defect in a second generator (45.0% → 49.5%).
+
+   Prefer b09's construction. And note the general lesson, which is not about probes: **a balanced draw
+   can still produce an unbalanced page once a uniqueness filter sits between them.** Measure what is
+   served, never what you intended to draw.
+
 9. **The metacognition probe has a 7-word budget, not 15.** `lib/metacog.ts` prepends its own
    lead-in, whose longest form is 8 words, so a probe of 8+ words breaks the Level-B/C 15-word
    sentence ceiling however careful the rest of the pack is. Two authors measured this independently
