@@ -205,9 +205,25 @@ unregistered id silently skips the QG-5 audit, so `bb-verify-packs` asserts ever
      nothing to prefer, so the mechanism is removed rather than avoided: 50.1% over 5000 draws. It then
      found the same defect in a second generator (45.0% → 49.5%).
 
-   Prefer b09's construction. And note the general lesson, which is not about probes: **a balanced draw
-   can still produce an unbalanced page once a uniqueness filter sits between them.** Measure what is
-   served, never what you intended to draw.
+   Prefer b09's construction — but it is NECESSARY, NOT SUFFICIENT, and b11 measured why. Applied
+   naively, "every row is decided by the flip" means exactly one of the two amounts crosses on every
+   row; and since crossing climbs with size, **"the bigger one came first" then answers the probe 100%
+   of the time.** The numerals matched and the page was still free. b11's pool therefore carries
+   both-cross and neither-cross rows in equal number, with flip-decided rows capped at half:
+
+   | pool | probe split | size habit scores |
+   |---|---|---|
+   | every row decided by the flip | 50% | **100%** |
+   | flip rows uncapped | 48.6–49.8% | 70.4–71.4% |
+   | capped at the class | 48.8–50.0% | 65.9–66.8% |
+   | **capped at half (shipped)** | **49.5–50.6%** | **59.6–60.3%** |
+
+   So measure the probe's split AND at least one blind habit that could answer it. A 50/50 answer
+   distribution is not the same as an unguessable question.
+
+   And note the general lesson, which is not about probes: **a balanced draw can still produce an
+   unbalanced page once a uniqueness filter sits between them.** Measure what is served, never what you
+   intended to draw.
 
 9. **The metacognition probe has a 7-word budget, not 15.** `lib/metacog.ts` prepends its own
    lead-in, whose longest form is 8 words, so a probe of 8+ words breaks the Level-B/C 15-word
