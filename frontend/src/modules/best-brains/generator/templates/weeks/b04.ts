@@ -154,15 +154,23 @@
  * "every distractor undershoots", is a live danger in a week whose two named
  * errors are both off-by-a-little).
  *
- *   · **`discBothMoves` BRACKETS ITS OWN ANSWER, on every draw without exception.**
- *     The two distractors are the two ways of ignoring a turn: both moves sent up
- *     the track (`start + kOn + kBack`) and both sent down (`start − kOn − kBack`).
- *     The true finish is `start + kOn − kBack`, which lies STRICTLY BETWEEN them
- *     for any positive pair of hops. One option therefore sits above the answer
- *     and one below it on every draw without exception: measured over 400 seeds the
- *     key is the largest on 0% of draws and the smallest on 0%, so neither "pick
- *     the biggest" nor "pick the smallest" scores anything at all. This is the item that also sits in mastery, deliberately: a certifying
- *     slot should be the one with no extreme to guess at.
+ *   · **`discBothMoves` ROTATES WHICH PAIR OF WRONG FINISHES IT OFFERS, so the
+ *     answer sits low, middle and high in turn.** Four wrong finishes exist, all
+ *     named misconceptions: both moves sent up the track (`start + kOn + kBack`),
+ *     both sent down (`start − kOn − kBack`), and the two ways of dropping a move
+ *     rather than turning it round (`start + kOn`, `start − kBack`).
+ *
+ *     An earlier version of this item always offered the first pair, which brackets
+ *     the true finish — and that was written up here as a virtue, since neither
+ *     "pick the biggest" nor "pick the smallest" can score against a bracketed
+ *     answer. Both halves of that were true and the conclusion was still wrong:
+ *     bracketing on EVERY draw makes the answer the middle number every time, and
+ *     "pick the middle" is exactly as free. It measured 100% of draws in a mastery
+ *     slot. Rotating the pairing is the fix; measured over 300 seeds the keyed rank
+ *     is 409 low / 405 middle / 386 high.
+ *
+ *     This is the item that also sits in mastery, deliberately: a certifying slot
+ *     should be the one with no position to guess at.
  *   · **`discWhichWay` rotates its direction, so the extreme rotates with it.**
  *     Its two distractors are the week's two named errors — the other way along
  *     the track, and the starting square counted as hop one — and both of them
@@ -839,7 +847,11 @@ const discBothMoves = withClaimSpec(
           'Do the two moves go the same way, or opposite ways?',
           'Take one move at a time, in the order the story gives.',
         ],
-        errorTags: ['concept-misconception', 'task-comprehension'],
+        // Read off the pair actually offered rather than listed as the union of
+        // every pairing: on the both-below draw neither distractor is a
+        // concept-misconception, and an item that reports a tag it did not serve
+        // feeds the wrong reteach to the child who missed it.
+        errorTags: [...new Set([TAG[wrongA], TAG[wrongB]])],
       };
     },
   }),
@@ -1285,7 +1297,7 @@ export const buildB04 = makeWeekBuilder({
     { gen: discBothMoves, diff: 3 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01: one hop up the track from a fresh square. 02: one hop down the track, drawn so the landing stays on the track on both forms. 03: two journeys meeting on one square, built backwards from a fresh meeting square, so a form cannot be passed by remembering where the last one met. 04: the two-move chain served RAW here rather than through the estimate-first wrapper the daily pages use — a check that hands over the strategy is not checking it — with the bigger hop belonging to the forward move on one form and the backward move on the other. 05: two moves the same way, with the way drawn fresh per form. 06: the two-move choice, whose keyed option lies strictly between its two distractors on every draw of both forms, so neither form can be passed by picking an extreme. No operand surface is reused from Form A or from the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01: one hop up the track from a fresh square. 02: one hop down the track, drawn so the landing stays on the track on both forms. 03: two journeys meeting on one square, built backwards from a fresh meeting square, so a form cannot be passed by remembering where the last one met. 04: the two-move chain served RAW here rather than through the estimate-first wrapper the daily pages use — a check that hands over the strategy is not checking it — with the bigger hop belonging to the forward move on one form and the backward move on the other. 05: two moves the same way, with the way drawn fresh per form. 06: the two-move choice, which rotates which two of its four named wrong finishes it offers, so the keyed option sits below, between and above its distractors in turn and neither form can be passed by picking a position. No operand surface is reused from Form A or from the daily pages.',
   mistakeBank: [
     {
       errorTag: 'task-comprehension',
@@ -1314,7 +1326,7 @@ export const buildB04 = makeWeekBuilder({
         'Treats a two-move story as one long journey in a single direction, so the turn in the middle never happens and the two hops are combined instead of one giving squares back.',
       exampleWrongAnswer: 'square 15 given for a counter on 11 that hops on 3 and then back 1',
       distractorRationale:
-        'Offer both moves added on and both moves taken off, which bracket the truth on the two-move choice.',
+        'Offer two of the four wrong finishes on the two-move choice — the pair rotates, so the truth is not always the middle number.',
       reteachPointer: 'guidedExamples/B4-GE-03 (make the first move, stop on the square it reaches, then make the second)',
     },
     {

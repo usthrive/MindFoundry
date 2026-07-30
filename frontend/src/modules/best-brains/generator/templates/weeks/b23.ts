@@ -248,6 +248,8 @@ import type { Rng } from '../../rng';
 const ge = makeGe('B');
 
 const B13 = { level: 'B' as const, week: 13 };
+/** The fluency sprint's source week, which the prerequisite list had omitted. */
+const B14 = { level: 'B' as const, week: 14 };
 const B15 = { level: 'B' as const, week: 15 };
 const B18 = { level: 'B' as const, week: 18 };
 
@@ -1121,7 +1123,7 @@ export const buildB23 = makeWeekBuilder({
   conceptId: 'bar-graphs-line-plots',
   conceptName: 'Bar graphs & line plots',
   strandTags: ['probability-statistics'],
-  prerequisiteWeeks: [B13, B15, B18],
+  prerequisiteWeeks: [B13, B14, B15, B18],
   pedagogyContract: 'v2',
   conceptualAnchor: 'bars are stacked counts',
   conceptFamily: 'operation',

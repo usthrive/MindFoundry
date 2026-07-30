@@ -391,8 +391,12 @@ const PART_SIZES = [2, 3, 4, 5, 6, 7, 8, 9] as const;
  * `3 + ▢ = 5` on a Day-2 page and a mastery slot asking what is under a dish
  * when one pan holds seven, and neither is this week's question: a count on that
  * never leaves the first ten is over before the child has had to decide anything.
- * Every whole in the pack is now a teen or close to it, which is also what the
- * catalog cell's own example (`6+▢=13`) is. The filter can never empty: for the
+ * Every whole `hiddenPartFor` builds is now a teen or close to it, which is also
+ * what the catalog cell's own example (`6+▢=13`) is. The claim is scoped to that
+ * helper on purpose: `discPartOrWhole` draws from its own `PART_PAIRS` pool and
+ * still serves wholes below ten, which is defensible there — that item asks WHICH
+ * amount is missing, not for a count that has to bridge — but the earlier wording
+ * said "every whole in the pack" and was simply false. The filter can never empty: for the
  * largest visible part every size qualifies, and for the smallest, three still do.
  */
 const hiddenPartFor = (r: Rng, shown: number): number =>

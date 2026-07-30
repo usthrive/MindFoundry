@@ -573,10 +573,31 @@ export function validatePack(
         if (item.answer.validation === 'choice-key' && item.choices) {
           const correct = item.choices.find((c) => c.isCorrect);
           if (correct) {
+            // WHOLE-VALUE MATCH, NOT A SUBSTRING.
+            //
+            // This used to accept `correct.text.includes(truth.correct)`, which is
+            // satisfied by any numeral inside the option: a keyed "8:30" accepted a
+            // truth of "8", and a keyed "5 − 4 = 9" accepted 5, 4 or 9. The pin went
+            // green while proving nothing, so an operand order swapped in the
+            // transform — the exact D6 class QG-11 exists to prevent — would have
+            // passed. Measured across the corpus by scripts/bb-qg11-power-test.ts:
+            // 11 of 1500 audited slots had a keyed option carrying more than one
+            // number, so their pins were green and not load-bearing.
+            //
+            // Currency and thousands separators still have to be tolerated, because
+            // a prompt may legitimately render a value as money while the transform
+            // returns the canonical form (P6, the same reason the `truth.wrong`
+            // check below strips separators). So the comparison normalises rather
+            // than loosens: equal as numbers, or equal as whole strings once
+            // punctuation is set aside.
+            const normVal = (t: string) =>
+              t
+                .replace(/[£$€]/g, '')
+                .replace(/(\d),(?=\d{3}\b)/g, '$1')
+                .trim();
+            const wholeMatch = (t: string) => numEq(t, truth!.correct) || normVal(t) === normVal(truth!.correct);
             const ok =
-              numEq(correct.text, truth.correct) ||
-              correct.text.includes(truth.correct) ||
-              (item.answer.acceptableForms ?? []).some((f) => numEq(f, truth!.correct) || f.includes(truth!.correct));
+              wholeMatch(correct.text) || (item.answer.acceptableForms ?? []).some((f) => wholeMatch(f));
             if (!ok) {
               add('QG-11', `${path}.choices`, `option keyed correct ("${correct.text}") ≠ recomputed truth "${truth.correct}" (D6 class)`);
             }
