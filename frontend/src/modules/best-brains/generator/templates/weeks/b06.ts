@@ -832,7 +832,7 @@ export const buildB06 = makeWeekBuilder({
       ...ge(6, 1, 'modeled', 'Is this number sentence true? 5 + 2 = 4 + 3', [
         {
           teacherSay:
-            'Watch me. I am not going to write an answer anywhere, because nothing here is asking me for one. I look at the left side first and gather it: five and two, which is seven. I hold that seven in my head, and now I turn to the far side of the equals sign.',
+            'Watch me. I am not writing an answer. Nothing here is asking me for one. I look at the left side first. Five and two gather to seven. I hold that seven in my head. Now I turn to the far side.',
         },
         {
           teacherSay: 'Four and three are sitting over there. What does that side gather up to, and will my bar sit flat?',
@@ -848,10 +848,10 @@ export const buildB06 = makeWeekBuilder({
     {
       ...ge(6, 2, 'completion', 'Fill the box so this sentence is true: 6 + 3 = ▢ + 4', [
         {
-          teacherSay: 'The left side gathers up to nine, so the whole line has to balance at nine. There are already four on the other pan. What must the box bring to lift it to nine?',
+          teacherSay: 'The left side gathers up to nine. The whole line balances at nine. There are already four on the other pan. What must the box bring to lift it to nine?',
           expected: '5',
         },
-        { childDo: 'Say what each pan is worth once the box is filled, and check the two amounts against each other.', expected: '5' },
+        { childDo: 'Say what each pan is worth once the box is filled. Check the two amounts.', expected: '5' },
       ], '5'),
       visual: 'A balance: heaps of six and three on the left pan, a heap of four and one unmarked box on the right.',
       figure: barModel([pan('the left pan', [6, 3]), { label: 'the right pan', segments: [{ value: 4, label: '4' }, { value: 5, label: '?', fill: 'none' }] }], {
@@ -861,7 +861,7 @@ export const buildB06 = makeWeekBuilder({
     },
     {
       ...ge(6, 3, 'prompted', 'A balance is level. Its left pan holds 8 walnuts. Its right pan holds 5 walnuts and one closed bag. How many walnuts are inside the bag?', [
-        { childDo: 'Match the two pans against each other, and name what the right pan is still short of.', expected: '3' },
+        { childDo: 'Match the two pans. Name what the right pan is still short of.', expected: '3' },
       ], '3'),
       visual: 'A balance: eight walnuts on the left pan, five walnuts and a closed bag on the right, the bar level.',
       figure: barModel([pan('the left pan', [8]), { label: 'the right pan', segments: [{ value: 5, label: '5' }, { value: 3, label: '?', fill: 'none' }] }], {

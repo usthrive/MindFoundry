@@ -575,7 +575,7 @@ export const buildB16 = makeWeekBuilder({
       ...ge(16, 1, 'modeled', 'A purse holds one quarter, two dimes and one penny. How much money is that?', [
         {
           teacherSay:
-            'Watch how I start. I hunt for the coin worth the most first, every time, because a count that begins with the big values never has to be unpicked. That is the quarter, so I am at twenty-five before I have touched anything else.',
+            'Watch how I start. I hunt for the coin worth the most first, every time. A count that starts big never has to be unpicked. That is the quarter. I am at twenty-five already.',
         },
         {
           teacherSay:

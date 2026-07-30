@@ -1539,7 +1539,7 @@ export const buildB09 = makeWeekBuilder({
       ...ge(9, 1, 'modeled', 'The tin held 9 oatcakes. Then 6 more were stacked in. How many oatcakes are there now?', [
         {
           teacherSay:
-            'Watch me. I read it twice before I write anything, because the first read tells me what happened and the second tells me which part is missing.',
+            'Watch me. I read it twice before I write anything. The first read tells me what happened. The second tells me which part is missing.',
         },
         {
           teacherSay: 'There were 9. What happened is that 6 arrived. So which part is the question after?',
