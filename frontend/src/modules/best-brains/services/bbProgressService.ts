@@ -48,6 +48,7 @@ interface WeekStateRow {
   pack_seed: number;
   content_version: string | null;
   state: WeekMasteryState;
+  lesson_segment: number | null;
   day_progress: DayProgress;
   mastery: WeekMasteryRecord;
   started_at: string | null;
@@ -73,6 +74,7 @@ function mapWeekState(row: WeekStateRow): WeekState {
     packSeed: Number(row.pack_seed),
     contentVersion: row.content_version ?? undefined,
     state: row.state,
+    lessonSegment: row.lesson_segment ?? null,
     dayProgress: row.day_progress ?? {},
     mastery: row.mastery ?? { attempts: [] },
     startedAt: row.started_at ?? undefined,
@@ -135,7 +137,7 @@ export async function getOrInitWeekState(
 ): Promise<WeekState> {
   const { data, error } = await supabase
     .from('bb_week_state')
-    .select('child_id, level, week, pack_seed, content_version, state, day_progress, mastery, started_at, completed_at')
+    .select('child_id, level, week, pack_seed, content_version, state, lesson_segment, day_progress, mastery, started_at, completed_at')
     .eq('child_id', childId)
     .eq('level', level)
     .eq('week', week)
@@ -153,14 +155,14 @@ export async function getOrInitWeekState(
   const { data: created, error: insertError } = await supabase
     .from('bb_week_state')
     .insert(insert)
-    .select('child_id, level, week, pack_seed, content_version, state, day_progress, mastery, started_at, completed_at')
+    .select('child_id, level, week, pack_seed, content_version, state, lesson_segment, day_progress, mastery, started_at, completed_at')
     .single();
   if (insertError) {
     // Concurrent init (two tabs): fall back to the row that won.
     if (insertError.code === '23505') {
       const { data: existing, error: refetchError } = await supabase
         .from('bb_week_state')
-        .select('child_id, level, week, pack_seed, content_version, state, day_progress, mastery, started_at, completed_at')
+        .select('child_id, level, week, pack_seed, content_version, state, lesson_segment, day_progress, mastery, started_at, completed_at')
         .eq('child_id', childId)
         .eq('level', level)
         .eq('week', week)
@@ -177,7 +179,7 @@ export async function getOrInitWeekState(
 export async function listWeekStates(childId: string, level: BBLevel): Promise<WeekState[]> {
   const { data, error } = await supabase
     .from('bb_week_state')
-    .select('child_id, level, week, pack_seed, content_version, state, day_progress, mastery, started_at, completed_at')
+    .select('child_id, level, week, pack_seed, content_version, state, lesson_segment, day_progress, mastery, started_at, completed_at')
     .eq('child_id', childId)
     .eq('level', level)
     .order('week');
@@ -213,7 +215,7 @@ export async function transitionWeekState(
     .eq('child_id', current.childId)
     .eq('level', current.level)
     .eq('week', current.week)
-    .select('child_id, level, week, pack_seed, content_version, state, day_progress, mastery, started_at, completed_at')
+    .select('child_id, level, week, pack_seed, content_version, state, lesson_segment, day_progress, mastery, started_at, completed_at')
     .single();
   if (error) throw error;
   return mapWeekState(data as WeekStateRow);
@@ -224,6 +226,28 @@ export async function transitionWeekState(
  * per-child single-writer in practice). Keys "1".."5"; the extra "lesson" key
  * marks the Day-1 lesson+guided gate.
  */
+/**
+ * Where the lesson got to, so it resumes at a segment boundary on any device.
+ *
+ * This lived in `sessionStorage`, which dies with the tab — so a child who closed
+ * the app part-way through Ms. Wren's explanation restarted it from the hook. It
+ * is a single small integer, written on each Continue and cleared when the lesson
+ * is pinned, so it is sent fire-and-forget: a slow write must never sit between a
+ * child and the next thing she says.
+ */
+export async function saveLessonSegment(
+  state: WeekState,
+  segment: number | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('bb_week_state')
+    .update({ lesson_segment: segment })
+    .eq('child_id', state.childId)
+    .eq('level', state.level)
+    .eq('week', state.week);
+  if (error) throw error;
+}
+
 export async function updateDayProgress(
   state: WeekState,
   dayKey: string,
@@ -236,7 +260,7 @@ export async function updateDayProgress(
     .eq('child_id', state.childId)
     .eq('level', state.level)
     .eq('week', state.week)
-    .select('child_id, level, week, pack_seed, content_version, state, day_progress, mastery, started_at, completed_at')
+    .select('child_id, level, week, pack_seed, content_version, state, lesson_segment, day_progress, mastery, started_at, completed_at')
     .single();
   if (error) throw error;
   return mapWeekState(data as WeekStateRow);

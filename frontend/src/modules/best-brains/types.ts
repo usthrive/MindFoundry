@@ -455,6 +455,12 @@ export type DayProgress = Record<string, DayProgressEntry>;
 /** One row of bb_week_state, camel-cased for app use. */
 export interface WeekState {
   childId: string;
+  /**
+   * The last lesson segment the child reached, or null when the lesson has not
+   * been started (or has been pinned). Persisted so LessonRoom resumes across a
+   * closed tab and across devices; it was sessionStorage, which did neither.
+   */
+  lessonSegment?: number | null;
   level: BBLevel;
   week: BBWeek;
   /** Deterministic pack regeneration seed — packs are never stored. */

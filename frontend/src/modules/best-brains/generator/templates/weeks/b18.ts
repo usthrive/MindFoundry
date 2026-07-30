@@ -914,7 +914,7 @@ export const buildB18 = makeWeekBuilder({
       ...ge(18, 1, 'modeled', 'Count in fives from 0. Which number does the seventh hop land on?', [
         {
           teacherSay:
-            'Watch me. I start at 0 and I keep every hop the same size. Five, ten, fifteen, twenty — I say one number for each hop, and I keep the hops on my fingers so I do not lose count.',
+            'Watch me. I start at 0 and I keep every hop the same size. Five, ten, fifteen, twenty. I say one number for each hop. I keep the hops on my fingers so I do not lose count.',
         },
         {
           teacherSay: 'Four fingers are up, so I have taken four hops. Three hops to go — where do they put me?',
