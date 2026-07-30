@@ -216,7 +216,7 @@ function generateDivisionProblem(
     remainder = 0
   }
   
-  const answer = remainder > 0 ? `${quotient} R${remainder}` : quotient
+  const answer = remainder > 0 ? `${quotient} R ${remainder}` : quotient
   
   return {
     id: generateId(),
@@ -231,7 +231,9 @@ function generateDivisionProblem(
     operands: [dividend, divisor],
     hints: [
       `How many times does ${divisor} go into ${dividend}?`,
-      allowRemainder ? 'Remember to include the remainder if there is one' : '',
+      allowRemainder
+        ? 'If some is left over, tap R and write what is left — like 13 R 1'
+        : '',
     ].filter(Boolean),
     graduatedHints: generateDivisionHints([dividend, divisor], 'C'),
   }

@@ -8,6 +8,8 @@ export interface NumberPadProps {
   allowNegative?: boolean
   allowDecimal?: boolean
   allowFraction?: boolean
+  /** Show the "R" key for division answers written as quotient + remainder (e.g. 13 R 1) */
+  allowRemainder?: boolean
   disabled?: boolean
   className?: string
   /** Size variant: 'compact' for phones, 'medium' for tablets, 'large' for desktop */
@@ -32,6 +34,7 @@ const NumberPad = ({
   allowNegative = false,
   allowDecimal = false,
   allowFraction = false,
+  allowRemainder = false,
   disabled = false,
   className,
   size = 'auto',
@@ -139,8 +142,19 @@ const NumberPad = ({
         ))}
 
         {/* Bottom row: special buttons */}
-        {/* Left slot: Negative, Fraction, or empty */}
-        {allowNegative ? (
+        {/* Left slot: Remainder, Negative, Fraction, or empty */}
+        {allowRemainder ? (
+          <button
+            onClick={() => onNumberClick(-4)} // Signal for remainder
+            disabled={disabled}
+            className={cn(specialButtonBase, buttonSizeClasses)}
+            type="button"
+            title="Remainder (press R on keyboard)"
+            aria-label="Remainder"
+          >
+            R
+          </button>
+        ) : allowNegative ? (
           <button
             onClick={() => onNumberClick(-1)} // Signal for negative
             disabled={disabled}

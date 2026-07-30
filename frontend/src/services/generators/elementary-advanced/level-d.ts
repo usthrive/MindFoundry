@@ -114,7 +114,7 @@ function generateMultDivReview(): Problem {
   const quotient = randomInt(11, 99)
   const remainder = randomInt(0, divisor - 1)
   const dividend = divisor * quotient + remainder
-  const answer = remainder > 0 ? `${quotient} R${remainder}` : quotient
+  const answer = remainder > 0 ? `${quotient} R ${remainder}` : quotient
   return {
     id: generateId(),
     level: 'D',
@@ -198,7 +198,7 @@ function generateLongDivision(part?: 1 | 2 | 3 | 4 | 5): Problem {
   const remainder = randomInt(0, divisor - 1)
   const dividend = divisor * quotient + remainder
 
-  const answer = remainder > 0 ? `${quotient} R${remainder}` : quotient
+  const answer = remainder > 0 ? `${quotient} R ${remainder}` : quotient
 
   return {
     id: generateId(),

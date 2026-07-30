@@ -1,0 +1,123 @@
+/**
+ * Error-analysis generator (CONTENT-GENERATOR-FIX-SPEC §4.4, fix #7) — the
+ * first-class "analyze-a-worked-error" item, AND the structural cure for the
+ * D6/D8 bug class (a keyed-wrong answer / a fabricated anchor number).
+ *
+ * The factory recomputes the truth from a registered `verifyFor` (lib/compute.ts
+ * LIB_VERIFY_DEFS): `correct` = the code-computed answer, `wrong` = the genuine
+ * output of a NAMED misconception transform. It hands BOTH to the week's `build`
+ * closure, so the shown "wrong" number is provably a real misconception result
+ * and the stated true answer is code-computed — neither can be fabricated. The
+ * verify params ship in `generator.params`, so QG-11 re-derives the same truth
+ * and confirms the item embeds `wrong` and keys `correct` (never the reverse).
+ *
+ * Emitted as `type:'error-analysis'`, `strand:'noncomputational'` (so it couples
+ * the two strands, BB-G2), with a written-explanation answer + extension prompt.
+ */
+
+import type { ErrorTag } from '../../../types';
+import type { Rng } from '../../rng';
+import type { ItemDraft } from '../shared';
+import { drawUniqueItem } from './guard';
+import { LIB_VERIFY_DEFS, type VerifyResult } from './compute';
+import { getTemplate } from '../registry';
+import type { AuthorMeta } from './meta';
+import type { ItemGen } from './multistep';
+
+/**
+ * Verify-truth lookup.
+ *
+ * This used to be a Map built eagerly from `LIB_VERIFY_DEFS` alone, which meant
+ * only Level-D's own compute module could supply an error-analysis truth — the
+ * A/B/C/E generator families registered theirs in the registry and were told
+ * their templateId was unknown. Resolution therefore goes through the REGISTRY,
+ * and it is deliberately LAZY: `registry.ts` imports the families and the
+ * families import this file, so reading the registry at module-evaluation time
+ * would see a half-built map. Reading it at call time sees the finished one.
+ */
+function verifyTruth(id: string): ((p: Record<string, unknown>) => VerifyResult) | undefined {
+  const fromRegistry = getTemplate(id)?.verifyFor;
+  if (fromRegistry) return fromRegistry;
+  return LIB_VERIFY_DEFS.find((d) => d.id === id)?.verifyFor;
+}
+
+/**
+ * Phrases that hand the child the diagnosis (PEDAGOGY-CEILING-REVIEW F6).
+ *
+ * The prompt MAY show what the student did — a teacher shows the working. It may
+ * NOT say what they should have done, or label the move an error: once the
+ * prompt contains "ignoring that × outranks +", "explain what went wrong"
+ * collapses into paraphrase, and the analysis the item exists for never happens.
+ * The diagnosis is the child's ANSWER, so it cannot also be the question.
+ */
+const HANDS_OVER_DIAGNOSIS =
+  /\binstead of\b|\bignoring\b|\bforgetting\b|\bforgot to\b|\bby mistake\b|\bwrongly\b|\bfailed to\b|\bshould have\b|\brather than\b/i;
+
+export interface ErrorAnalysisProse {
+  /** The worked-error prompt; MUST embed the shown wrong value and require a written explanation. */
+  prompt: string;
+  /** Extension prompt appended to deepen the analysis (BB-W7 signature). */
+  extension: string;
+  /** Orient → locate hints (must not leak the true answer). */
+  hints: [string, string];
+  errorTags: ErrorTag[];
+  /** Extra accepted keyword forms for the written answer (beyond `correct`). */
+  answerKeywords?: string[];
+}
+
+export interface ErrorAnalysisCfg {
+  /** A registered verify templateId whose verifyFor returns {correct, wrong}. */
+  verifyTemplateId: string;
+  cognitiveOp?: string;
+  /** Draw the serializable verify params (operands + op selectors). */
+  drawParams: (r: Rng) => Record<string, unknown>;
+  /** Build the prose from the code-recomputed truth — guarantees prose ↔ code agreement. */
+  build: (v: Required<VerifyResult>, params: Record<string, unknown>, r: Rng) => ErrorAnalysisProse;
+}
+
+export function errorAnalysis(cfg: ErrorAnalysisCfg): ItemGen {
+  // Resolved per invocation, not at factory time — see `verifyTruth`. An
+  // unknown id still throws loudly, just at the first draw rather than at
+  // import, and both the 200-seed week check and bb-verify-packs catch it.
+  const verifyFor = verifyTruth(cfg.verifyTemplateId);
+  if (!verifyFor) {
+    throw new Error(`errorAnalysis: unknown verify templateId "${cfg.verifyTemplateId}"`);
+  }
+  return (rng, guard, difficulty) =>
+    drawUniqueItem(rng, guard, (r) => {
+      const params = cfg.drawParams(r);
+      const v = verifyFor(params);
+      if (v.wrong === undefined) {
+        throw new Error(`errorAnalysis: verify "${cfg.verifyTemplateId}" produced no misconception value`);
+      }
+      const prose = cfg.build({ correct: v.correct, wrong: v.wrong }, params, r);
+      const tell = HANDS_OVER_DIAGNOSIS.exec(prose.prompt);
+      if (tell) {
+        throw new Error(
+          `errorAnalysis (${cfg.verifyTemplateId}): the prompt states the diagnosis ("${tell[0]}") — show the student's WORK and CLAIM only; the diagnosis is the child's answer. Prompt: "${prose.prompt.slice(0, 120)}"`,
+        );
+      }
+      const meta: AuthorMeta = {
+        stepCount: 1,
+        cognitiveOp: cfg.cognitiveOp ?? 'error-analysis',
+        isErrorAnalysis: true,
+      };
+      const draft: ItemDraft = {
+        type: 'error-analysis',
+        prompt: `${prose.prompt} ${prose.extension} (Written explanation required.)`,
+        answer: {
+          value: `the true answer is ${v.correct}; the error was the misconception, not the method`,
+          acceptableForms: [v.correct, ...(prose.answerKeywords ?? [])],
+          validation: 'manual-review',
+        },
+        difficulty,
+        strand: 'noncomputational',
+        isRetrieval: false,
+        generator: { templateId: cfg.verifyTemplateId, params, seed: r.uint() },
+        hintLadder: prose.hints,
+        errorTags: prose.errorTags,
+        authorMeta: meta,
+      };
+      return draft;
+    });
+}

@@ -29,11 +29,12 @@ import ConceptTimeChart from '@/components/analytics/ConceptTimeChart'
 import PerformanceTrendChart from '@/components/analytics/PerformanceTrendChart'
 import PerformanceQuadrantChart from '@/components/analytics/PerformanceQuadrantChart'
 import { getChildBadges, type Badge } from '@/utils/badgeSystem'
+import BestBrainsProgressTab from '@/pages/progress/BestBrainsProgressTab'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 
 type Child = Database['public']['Tables']['children']['Row']
-type ProgressTab = 'kumon' | 'school'
+type ProgressTab = 'kumon' | 'school' | 'best-brains'
 
 function ProgressTabButton({
   active,
@@ -140,8 +141,10 @@ export default function ProgressDashboard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Tab state - default to 'kumon' unless URL has ?tab=school
-  const initialTab = searchParams.get('tab') === 'school' ? 'school' : 'kumon'
+  // Tab state - default to 'kumon' unless the URL selects another tab
+  const tabParam = searchParams.get('tab')
+  const initialTab: ProgressTab =
+    tabParam === 'school' ? 'school' : tabParam === 'best-brains' ? 'best-brains' : 'kumon'
   const [activeTab, setActiveTab] = useState<ProgressTab>(initialTab)
 
   const handleTabChange = (tab: ProgressTab) => {
@@ -311,10 +314,28 @@ export default function ProgressDashboard() {
           >
             School Help
           </ProgressTabButton>
+          <ProgressTabButton
+            active={activeTab === 'best-brains'}
+            onClick={() => handleTabChange('best-brains')}
+            icon="🧠"
+          >
+            Best Brains
+          </ProgressTabButton>
         </div>
 
+        {/* Foundry Method parent surface — weekly reports live on their own page */}
+        <button
+          onClick={() => navigate('/foundry/parent')}
+          className="w-full flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-3 text-left shadow-sm hover:bg-teal-50 transition-colors"
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold text-teal-800">
+            <span>🧠</span> Best Brains Method — Ms. Wren's weekly reports
+          </span>
+          <span className="text-teal-600">›</span>
+        </button>
+
         {/* Tab Content */}
-        {activeTab === 'kumon' ? (
+        {activeTab === 'kumon' && (
           <>
         {/* Main Stats Card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-blue-100/50 p-5">
@@ -740,7 +761,9 @@ export default function ProgressDashboard() {
           Continue Learning
         </Button>
         </>
-        ) : (
+        )}
+
+        {activeTab === 'school' && (
           /* School Help Tab Content */
           <div className="space-y-5">
             {/* Homework & Exam Stats Summary */}
@@ -801,6 +824,10 @@ export default function ProgressDashboard() {
               Get School Help
             </Button>
           </div>
+        )}
+
+        {activeTab === 'best-brains' && (
+          <BestBrainsProgressTab childId={selectedChild.id} childName={selectedChild.name} />
         )}
       </div>
     </div>

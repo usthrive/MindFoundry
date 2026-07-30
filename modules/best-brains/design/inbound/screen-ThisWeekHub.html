@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mind Foundry — ThisWeekHub</title><style>
+/* Mind Foundry — weekly math module design tokens */
+:root {
+  --mf-paper: #FAF7F2;
+  --mf-surface: #FFFFFF;
+  --mf-surface-raised: #FFFFFF;
+  --mf-ink: #2B3238;
+  --mf-ink-muted: #66717A;
+  --mf-line: #E7E1D7;
+  --mf-primary: #3B7B78;
+  --mf-primary-deep: #2C5E5C;
+  --mf-primary-soft: #E4F0EE;
+  --mf-accent: #E39A57;
+  --mf-accent-deep: #B9773B;
+  --mf-accent-soft: #FBEEDD;
+  --mf-focus: #4C86C6;
+  --mf-success-quiet: #5E8C61;
+  --mf-info: #4C86C6;
+  --mf-warning-quiet: #C08A3E;
+  --mf-attention: #8B819B;
+  --mf-font-child: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-parent: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-report: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --mf-a-display: 700 32px/1.35 var(--mf-font-child);
+  --mf-a-body: 500 24px/1.55 var(--mf-font-child);
+  --mf-a-label: 700 20px/1.4 var(--mf-font-child);
+  --mf-b-display: 700 26px/1.35 var(--mf-font-child);
+  --mf-b-body: 500 19px/1.55 var(--mf-font-child);
+  --mf-b-label: 700 15px/1.4 var(--mf-font-child);
+  --mf-c-display: 700 22px/1.4 var(--mf-font-child);
+  --mf-c-body: 400 17px/1.6 var(--mf-font-child);
+  --mf-c-label: 600 13px/1.4 var(--mf-font-child);
+  --mf-p-display: 700 22px/1.35 var(--mf-font-parent);
+  --mf-p-body: 400 16px/1.6 var(--mf-font-parent);
+  --mf-p-label: 600 12px/1.4 var(--mf-font-parent);
+  --mf-tracking-body: 0.01em;
+  --mf-tracking-label: 0.06em;
+  --mf-s1: 4px;  --mf-s2: 8px;  --mf-s3: 12px; --mf-s4: 16px;
+  --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px; --mf-s8: 64px;
+  --mf-r-sm: 8px; --mf-r-md: 14px; --mf-r-lg: 20px; --mf-r-xl: 28px; --mf-r-pill: 999px;
+  --mf-shadow-1: 0 1px 2px rgba(43,50,56,0.06);
+  --mf-shadow-2: 0 2px 8px rgba(43,50,56,0.08);
+  --mf-shadow-3: 0 6px 20px rgba(43,50,56,0.10);
+  --mf-dur-fast: 150ms;
+  --mf-dur-med: 220ms;
+  --mf-dur-slow: 300ms;
+  --mf-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --mf-ease-settle: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --mf-tap-min: 48px;
+  --mf-tap-banda: 64px;
+}
+
+html,body{margin:0}
+body{background:#EFEAE2;font-family:var(--mf-font-child);color:var(--mf-ink);min-height:100vh;padding:36px 16px 48px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px}
+a{color:var(--mf-primary)}a:hover{color:var(--mf-primary-deep)}
+header{width:100%;max-width:390px;margin-bottom:10px}
+header h1{font-size:17px;margin:0 0 4px}header p{font-size:12.5px;color:var(--mf-ink-muted);margin:0;line-height:1.5}
+.state-label{width:100%;max-width:390px;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:var(--mf-ink-muted);letter-spacing:0.04em;margin-top:14px}
+.dv-card{max-width:100%;box-sizing:border-box;background:#FAF7F2;border:1px solid rgba(0,0,0,0.07);border-radius:22px;box-shadow:0 6px 24px rgba(43,50,56,0.10);overflow:hidden}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header><h1>ThisWeekHub</h1><p>Home screen — concept card, five day-tiles, Anchor / Chest / Journey map entries.</p></header>
+<div class="state-label">Monday reveal</div>
+<div class="dv-card" style="width:390px;padding:20px 18px 24px;display:flex;flex-direction:column;gap:18px" data-screen-label="ThisWeekHub Monday">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div style="font-size:21px;font-weight:700">Hi, Maya</div><div style="font-size:12.5px;color:#66717A;letter-spacing:0.02em">Level B · Week 14</div></div>
+    <svg width="38" height="38" viewBox="0 0 40 40"><circle cx="16" cy="24" r="12" fill="#3B7B78"></circle><circle cx="12" cy="27" r="5" fill="#2C5E5C"></circle><circle cx="26" cy="13" r="7.5" fill="#2C5E5C"></circle><circle cx="28.4" cy="11.6" r="1.6" fill="#FAF7F2"></circle><polygon points="33,11.5 39,13.5 33,15.5" fill="#E39A57"></polygon></svg>
+  </div>
+  <div style="background:#FFFFFF;border-radius:20px;box-shadow:0 6px 20px rgba(43,50,56,0.10);padding:22px 20px;display:flex;flex-direction:column;gap:12px;border-top:6px solid #3B7B78">
+    <div style="align-self:flex-start;background:#FBEEDD;color:#B9773B;font-size:11px;font-weight:700;letter-spacing:0.08em;padding:4px 10px;border-radius:999px">NEW THIS WEEK</div>
+    <div style="font-size:26px;font-weight:700;line-height:1.3;text-wrap:pretty">Subtraction with Regrouping</div>
+    <div style="font-size:15px;color:#66717A;line-height:1.55">When a column runs short, you can trade a ten for ten ones.</div>
+    <button style="margin-top:6px;min-height:56px;border:none;border-radius:16px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer">Start Monday’s lesson with Ms. Wren</button>
+  </div>
+  <div style="display:flex;gap:8px">
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#FFFFFF;border:2.5px solid #3B7B78;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:700;color:#3B7B78">Mon</span><span style="width:7px;height:7px;border-radius:50%;background:#E39A57"></span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#F1EBE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:600;color:#A9A093">Tue</span><span style="font-size:10px;color:#A9A093">resting</span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#F1EBE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:600;color:#A9A093">Wed</span><span style="font-size:10px;color:#A9A093">resting</span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#F1EBE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:600;color:#A9A093">Thu</span><span style="font-size:10px;color:#A9A093">resting</span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#F1EBE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:600;color:#A9A093">Fri</span><span style="font-size:10px;color:#A9A093">resting</span></div>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:14px;background:#FFFFFF;font-family:inherit;font-size:13px;font-weight:600;color:#2B3238;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="color:#3B7B78">⌗</span>Anchor</button>
+    <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:14px;background:#FFFFFF;font-family:inherit;font-size:13px;font-weight:600;color:#2B3238;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="color:#B9773B">▣</span>Chest · 2 waiting</button>
+    <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:14px;background:#FFFFFF;font-family:inherit;font-size:13px;font-weight:600;color:#2B3238;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="color:#3B7B78">◔</span>Journey map</button>
+  </div>
+</div>
+<div class="state-label">mid-week · dual-thread</div>
+<div class="dv-card" style="width:390px;padding:20px 18px 24px;display:flex;flex-direction:column;gap:18px" data-screen-label="ThisWeekHub midweek">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div style="font-size:21px;font-weight:700">Hi, Maya</div><div style="font-size:12.5px;color:#66717A;letter-spacing:0.02em">Level B · Week 14 · Wednesday</div></div>
+    <svg width="38" height="38" viewBox="0 0 40 40"><circle cx="16" cy="24" r="12" fill="#3B7B78"></circle><circle cx="12" cy="27" r="5" fill="#2C5E5C"></circle><circle cx="26" cy="13" r="7.5" fill="#2C5E5C"></circle><circle cx="28.4" cy="11.6" r="1.6" fill="#FAF7F2"></circle><polygon points="33,11.5 39,13.5 33,15.5" fill="#E39A57"></polygon></svg>
+  </div>
+  <div style="background:#FFFFFF;border-radius:20px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:20px;display:flex;flex-direction:column;gap:10px;border-top:6px solid #3B7B78">
+    <div style="font-size:23px;font-weight:700;line-height:1.3">Subtraction with Regrouping</div>
+    <div style="font-size:13px;color:#66717A;line-height:1.5">This week: Subtraction with Regrouping · Still strengthening: <span style="color:#B9773B;font-weight:600">Renaming tens from Week 12</span></div>
+    <button style="margin-top:4px;min-height:56px;border:none;border-radius:16px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer">Start Wednesday’s practice</button>
+    <div style="font-size:13px;color:#66717A;text-align:center">About 10 minutes</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#3B7B78;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:700;color:#FFFFFF">Mon</span><span style="font-size:11px;color:#BFDAD7">done</span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#3B7B78;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:700;color:#FFFFFF">Tue</span><span style="font-size:11px;color:#BFDAD7">done</span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#FFFFFF;border:2.5px solid #3B7B78;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:700;color:#3B7B78">Wed</span><span style="width:7px;height:7px;border-radius:50%;background:#E39A57"></span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#F1EBE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:600;color:#A9A093">Thu</span><span style="font-size:10px;color:#A9A093">resting</span></div>
+    <div style="flex:1;min-height:64px;border-radius:14px;background:#F1EBE1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:14px;font-weight:600;color:#A9A093">Fri</span><span style="font-size:10px;color:#A9A093">check day</span></div>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:14px;background:#FFFFFF;font-family:inherit;font-size:13px;font-weight:600;color:#2B3238;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="color:#3B7B78">⌗</span>Anchor</button>
+    <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:14px;background:#FFFFFF;font-family:inherit;font-size:13px;font-weight:600;color:#2B3238;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="color:#B9773B">▣</span>Chest · 1 waiting</button>
+    <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:14px;background:#FFFFFF;font-family:inherit;font-size:13px;font-weight:600;color:#2B3238;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="color:#3B7B78">◔</span>Journey map</button>
+  </div>
+</div>
+<p style="font-size:11px;color:#A9A093;max-width:390px;width:100%;text-align:center;margin-top:20px"><a href="INDEX.html">← index</a></p>
+</body></html>

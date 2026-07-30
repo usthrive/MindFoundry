@@ -1,0 +1,373 @@
+/**
+ * Best Brains-inspired module — Claude-Design skin (design/inbound tokens.css).
+ *
+ * MODULE-SCOPED: every rule lives under `.mf-foundry` (applied by
+ * FoundryLayout and FoundryParentLayout roots), so Kumon screens are
+ * untouched. Two layers:
+ *
+ *  1. The verbatim design-token variables from design/inbound/tokens.css.
+ *  2. A Tailwind-utility remap: increment 3 deliberately styled every screen
+ *     with theme tokens only (bg-primary / bg-surface / text-text-* …), so
+ *     re-pointing those utilities at the mf palette *is* the skin pass.
+ *     Semantics: primary/secondary → calm teal; warning → apricot;
+ *     error/attention → neutral lavender #8B819B (NO red on child surfaces);
+ *     grays → warm paper neutrals.
+ *  3. Component classes for the reference grammar (cards with teal top-rule,
+ *     day tiles, speech bubbles 4/16/16/16, hint bottom-sheet, serif report,
+ *     verdict-as-typography).
+ */
+
+.mf-foundry {
+  /* Color — base */
+  --mf-paper: #FAF7F2;
+  --mf-page: #EFEAE2;
+  --mf-surface: #FFFFFF;
+  --mf-ink: #2B3238;
+  --mf-ink-muted: #66717A;
+  --mf-ink-faint: #A9A093;
+  --mf-line: #E7E1D7;
+  --mf-fill: #F1EBE1;
+  --mf-fill-soft: #F5F2EC;
+
+  /* Color — brand */
+  --mf-primary: #3B7B78; /* calm teal */
+  --mf-primary-deep: #2C5E5C;
+  --mf-primary-soft: #E4F0EE;
+  --mf-accent: #E39A57; /* apricot */
+  --mf-accent-deep: #B9773B;
+  --mf-accent-soft: #FBEEDD;
+
+  /* Color — semantic */
+  --mf-focus: #4C86C6;
+  --mf-success-quiet: #5E8C61;
+  --mf-warning-quiet: #C08A3E;
+  --mf-attention: #8B819B; /* neutral attention — no error-red on child surfaces */
+  --mf-attention-soft: #F0EDF4;
+  --mf-attention-deep: #5D5470;
+
+  /* Type families */
+  --mf-font-child: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-parent: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-report: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+
+  /* Letterspacing (dyslexia-aware: slightly open) */
+  --mf-tracking-body: 0.01em;
+  --mf-tracking-label: 0.06em;
+
+  /* Radii */
+  --mf-r-sm: 8px;
+  --mf-r-md: 14px;
+  --mf-r-lg: 20px;
+  --mf-r-xl: 28px;
+  --mf-r-pill: 999px;
+
+  /* Elevation */
+  --mf-shadow-1: 0 1px 2px rgba(43, 50, 56, 0.06);
+  --mf-shadow-2: 0 2px 8px rgba(43, 50, 56, 0.08);
+  --mf-shadow-3: 0 6px 20px rgba(43, 50, 56, 0.1);
+
+  /* Motion — calm */
+  --mf-dur-fast: 150ms;
+  --mf-dur-med: 220ms;
+  --mf-dur-slow: 300ms;
+  --mf-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --mf-ease-settle: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Touch targets */
+  --mf-tap-min: 48px;
+  --mf-tap-banda: 64px;
+
+  /* The module canvas */
+  background: var(--mf-page);
+  color: var(--mf-ink);
+  font-family: var(--mf-font-child);
+  letter-spacing: var(--mf-tracking-body);
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. Tailwind semantic-utility remap (scoped) — the skin pass proper.
+ * ------------------------------------------------------------------------- */
+
+/* Primary → calm teal */
+.mf-foundry .bg-primary { background-color: var(--mf-primary); }
+.mf-foundry .hover\:bg-primary-hover:hover { background-color: var(--mf-primary-deep); }
+.mf-foundry .bg-primary-light,
+.mf-foundry .hover\:bg-primary-light:hover { background-color: var(--mf-primary-soft); }
+.mf-foundry .hover\:bg-primary\/60:hover { background-color: rgba(59, 123, 120, 0.6); }
+.mf-foundry .text-primary { color: var(--mf-primary); }
+.mf-foundry .text-primary-700 { color: var(--mf-primary-deep); }
+.mf-foundry .border-primary { border-color: var(--mf-primary); }
+.mf-foundry .border-primary\/50,
+.mf-foundry .focus\:border-primary\/50:focus { border-color: rgba(59, 123, 120, 0.5); }
+.mf-foundry .border-primary\/40,
+.mf-foundry .hover\:border-primary\/40:hover { border-color: rgba(59, 123, 120, 0.4); }
+.mf-foundry .border-primary\/20 { border-color: rgba(59, 123, 120, 0.2); }
+.mf-foundry .focus\:ring-primary\/30:focus { --tw-ring-color: rgba(59, 123, 120, 0.3); }
+.mf-foundry .ring-primary\/30 { --tw-ring-color: rgba(59, 123, 120, 0.3); }
+.mf-foundry .focus\:ring-primary\/40:focus,
+.mf-foundry .ring-primary\/40 { --tw-ring-color: rgba(59, 123, 120, 0.4); }
+
+/* Secondary (done/owned states) → same teal family — one calm hue, not two */
+.mf-foundry .bg-secondary { background-color: var(--mf-primary); }
+.mf-foundry .bg-secondary\/40 { background-color: rgba(59, 123, 120, 0.4); }
+.mf-foundry .bg-secondary\/60 { background-color: rgba(59, 123, 120, 0.6); }
+.mf-foundry .bg-secondary-light { background-color: var(--mf-primary-soft); }
+.mf-foundry .hover\:bg-secondary-light\/70:hover { background-color: rgba(228, 240, 238, 0.7); }
+.mf-foundry .text-secondary,
+.mf-foundry .text-secondary-600,
+.mf-foundry .text-secondary-700 { color: var(--mf-primary-deep); }
+.mf-foundry .border-secondary\/20 { border-color: rgba(59, 123, 120, 0.2); }
+.mf-foundry .border-secondary\/30 { border-color: rgba(59, 123, 120, 0.3); }
+.mf-foundry .border-secondary\/40 { border-color: rgba(59, 123, 120, 0.4); }
+.mf-foundry .focus\:ring-secondary\/40:focus { --tw-ring-color: rgba(59, 123, 120, 0.4); }
+.mf-foundry .ring-secondary\/40 { --tw-ring-color: rgba(59, 123, 120, 0.4); }
+.mf-foundry .ring-secondary\/50 { --tw-ring-color: rgba(59, 123, 120, 0.5); }
+
+/* Warning (hint surfaces) → apricot */
+.mf-foundry .bg-warning\/20 { background-color: var(--mf-accent-soft); }
+.mf-foundry .bg-warning-light,
+.mf-foundry .hover\:bg-warning-light:hover { background-color: var(--mf-accent-soft); }
+.mf-foundry .bg-warning-light\/40 { background-color: rgba(251, 238, 221, 0.4); }
+.mf-foundry .bg-warning-light\/50 { background-color: rgba(251, 238, 221, 0.5); }
+.mf-foundry .bg-warning-light\/60 { background-color: rgba(251, 238, 221, 0.6); }
+.mf-foundry .bg-warning-light\/70 { background-color: rgba(251, 238, 221, 0.7); }
+.mf-foundry .border-warning,
+.mf-foundry .hover\:border-warning:hover { border-color: var(--mf-accent); }
+.mf-foundry .border-warning\/30 { border-color: rgba(227, 154, 87, 0.3); }
+.mf-foundry .border-warning\/40 { border-color: rgba(227, 154, 87, 0.4); }
+.mf-foundry .focus\:ring-warning\/40:focus,
+.mf-foundry .ring-warning\/40 { --tw-ring-color: rgba(227, 154, 87, 0.4); }
+
+/* Error → neutral lavender (miss-state law: never red on child surfaces) */
+.mf-foundry .bg-error { background-color: var(--mf-attention); }
+.mf-foundry .bg-error-light { background-color: var(--mf-attention-soft); }
+.mf-foundry .text-error { color: var(--mf-attention); }
+.mf-foundry .border-error { border-color: var(--mf-attention); }
+
+/* Success → quiet green (rarely used; kept quiet) */
+.mf-foundry .bg-success { background-color: var(--mf-success-quiet); }
+.mf-foundry .bg-success-light { background-color: rgba(94, 140, 97, 0.14); }
+.mf-foundry .text-success { color: var(--mf-success-quiet); }
+
+/* Surfaces + warm paper neutrals */
+.mf-foundry .bg-background,
+.mf-foundry.bg-background { background-color: var(--mf-page); }
+.mf-foundry .bg-surface { background-color: var(--mf-surface); }
+.mf-foundry .bg-gray-50,
+.mf-foundry .hover\:bg-gray-50:hover { background-color: var(--mf-fill-soft); }
+.mf-foundry .bg-gray-100 { background-color: var(--mf-fill); }
+.mf-foundry .bg-gray-200,
+.mf-foundry .hover\:bg-gray-200:hover { background-color: var(--mf-line); }
+.mf-foundry .border-gray-100 { border-color: var(--mf-fill); }
+.mf-foundry .border-gray-200 { border-color: var(--mf-line); }
+
+/* Shared components rendered inside the module (NumberPad, ScratchPad…) */
+.mf-foundry .text-gray-900 { color: var(--mf-ink); }
+.mf-foundry .text-gray-700 { color: var(--mf-ink-muted); }
+.mf-foundry .text-gray-500 { color: var(--mf-ink-faint); }
+.mf-foundry .hover\:bg-gray-300:hover { background-color: var(--mf-line); }
+.mf-foundry .bg-error\/10 { background-color: var(--mf-attention-soft); }
+.mf-foundry .hover\:bg-error\/20:hover { background-color: rgba(139, 129, 155, 0.2); }
+.mf-foundry .border-error\/30 { border-color: rgba(139, 129, 155, 0.3); }
+.mf-foundry .focus\:ring-error\/40:focus { --tw-ring-color: rgba(139, 129, 155, 0.4); }
+.mf-foundry .hover\:bg-primary\/90:hover { background-color: var(--mf-primary-deep); }
+
+/* Ink */
+.mf-foundry .text-text-primary { color: var(--mf-ink); }
+.mf-foundry .text-text-secondary { color: var(--mf-ink-muted); }
+.mf-foundry .text-text-muted { color: var(--mf-ink-faint); }
+
+/* Elevation → the calm shadow scale */
+.mf-foundry .shadow-sm { box-shadow: var(--mf-shadow-1); }
+.mf-foundry .shadow-md { box-shadow: var(--mf-shadow-2); }
+.mf-foundry .shadow-lg,
+.mf-foundry .shadow-2xl { box-shadow: var(--mf-shadow-3); }
+
+/* Radii → reference scale (cards 20, buttons 16, tiles 14) */
+.mf-foundry .rounded-3xl { border-radius: var(--mf-r-lg); }
+.mf-foundry .rounded-2xl { border-radius: 16px; }
+.mf-foundry .rounded-xl { border-radius: var(--mf-r-md); }
+
+/* ---------------------------------------------------------------------------
+ * 3. Component classes — the reference grammar.
+ * ------------------------------------------------------------------------- */
+
+/* White content card with the teal top-rule (concept card, report card…). */
+.mf-foundry .mf-card {
+  background: var(--mf-surface);
+  border-radius: var(--mf-r-lg);
+  box-shadow: var(--mf-shadow-3);
+  border-top: 6px solid var(--mf-primary);
+}
+.mf-foundry .mf-card-quiet {
+  background: var(--mf-surface);
+  border-radius: var(--mf-r-lg);
+  box-shadow: var(--mf-shadow-2);
+}
+
+/* Eyebrow label (11px, 700, wide tracking). */
+.mf-foundry .mf-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mf-ink-muted);
+}
+.mf-foundry .mf-label-teal { color: var(--mf-primary); }
+.mf-foundry .mf-label-apricot { color: var(--mf-accent-deep); }
+
+/* Apricot pill chip ("NEW THIS WEEK"). */
+.mf-foundry .mf-chip {
+  display: inline-block;
+  background: var(--mf-accent-soft);
+  color: var(--mf-accent-deep);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--mf-r-pill);
+}
+
+/* Day tiles (done = teal fill / active = teal outline + apricot dot / resting). */
+.mf-foundry .mf-tile {
+  min-height: 64px;
+  border-radius: var(--mf-r-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+}
+.mf-foundry .mf-tile-done {
+  background: var(--mf-primary);
+  color: #ffffff;
+}
+.mf-foundry .mf-tile-done .mf-tile-sub { color: #bfdad7; }
+.mf-foundry .mf-tile-active {
+  background: var(--mf-surface);
+  border: 2.5px solid var(--mf-primary);
+  color: var(--mf-primary);
+}
+.mf-foundry .mf-tile-resting {
+  background: var(--mf-fill);
+  color: var(--mf-ink-faint);
+}
+.mf-foundry .mf-tile-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mf-accent);
+}
+.mf-foundry .mf-tile-sub { font-size: 10px; }
+
+/* Ms. Wren speech bubble — radius 4/16/16/16, white, shadow-1. */
+.mf-foundry .mf-bubble {
+  background: var(--mf-surface);
+  border-radius: 4px 16px 16px 16px;
+  box-shadow: var(--mf-shadow-1);
+}
+.mf-foundry .mf-bubble-teal {
+  background: var(--mf-primary-soft);
+  border-radius: 4px 16px 16px 16px;
+}
+
+/* Hint bottom-sheet (radius 24/24/0/0, up-shadow, grab handle). */
+.mf-foundry .mf-sheet {
+  background: var(--mf-surface);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -6px 20px rgba(43, 50, 56, 0.1);
+}
+.mf-foundry .mf-sheet-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: var(--mf-r-pill);
+  background: var(--mf-line);
+  margin: 0 auto;
+}
+
+/* Miss state — neutral lavender, never red. */
+.mf-foundry .mf-miss {
+  background: var(--mf-attention-soft);
+  border: 2px solid var(--mf-attention);
+  color: var(--mf-attention-deep);
+}
+
+/* Parent report (serif body, sans labels, verdict-as-typography). */
+.mf-foundry .mf-report-body {
+  font-family: var(--mf-font-report);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--mf-ink);
+}
+.mf-foundry .mf-verdict {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--mf-ink);
+  border-bottom: 3px solid var(--mf-ink);
+  padding-bottom: 2px;
+}
+.mf-foundry .mf-ack-btn {
+  width: 100%;
+  min-height: 54px;
+  border: none;
+  border-radius: 16px;
+  background: var(--mf-ink);
+  color: #ffffff;
+  font-family: var(--mf-font-parent);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mf-foundry .mf-ack-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Primary CTA per reference (teal, radius 16, min-height 56). */
+.mf-foundry .mf-btn-primary {
+  min-height: 56px;
+  border: none;
+  border-radius: 16px;
+  background: var(--mf-primary);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--mf-dur-fast) var(--mf-ease);
+}
+.mf-foundry .mf-btn-primary:hover { background: var(--mf-primary-deep); }
+.mf-foundry .mf-btn-primary:disabled { opacity: 0.6; }
+
+/* Quiet outlined action (Anchor / Chest / Journey map row). */
+.mf-foundry .mf-btn-quiet {
+  min-height: 52px;
+  border: 1px solid var(--mf-line);
+  border-radius: var(--mf-r-md);
+  background: var(--mf-surface);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mf-ink);
+  cursor: pointer;
+}
+.mf-foundry .mf-btn-quiet:hover { background: var(--mf-fill-soft); }
+
+/* NumberPad tray dress (reference: warm tray, white keys, teal Check). */
+.mf-foundry .mf-pad-tray {
+  background: var(--mf-fill);
+  border-radius: var(--mf-r-lg);
+  padding: 14px;
+}
+
+/* Calm motion floor. */
+@media (prefers-reduced-motion: reduce) {
+  .mf-foundry *,
+  .mf-foundry *::before,
+  .mf-foundry *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

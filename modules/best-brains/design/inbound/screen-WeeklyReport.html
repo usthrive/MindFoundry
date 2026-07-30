@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mind Foundry — WeeklyReport</title><style>
+/* Mind Foundry — weekly math module design tokens */
+:root {
+  --mf-paper: #FAF7F2;
+  --mf-surface: #FFFFFF;
+  --mf-surface-raised: #FFFFFF;
+  --mf-ink: #2B3238;
+  --mf-ink-muted: #66717A;
+  --mf-line: #E7E1D7;
+  --mf-primary: #3B7B78;
+  --mf-primary-deep: #2C5E5C;
+  --mf-primary-soft: #E4F0EE;
+  --mf-accent: #E39A57;
+  --mf-accent-deep: #B9773B;
+  --mf-accent-soft: #FBEEDD;
+  --mf-focus: #4C86C6;
+  --mf-success-quiet: #5E8C61;
+  --mf-info: #4C86C6;
+  --mf-warning-quiet: #C08A3E;
+  --mf-attention: #8B819B;
+  --mf-font-child: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-parent: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-report: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --mf-a-display: 700 32px/1.35 var(--mf-font-child);
+  --mf-a-body: 500 24px/1.55 var(--mf-font-child);
+  --mf-a-label: 700 20px/1.4 var(--mf-font-child);
+  --mf-b-display: 700 26px/1.35 var(--mf-font-child);
+  --mf-b-body: 500 19px/1.55 var(--mf-font-child);
+  --mf-b-label: 700 15px/1.4 var(--mf-font-child);
+  --mf-c-display: 700 22px/1.4 var(--mf-font-child);
+  --mf-c-body: 400 17px/1.6 var(--mf-font-child);
+  --mf-c-label: 600 13px/1.4 var(--mf-font-child);
+  --mf-p-display: 700 22px/1.35 var(--mf-font-parent);
+  --mf-p-body: 400 16px/1.6 var(--mf-font-parent);
+  --mf-p-label: 600 12px/1.4 var(--mf-font-parent);
+  --mf-tracking-body: 0.01em;
+  --mf-tracking-label: 0.06em;
+  --mf-s1: 4px;  --mf-s2: 8px;  --mf-s3: 12px; --mf-s4: 16px;
+  --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px; --mf-s8: 64px;
+  --mf-r-sm: 8px; --mf-r-md: 14px; --mf-r-lg: 20px; --mf-r-xl: 28px; --mf-r-pill: 999px;
+  --mf-shadow-1: 0 1px 2px rgba(43,50,56,0.06);
+  --mf-shadow-2: 0 2px 8px rgba(43,50,56,0.08);
+  --mf-shadow-3: 0 6px 20px rgba(43,50,56,0.10);
+  --mf-dur-fast: 150ms;
+  --mf-dur-med: 220ms;
+  --mf-dur-slow: 300ms;
+  --mf-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --mf-ease-settle: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --mf-tap-min: 48px;
+  --mf-tap-banda: 64px;
+}
+
+html,body{margin:0}
+body{background:#EFEAE2;font-family:var(--mf-font-child);color:var(--mf-ink);min-height:100vh;padding:36px 16px 48px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px}
+a{color:var(--mf-primary)}a:hover{color:var(--mf-primary-deep)}
+header{width:100%;max-width:390px;margin-bottom:10px}
+header h1{font-size:17px;margin:0 0 4px}header p{font-size:12.5px;color:var(--mf-ink-muted);margin:0;line-height:1.5}
+.state-label{width:100%;max-width:390px;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:var(--mf-ink-muted);letter-spacing:0.04em;margin-top:14px}
+.dv-card{max-width:100%;box-sizing:border-box;background:#FAF7F2;border:1px solid rgba(0,0,0,0.07);border-radius:22px;box-shadow:0 6px 24px rgba(43,50,56,0.10);overflow:hidden}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header><h1>WeeklyReport</h1><p>Ms. Wren’s weekly note. Verdict typographic, % shown exactly once, no verdict color-coding.</p></header>
+<div class="state-label">Passed</div>
+<div class="dv-card" style="width:390px;background:#FFFFFF;display:flex;flex-direction:column" data-screen-label="WeeklyReport passed">
+  <div style="background:#FAF7F2;border-bottom:1px solid #E7E1D7;padding:18px 22px;display:flex;flex-direction:column;gap:4px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#66717A">MAYA · LEVEL B · WEEK 14</div>
+    <div style="font-size:19px;font-weight:700">Subtraction with Regrouping</div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin-top:6px"><span style="font-size:21px;font-weight:700;color:#2B3238;border-bottom:3px solid #2B3238;padding-bottom:2px">Passed</span><span style="font-size:13px;color:#66717A">87% on the weekly check</span></div>
+  </div>
+  <div style="padding:18px 22px;display:flex;flex-direction:column;gap:16px;font-family:Georgia,'Iowan Old Style',serif;font-size:15px;line-height:1.65;color:#2B3238">
+    <div><div style="font-family:inherit;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#3B7B78;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">WHAT WE WORKED ON</div><p style="margin:6px 0 0">Trading a ten for ten ones when the ones column runs short — with place-value columns, then without.</p></div>
+    <div><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#3B7B78;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">WHERE MAYA IS IMPROVING</div><p style="margin:6px 0 0">She now checks the ones column before writing anything — a real mathematician’s habit she didn’t have two weeks ago.</p></div>
+    <div><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#3B7B78;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">WHAT WE’RE STRENGTHENING</div><p style="margin:6px 0 0">Word problems that hide the subtraction. Our plan: story warm-ups next week, read aloud together.</p></div>
+    <div style="background:#FAF7F2;border-radius:14px;padding:14px 16px"><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#B9773B;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">AT HOME THIS WEEK</div><p style="margin:8px 0 0">Praise the move: <em>“You noticed the ones ran short before you started — that’s the hard part.”</em></p><p style="margin:8px 0 0">Ask her to teach you: <em>“Why did you cross out the 5 and write 4?”</em></p></div>
+  </div>
+  <div style="padding:0 22px 22px"><button style="width:100%;min-height:54px;border:none;border-radius:16px;background:#2B3238;color:#FFFFFF;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif;font-size:15px;font-weight:700;cursor:pointer">Seen it — Maya will know her week counted</button></div>
+</div>
+<div class="state-label">One more round — identical dress</div>
+<div class="dv-card" style="width:390px;background:#FFFFFF;display:flex;flex-direction:column" data-screen-label="WeeklyReport one more round">
+  <div style="background:#FAF7F2;border-bottom:1px solid #E7E1D7;padding:18px 22px;display:flex;flex-direction:column;gap:4px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#66717A">MAYA · LEVEL B · WEEK 14</div>
+    <div style="font-size:19px;font-weight:700">Subtraction with Regrouping</div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin-top:6px"><span style="font-size:21px;font-weight:700;color:#2B3238;border-bottom:3px solid #2B3238;padding-bottom:2px">One more round</span><span style="font-size:13px;color:#66717A">68% on the weekly check</span></div>
+  </div>
+  <div style="padding:18px 22px;display:flex;flex-direction:column;gap:16px;font-family:Georgia,'Iowan Old Style',serif;font-size:15px;line-height:1.65;color:#2B3238">
+    <div><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#3B7B78;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">WHAT WE WORKED ON</div><p style="margin:6px 0 0">Trading a ten for ten ones when the ones column runs short — with place-value columns, then without.</p></div>
+    <div><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#3B7B78;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">WHERE MAYA IS IMPROVING</div><p style="margin:6px 0 0">Her setup is excellent — columns lined up, strategy chosen before she writes. That’s the foundation.</p></div>
+    <div><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#3B7B78;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">WHAT WE’RE STRENGTHENING</div><p style="margin:6px 0 0">Renaming the ten under load — she knows the move but skips it when the problem looks familiar. Our plan: a short revisit Monday, then a fresh check with brand-new problems. Nothing else pauses.</p></div>
+    <div style="background:#FAF7F2;border-radius:14px;padding:14px 16px"><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:#B9773B;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif">AT HOME THIS WEEK</div><p style="margin:8px 0 0">Praise the move: <em>“You kept your columns straight the whole page — that takes care.”</em></p><p style="margin:8px 0 0">Ask her to teach you: <em>“How do you know when you need to trade a ten?”</em></p></div>
+  </div>
+  <div style="padding:0 22px 22px"><button style="width:100%;min-height:54px;border:none;border-radius:16px;background:#2B3238;color:#FFFFFF;font-family:'Avenir Next',Avenir,Seravek,'Trebuchet MS',Verdana,sans-serif;font-size:15px;font-weight:700;cursor:pointer">Seen it — Maya will know her week counted</button></div>
+</div>
+<p style="font-size:11px;color:#A9A093;max-width:390px;width:100%;text-align:center;margin-top:20px"><a href="INDEX.html">← index</a></p>
+</body></html>

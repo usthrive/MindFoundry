@@ -1,0 +1,77 @@
+/* Mind Foundry — weekly math module design tokens */
+:root {
+  /* Color — base */
+  --mf-paper: #FAF7F2;
+  --mf-surface: #FFFFFF;
+  --mf-surface-raised: #FFFFFF;
+  --mf-ink: #2B3238;
+  --mf-ink-muted: #66717A;
+  --mf-line: #E7E1D7;
+
+  /* Color — brand */
+  --mf-primary: #3B7B78;        /* calm teal */
+  --mf-primary-deep: #2C5E5C;
+  --mf-primary-soft: #E4F0EE;
+  --mf-accent: #E39A57;         /* apricot */
+  --mf-accent-deep: #B9773B;
+  --mf-accent-soft: #FBEEDD;
+
+  /* Color — semantic */
+  --mf-focus: #4C86C6;
+  --mf-success-quiet: #5E8C61;
+  --mf-info: #4C86C6;
+  --mf-warning-quiet: #C08A3E;
+  --mf-attention: #8B819B;      /* neutral attention — no error-red on child surfaces */
+
+  /* Type families */
+  --mf-font-child: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-parent: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-report: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+
+  /* Type scale — Band A (4–6): largest, roundest */
+  --mf-a-display: 700 32px/1.35 var(--mf-font-child);
+  --mf-a-body: 500 24px/1.55 var(--mf-font-child);
+  --mf-a-label: 700 20px/1.4 var(--mf-font-child);
+
+  /* Type scale — Band B (6–9) */
+  --mf-b-display: 700 26px/1.35 var(--mf-font-child);
+  --mf-b-body: 500 19px/1.55 var(--mf-font-child);
+  --mf-b-label: 700 15px/1.4 var(--mf-font-child);
+
+  /* Type scale — Band C (9–12): clean reading scale */
+  --mf-c-display: 700 22px/1.4 var(--mf-font-child);
+  --mf-c-body: 400 17px/1.6 var(--mf-font-child);
+  --mf-c-label: 600 13px/1.4 var(--mf-font-child);
+
+  /* Parent scale */
+  --mf-p-display: 700 22px/1.35 var(--mf-font-parent);
+  --mf-p-body: 400 16px/1.6 var(--mf-font-parent);
+  --mf-p-label: 600 12px/1.4 var(--mf-font-parent);
+
+  /* Letterspacing (dyslexia-aware: slightly open) */
+  --mf-tracking-body: 0.01em;
+  --mf-tracking-label: 0.06em;
+
+  /* Spacing */
+  --mf-s1: 4px;  --mf-s2: 8px;  --mf-s3: 12px; --mf-s4: 16px;
+  --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px; --mf-s8: 64px;
+
+  /* Radii */
+  --mf-r-sm: 8px; --mf-r-md: 14px; --mf-r-lg: 20px; --mf-r-xl: 28px; --mf-r-pill: 999px;
+
+  /* Elevation */
+  --mf-shadow-1: 0 1px 2px rgba(43,50,56,0.06);
+  --mf-shadow-2: 0 2px 8px rgba(43,50,56,0.08);
+  --mf-shadow-3: 0 6px 20px rgba(43,50,56,0.10);
+
+  /* Motion — calm */
+  --mf-dur-fast: 150ms;
+  --mf-dur-med: 220ms;
+  --mf-dur-slow: 300ms;
+  --mf-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --mf-ease-settle: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Touch targets */
+  --mf-tap-min: 48px;
+  --mf-tap-banda: 64px;
+}

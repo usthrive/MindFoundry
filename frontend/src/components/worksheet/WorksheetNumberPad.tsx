@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import AlgebraKeys from '@/components/input/AlgebraKeys'
+import type { Problem } from '@/services/generators/types'
 
 export interface WorksheetNumberPadProps {
   onInput: (value: number | string) => void
   allowNegative?: boolean
   allowDecimal?: boolean
   allowFraction?: boolean
+  /** Show the "R" key for division answers written as quotient + remainder (e.g. 13 R 1) */
+  allowRemainder?: boolean
+  /** When set, an algebra key row (variables, powers, brackets, relations) is shown
+   *  above the digits. Required from Level G, where answers are expressions. */
+  algebraProblem?: Problem | null
   disabled?: boolean
   /** Disable only the submit button (when not all questions answered) */
   submitDisabled?: boolean
@@ -39,6 +46,8 @@ export default function WorksheetNumberPad({
   allowNegative = false,
   allowDecimal = false,
   allowFraction = false,
+  allowRemainder = false,
+  algebraProblem = null,
   disabled = false,
   submitDisabled = false,
   className,
@@ -177,6 +186,19 @@ export default function WorksheetNumberPad({
       getMaxWidthClasses(),
       !fixed && className
     )}>
+      {/* Algebra keys (Level G+): variables, powers, brackets, relations */}
+      {algebraProblem && (
+        <AlgebraKeys
+          problem={algebraProblem}
+          onKey={onInput}
+          disabled={disabled}
+          className={cn('mb-1.5', gapClasses)}
+          buttonClassName={fixed
+            ? 'min-h-[32px] h-[clamp(32px,4.2vh,38px)] text-[clamp(0.8rem,1.6vh,0.95rem)]'
+            : 'h-9 text-sm sm:h-10 sm:text-base'}
+        />
+      )}
+
       {/* Number grid: 3×4 layout */}
       <div className={cn('grid grid-cols-3', gapClasses)}>
         {/* Numbers 1-9 */}
@@ -193,7 +215,18 @@ export default function WorksheetNumberPad({
         ))}
 
         {/* Bottom row: special buttons */}
-        {allowNegative ? (
+        {allowRemainder ? (
+          <button
+            onClick={() => onInput('remainder')}
+            disabled={disabled}
+            className={cn(specialButtonBase, buttonSizeClasses)}
+            type="button"
+            title="Remainder (e.g. 13 R 1)"
+            aria-label="Remainder"
+          >
+            R
+          </button>
+        ) : allowNegative ? (
           <button
             onClick={() => onInput('negative')}
             disabled={disabled}

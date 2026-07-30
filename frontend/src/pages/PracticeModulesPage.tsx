@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getCohortForChild } from '@/services/cohorts/cohortService'
 import { countUnread } from '@/services/cohorts/stickerService'
 import ParentInviteBanner from '@/components/cohorts/ParentInviteBanner'
+import { getModule } from '@/modules/core/registry'
 import type { Cohort } from '@/types/cohort'
 
 interface ModuleCardProps {
@@ -215,11 +216,11 @@ export default function PracticeModulesPage() {
 
         {/* Module Grid - 3 Main Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          {/* Kumon-Style Practice */}
+          {/* Kumon Method (Kumon-style daily worksheet practice) */}
           <ModuleCard
             icon="📚"
-            title="Daily Practice"
-            description="Continue your Kumon-style math practice with adaptive problems"
+            title="Kumon Method"
+            description="Daily worksheet practice — repetition builds speed and accuracy"
             path="/study"
           />
 
@@ -241,6 +242,21 @@ export default function PracticeModulesPage() {
             path="/videos"
           />
 
+          {/* Best Brains Method (weekly concept mastery with Ms. Wren) — calm card,
+              display name from the module registry. NOTE: user chose the "Best Brains"
+              label for this private build; for a public/commercial release revert the
+              registry displayName to the neutral codename "Foundry Method". */}
+          {getModule('best-brains').status === 'live' && (
+            <ModuleCard
+              icon="🧠"
+              title={getModule('best-brains').displayName}
+              description="One new math idea a week with Ms. Wren — short, calm daily practice that makes it stick"
+              path="/foundry"
+              badge="Weekly"
+              badgeColor="bg-teal-100 text-teal-700"
+            />
+          )}
+
           {/* Teams (Cohorts) */}
           <TeamsCard
             cohort={cohort}
@@ -254,7 +270,7 @@ export default function PracticeModulesPage() {
           <ModuleCard
             icon="📊"
             title="My Progress"
-            description="Track your achievements in Daily Practice and School Help"
+            description="Track your achievements in Kumon Method and School Help"
             path="/progress"
           />
         </div>

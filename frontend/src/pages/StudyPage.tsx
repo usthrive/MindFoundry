@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react'
+import { checkStringAnswer } from '@/services/answerCheck'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCelebration } from '@/contexts/CelebrationContext'
@@ -24,6 +25,7 @@ import { useDailySaveLimit } from '@/hooks/useDailySaveLimit'
 import ParentVerification from '@/components/auth/ParentVerification'
 import WorksheetView, { type WorksheetViewRef, type PageState } from '@/components/worksheet/WorksheetView'
 import WorksheetNumberPad from '@/components/worksheet/WorksheetNumberPad'
+import AlgebraKeys from '@/components/input/AlgebraKeys'
 import ScratchPadOverlay from '@/components/worksheet/ScratchPadOverlay'
 import type { Stroke } from '@/components/ui/ScratchPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
@@ -374,6 +376,21 @@ export default function StudyPage() {
   const supportsNegatives = () => {
     return ['G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].includes(currentLevel)
   }
+  // Which problem the child is on inside the worksheet grid — drives the algebra keys.
+  const [activeWorksheetProblem, setActiveWorksheetProblem] = useState<Problem | null>(null)
+
+  const supportsAlgebraKeys = () => {
+    // From Level G every answer is an expression ("(3x + 5)(x + 3)", "y = 5x + 2"),
+    // which a digits-only pad cannot produce at all.
+    return ['G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].includes(currentLevel)
+  }
+  const supportsRemainder = () => {
+    // Division answers are written "13 R 1" from Level C's division section (worksheet
+    // 111 onward) through Level D's long division. Gated on the LEVEL, never on whether
+    // this particular problem happens to have a remainder — that would give the answer away.
+    if (currentLevel === 'C') return currentWorksheet >= 111
+    return currentLevel === 'D'
+  }
 
   // FIXED: Dynamic age group based on level (per Kumon requirements)
   const getAgeGroup = () => {
@@ -673,6 +690,13 @@ export default function StudyPage() {
         } else if (!inputValue.includes('/')) {
           setInputValue(prev => prev + '/')
         }
+      } else if ((e.key === 'r' || e.key === 'R') && supportsRemainder()) {
+        e.preventDefault()
+        if (worksheetModeActive) {
+          handleWorksheetInput('remainder')
+        } else if (inputValue.length > 0 && !/r/i.test(inputValue)) {
+          setInputValue(prev => prev + ' R ')
+        }
       } else if (e.key === '-' && supportsNegatives()) {
         e.preventDefault()
         if (worksheetModeActive) {
@@ -727,6 +751,10 @@ export default function StudyPage() {
     } else if (num === -3) { // Fraction slash signal
       if (supportsFractions() && !inputValue.includes('/')) {
         setInputValue(prev => prev + '/')
+      }
+    } else if (num === -4) { // Remainder signal (division answers: "13 R 1")
+      if (supportsRemainder() && inputValue.length > 0 && !/r/i.test(inputValue)) {
+        setInputValue(prev => prev + ' R ')
       }
     } else if (num >= 0) {
       setInputValue((prev) => prev + num.toString())
@@ -849,8 +877,8 @@ export default function StudyPage() {
       const correctAnswer = currentProblem.correctAnswer
 
       if (typeof correctAnswer === 'string') {
-        // String answer (exact match, case insensitive)
-        isCorrect = inputValue.toLowerCase() === correctAnswer.toLowerCase()
+        // Mark the maths, not the notation — see services/answerCheck.
+        isCorrect = checkStringAnswer(inputValue, correctAnswer)
       } else if (typeof correctAnswer === 'number') {
         // Numeric answer
         isCorrect = parseFloat(inputValue) === correctAnswer
@@ -1786,6 +1814,7 @@ export default function StudyPage() {
                 onPageComplete={handleWorksheetPageComplete}
                 onWorksheetComplete={handleWorksheetComplete}
                 onAllAnsweredChange={setCanSubmitWorksheet}
+                onActiveProblemChange={setActiveWorksheetProblem}
                 onPageStateChange={handlePageStateChange}
                 sessionActive={sessionActive}
                 supplementaryPractice={getSupplementaryPractice()}
@@ -1803,6 +1832,10 @@ export default function StudyPage() {
                 allowDecimal={supportsDecimals()}
                 allowFraction={supportsFractions()}
                 allowNegative={supportsNegatives()}
+                allowRemainder={supportsRemainder()}
+                algebraProblem={supportsAlgebraKeys()
+                  ? (activeWorksheetProblem ?? currentProblem)
+                  : null}
                 disabled={!sessionActive}
                 submitDisabled={!canSubmitWorksheet}
                 fixed={true}
@@ -1951,6 +1984,14 @@ export default function StudyPage() {
                     // Regular levels: NumberPad with typed input
                     <>
                       <InputDisplay value={inputValue} size="xl" />
+                      {supportsAlgebraKeys() && (
+                        <AlgebraKeys
+                          problem={currentProblem}
+                          onKey={(text) => setInputValue(prev => prev + text)}
+                          disabled={!sessionActive}
+                          className="mb-2 w-full max-w-[320px] mx-auto"
+                        />
+                      )}
                       <NumberPad
                         onNumberClick={handleNumberClick}
                         onBackspace={handleBackspace}
@@ -1959,6 +2000,7 @@ export default function StudyPage() {
                         allowDecimal={supportsDecimals()}
                         allowFraction={supportsFractions()}
                         allowNegative={supportsNegatives()}
+                        allowRemainder={supportsRemainder()}
                       />
                     </>
                   )}

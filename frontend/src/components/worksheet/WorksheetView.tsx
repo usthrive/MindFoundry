@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useImperativeHandle, forwardRef, useRef } from 'react'
 import { cn } from '@/lib/utils'
+import { checkStringAnswer } from '@/services/answerCheck'
 import Button from '@/components/ui/Button'
 import WorksheetProblem from './WorksheetProblem'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
@@ -54,6 +55,9 @@ export interface WorksheetViewProps {
   onWorksheetComplete: (totalCorrect: number, totalProblems: number) => void
   onAnswerChange?: (problemIndex: number, answer: string) => void
   onAllAnsweredChange?: (allAnswered: boolean) => void
+  /** Fires whenever the child moves to a different problem, so the parent can adapt
+   *  the keypad (Level G+ shows the variables that appear in THIS question). */
+  onActiveProblemChange?: (problem: Problem | null) => void
   onPageStateChange?: (pageState: PageState) => void  // Callback when page state changes (for persistence)
   sessionActive: boolean
   supplementaryPractice?: SupplementaryPractice
@@ -91,6 +95,11 @@ export interface PageState {
   columnDigits: Record<number, (string | null)[]>  // per-problem array of column digits (index 0 = ones)
   activeColumns: Record<number, number>             // per-problem active column index (0 = ones)
   carries: Record<number, (string | null)[]>        // carry indicators per column
+  // Partial-product working for multiplication by a 2-digit-or-wider multiplier.
+  // partialProducts[problemIndex][row][col]; activeRows[problemIndex] is the row the
+  // child is in (0..N-1 = partial rows, N = the final total row).
+  partialProducts?: Record<number, (string | null)[][]>
+  activeRows?: Record<number, number>
   // Subtraction regroup state (parallel arrays indexed by column, 0 = ones)
   regroupStrikes?: Record<number, (string | null)[]> // donor replacement digit per column
   regroupAdds?: Record<number, (string | null)[]>    // "+10" receiver indicator per column
@@ -121,36 +130,173 @@ function getDigitAtPlace(num: number, place: number): number {
 
 /**
  * Compute the number of answer columns needed for a vertical problem.
- * Uses max OPERAND digit count (not answer digit count).
- * The last column (highest place value) allows 2-digit entry to capture overflow
- * (e.g., 55+67=122 uses 2 columns: ones="2", tens="12").
+ *
+ * ONE COLUMN PER PLACE VALUE. This is the whole point of the vertical algorithm:
+ * the child lines up ones under ones, tens under tens, and the answer gets a box for
+ * every place it can possibly reach. A box must never hold two digits — writing "12"
+ * under a column labelled "T" teaches the opposite of place value.
+ *
+ * The width is a property of the problem SHAPE, not of the answer, so it never leaks
+ * how big the answer is (every 2-digit × 1-digit problem gets 3 boxes whether the
+ * product is 24 or 891; the child leaves the leading box empty, exactly as on paper).
+ *
+ *   addition       max operand digits + 1   (a sum carries out at most one place)
+ *   multiplication digits(a) + digits(b)    (the standard bound on a product's width)
+ *   subtraction    max operand digits       (a difference can never grow)
  */
-function getAnswerColumnCount(problem: Problem): number {
+export function getAnswerColumnCount(problem: Problem): number {
   if (problem.displayFormat !== 'vertical' || !problem.operands?.length) return 0
-  return Math.max(...problem.operands.map(op => String(Math.abs(op)).length))
+  const digits = problem.operands.map(op => String(Math.abs(op)).length)
+  const maxDigits = Math.max(...digits)
+
+  switch (problem.type) {
+    case 'multiplication':
+      return digits.reduce((sum, d) => sum + d, 0)
+    case 'addition':
+      return maxDigits + 1
+    default:
+      return maxDigits
+  }
 }
 
 /**
- * Compute carry values for addition based on entered column digits.
- * Returns an array where index = column position, value = carry digit string or null.
- * Only computes carries up to the last column the child has filled.
+ * How many partial-product rows a vertical multiplication needs.
+ *
+ * A single-digit multiplier has none — the product IS the answer row. A 2-digit
+ * multiplier cannot be done in one step: the child multiplies by the ones digit,
+ * then by the tens digit (written one place further left), then adds. Each of those
+ * gets its own row, which is what the layout was missing.
  */
-function computeCarries(problem: Problem, columns: (string | null)[]): (string | null)[] {
-  if (!problem.operands || problem.type !== 'addition') return new Array(columns.length).fill(null)
+export function getPartialRowCount(problem: Problem): number {
+  if (problem.type !== 'multiplication' || problem.displayFormat !== 'vertical') return 0
+  const multiplier = problem.operands?.[1]
+  if (multiplier === undefined) return 0
+  const digits = String(Math.abs(multiplier)).length
+  return digits >= 2 ? digits : 0
+}
+
+/** The true value of partial row r, BEFORE its place-value shift (81 × 63 → row 1 = 486). */
+export function getPartialRowValue(problem: Problem, row: number): number {
+  const [a, b] = problem.operands ?? []
+  return Math.abs(a ?? 0) * getDigitAtPlace(b ?? 0, row)
+}
+
+/**
+ * Columns partial row r may occupy: [r, r + digits(multiplicand)].
+ * The upper bound is structural — multiplicand × one digit can never be wider than
+ * digits(multiplicand) + 1 — so it is the same for every problem of a given shape
+ * and gives nothing away about this particular answer.
+ */
+export function getPartialRowSpan(problem: Problem, row: number): { from: number; to: number } {
+  const aDigits = String(Math.abs(problem.operands?.[0] ?? 0)).length
+  return { from: row, to: row + aDigits }
+}
+
+/** Digits of the correct value for partial row r, indexed by grid column. */
+export function getPartialRowDigits(problem: Problem, row: number, colCount: number): (string | null)[] {
+  const value = getPartialRowValue(problem, row)
+  const out: (string | null)[] = new Array(colCount).fill(null)
+  const str = String(value)
+  for (let i = 0; i < str.length; i++) {
+    const col = row + i
+    if (col < colCount) out[col] = str[str.length - 1 - i]
+  }
+  return out
+}
+
+/** Has the child written this partial row correctly? null = not attempted at all. */
+export function checkPartialRow(
+  problem: Problem,
+  row: number,
+  entered: (string | null)[] | undefined
+): boolean | null {
+  if (!entered || entered.every(d => d === null)) return null
+  const expected = getPartialRowDigits(problem, row, entered.length)
+  return entered.every((d, col) => (d ?? null) === (expected[col] ?? null))
+}
+
+/**
+ * Compute carry values for a vertical problem based on entered column digits.
+ * Returns an array where index = column position, value = carry digit string or null.
+ * Only computes carries up to the last column the child has filled, so the carry
+ * appears as a consequence of their own work rather than as a pre-filled answer.
+ *
+ * Addition:       carry = tens part of (d1 + d2 + carry_in).
+ * Multiplication: carry = tens part of (multiplicand digit × multiplier + carry_in).
+ *                 Only defined for a SINGLE-digit multiplier (Level C). A 2-digit
+ *                 multiplier needs partial-product rows, which this layout does not
+ *                 have, so no carries are shown there.
+ */
+export function computeCarries(problem: Problem, columns: (string | null)[]): (string | null)[] {
+  const none = () => new Array(columns.length).fill(null)
+  if (!problem.operands || problem.operands.length < 2) return none()
 
   const [num1, num2] = problem.operands
-  const carries: (string | null)[] = new Array(columns.length).fill(null)
+  const isAddition = problem.type === 'addition'
+  const isSingleDigitMultiplication =
+    problem.type === 'multiplication' && Math.abs(num2) < 10
+  if (!isAddition && !isSingleDigitMultiplication) return none()
+
+  const operandDigits = String(Math.abs(num1)).length
+  const carries: (string | null)[] = none()
 
   let carry = 0
   for (let col = 0; col < columns.length; col++) {
     if (columns[col] === null) break // Stop computing past where child has entered
+    // Past the top number's own digits there is nothing left to carry out of.
+    if (!isAddition && col >= operandDigits) break
     const d1 = getDigitAtPlace(num1, col)
-    const d2 = getDigitAtPlace(num2, col)
-    const sum = d1 + d2 + carry
-    carry = Math.floor(sum / 10)
+    const result = isAddition
+      ? d1 + getDigitAtPlace(num2, col) + carry
+      : d1 * Math.abs(num2) + carry
+    carry = Math.floor(result / 10)
     if (carry > 0 && col + 1 < columns.length) {
       carries[col + 1] = String(carry)
     }
+  }
+  return carries
+}
+
+/**
+ * Carries for the row the child is currently working in, on a problem that has
+ * partial-product rows.
+ *   row < rowCount → carries from multiplicand × that digit of the multiplier,
+ *                    positioned in the shifted frame of that row.
+ *   row = rowCount → the final total is an ADDITION of the partial rows, so its
+ *                    carries come from summing them column by column.
+ * As everywhere else, nothing is revealed past the column the child has reached.
+ */
+export function computeRowCarries(
+  problem: Problem,
+  columns: (string | null)[],
+  row: number,
+  rowCount: number
+): (string | null)[] {
+  const carries: (string | null)[] = new Array(columns.length).fill(null)
+  const [a, b] = problem.operands ?? []
+  let carry = 0
+
+  if (row < rowCount) {
+    const multiplierDigit = getDigitAtPlace(b ?? 0, row)
+    const aDigits = String(Math.abs(a ?? 0)).length
+    for (let i = 0; i < aDigits; i++) {
+      const col = row + i
+      if (col >= columns.length || columns[col] === null) break
+      const result = getDigitAtPlace(a ?? 0, i) * multiplierDigit + carry
+      carry = Math.floor(result / 10)
+      if (carry > 0 && col + 1 < columns.length) carries[col + 1] = String(carry)
+    }
+    return carries
+  }
+
+  const shifted = Array.from({ length: rowCount }, (_, r) =>
+    getPartialRowValue(problem, r) * Math.pow(10, r)
+  )
+  for (let col = 0; col < columns.length; col++) {
+    if (columns[col] === null) break
+    const sum = shifted.reduce((s, v) => s + getDigitAtPlace(v, col), 0) + carry
+    carry = Math.floor(sum / 10)
+    if (carry > 0 && col + 1 < columns.length) carries[col + 1] = String(carry)
   }
   return carries
 }
@@ -260,6 +406,8 @@ function emptyColumnState() {
     columnDigits: {} as Record<number, (string | null)[]>,
     activeColumns: {} as Record<number, number>,
     carries: {} as Record<number, (string | null)[]>,
+    partialProducts: {} as Record<number, (string | null)[][]>,
+    activeRows: {} as Record<number, number>,
     regroupStrikes: {} as Record<number, (string | null)[]>,
     regroupAdds: {} as Record<number, (string | null)[]>,
     scratchPadStrokes: {} as Record<number, Stroke[]>,
@@ -274,6 +422,8 @@ function initColumnStateForProblems(problems: Problem[]) {
   const columnDigits: Record<number, (string | null)[]> = {}
   const activeColumns: Record<number, number> = {}
   const carries: Record<number, (string | null)[]> = {}
+  const partialProducts: Record<number, (string | null)[][]> = {}
+  const activeRows: Record<number, number> = {}
   const regroupStrikes: Record<number, (string | null)[]> = {}
   const regroupAdds: Record<number, (string | null)[]> = {}
 
@@ -286,6 +436,14 @@ function initColumnStateForProblems(problems: Problem[]) {
         carries[index] = new Array(colCount).fill(null)
         regroupStrikes[index] = new Array(colCount).fill(null)
         regroupAdds[index] = new Array(colCount).fill(null)
+        const rowCount = getPartialRowCount(problem)
+        if (rowCount > 0) {
+          partialProducts[index] = Array.from({ length: rowCount }, () =>
+            new Array(colCount).fill(null)
+          )
+          activeRows[index] = 0
+          activeColumns[index] = 0 // row 0 starts at the ones column
+        }
       }
     }
   })
@@ -294,6 +452,8 @@ function initColumnStateForProblems(problems: Problem[]) {
     columnDigits,
     activeColumns,
     carries,
+    partialProducts,
+    activeRows,
     regroupStrikes,
     regroupAdds,
     scratchPadStrokes: {} as Record<number, Stroke[]>,
@@ -344,6 +504,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   onWorksheetComplete,
   onAnswerChange,
   onAllAnsweredChange,
+  onActiveProblemChange,
   onPageStateChange,
   sessionActive,
   supplementaryPractice,
@@ -494,28 +655,38 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         columnDigits: initialPageState.columnDigits ?? {},
         activeColumns: initialPageState.activeColumns ?? {},
         carries: initialPageState.carries ?? {},
+        partialProducts: initialPageState.partialProducts ?? {},
+        activeRows: initialPageState.activeRows ?? {},
         regroupStrikes: initialPageState.regroupStrikes ?? {},
         regroupAdds: initialPageState.regroupAdds ?? {},
         scratchPadStrokes: initialPageState.scratchPadStrokes ?? {},
       }
 
-      // Backfill column state for vertical problems missing it (legacy sessions)
+      // Backfill column state for vertical problems missing it (legacy sessions).
+      // Arrays saved before the column count widened are padded rather than replaced,
+      // so a session restored mid-worksheet keeps its digits AND gets the full set of
+      // place-value boxes.
+      const padTo = (arr: (string | null)[] | undefined, n: number): (string | null)[] => {
+        const out = arr ? [...arr] : []
+        while (out.length < n) out.push(null)
+        return out
+      }
       normalizedProblems.forEach((problem, index) => {
-        if (problem.displayFormat === 'vertical' && !normalized.columnDigits[index]) {
-          const colCount = getAnswerColumnCount(problem)
-          if (colCount > 0) {
-            normalized.columnDigits[index] = new Array(colCount).fill(null)
-            normalized.activeColumns[index] = normalized.activeColumns[index] ?? 0
-            normalized.carries[index] = normalized.carries[index] ?? new Array(colCount).fill(null)
-          }
-        }
-        // Backfill regroup arrays separately (legacy sessions before this feature)
-        if (problem.displayFormat === 'vertical') {
-          const colCount = getAnswerColumnCount(problem)
-          if (colCount > 0) {
-            normalized.regroupStrikes![index] = normalized.regroupStrikes?.[index] ?? new Array(colCount).fill(null)
-            normalized.regroupAdds![index] = normalized.regroupAdds?.[index] ?? new Array(colCount).fill(null)
-          }
+        if (problem.displayFormat !== 'vertical') return
+        const colCount = getAnswerColumnCount(problem)
+        if (colCount <= 0) return
+        normalized.columnDigits[index] = padTo(normalized.columnDigits[index], colCount)
+        normalized.activeColumns[index] = normalized.activeColumns[index] ?? 0
+        normalized.carries[index] = padTo(normalized.carries[index], colCount)
+        normalized.regroupStrikes![index] = padTo(normalized.regroupStrikes?.[index], colCount)
+        normalized.regroupAdds![index] = padTo(normalized.regroupAdds?.[index], colCount)
+        const rowCount = getPartialRowCount(problem)
+        if (rowCount > 0) {
+          const saved = normalized.partialProducts?.[index] ?? []
+          normalized.partialProducts![index] = Array.from({ length: rowCount }, (_, r) =>
+            padTo(saved[r], colCount)
+          )
+          normalized.activeRows![index] = normalized.activeRows?.[index] ?? 0
         }
       })
 
@@ -722,7 +893,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     if (typeof correctAnswer === 'number') {
       return parseFloat(answer) === correctAnswer
     } else if (typeof correctAnswer === 'string') {
-      return answer.toLowerCase() === correctAnswer.toLowerCase()
+      // Mark the maths, not the notation: "13R1" == "13 R 1", and "(x+3)(x+4)"
+      // == "(x + 4)(x + 3)" == "x² + 7x + 12".
+      return checkStringAnswer(answer, correctAnswer)
     } else if (typeof correctAnswer === 'object' && 'numerator' in correctAnswer) {
       const frac = correctAnswer as { numerator: number; denominator: number }
 
@@ -983,6 +1156,38 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const handleEnterKey = useCallback(() => {
     // For vertical problems: advance column if current column has a digit but more columns remain
     const activeProblem = currentPageState.problems[activeIndex]
+
+    // On a problem with partial-product working, Enter means "this row is done" —
+    // a partial product is usually narrower than the space allowed for it, so the
+    // child needs a way to move on that doesn't depend on filling every cell.
+    if (activeProblem?.displayFormat === 'vertical') {
+      const rowCount = getPartialRowCount(activeProblem)
+      const row = currentPageState.activeRows?.[activeIndex] ?? 0
+      if (rowCount > 0) {
+        // Only advance out of a row the child has actually written in. Without this,
+        // an Enter pressed straight after the row auto-advanced (which happens when the
+        // working fills its whole span) would skip the next row entirely.
+        const rowHasDigits = row < rowCount &&
+          (currentPageState.partialProducts?.[activeIndex]?.[row] ?? []).some(d => d !== null)
+        if (rowHasDigits) {
+          const nextRow = row + 1
+          const nextCol = nextRow < rowCount ? getPartialRowSpan(activeProblem, nextRow).from : 0
+          setPageStates(prev => ({
+            ...prev,
+            [currentPage]: {
+              ...prev[currentPage],
+              activeRows: { ...(prev[currentPage].activeRows ?? {}), [activeIndex]: nextRow },
+              activeColumns: { ...prev[currentPage].activeColumns, [activeIndex]: nextCol },
+            },
+          }))
+        }
+        // Either way, stay on this problem. Enter pressed mid-working must never
+        // throw the child onto a different question.
+        const totalEmpty = (currentPageState.columnDigits[activeIndex] ?? []).every(d => d === null)
+        if (rowHasDigits || row < rowCount || totalEmpty) return
+      }
+    }
+
     if (activeProblem?.displayFormat === 'vertical') {
       const columns = currentPageState.columnDigits[activeIndex]
       const activeCol = currentPageState.activeColumns[activeIndex] ?? 0
@@ -1058,6 +1263,96 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       const activeProblem = currentState.problems[activeIndex]
       const isVertical = activeProblem?.displayFormat === 'vertical'
 
+      // ── Partial-product rows (multiplication by a 2-digit-or-wider multiplier) ──
+      // While the child is working in a partial row, digits go into that row rather
+      // than into the answer. Entry walks left along the row's span, then drops to the
+      // next row, and finally to the total — the order the algorithm is written in.
+      if (isVertical && activeProblem) {
+        const rowCount = getPartialRowCount(activeProblem)
+        const activeRow = currentState.activeRows?.[activeIndex] ?? 0
+        if (rowCount > 0 && activeRow < rowCount) {
+          const columnCount = getAnswerColumnCount(activeProblem)
+          const rows = (currentState.partialProducts?.[activeIndex] ??
+            Array.from({ length: rowCount }, () => new Array(columnCount).fill(null))
+          ).map(r => {
+            const copy = [...r]
+            while (copy.length < columnCount) copy.push(null)
+            return copy
+          })
+          const span = getPartialRowSpan(activeProblem, activeRow)
+          const topCol = Math.min(span.to, columnCount - 1)
+          let newRow = activeRow
+          let newCol = Math.min(
+            Math.max(currentState.activeColumns[activeIndex] ?? span.from, span.from),
+            topCol
+          )
+
+          if (num === 'clear') {
+            // Clear the whole problem — working and answer — and start over at row 0.
+            const firstSpan = getPartialRowSpan(activeProblem, 0)
+            return {
+              ...prev,
+              [currentPage]: {
+                ...currentState,
+                answers: { ...currentState.answers, [activeIndex]: '' },
+                columnDigits: { ...currentState.columnDigits, [activeIndex]: new Array(columnCount).fill(null) },
+                carries: { ...currentState.carries, [activeIndex]: new Array(columnCount).fill(null) },
+                partialProducts: {
+                  ...(currentState.partialProducts ?? {}),
+                  [activeIndex]: Array.from({ length: rowCount }, () => new Array(columnCount).fill(null)),
+                },
+                activeRows: { ...(currentState.activeRows ?? {}), [activeIndex]: 0 },
+                activeColumns: { ...currentState.activeColumns, [activeIndex]: firstSpan.from },
+              },
+            }
+          } else if (num === 'backspace') {
+            if (rows[newRow][newCol] !== null) {
+              rows[newRow][newCol] = null
+            } else if (newCol > span.from) {
+              newCol -= 1
+              rows[newRow][newCol] = null
+            } else if (newRow > 0) {
+              newRow -= 1
+              const prevSpan = getPartialRowSpan(activeProblem, newRow)
+              newCol = Math.min(prevSpan.to, columnCount - 1)
+              rows[newRow][newCol] = null
+            }
+          } else if (typeof num === 'number' || (typeof num === 'string' && /^\d$/.test(num))) {
+            rows[newRow][newCol] = String(num)
+            if (newCol < topCol) {
+              newCol += 1
+            } else if (newRow < rowCount - 1) {
+              newRow += 1
+              newCol = getPartialRowSpan(activeProblem, newRow).from
+            } else {
+              // Working done — move down to the total row (row index === rowCount).
+              newRow = rowCount
+              newCol = 0
+            }
+          } else {
+            return prev // 'negative' / 'decimal' / 'fraction' / 'remainder' have no meaning here
+          }
+
+          const workingColumns = newRow < rowCount
+            ? rows[newRow]
+            : (currentState.columnDigits[activeIndex] ?? new Array(columnCount).fill(null))
+
+          return {
+            ...prev,
+            [currentPage]: {
+              ...currentState,
+              partialProducts: { ...(currentState.partialProducts ?? {}), [activeIndex]: rows },
+              activeRows: { ...(currentState.activeRows ?? {}), [activeIndex]: newRow },
+              activeColumns: { ...currentState.activeColumns, [activeIndex]: newCol },
+              carries: {
+                ...currentState.carries,
+                [activeIndex]: computeRowCarries(activeProblem, workingColumns, newRow, rowCount),
+              },
+            },
+          }
+        }
+      }
+
       // ── Vertical (column-by-column) input ──
       if (isVertical && activeProblem) {
         const columnCount = getAnswerColumnCount(activeProblem)
@@ -1132,20 +1427,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             }
           }
 
-          if (isLastColumn) {
-            // Last column (highest place value): allow up to 2 digits (captures overflow)
-            const existing = newColumns[newActiveCol]
-            if (existing === null) {
-              newColumns[newActiveCol] = digit
-            } else if (existing.length < 2) {
-              newColumns[newActiveCol] = existing + digit
-            }
-            // No auto-advance — this is the last column
-          } else {
-            // Non-last columns: single digit, auto-advance immediately
-            newColumns[newActiveCol] = digit
-            newActiveCol = newActiveCol + 1
-          }
+          // One digit per place-value column, always. The grid is now wide enough for
+          // every place the answer can reach (see getAnswerColumnCount), so a column
+          // never has to swallow two digits.
+          newColumns[newActiveCol] = digit
+          if (!isLastColumn) newActiveCol = newActiveCol + 1
         }
         // Ignore 'negative', 'decimal', 'fraction' for vertical problems
 
@@ -1157,8 +1443,12 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           .join('')
           .replace(/^0+(?=\d)/, '') // strip leading zeros (keep "0" if only digit)
 
-        // Compute carries for auto-carry display
-        const newCarries = computeCarries(activeProblem, newColumns)
+        // Compute carries for auto-carry display. On a problem with partial-product
+        // rows the total is a SUM of those rows, so its carries come from adding them.
+        const totalRowCount = getPartialRowCount(activeProblem)
+        const newCarries = totalRowCount > 0
+          ? computeRowCarries(activeProblem, newColumns, totalRowCount, totalRowCount)
+          : computeCarries(activeProblem, newColumns)
 
         const newAnswers = { ...currentState.answers, [activeIndex]: answerStr }
         const newColumnDigits = { ...currentState.columnDigits, [activeIndex]: newColumns }
@@ -1198,6 +1488,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       } else if (num === 'fraction') {
         if (!currentAnswer.includes('/')) {
           newAnswer = currentAnswer + '/'
+        }
+      } else if (num === 'remainder') {
+        // "13 R 1" — only once, and only after a quotient has been entered.
+        if (currentAnswer.length > 0 && !/r/i.test(currentAnswer)) {
+          newAnswer = currentAnswer + ' R '
         }
       } else {
         newAnswer = currentAnswer + String(num)
@@ -1260,6 +1555,12 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       currentPageState.results[index] === false &&
       !currentPageState.lockedProblems[index]
     )
+
+  // Tell the parent which problem is being worked on, so the keypad can offer the
+  // right symbols for it.
+  useEffect(() => {
+    onActiveProblemChange?.(currentPageState.problems[activeIndex] ?? null)
+  }, [activeIndex, currentPage, currentPageState.problems, onActiveProblemChange])
 
   // Notify parent when allAnswered status changes
   useEffect(() => {
@@ -1516,6 +1817,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                         ...prev[currentPage].activeColumns,
                         [index]: col,
                       },
+                      // Tapping the answer row means "I'm on the total now", so digits
+                      // stop going into the partial-product working.
+                      ...(getPartialRowCount(problem) > 0
+                        ? { activeRows: { ...(prev[currentPage].activeRows ?? {}), [index]: getPartialRowCount(problem) } }
+                        : {}),
                     },
                   }))
                   // Auto-regroup demonstration: when child taps a subtraction column
@@ -1531,6 +1837,30 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 } : undefined}
                 manualCarryMode={manualCarry && problem.displayFormat === 'vertical' && problem.type === 'addition'}
                 answerColumnCount={problem.displayFormat === 'vertical' ? getAnswerColumnCount(problem) : undefined}
+                partialProducts={getPartialRowCount(problem) > 0
+                  ? currentPageState.partialProducts?.[index]
+                  : undefined}
+                partialRowShift={(row: number) => getPartialRowSpan(problem, row).from}
+                partialRowSpanTo={(row: number) => getPartialRowSpan(problem, row).to}
+                partialRowResults={currentPageState.submitted && getPartialRowCount(problem) > 0
+                  ? Array.from({ length: getPartialRowCount(problem) }, (_, row) =>
+                      checkPartialRow(problem, row, currentPageState.partialProducts?.[index]?.[row]))
+                  : undefined}
+                activeRow={getPartialRowCount(problem) > 0
+                  ? (currentPageState.activeRows?.[index] ?? 0)
+                  : undefined}
+                onPartialCellClick={isActive && getPartialRowCount(problem) > 0
+                  ? (row: number, col: number) => {
+                      setPageStates(prev => ({
+                        ...prev,
+                        [currentPage]: {
+                          ...prev[currentPage],
+                          activeRows: { ...(prev[currentPage].activeRows ?? {}), [index]: row },
+                          activeColumns: { ...prev[currentPage].activeColumns, [index]: col },
+                        },
+                      }))
+                    }
+                  : undefined}
                 regroupStrikes={problem.displayFormat === 'vertical' && problem.type === 'subtraction'
                   ? currentPageState.regroupStrikes?.[index]
                   : undefined}

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mind Foundry — PracticePage</title><style>
+/* Mind Foundry — weekly math module design tokens */
+:root {
+  --mf-paper: #FAF7F2;
+  --mf-surface: #FFFFFF;
+  --mf-surface-raised: #FFFFFF;
+  --mf-ink: #2B3238;
+  --mf-ink-muted: #66717A;
+  --mf-line: #E7E1D7;
+  --mf-primary: #3B7B78;
+  --mf-primary-deep: #2C5E5C;
+  --mf-primary-soft: #E4F0EE;
+  --mf-accent: #E39A57;
+  --mf-accent-deep: #B9773B;
+  --mf-accent-soft: #FBEEDD;
+  --mf-focus: #4C86C6;
+  --mf-success-quiet: #5E8C61;
+  --mf-info: #4C86C6;
+  --mf-warning-quiet: #C08A3E;
+  --mf-attention: #8B819B;
+  --mf-font-child: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-parent: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-report: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --mf-a-display: 700 32px/1.35 var(--mf-font-child);
+  --mf-a-body: 500 24px/1.55 var(--mf-font-child);
+  --mf-a-label: 700 20px/1.4 var(--mf-font-child);
+  --mf-b-display: 700 26px/1.35 var(--mf-font-child);
+  --mf-b-body: 500 19px/1.55 var(--mf-font-child);
+  --mf-b-label: 700 15px/1.4 var(--mf-font-child);
+  --mf-c-display: 700 22px/1.4 var(--mf-font-child);
+  --mf-c-body: 400 17px/1.6 var(--mf-font-child);
+  --mf-c-label: 600 13px/1.4 var(--mf-font-child);
+  --mf-p-display: 700 22px/1.35 var(--mf-font-parent);
+  --mf-p-body: 400 16px/1.6 var(--mf-font-parent);
+  --mf-p-label: 600 12px/1.4 var(--mf-font-parent);
+  --mf-tracking-body: 0.01em;
+  --mf-tracking-label: 0.06em;
+  --mf-s1: 4px;  --mf-s2: 8px;  --mf-s3: 12px; --mf-s4: 16px;
+  --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px; --mf-s8: 64px;
+  --mf-r-sm: 8px; --mf-r-md: 14px; --mf-r-lg: 20px; --mf-r-xl: 28px; --mf-r-pill: 999px;
+  --mf-shadow-1: 0 1px 2px rgba(43,50,56,0.06);
+  --mf-shadow-2: 0 2px 8px rgba(43,50,56,0.08);
+  --mf-shadow-3: 0 6px 20px rgba(43,50,56,0.10);
+  --mf-dur-fast: 150ms;
+  --mf-dur-med: 220ms;
+  --mf-dur-slow: 300ms;
+  --mf-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --mf-ease-settle: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --mf-tap-min: 48px;
+  --mf-tap-banda: 64px;
+}
+
+html,body{margin:0}
+body{background:#EFEAE2;font-family:var(--mf-font-child);color:var(--mf-ink);min-height:100vh;padding:36px 16px 48px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px}
+a{color:var(--mf-primary)}a:hover{color:var(--mf-primary-deep)}
+header{width:100%;max-width:390px;margin-bottom:10px}
+header h1{font-size:17px;margin:0 0 4px}header p{font-size:12.5px;color:var(--mf-ink-muted);margin:0;line-height:1.5}
+.state-label{width:100%;max-width:390px;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:var(--mf-ink-muted);letter-spacing:0.04em;margin-top:14px}
+.dv-card{max-width:100%;box-sizing:border-box;background:#FAF7F2;border:1px solid rgba(0,0,0,0.07);border-radius:22px;box-shadow:0 6px 24px rgba(43,50,56,0.10);overflow:hidden}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header><h1>PracticePage</h1><p>The core surface: one problem in focus, band-law inputs, Anchor + scratch pad one tap away.</p></header>
+<div class="state-label">default + resume banner</div>
+<div class="dv-card" style="width:390px;display:flex;flex-direction:column" data-screen-label="PracticePage default">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 0">
+    <span style="font-size:12.5px;font-weight:700;letter-spacing:0.06em;color:#66717A">PRACTICE · PAGE 2 OF 3</span>
+    <div style="display:flex;gap:8px">
+      <button style="min-width:48px;min-height:40px;border:1px solid #E7E1D7;border-radius:12px;background:#FFFFFF;font-family:inherit;font-size:11.5px;font-weight:600;color:#3B7B78;cursor:pointer;padding:0 10px">Scratch pad</button>
+      <button style="min-width:48px;min-height:40px;border:none;border-radius:12px 0 0 12px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;padding:0 12px;margin-right:-18px">Anchor ⌗</button>
+    </div>
+  </div>
+  <div style="margin:12px 18px 0;background:#E4F0EE;border-radius:12px;padding:10px 14px;font-size:13px;color:#2C5E5C;font-weight:600">We were right here. Ready when you are.</div>
+  <div style="display:flex;gap:10px;align-items:flex-start;padding:14px 18px 0">
+    <svg width="32" height="32" viewBox="0 0 40 40" style="flex:none"><circle cx="16" cy="24" r="12" fill="#3B7B78"></circle><circle cx="12" cy="27" r="5" fill="#2C5E5C"></circle><circle cx="26" cy="13" r="7.5" fill="#2C5E5C"></circle><circle cx="28.4" cy="11.6" r="1.6" fill="#FAF7F2"></circle><polygon points="33,11.5 39,13.5 33,15.5" fill="#E39A57"></polygon></svg>
+    <div style="background:#FFFFFF;border-radius:4px 16px 16px 16px;box-shadow:0 1px 2px rgba(43,50,56,0.06);padding:10px 14px;font-size:15px;line-height:1.5;display:flex;gap:10px;align-items:center">Trade a ten if the ones run short.<button style="flex:none;width:34px;height:34px;border:none;border-radius:50%;background:#E4F0EE;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 20 20"><polygon points="3,7 7,7 13,2 13,18 7,13 3,13" fill="#3B7B78"></polygon></svg></button></div>
+  </div>
+  <div style="margin:16px 18px;background:#FFFFFF;border-radius:20px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:22px 20px;display:flex;flex-direction:column;align-items:center;gap:14px">
+    <div style="display:grid;grid-template-columns:64px 64px;gap:4px 12px;text-align:center;font-size:26px;font-weight:700">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#3B7B78">TENS</div><div style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:#B9773B">ONES</div>
+      <div style="background:#E4F0EE;border-radius:10px;padding:8px 0">5</div><div style="background:#FBEEDD;border-radius:10px;padding:8px 0">2</div>
+      <div style="background:#F5F2EC;border-radius:10px;padding:8px 0;position:relative"><span style="position:absolute;left:8px;top:8px;font-size:18px;color:#66717A">−</span>1</div><div style="background:#F5F2EC;border-radius:10px;padding:8px 0">7</div>
+      <div style="border-top:3px solid #2B3238;margin-top:2px;padding-top:8px"><div style="height:52px;border:2.5px dashed #3B7B78;border-radius:10px"></div></div>
+      <div style="border-top:3px solid #2B3238;margin-top:2px;padding-top:8px"><div style="height:52px;border:2.5px dashed #3B7B78;border-radius:10px"></div></div>
+    </div>
+    <button style="min-height:44px;border:none;border-radius:999px;background:#F5F2EC;font-family:inherit;font-size:13px;font-weight:600;color:#66717A;cursor:pointer;padding:0 18px">Need a hint?</button>
+  </div>
+  <div style="background:#F1EBE1;padding:14px 18px 20px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">1</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">2</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">3</button>
+      <button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">4</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">5</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">6</button>
+      <button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">7</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">8</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">9</button>
+      <button style="min-height:52px;border:none;border-radius:14px;background:transparent;font-family:inherit;font-size:14px;font-weight:600;color:#66717A;cursor:pointer">erase</button><button style="min-height:52px;border:none;border-radius:14px;background:#FFFFFF;box-shadow:0 1px 2px rgba(43,50,56,0.06);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer">0</button><button style="min-height:52px;border:none;border-radius:14px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">Check</button>
+    </div>
+  </div>
+</div>
+<div class="state-label">hint ladder open · rung 1</div>
+<div class="dv-card" style="width:390px;display:flex;flex-direction:column" data-screen-label="PracticePage hint">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 0;opacity:0.45">
+    <span style="font-size:12.5px;font-weight:700;letter-spacing:0.06em;color:#66717A">PRACTICE · PAGE 2 OF 3</span>
+    <button style="min-width:48px;min-height:40px;border:none;border-radius:12px 0 0 12px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:11.5px;font-weight:700;padding:0 12px;margin-right:-18px">Anchor ⌗</button>
+  </div>
+  <div style="margin:16px 18px;background:#FFFFFF;border-radius:20px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:18px 20px;opacity:0.45;display:flex;justify-content:center">
+    <div style="display:grid;grid-template-columns:56px 56px;gap:4px 12px;text-align:center;font-size:22px;font-weight:700">
+      <div style="font-size:10px;font-weight:700;color:#3B7B78">TENS</div><div style="font-size:10px;font-weight:700;color:#B9773B">ONES</div>
+      <div style="background:#E4F0EE;border-radius:10px;padding:6px 0">5</div><div style="background:#FBEEDD;border-radius:10px;padding:6px 0">2</div>
+      <div style="background:#F5F2EC;border-radius:10px;padding:6px 0">1</div><div style="background:#F5F2EC;border-radius:10px;padding:6px 0">7</div>
+    </div>
+  </div>
+  <div style="background:#FFFFFF;border-radius:24px 24px 0 0;box-shadow:0 -6px 20px rgba(43,50,56,0.10);padding:20px 18px 24px;display:flex;flex-direction:column;gap:14px">
+    <div style="width:44px;height:5px;border-radius:999px;background:#E7E1D7;align-self:center"></div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;color:#66717A">HINT LADDER · RUNG 1</div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <svg width="32" height="32" viewBox="0 0 40 40" style="flex:none"><circle cx="16" cy="24" r="12" fill="#3B7B78"></circle><circle cx="12" cy="27" r="5" fill="#2C5E5C"></circle><circle cx="26" cy="13" r="7.5" fill="#2C5E5C"></circle><circle cx="28.4" cy="11.6" r="1.6" fill="#FAF7F2"></circle><polygon points="33,11.5 39,13.5 33,15.5" fill="#E39A57"></polygon></svg>
+      <div style="background:#E4F0EE;border-radius:4px 16px 16px 16px;padding:12px 14px;font-size:16px;line-height:1.55">Look at the ones column first. Can you take 7 ones away from 2 ones?</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;min-height:48px;border:1.5px dashed #E7E1D7;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#A9A093;font-weight:600">Rung 2 · find the step</div>
+      <div style="flex:1;min-height:48px;border:1.5px dashed #E7E1D7;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#A9A093;font-weight:600">Rung 3 · a worked twin</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button style="flex:1;min-height:52px;border:none;border-radius:16px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">I’ll try it</button>
+      <button style="flex:1;min-height:52px;border:1px solid #E7E1D7;border-radius:16px;background:#FFFFFF;font-family:inherit;font-size:15px;font-weight:600;color:#2B3238;cursor:pointer">Next rung</button>
+    </div>
+    <div style="font-size:11.5px;color:#66717A;text-align:center">The answer only comes after rung 3 and one try — with the why.</div>
+  </div>
+</div>
+<div class="state-label">after a miss · warm explanation + park (no red, ever)</div>
+<div class="dv-card" style="width:390px;display:flex;flex-direction:column" data-screen-label="PracticePage miss">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 0">
+    <span style="font-size:12.5px;font-weight:700;letter-spacing:0.06em;color:#66717A">PRACTICE · PAGE 2 OF 3</span>
+    <button style="min-width:48px;min-height:40px;border:none;border-radius:12px 0 0 12px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:11.5px;font-weight:700;padding:0 12px;margin-right:-18px">Anchor ⌗</button>
+  </div>
+  <div style="margin:16px 18px 0;background:#FFFFFF;border-radius:20px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:18px 20px;display:flex;justify-content:center">
+    <div style="display:grid;grid-template-columns:56px 56px;gap:4px 12px;text-align:center;font-size:22px;font-weight:700">
+      <div style="font-size:10px;font-weight:700;color:#3B7B78">TENS</div><div style="font-size:10px;font-weight:700;color:#B9773B">ONES</div>
+      <div style="background:#E4F0EE;border-radius:10px;padding:6px 0">5</div><div style="background:#FBEEDD;border-radius:10px;padding:6px 0">2</div>
+      <div style="background:#F5F2EC;border-radius:10px;padding:6px 0">1</div><div style="background:#F5F2EC;border-radius:10px;padding:6px 0">7</div>
+      <div style="border-top:3px solid #2B3238;padding-top:6px"><div style="background:#F0EDF4;border:2px solid #8B819B;border-radius:10px;padding:6px 0;color:#5D5470">4</div></div>
+      <div style="border-top:3px solid #2B3238;padding-top:6px"><div style="background:#F0EDF4;border:2px solid #8B819B;border-radius:10px;padding:6px 0;color:#5D5470">5</div></div>
+    </div>
+  </div>
+  <div style="margin:14px 18px;display:flex;gap:10px;align-items:flex-start">
+    <svg width="32" height="32" viewBox="0 0 40 40" style="flex:none"><circle cx="16" cy="24" r="12" fill="#3B7B78"></circle><circle cx="12" cy="27" r="5" fill="#2C5E5C"></circle><circle cx="26" cy="13" r="7.5" fill="#2C5E5C"></circle><circle cx="28.4" cy="11.6" r="1.6" fill="#FAF7F2"></circle><polygon points="33,11.5 39,13.5 33,15.5" fill="#E39A57"></polygon></svg>
+    <div style="background:#FFFFFF;border-radius:4px 16px 16px 16px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:14px 16px;font-size:16px;line-height:1.6">So close — let’s look together. You found 45, and I see why: 7 take away 2 is 5. But watch the order — we start with <strong>2 ones</strong> and need to take away <strong>7</strong>. The ones run short, so we trade one ten. That’s the regrouping move.</div>
+  </div>
+  <div style="margin:0 18px 22px;display:flex;gap:10px">
+    <button style="flex:1;min-height:56px;border:none;border-radius:16px;background:#3B7B78;color:#FFFFFF;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer">Try it again</button>
+    <button style="flex:1;min-height:56px;border:1px solid #E7E1D7;border-radius:16px;background:#FFFFFF;font-family:inherit;font-size:14px;font-weight:600;color:#2B3238;cursor:pointer">Park it in the chest</button>
+  </div>
+</div>
+<p style="font-size:11px;color:#A9A093;max-width:390px;width:100%;text-align:center;margin-top:20px"><a href="INDEX.html">← index</a></p>
+</body></html>

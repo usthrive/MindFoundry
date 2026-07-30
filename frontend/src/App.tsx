@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
@@ -18,6 +19,7 @@ import ProgressDashboard from '@/pages/ProgressDashboard'
 import TestLevelsPage from '@/pages/TestLevelsPage'
 import AnimationTestPage from '@/pages/AnimationTestPage'
 import TestConceptsPage from '@/pages/TestConceptsPage'
+import FoundryPreviewPage from '@/pages/FoundryPreviewPage'
 import TestTTSPage from '@/pages/TestTTSPage'
 import VideoLibraryPage from '@/pages/VideoLibraryPage'
 import VideoCategoryPage from '@/pages/VideoCategoryPage'
@@ -28,6 +30,9 @@ import ExamPrepPage from '@/pages/ExamPrepPage'
 import PracticeModulesPage from '@/pages/PracticeModulesPage'
 import SchoolHelpPage from '@/pages/SchoolHelpPage'
 import CohortPage from '@/pages/CohortPage'
+
+// Best Brains-inspired module ("Foundry Method") — lazy chunk, route base /foundry
+const FoundryRoutes = lazy(() => import('@/modules/best-brains/FoundryRoutes'))
 
 function App() {
   return (
@@ -171,6 +176,23 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Best Brains-inspired module (Foundry Method) */}
+          <Route
+            path="/foundry/*"
+            element={
+              <ProtectedRoute>
+                <Suspense
+                  fallback={
+                    <div className="flex min-h-screen items-center justify-center bg-background">
+                      <p className="text-lg text-gray-600">Setting up…</p>
+                    </div>
+                  }
+                >
+                  <FoundryRoutes />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
           {/* Admin Routes */}
           <Route
             path="/admin"
@@ -183,6 +205,7 @@ function App() {
           <Route path="/test-levels" element={<TestLevelsPage />} />
           <Route path="/test-animations" element={<AnimationTestPage />} />
           <Route path="/test-concepts" element={<TestConceptsPage />} />
+          <Route path="/test-foundry" element={<FoundryPreviewPage />} />
           <Route path="/test-tts" element={<ProtectedRoute><TestTTSPage /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>

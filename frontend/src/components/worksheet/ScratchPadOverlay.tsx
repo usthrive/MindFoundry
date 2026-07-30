@@ -1,10 +1,11 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import ScratchPad, { type ScratchPadRef, type Stroke, type BackgroundStyle, COLORS, WIDTHS } from '@/components/ui/ScratchPad'
 import ScratchPadAnswerBar from './ScratchPadAnswerBar'
 import WorksheetProblem from './WorksheetProblem'
 import type { Problem } from '@/services/generators/types'
+import { cellCountForProblem, allowedCharsForProblem } from '@/services/ink/answerShape'
 
 interface ScratchPadOverlayProps {
   /** Whether the overlay is visible */
@@ -35,6 +36,10 @@ interface ScratchPadOverlayProps {
   canGoNext?: boolean
   /** Whether previous button should be enabled */
   canGoPrevious?: boolean
+  /** Let the child write the answer by hand instead of tapping it. */
+  allowHandwriting?: boolean
+  /** Keys the per-child learned handwriting. */
+  childId?: string
 }
 
 /**
@@ -60,7 +65,15 @@ export default function ScratchPadOverlay({
   onPrevious,
   canGoNext = false,
   canGoPrevious = false,
+  allowHandwriting = false,
+  childId = 'default',
 }: ScratchPadOverlayProps) {
+  // Sized from the problem's SHAPE, never from its answer — see services/ink/answerShape.
+  // Memoised: the recogniser re-runs when this list changes, so a fresh array on every
+  // render would restart recognition forever.
+  const handwritingCells = useMemo(() => cellCountForProblem(problem), [problem])
+  const handwritingChars = useMemo(() => allowedCharsForProblem(problem), [problem])
+
   const scratchPadRef = useRef<ScratchPadRef>(null)
   const [currentColor, setCurrentColor] = useState(COLORS[0])
   const [currentWidth, setCurrentWidth] = useState(WIDTHS[1])
@@ -317,6 +330,10 @@ export default function ScratchPadOverlay({
               answer={answer}
               onAnswerChange={onAnswerChange}
               onDone={onClose}
+              allowHandwriting={allowHandwriting}
+              handwritingCells={handwritingCells}
+              handwritingChars={handwritingChars}
+              childId={childId}
             />
           </div>
         </motion.div>

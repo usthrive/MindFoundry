@@ -1,0 +1,218 @@
+/**
+ * Best Brains pack verification — increment-2 acceptance harness.
+ *
+ * Run: npx tsx scripts/bb-verify-packs.ts (from frontend/)
+ *
+ * For every available (level, week) cell × 3 seeds:
+ *  1. generate the pack,
+ *  2. run the QG-1..QG-10 validator (zero violations required),
+ *  3. assert determinism: same seed → deep-equal (JSON-identical) pack,
+ *  4. template cells: different seeds → different surfaces;
+ *     fixture cells: seed-independent (static pack, byte-identical),
+ *  5. assert Form-B surface disjointness from Form A (per index: different
+ *     prompt, different operand tuple where extractable),
+ *  6. assert the pack's conceptId matches the CURRICULUM-MAP catalog cell.
+ */
+
+import {
+  AVAILABLE_WEEKS,
+  generatePack,
+  validatePack,
+  surfaceSignature,
+  getTemplate,
+  V2_WEEKS,
+} from '../src/modules/best-brains/generator';
+import { getCatalogWeek } from '../src/modules/best-brains/content/catalog';
+import type { PackItem, WeeklyConceptPack } from '../src/modules/best-brains/types';
+
+/** Every child-answered item that ships a generator spec (day + mastery items). */
+function generatorItems(p: WeeklyConceptPack): PackItem[] {
+  return [
+    ...p.days.flatMap((d) => d.items),
+    ...p.masteryCheck.formA,
+    ...p.masteryCheck.formB,
+  ];
+}
+
+const SEEDS = [12345, 67890, 424242, 8, 999983];
+
+let failures = 0;
+let checks = 0;
+
+function assert(cond: boolean, label: string): void {
+  checks++;
+  if (!cond) {
+    failures++;
+    console.error(`  FAIL  ${label}`);
+  }
+}
+
+function packJson(p: WeeklyConceptPack): string {
+  return JSON.stringify(p);
+}
+
+console.log(`Verifying ${AVAILABLE_WEEKS.length} packs x ${SEEDS.length} seeds\n`);
+
+for (const cell of AVAILABLE_WEEKS) {
+  const label = `${cell.level}${cell.week} (${cell.source})`;
+  console.log(`— Pack ${label}`);
+  const bySeed: string[] = [];
+
+  for (const seed of SEEDS) {
+    const pack = generatePack(cell.level, cell.week, seed);
+
+    // 2. Quality gates (v2 weeks validated under the v2 contract → QG-11 detector blocks)
+    const contract = V2_WEEKS.has(`${cell.level}${cell.week}`) ? 'v2' : 'v1';
+    const result = validatePack(pack, { contract });
+    if (!result.valid) {
+      for (const viol of result.violations) {
+        console.error(`  FAIL  [seed ${seed}] ${viol.gate} @ ${viol.path}: ${viol.message}`);
+      }
+    }
+    assert(result.valid, `[seed ${seed}] validator: ${result.violations.length} violation(s)`);
+
+    // 3. Determinism: regenerate with the same seed → deep-equal
+    const again = generatePack(cell.level, cell.week, seed);
+    assert(packJson(pack) === packJson(again), `[seed ${seed}] same seed regenerates deep-equal pack`);
+
+    // 3b. No authoring-time metadata leaks into the shipped pack (FIX-SPEC §3, review M2).
+    assert(!packJson(pack).includes('"authorMeta"'), `[seed ${seed}] emitted pack carries no authorMeta`);
+
+    // 3c. Every generator-backed item's templateId resolves in the registry, so the
+    //     QG-5 arithmetic audit is never silently skipped (FIX-SPEC §5, review determinism-minor).
+    for (const it of generatorItems(pack)) {
+      if (it.generator) {
+        assert(
+          getTemplate(it.generator.templateId) !== undefined,
+          `[seed ${seed}] item ${it.id} templateId "${it.generator.templateId}" resolves in registry`,
+        );
+      }
+    }
+
+    // 5. Form-B disjointness from Form-A surfaces (per index)
+    const { formA, formB } = pack.masteryCheck;
+    assert(formA.length === formB.length, `[seed ${seed}] formA/formB pair by index`);
+    formA.forEach((a, i) => {
+      const b = formB[i];
+      assert(a.prompt !== b.prompt, `[seed ${seed}] formB[${i}] prompt differs from formA[${i}]`);
+      const sa = surfaceSignature(a);
+      const sb = surfaceSignature(b);
+      if (sa && sb) {
+        assert(sa !== sb, `[seed ${seed}] formB[${i}] operand surface differs from formA[${i}]`);
+      }
+    });
+
+    // 6. Catalog agreement
+    const cat = getCatalogWeek(cell.level, cell.week);
+    assert(cat !== undefined, `[seed ${seed}] catalog has cell ${cell.level}${cell.week}`);
+    if (cat) {
+      assert(
+        pack.identity.conceptId === cat.conceptId,
+        `[seed ${seed}] conceptId "${pack.identity.conceptId}" matches catalog "${cat.conceptId}"`,
+      );
+    }
+
+    bySeed.push(packJson(pack));
+  }
+
+  // 4. Seed sensitivity
+  if (cell.source === 'template') {
+    for (let i = 0; i < SEEDS.length; i++) {
+      for (let j = i + 1; j < SEEDS.length; j++) {
+        assert(
+          bySeed[i] !== bySeed[j],
+          `seeds ${SEEDS[i]} vs ${SEEDS[j]} produce different surfaces`,
+        );
+      }
+    }
+  } else {
+    for (let i = 1; i < SEEDS.length; i++) {
+      assert(bySeed[0] === bySeed[i], `fixture is seed-independent (seed ${SEEDS[i]})`);
+    }
+  }
+  console.log(`  ok (${cell.source})`);
+}
+
+// ---------------------------------------------------------------------------
+// Figure census (B1.0) — what the child actually SEES.
+//
+// The L27 defect was invisible because nothing counted it: a `visual` field
+// with a placeholder consumer looks identical to a rendered one in every gate.
+// So it gets counted, every run, per level. The Level-A row is an ASSERTION,
+// not a report: a pre-reader served an `[image: …]` with no picture behind it
+// is served literal bracket characters, which is why Level A was blocked on
+// this task at all.
+// ---------------------------------------------------------------------------
+console.log('\nFigure census — drawn pictures vs un-migrated [image: …] directions');
+{
+  const IMAGE = /\[image:/i;
+  type Row = { figures: number; unmigrated: number; scriptFigs: number; scriptSegs: number; geFigs: number; ges: number };
+  const rows = new Map<string, Row>();
+  const unmigratedA: string[] = [];
+
+  for (const cell of AVAILABLE_WEEKS) {
+    const pack = generatePack(cell.level, cell.week, SEEDS[0]);
+    const row = rows.get(cell.level) ?? { figures: 0, unmigrated: 0, scriptFigs: 0, scriptSegs: 0, geFigs: 0, ges: 0 };
+    for (const it of generatorItems(pack)) {
+      if (it.figure) row.figures++;
+      else if (IMAGE.test(it.prompt)) {
+        row.unmigrated++;
+        if (cell.level === 'A') unmigratedA.push(`${it.id}: ${it.prompt.slice(0, 60)}`);
+      }
+    }
+    if (pack.puzzle.figure) row.figures++;
+    else if (IMAGE.test(pack.puzzle.prompt)) {
+      row.unmigrated++;
+      if (cell.level === 'A') unmigratedA.push(`${pack.puzzle.id}: ${pack.puzzle.prompt.slice(0, 60)}`);
+    }
+    row.scriptSegs += pack.explanation.script.length;
+    row.scriptFigs += pack.explanation.script.filter((s) => s.figure).length;
+    row.ges += pack.guidedExamples.length;
+    row.geFigs += pack.guidedExamples.filter((g) => g.figure).length;
+    rows.set(cell.level, row);
+  }
+
+  for (const [lvl, r] of [...rows.entries()].sort()) {
+    console.log(
+      `  Level ${lvl}: items drawn ${r.figures}, un-migrated [image:] ${r.unmigrated} · ` +
+        `lesson script ${r.scriptFigs}/${r.scriptSegs} drawn · guided examples ${r.geFigs}/${r.ges} drawn`,
+    );
+  }
+  // The named residue. B1.0 shipped ten primitives; these eight Level-A surfaces
+  // want an eleventh, twelfth or thirteenth, so they are DECLARED rather than
+  // quietly tolerated. The renderer already prevents the L27 harm everywhere —
+  // `PromptFigure` shows the direction as a quiet caption, never raw bracket
+  // characters — so what is left here is missing ARTWORK, not broken output.
+  // The assertion is that this list does not GROW: any newly un-migrated
+  // Level-A item fails the gate.
+  const FIGURE_DEBT: Record<string, string> = {
+    'A2-D5-01': 'shape-pattern strip (AB/ABB/AAB) — not one of the ten primitives',
+    'A2-D5-02': 'shape-pattern strip',
+    'A2-D5-03': 'shape-pattern strip',
+    'A2-PZ-01': 'shape-pattern train — same strip primitive',
+    'A15-D2-01': 'hands/fingers manipulative; a five-frame would silently swap the authored manipulative',
+    'A15-D4-03': 'deliberately NOT drawn: the item\'s own rationale says one group is drawn larger and spread out, and a one-to-one compare figure would hand over the answer the conservation trap exists to withhold',
+    'A15-D5-04': 'a shape gallery (triangle/circle/square side by side) — angle-figure draws one polygon and no circle',
+    'A15-PZ-01': 'a labelled-sum garden — no primitive',
+  };
+  const undeclared = unmigratedA.filter((m) => !FIGURE_DEBT[m.split(':')[0]]);
+  for (const miss of undeclared) console.error(`  FAIL  Level A prints an UNDECLARED placeholder — ${miss}`);
+  assert(undeclared.length === 0, `Level A has no undeclared [image: …] prompts (${undeclared.length} found)`);
+  console.log(`  Level-A figure debt: ${unmigratedA.length} declared surfaces awaiting a primitive B1.0 does not have`);
+  for (const [id, why] of Object.entries(FIGURE_DEBT)) console.log(`    · ${id} — ${why}`);
+}
+
+// Level-D coverage summary (the proof level: 23 template weeks + 1 fixture = 24).
+const dCells = AVAILABLE_WEEKS.filter((w) => w.level === 'D');
+const dTemplate = dCells.filter((w) => w.source === 'template').length;
+const dFixture = dCells.filter((w) => w.source === 'fixture').length;
+console.log(
+  `\nLevel D coverage: ${dCells.length}/24 cells servable (${dTemplate} template + ${dFixture} fixture).`,
+);
+
+console.log(`\n${checks} assertions, ${failures} failure(s).`);
+if (failures > 0) {
+  process.exit(1);
+} else {
+  console.log('ALL GREEN');
+}

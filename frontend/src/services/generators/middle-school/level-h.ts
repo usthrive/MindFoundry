@@ -175,16 +175,24 @@ function generateSystemElimination(): Problem {
 }
 
 function generateLinearInequality(): Problem {
-  const a = randomInt(2, 6)
+  // Pick the BOUNDARY first and derive the constant from it. Choosing c at random
+  // and dividing gave answers like "x < -4.666666666666667" — sixteen digits the
+  // child has no way to write, and no way to be marked right for.
+  const magnitude = randomInt(2, 6)
+  // A negative coefficient is the case where the inequality has to be flipped — the
+  // classic mistake. It was unreachable before (a was always positive), so the
+  // "remember to flip" hint below could never fire.
+  const a = Math.random() < 0.35 ? -magnitude : magnitude
   const b = randomInt(-10, 10)
-  const c = randomInt(-20, 20)
+  const boundary = randomInt(-9, 9)
+  const c = a * boundary + b
   const op = randomChoice(['<', '>', '≤', '≥'])
-  
-  const boundary = (c - b) / a
-  const answer = a > 0 
+
+  const flipped = op === '<' ? '>' : op === '>' ? '<' : op === '≤' ? '≥' : '≤'
+  const answer = a > 0
     ? `x ${op} ${boundary}`
-    : `x ${op === '<' ? '>' : op === '>' ? '<' : op === '≤' ? '≥' : '≤'} ${boundary}`
-  
+    : `x ${flipped} ${boundary}`
+
   const bStr = b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`
   
   return {

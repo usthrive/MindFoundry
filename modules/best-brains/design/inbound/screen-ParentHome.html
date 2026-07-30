@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mind Foundry — ParentHome</title><style>
+/* Mind Foundry — weekly math module design tokens */
+:root {
+  --mf-paper: #FAF7F2;
+  --mf-surface: #FFFFFF;
+  --mf-surface-raised: #FFFFFF;
+  --mf-ink: #2B3238;
+  --mf-ink-muted: #66717A;
+  --mf-line: #E7E1D7;
+  --mf-primary: #3B7B78;
+  --mf-primary-deep: #2C5E5C;
+  --mf-primary-soft: #E4F0EE;
+  --mf-accent: #E39A57;
+  --mf-accent-deep: #B9773B;
+  --mf-accent-soft: #FBEEDD;
+  --mf-focus: #4C86C6;
+  --mf-success-quiet: #5E8C61;
+  --mf-info: #4C86C6;
+  --mf-warning-quiet: #C08A3E;
+  --mf-attention: #8B819B;
+  --mf-font-child: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-parent: 'Avenir Next', Avenir, Seravek, 'Trebuchet MS', Verdana, sans-serif;
+  --mf-font-report: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --mf-a-display: 700 32px/1.35 var(--mf-font-child);
+  --mf-a-body: 500 24px/1.55 var(--mf-font-child);
+  --mf-a-label: 700 20px/1.4 var(--mf-font-child);
+  --mf-b-display: 700 26px/1.35 var(--mf-font-child);
+  --mf-b-body: 500 19px/1.55 var(--mf-font-child);
+  --mf-b-label: 700 15px/1.4 var(--mf-font-child);
+  --mf-c-display: 700 22px/1.4 var(--mf-font-child);
+  --mf-c-body: 400 17px/1.6 var(--mf-font-child);
+  --mf-c-label: 600 13px/1.4 var(--mf-font-child);
+  --mf-p-display: 700 22px/1.35 var(--mf-font-parent);
+  --mf-p-body: 400 16px/1.6 var(--mf-font-parent);
+  --mf-p-label: 600 12px/1.4 var(--mf-font-parent);
+  --mf-tracking-body: 0.01em;
+  --mf-tracking-label: 0.06em;
+  --mf-s1: 4px;  --mf-s2: 8px;  --mf-s3: 12px; --mf-s4: 16px;
+  --mf-s5: 24px; --mf-s6: 32px; --mf-s7: 48px; --mf-s8: 64px;
+  --mf-r-sm: 8px; --mf-r-md: 14px; --mf-r-lg: 20px; --mf-r-xl: 28px; --mf-r-pill: 999px;
+  --mf-shadow-1: 0 1px 2px rgba(43,50,56,0.06);
+  --mf-shadow-2: 0 2px 8px rgba(43,50,56,0.08);
+  --mf-shadow-3: 0 6px 20px rgba(43,50,56,0.10);
+  --mf-dur-fast: 150ms;
+  --mf-dur-med: 220ms;
+  --mf-dur-slow: 300ms;
+  --mf-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --mf-ease-settle: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --mf-tap-min: 48px;
+  --mf-tap-banda: 64px;
+}
+
+html,body{margin:0}
+body{background:#EFEAE2;font-family:var(--mf-font-child);color:var(--mf-ink);min-height:100vh;padding:36px 16px 48px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:14px}
+a{color:var(--mf-primary)}a:hover{color:var(--mf-primary-deep)}
+header{width:100%;max-width:390px;margin-bottom:10px}
+header h1{font-size:17px;margin:0 0 4px}header p{font-size:12.5px;color:var(--mf-ink-muted);margin:0;line-height:1.5}
+.state-label{width:100%;max-width:390px;font:600 11px/1.4 ui-monospace,Menlo,monospace;color:var(--mf-ink-muted);letter-spacing:0.04em;margin-top:14px}
+.dv-card{max-width:100%;box-sizing:border-box;background:#FAF7F2;border:1px solid rgba(0,0,0,0.07);border-radius:22px;box-shadow:0 6px 24px rgba(43,50,56,0.10);overflow:hidden}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<header><h1>ParentHome</h1><p>Per-child week strips, effort-framed consistency, never ranked.</p></header>
+<div class="state-label">two children</div>
+<div class="dv-card" style="width:390px;padding:20px 18px 24px;display:flex;flex-direction:column;gap:16px" data-screen-label="ParentHome">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:21px;font-weight:700">This week</div>
+    <button style="min-width:48px;min-height:44px;border:1px solid #E7E1D7;border-radius:12px;background:#FFFFFF;font-family:inherit;font-size:12px;font-weight:600;color:#66717A;cursor:pointer;padding:0 12px">Settings</button>
+  </div>
+  <div style="background:#FFFFFF;border-radius:20px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:18px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px;font-weight:700">Maya</span><span style="font-size:12px;color:#66717A">Level B · Week 14</span></div>
+    <div style="font-size:14px;color:#2B3238">Subtraction with Regrouping</div>
+    <div style="display:flex;gap:6px">
+      <div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#F1EBE1"></div>
+    </div>
+    <div style="font-size:13px;color:#66717A">4 practice days this week</div>
+    <button style="min-height:50px;border:none;border-radius:14px;background:#E4F0EE;color:#2C5E5C;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">Weekly report ready — read it</button>
+    <div style="display:flex;gap:14px;font-size:12.5px;font-weight:600"><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Trends</a><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Mastery map</a><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Coach corner</a><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Patterns</a></div>
+  </div>
+  <div style="background:#FFFFFF;border-radius:20px;box-shadow:0 2px 8px rgba(43,50,56,0.08);padding:18px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:17px;font-weight:700">Dev</span><span style="font-size:12px;color:#66717A">Level C · Week 9</span></div>
+    <div style="font-size:14px;color:#2B3238">Adding Fractions with Unlike Denominators</div>
+    <div style="display:flex;gap:6px">
+      <div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#F1EBE1"></div><div style="flex:1;height:30px;border-radius:8px;background:#3B7B78"></div><div style="flex:1;height:30px;border-radius:8px;background:#F1EBE1"></div>
+    </div>
+    <div style="font-size:13px;color:#66717A">3 practice days this week · report arrives Friday</div>
+    <div style="display:flex;gap:14px;font-size:12.5px;font-weight:600"><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Trends</a><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Mastery map</a><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Coach corner</a><a href="screen-WeeklyReport.html" style="color:#3B7B78;text-decoration:none">Patterns</a></div>
+  </div>
+</div>
+<p style="font-size:11px;color:#A9A093;max-width:390px;width:100%;text-align:center;margin-top:20px"><a href="INDEX.html">← index</a></p>
+</body></html>
