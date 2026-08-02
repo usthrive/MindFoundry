@@ -376,6 +376,9 @@ export default function StudyPage() {
   const supportsNegatives = () => {
     return ['G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].includes(currentLevel)
   }
+  /** Session id already put through completion, so a second attempt is ignored. */
+  const completingSessionRef = useRef<string | null>(null)
+
   // Which problem the child is on inside the worksheet grid — drives the algebra keys.
   const [activeWorksheetProblem, setActiveWorksheetProblem] = useState<Problem | null>(null)
 
@@ -1067,6 +1070,16 @@ export default function StudyPage() {
 
   const handleSessionComplete = async (score: number, totalProblems: number) => {
     if (!currentChild || !sessionId) return
+
+    // A session may only be completed once. Belt and braces alongside the latch in
+    // WorksheetView: this function closes the current session AND opens the next one,
+    // so running it twice strands the finished session and orphans the work in it.
+    // Keyed by session id, set synchronously before the first await.
+    if (completingSessionRef.current === sessionId) {
+      console.warn('[handleSessionComplete] ignored duplicate completion for session', sessionId)
+      return
+    }
+    completingSessionRef.current = sessionId
 
     // Stop the enhanced timer and get final metrics
     enhancedTimer.stop()
