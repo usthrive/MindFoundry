@@ -523,6 +523,33 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   // Stable key for this worksheet (used for restore gating)
   const worksheetKey = `${level}:${worksheetNumber}`
 
+  /**
+   * A worksheet may only be completed ONCE.
+   *
+   * Four separate things can ask for completion — the auto-advance at the end of
+   * handleSubmitPage, the recovery effect that rescues an interrupted finish,
+   * handleNextPage on the last page, and the "tap here if stuck" button. On the last
+   * page the first two both fire: the recovery effect at 800ms and the submit
+   * auto-advance at 1200ms, and the latter is a bare setTimeout nobody cancels.
+   *
+   * The child saw the consequence. Each completion advanced the worksheet and
+   * remounted this view, so the second one drew a fresh page of questions on top of
+   * the "10/10" scorecard from the first — an extra set of questions out of nowhere.
+   * It also opened a second practice session (254 sessions in the database were born
+   * within a second of another), left the first stranded mid-flight holding the work
+   * already done (75 such sessions, 482 answered problems), and double-counted the
+   * page, which is why completed sessions recorded 13, 15, 22 and even 30 problems
+   * for a 10-problem worksheet.
+   *
+   * The latch is keyed by worksheet, so moving to the next one re-arms it naturally.
+   */
+  const completedWorksheetRef = useRef<string | null>(null)
+  const fireWorksheetComplete = useCallback((correct: number, answered: number) => {
+    if (completedWorksheetRef.current === worksheetKey) return
+    completedWorksheetRef.current = worksheetKey
+    onWorksheetComplete(correct, answered)
+  }, [worksheetKey, onWorksheetComplete])
+
   // Manual carry mode
   const manualCarry = isManualCarryMode(level, worksheetNumber)
   const [showCarryTransitionModal, setShowCarryTransitionModal] = useState(false)
@@ -741,6 +768,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
     // Normal reset for new worksheets (only if no initialPageState to restore)
     console.log('📂 WorksheetView: Resetting for new worksheet', worksheetKey)
+    completedWorksheetRef.current = null
     setCurrentPage(1)
     setActiveIndex(0)
     setPageStates({})
@@ -1110,11 +1138,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       // Auto-advance if last page
       if (currentPage >= totalPages) {
         setTimeout(() => {
-          onWorksheetComplete(newTotalCorrect, newTotalAnswered)
+          fireWorksheetComplete(newTotalCorrect, newTotalAnswered)
         }, 1200)
       }
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, onWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId])
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, fireWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId])
 
   // Handle completing full teaching (locks the problem and shows answer)
   const handleTeachingComplete = useCallback(() => {
@@ -1524,7 +1552,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       setActiveIndex(0)
     } else {
       // Worksheet complete
-      onWorksheetComplete(totalCorrect, totalAnswered)
+      fireWorksheetComplete(totalCorrect, totalAnswered)
     }
   }
 
@@ -1577,11 +1605,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   useEffect(() => {
     if (allResolved && currentPage >= totalPages && sessionActive) {
       const timer = setTimeout(() => {
-        onWorksheetComplete(totalCorrect, totalAnswered)
+        fireWorksheetComplete(totalCorrect, totalAnswered)
       }, 800)
       return () => clearTimeout(timer)
     }
-  }, [allResolved, currentPage, totalPages, sessionActive, onWorksheetComplete, totalCorrect, totalAnswered])
+  }, [allResolved, currentPage, totalPages, sessionActive, fireWorksheetComplete, totalCorrect, totalAnswered])
 
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
@@ -1958,7 +1986,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             </div>
             <button
               className="text-sm text-gray-400 underline"
-              onClick={() => onWorksheetComplete(totalCorrect, totalAnswered)}
+              onClick={() => fireWorksheetComplete(totalCorrect, totalAnswered)}
             >
               Tap here if stuck
             </button>
