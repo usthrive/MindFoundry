@@ -193,7 +193,7 @@ const grpEqualGroups = withFigure(
         units: s.noun,
         hints: [
           'Does every group in this story hold the same amount?',
-          'Draw one group, then count on by that amount once for every group in the story.',
+          'Draw one group. Then count on by that amount once for every group.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -227,7 +227,7 @@ const grpArray = withFigure(
         units: noun,
         hints: [
           'Which part of this path is one equal group — a row, or the whole path?',
-          'Count what a single row holds, then count on by that amount once for every row.',
+          'Count what a single row holds. Then count on by that amount once for every row.',
         ],
         errorTags: ['representation-misread', 'procedure-slip'],
       };
@@ -284,7 +284,7 @@ const grpHops = withFigure(
         params: { a: hop, b: hops },
         hints: [
           'Are the hops all the same size, or do they change?',
-          'Start at zero and count on by one hop at a time until every hop is used.',
+          'Start at zero. Count on by one hop at a time until every hop is used.',
         ],
         errorTags: ['representation-misread', 'concept-misconception'],
       };
@@ -391,7 +391,7 @@ const msGroupsThenChange = multiStep({
     const s = sceneOf(r, f.id);
     const name = one(r);
     return {
-      prompt: `${name} puts ${countNoun(per, s.noun)} ${f.into} each of ${countNoun(groups, s.group)}, then takes ${countNoun(taken, s.noun)} back ${f.outOf} one ${s.group}. How many ${unitFor(2, s.noun)} are ${f.inOn} the ${unitFor(2, s.group)} now?`,
+      prompt: `${name} puts ${countNoun(per, s.noun)} ${f.into} each of ${countNoun(groups, s.group)}. Then ${name} takes ${countNoun(taken, s.noun)} back ${f.outOf} one ${s.group}. How many ${unitFor(2, s.noun)} are ${f.inOn} the ${unitFor(2, s.group)} now?`,
       initN: per,
       steps: [
         { op: 'mul', n: groups, d: 1 },
@@ -399,7 +399,7 @@ const msGroupsThenChange = multiStep({
       ],
       units: s.noun,
       hints: [
-        'Is the last sentence adding a new group, or changing a group that is already there?',
+        'Is the last sentence adding a new group? Or changing a group that is already there?',
         'Build every equal group first, then take away what leaves.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -423,7 +423,7 @@ const msRowsWithSpare = multiStep({
     const cans = r.int(2, 4);
     const name = one(r);
     return {
-      prompt: `${name} plants ${countNoun(per, 'seedlings')} in each of ${countNoun(rows, 'rows')}, then plants ${countNoun(more, 'seedlings')} more along the fence. A shed by the gate holds ${countNoun(cans, 'watering cans')}. How many seedlings does ${name} plant in all?`,
+      prompt: `${name} plants ${countNoun(per, 'seedlings')} in each of ${countNoun(rows, 'rows')}. Then ${name} plants ${countNoun(more, 'seedlings')} more along the fence. A shed by the gate holds ${countNoun(cans, 'watering cans')}. How many seedlings does ${name} plant in all?`,
       initN: per,
       steps: [
         { op: 'mul', n: rows, d: 1 },
@@ -432,7 +432,7 @@ const msRowsWithSpare = multiStep({
       units: 'seedlings',
       hints: [
         'Which numbers in this story are counting seedlings, and which one is not?',
-        'Plant the equal rows first, then the few by the fence — and leave the number that counts something else alone.',
+        'Plant the equal rows first, then the few by the fence. Leave the number that counts something else alone.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -539,7 +539,7 @@ const eaAddedInsteadOfGrouped = errorAnalysis({
     const name = one(r);
     return {
       prompt: `A student read this story: "Each tray holds ${countNoun(Number(p.b), 'rolls')}. ${name} bakes ${countNoun(Number(p.a), 'trays')}." The student wrote that ${name} baked ${v.wrong} rolls.`,
-      extension: 'Draw the trays, write how many rolls there really are, and explain what the student heard in the story.',
+      extension: 'Draw the trays. Write how many rolls there really are. Then explain what the student heard in the story.',
       hints: [
         'Which of the two numbers in the story tells the size of one group?',
         'Draw the groups, then count what the picture really makes.',
@@ -565,12 +565,12 @@ export const buildC06 = makeWeekBuilder({
   conceptFamily: 'operation',
   explanation: {
     hook:
-      '"Three and four" lands on seven. "Three groups of four" lands on twelve. The same two numbers, and the answers are not even close — this week we learn to hear which one a story is asking for.',
+      '"Three and four" lands on seven. "Three groups of four" lands on twelve. The same two numbers, and the answers are not even close. This week we learn to hear which one a story asks for.',
     whyBeforeHow:
-      'Multiplication is a shortcut for counting equal groups, and the shortcut is only safe because every group holds exactly the same amount — if one basket held five and the next held three, counting by fives would never land on the truth. That is why we check that the groups match before we count anything. "Three groups of four" tells you to copy one group over and over; "three and four" tells you to join two different piles once. Same two numbers, two different pictures, two different totals.',
+      'Multiplication is a shortcut for counting equal groups. The shortcut is only safe because every group holds exactly the same amount. Say one basket held five and the next held three. Counting by fives would never land on the truth. That is why we check that the groups match before we count anything. "Three groups of four" tells you to copy one group over and over. "Three and four" tells you to join two different piles once. Same two numbers, two different pictures, two different totals.',
     script: [
       {
-        say: 'Watch me build three equal groups. I put four shells in this basket, four in the next, four in the last. Every basket holds the same amount — that is what makes them EQUAL groups, and it is the only reason a shortcut is allowed.',
+        say: 'Watch me build three equal groups. I put four shells in this basket, four in the next, four in the last. Every basket holds the same amount. That is what makes them EQUAL groups. It is the only reason a shortcut is allowed.',
         visual: 'Three baskets, each holding four shells.',
         figure: counterGroups(
           [
@@ -582,7 +582,7 @@ export const buildC06 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now a different story with the same two numbers: three counters here, four counters there, pushed together once. That is "three and four", and it lands on seven.',
+        say: 'Now a different story with the same two numbers. Three counters here, four counters there, pushed together once. That is "three and four", and it lands on seven.',
         visual: 'A pile of three counters joined to a pile of four counters.',
         figure: counterGroups(
           [
@@ -593,7 +593,7 @@ export const buildC06 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Back to the groups. Three groups of four, tidied into rows: four, eight, twelve. I can write that short as 3 × 4, and the short way still means "three groups of four".',
+        say: 'Back to the groups. Three groups of four, tidied into rows: four, eight, twelve. I can write that short as 3 × 4. The short way still means "three groups of four".',
         visual: 'Three rows with four counters in each row.',
         figure: areaGrid(
           { rows: 3, cols: 4, rowLabels: ['4', '4', '4'] },
@@ -601,7 +601,7 @@ export const buildC06 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Before I work out any "groups of" problem I check the size I expect: more than one whole group means the answer has to be a good deal bigger than one group. If my answer is only a little bigger, I joined two piles when I meant to copy a group.',
+        say: 'Before I work out any "groups of" problem, I check the size I expect. More than one whole group means a much bigger answer. It has to be a good deal bigger than one group. Say my answer is only a little bigger. Then I joined two piles when I meant to copy a group.',
         visual: 'The joined piles beside the copied groups: a short bar of seven and a long bar of twelve.',
         figure: barModel(
           [
@@ -613,7 +613,7 @@ export const buildC06 = makeWeekBuilder({
       },
     ],
     summary:
-      'Equal groups all hold the same amount. "Groups of" tells you to copy a group again and again, so you multiply; "and" tells you to join two piles once, so you add. Skip-count the groups to check that your answer is the right size.',
+      'Equal groups all hold the same amount. "Groups of" tells you to copy a group again and again. So you multiply. "And" tells you to join two piles once. So you add. Skip-count the groups to check that your answer is the right size.',
     vocabulary: [
       { term: 'equal groups', kidGloss: 'groups that all hold the same amount' },
       { term: 'groups of', kidGloss: 'the signal to copy one group again and again — that is a multiply' },
@@ -626,10 +626,10 @@ export const buildC06 = makeWeekBuilder({
       ...ge(6, 1, 'modeled', 'Ria puts 4 shells into each of 3 baskets. How many shells is that in all?', [
         {
           teacherSay:
-            'First I hunt for the words that promise the groups are equal: "into each of" — every basket gets four, not four in one and two in another. That tells me I may copy one group instead of joining two different piles.',
+            'First I hunt for the words that promise the groups are equal. Here they are: "into each of". Every basket gets four, not four in one and two in another. That tells me I may copy one group instead of joining two different piles.',
         },
         {
-          teacherSay: 'Now I skip-count one basket at a time — four, eight… what does the third basket take me to?',
+          teacherSay: 'Now I skip-count one basket at a time. Four, eight… what does the third basket take me to?',
           expected: '12',
         },
       ], '12'),
@@ -714,7 +714,7 @@ export const buildC06 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Draw a picture for "3 groups of 5" and a picture for "3 and 5". Work out both totals, then write one sentence saying why the two pictures cannot end up the same.',
+            'Draw a picture for "3 groups of 5" and a picture for "3 and 5". Work out both totals. Then write one sentence saying why the two pictures cannot end up the same.',
           value: '"groups of" copies one equal group again and again, while "and" joins two piles once, so the totals differ',
           acceptableForms: ['groups of', 'equal groups', 'copy', 'join', 'add'],
           keywords: true,
@@ -729,7 +729,7 @@ export const buildC06 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: "6 groups of 3" and "3 groups of 6" reach the same total. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? "6 groups of 3" and "3 groups of 6" reach the same total. In one sentence, explain how you know.',
           correct: 'always',
           distractors: [
             {
@@ -744,7 +744,7 @@ export const buildC06 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Picture the counters in rows, then turn the picture a quarter turn — what do you see?',
+            'Picture the counters in rows. Now turn the picture a quarter turn. What do you see?',
             'The rows become columns and the columns become rows; count the same counters both ways.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
@@ -771,7 +771,7 @@ export const buildC06 = makeWeekBuilder({
       id: 'C6-PZ-01',
       title: 'Puzzle Grove: Every Equal Way',
       puzzleType: 'construction',
-      prompt: `[image: ${countNoun(total, 'stickers')} in a loose pile] ${name} wants to lay ${countNoun(total, 'stickers')} out in equal rows, with at least 2 rows and at least 2 stickers in every row. Find EVERY arrangement that works, and say how you know none is missing.`,
+      prompt: `[image: ${countNoun(total, 'stickers')} in a loose pile] ${name} wants to lay ${countNoun(total, 'stickers')} out in equal rows. There must be at least 2 rows. Every row must hold at least 2 stickers. Find EVERY arrangement that works, and say how you know none is missing.`,
       figure: counters(total, 'stickers', {
         arrangement: 'scattered',
         alt: `${countNoun(total, 'stickers')} in a loose pile, not yet arranged`,
@@ -779,7 +779,7 @@ export const buildC06 = makeWeekBuilder({
       answer: { value: ways.join('; '), acceptableForms: ways, validation: 'short-text-keyword' },
       hintLadder: [
         'How could you be sure you had found them ALL, and not just some?',
-        'Walk up in order — two rows, then three, then four — and stop when the rows outnumber what would fit in a row.',
+        'Walk up in order: two rows, then three, then four. Stop when the rows outnumber what would fit in a row.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };

@@ -235,7 +235,7 @@ const sitScaleMass = withFigure(
         units: 'g',
         hints: [
           'What is one small step on this scale worth?',
-          'Share the gap between two numbered lines out among its steps, then count on in that amount from the line the pointer has passed.',
+          'Share one gap out among its steps to find what a step is worth. Then count on from the line the pointer passed.',
         ],
         errorTags: ['representation-misread', 'procedure-slip'],
       };
@@ -290,8 +290,8 @@ const sitPourOut = situation({
       params: { a: full, b: poured },
       units: 'ml',
       hints: [
-        'Which amount does the question point at — the part poured out, or the part still inside?',
-        'Picture the level before the pour and after it, and work out how far it has dropped.',
+        'Which amount does the question point at — the pour, or the part still inside?',
+        'Picture the level before the pour and after it. How far has it dropped?',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -314,7 +314,7 @@ const sitHeavierBy = situation({
       units: 'g',
       hints: [
         'Are these two parcels being put together, or set side by side?',
-        'Line the two masses up from the same starting point and read off the bit the heavier one has spare.',
+        'Line the two masses up from the same starting point. Then read off the bit the heavier one has spare.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -367,14 +367,14 @@ const sitBooksBase = situation({
     const second = r.int(250, 850);
     const name = one(r);
     return {
-      prompt: `${name} packs two books into a bag. One has a mass of ${qty(first, 'g')} and the other has a mass of ${qty(second, 'g')}. What is the mass of the two books together?`,
+      prompt: `${name} packs two books into a bag. One has a mass of ${qty(first, 'g')}. The other has a mass of ${qty(second, 'g')}. What is the mass of the two books together?`,
       answerValue: String(first + second),
       templateId: 'd_add_v1',
       params: { a: first, b: second },
       units: 'g',
       hints: [
-        'Which is the bigger amount — one book on its own, or both of them in the bag?',
-        'Put the two masses together, and keep the unit on the number as you write it down.',
+        'Which is bigger — one book on its own, or both in the bag?',
+        'Put the two masses together. Keep the unit on the number as you write it.',
       ],
       errorTags: ['procedure-slip', 'concept-misconception'],
     };
@@ -382,7 +382,7 @@ const sitBooksBase = situation({
 });
 const sitBooksEstimate = withEstimateFirst(
   sitBooksBase,
-  'will the two books together come to more than a bag of sugar, or less?',
+  'will the two books together weigh more than a bag of sugar, or less?',
 );
 
 // ---------------------------------------------------------------------------
@@ -413,8 +413,8 @@ const msCanRoom = withFigure(
         ],
         units: 'ml',
         hints: [
-          'How much has gone into the can so far, and how much will it hold in all?',
-          'Put the two bottles together into one amount first, then hold that amount against what the can takes.',
+          'How much has gone into the can so far, and how much fits?',
+          'Put the two bottles together into one amount first. Then hold that amount against what the can takes.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
@@ -457,7 +457,7 @@ const msBasketCompare = multiStep({
     const flour = 5 * r.int(60, Math.min(120, Math.floor((beans + pasta - 100) / 5)));
     const name = one(r);
     return {
-      prompt: `${name} puts a ${qty(beans, 'g')} can of beans and a ${qty(pasta, 'g')} bag of pasta into one basket. The next basket holds a ${qty(flour, 'g')} bag of flour on its own. How much heavier is the first basket?`,
+      prompt: `${name} puts a ${qty(beans, 'g')} can of beans into a basket. ${name} adds a ${qty(pasta, 'g')} bag of pasta. The next basket holds a ${qty(flour, 'g')} bag of flour on its own. How much heavier is the first basket?`,
       initN: beans,
       steps: [
         { op: 'add', n: pasta, d: 1 },
@@ -466,7 +466,7 @@ const msBasketCompare = multiStep({
       units: 'g',
       hints: [
         'Which basket has more than one thing in it?',
-        'Weigh the two-item basket up as a single amount first, then set that amount beside the other one.',
+        'Weigh the two-item basket up as a single amount first. Then set that amount beside the other one.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -489,7 +489,7 @@ const msPanBefore = multiStep({
     const secondBowl = r.int(250, 400);
     const name = one(r);
     return {
-      prompt: `A pan holds ${qty(now, 'ml')} of soup now. ${name} filled one bowl from it with ${qty(firstBowl, 'ml')}, and before that another bowl took ${qty(secondBowl, 'ml')}. How much soup was in the pan at the start?`,
+      prompt: `A pan holds ${qty(now, 'ml')} of soup now. ${name} filled one bowl from it with ${qty(firstBowl, 'ml')}. Before that, another bowl took ${qty(secondBowl, 'ml')}. How much soup was in the pan at the start?`,
       initN: now,
       steps: [
         { op: 'add', n: firstBowl, d: 1 },
@@ -498,7 +498,7 @@ const msPanBefore = multiStep({
       units: 'ml',
       hints: [
         'Was the soup measured before the bowls were filled, or after them?',
-        'Every bowlful that was served has to go back into the pan before the starting amount can show.',
+        'Every bowlful served has to go back into the pan. Only then does the starting amount show.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -558,7 +558,7 @@ const discrimUnitOnTheLabel = discrimination({
       ],
       hints: [
         'Picture holding this thing. Is it a light one or a heavy one?',
-        'Hold it in your mind against a paperclip and then against a bag of sugar, and see which one it sits nearer.',
+        'Hold it in your mind against a paperclip, then against a bag of sugar. Which one does it sit nearer?',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -603,7 +603,7 @@ const discrimBenchmarkMatch = discrimination({
       ],
       hints: [
         'Is the amount in this question a small one or a large one?',
-        'Take each thing in turn and picture it beside the amount named, until one of them fits.',
+        'Take each thing in turn and picture it beside the amount named. Stop when one fits.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -631,10 +631,10 @@ const eaScaleInterval = errorAnalysis({
     return {
       prompt: `${name} pours some water into a measuring jug and asks a friend to read it. The small lines on this jug stand for ${qty(key, 'ml')} each. The water has risen past ${countNoun(count, 'lines')}. On the record sheet the friend writes ${qty(Number(v.wrong), 'ml')}.`,
       extension:
-        'Work out the real amount for yourself. Then write one sentence saying what a teaspoon would have told you about the number on the sheet.',
+        'Work out the real amount for yourself. Then write one sentence about what a teaspoon would have told you.',
       hints: [
         'What does one small line on this jug stand for?',
-        'Count up in the amount a single line is worth, taking that amount once for every line the water has passed.',
+        'Count up in the amount one line is worth. Take it once for every line passed.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
       answerKeywords: ['ml', 'each line', 'lines', 'teaspoon'],
@@ -660,16 +660,16 @@ export const buildC19 = makeWeekBuilder({
     'B21 measured length, where the child could lay the ruler alongside the thing and SEE the answer. Mass and capacity cannot be seen at all: the child has to trust a tool, which means reading a divided scale, and has to judge the answer without one, which means carrying a few known amounts around in their head. The new load is therefore not the arithmetic — that is C3 and C4 unchanged — but the units themselves: which one a quantity belongs in, how big each one is, and the fact that grams and milliliters answer two different questions and can never stand in for one another.',
   explanation: {
     hook:
-      'Two children argue about which is heavier: a big bag of popcorn or a small can of beans. Looking will not settle it, and neither will lifting them if you are both stubborn. This week you get the thing that does settle it — a number with the right unit after it.',
+      'Two children argue about which is heavier. Is it a big bag of popcorn, or a small can of beans? Looking will not settle it, and neither will lifting them if you are both stubborn. This week you get the thing that does settle it. It is a number with the right unit after it.',
     whyBeforeHow:
-      'A number on its own is not a measurement, because the same number means wildly different things depending on what it counts: 4 could be four grams, which is a couple of paperclips, or four kilograms, which is a full school bag. So before we measure anything we stock up on benchmark units — a paperclip is about 1 g, a bag of sugar is about 1 kg, a teaspoon holds about 5 ml, a big bottle holds about 2 l. Four amounts you can feel are enough to judge almost anything, since every new amount can be held up against one of them and asked "nearer this, or nearer that?" And the two families never swap: grams and kilograms say how HEAVY something is, milliliters and liters say how MUCH a container holds. That is why the unit is written down beside the number every single time — the number says how many, and the unit says how many of what.',
+      'A number on its own is not a measurement. 4 could be four grams, which is a couple of paperclips. Or it could be four kilograms, which is a full school bag. That is why we stock up on benchmark units. A paperclip is about 1 g. A bag of sugar is about 1 kg. A teaspoon holds about 5 ml. A big bottle holds about 2 l. Four amounts you can feel are enough to judge almost anything. Hold a new amount against one of them. Nearer this, or nearer that? The two families never swap. Grams and kilograms say how HEAVY something is. Milliliters and liters say how MUCH a container holds. That is why the unit is written beside the number every time. The number says how many; the unit says how many of what.',
     script: [
       {
-        say: 'Watch me guess before I measure. I pick up this jar and I do not reach for the scale yet — I hold it against something I already know. A paperclip is about a gram. A bag of sugar is about a kilogram. So I ask myself one question: is this jar nearer the paperclip or nearer the sugar? Nearer the sugar, so my answer is going to be in hundreds of grams, and I know that before I have measured anything at all.',
+        say: 'Watch me guess before I measure. I pick up this jar and I do not reach for the scale yet. I hold it against something I already know. A paperclip is about a gram. A bag of sugar is about a kilogram. So I ask myself one question. Is this jar nearer the paperclip, or nearer the sugar? Nearer the sugar. So my answer will be in hundreds of grams. I knew that before measuring anything.',
         visual: 'A jar held in one hand, a bag of sugar in the other.',
       },
       {
-        say: 'Now the scale, and here is the trap on every scale ever made: the little lines do not stand for one. Look at this dial. The numbered lines are a hundred grams apart, and each gap has five equal steps in it, so one step is twenty grams. Watch me count on from four hundred in twenties — four hundred and twenty, four hundred and forty, four hundred and sixty. Three steps, sixty grams, not three grams.',
+        say: 'Now the scale, and here is the trap on every scale ever made. The little lines do not stand for one. Look at this dial. The numbered lines are a hundred grams apart. Each gap has five equal steps, so one step is twenty grams. Watch me count on from four hundred in twenties. Four hundred and twenty, four hundred and forty, four hundred and sixty. Three steps, sixty grams, not three grams.',
         visual: 'The stretch of dial around the pointer, with the four hundred line and the pointer marked.',
         figure: numberLine(
           {
@@ -687,7 +687,7 @@ export const buildC19 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Liquid works the same way, in a jug instead of on a pan. This jug is marked in hundreds of milliliters, and the thousand mark has a name of its own: that is one liter. A big bottle of water holds about two of them, and a mug holds about a quarter of one. So when I read a jug I read the lines first, and then I ask whether my answer sounds like a bottle, a mug or a teaspoon.',
+        say: 'Liquid works the same way, in a jug instead of on a pan. This jug is marked in hundreds of milliliters. The thousand mark has a name of its own: that is one liter. A big bottle of water holds about two of them. A mug holds about a quarter of one. So when I read a jug I read the lines first. Then I ask whether my answer sounds like a bottle or a teaspoon.',
         visual: 'A jug scale from empty to the liter mark.',
         figure: numberLine(
           {
@@ -702,16 +702,16 @@ export const buildC19 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Before I write any measurement down I check it against a benchmark, and it takes me one second. If my answer says a mug of tea holds two liters I stop, because a mug is nowhere near a big bottle. If it says a cat has a mass of five grams I stop, because five grams is a few paperclips. Estimating first is not a soft version of measuring — it is what tells me whether the measuring went right.',
+        say: 'Before I write any measurement down I check it against a benchmark. It takes me one second. If my answer says a mug of tea holds two liters, I stop. A mug is nowhere near a big bottle. If it says a cat has a mass of five grams, I stop. Five grams is a few paperclips. Estimating first is not a soft version of measuring. It tells me whether the measuring went right.',
         visual: 'A mug and a large bottle side by side, nowhere near the same size.',
       },
       {
-        say: 'One last thing, and it is the one that costs people marks. Grams and kilograms say how heavy something is. Milliliters and liters say how much a container holds. They are not two sizes of the same thing, so a mass can never be written in milliliters — a number with the wrong kind of unit after it is not a wrong answer, it is not an answer at all.',
+        say: 'One last thing, and it is the one that costs people marks. Grams and kilograms say how heavy something is. Milliliters and liters say how much a container holds. They are not two sizes of the same thing. So a mass can never be written in milliliters. A number with the wrong kind of unit is not a wrong answer. It is not an answer at all.',
         visual: 'Two labels: one reading grams and kilograms, the other milliliters and liters.',
       },
     ],
     summary:
-      'Mass is measured in grams and kilograms; how much a container holds is measured in milliliters and liters. To read any scale, work out what one small line is worth first, then count on in that amount from the numbered line below it. Keep four benchmarks in your head — a paperclip, a bag of sugar, a teaspoon, a big bottle — and hold every answer up against one of them before you write it down. And always write the unit: the number on its own says nothing.',
+      'Mass is measured in grams and kilograms. How much a container holds is measured in milliliters and liters. To read any scale, work out what one small line is worth first. Then count on in that amount from the numbered line below it. Keep four benchmarks in your head. A paperclip, a bag of sugar, a teaspoon, a big bottle. Hold every answer up against one of them before you write it down. And always write the unit: the number on its own says nothing.',
     vocabulary: [
       { term: 'mass', kidGloss: 'how heavy something is, measured in grams and kilograms' },
       { term: 'capacity', kidGloss: 'how much a container holds, measured in milliliters and liters' },
@@ -723,15 +723,15 @@ export const buildC19 = makeWeekBuilder({
   },
   guidedExamples: [
     {
-      ...ge(19, 1, 'modeled', 'A bag of rice is on the kitchen scale. The numbered lines are 100 g apart, and each gap is split into 5 equal steps. The pointer has passed the 400 g line and stopped 3 steps further on. What is the mass of the rice?', [
+      ...ge(19, 1, 'modeled', 'A bag of rice is on the kitchen scale. The numbered lines are 100 g apart. Each gap is split into 5 equal steps. The pointer has passed the 400 g line and stopped 3 steps further on. What is the mass of the rice?', [
         {
           teacherSay:
-            'Watch what I settle before I read a single number off this dial. The numbered lines jump by a hundred grams, and there are five equal steps between them, so one step is not one gram. What is one step worth here?',
+            'Watch what I settle before I read a single number off this dial. The numbered lines jump by a hundred grams. There are five equal steps between them, so one step is not one gram. What is one step worth here?',
           expected: '20',
         },
         {
           teacherSay:
-            'Now I start at the four hundred line and count on in twenties, saying it out loud so I cannot lose my place — four hundred and twenty, four hundred and forty. Where does the third step land me?',
+            'Now I start at the four hundred line and count on in twenties. I say it out loud so I cannot lose my place. Four hundred and twenty, four hundred and forty. Where does the third step land me?',
           expected: '460',
           figure: numberLine(
             {
@@ -750,15 +750,15 @@ export const buildC19 = makeWeekBuilder({
         },
         {
           teacherSay:
-            'Four hundred and sixty grams. I say the unit as I write it, because four hundred and sixty on its own could be anything at all, and I check it once against a bag of sugar — a bit under, which is about right for rice in a bag this size.',
+            'Four hundred and sixty grams. I say the unit as I write it. On its own, that number could be anything at all. Then I check it once against a bag of sugar. A bit under, which is about right for rice.',
         },
       ], '460 g'),
       visual: 'The dial around the pointer, with the 400 line and the pointer marked.',
     },
     {
       ...ge(19, 2, 'completion', 'A jug is marked every 100 ml. The juice stands 4 lines above the 500 ml line. How much juice is in the jug?', [
-        { teacherSay: 'Does one line on this jug stand for a single milliliter, or for a hundred of them?', expected: 'a hundred' },
-        { childDo: 'Count on from the line the juice has passed, one line at a time, saying the running amount out loud.', expected: '900' },
+        { teacherSay: 'Does one line on this jug stand for one milliliter, or a hundred?', expected: 'a hundred' },
+        { childDo: 'Count on from the line the juice has passed, one line at a time. Say the running amount out loud.', expected: '900' },
       ], '900 ml'),
       visual: 'The jug scale, with the 500 ml line marked and the juice level left for you.',
       figure: numberLine(
@@ -777,14 +777,14 @@ export const buildC19 = makeWeekBuilder({
       ),
     },
     ge(19, 3, 'prompted', 'A watering can holds 2,000 ml when it is full. 700 ml is tipped in from one bottle and 450 ml from another. How much more will the can take?', [
-      { childDo: 'Put the two bottles together into one amount first, then hold that amount against what the can takes.', expected: '1,150' },
+      { childDo: 'Put the two bottles together into one amount first. Then hold that amount against what the can takes.', expected: '1,150' },
     ], '850 ml'),
     {
       // Independent stage: no picture at all. Deciding which unit a bare number
       // belongs in is a judgement about the real world, and a drawing of a
       // school bag beside a bag of sugar would make it a looking task.
-      ...ge(19, 4, 'independent', 'The mass of a full school bag is written down as 4, and the unit is missing. Is that 4 g, 4 kg or 4 ml? Solve cold.', [
-        { childDo: 'Hold the bag in your mind against a paperclip and then against a bag of sugar, and say which it sits nearer.', expected: 'the bag of sugar' },
+      ...ge(19, 4, 'independent', 'The mass of a full school bag is written down as 4. The unit is missing. Is that 4 g, 4 kg or 4 ml? Solve cold.', [
+        { childDo: 'Hold the bag in your mind against a paperclip, then against sugar. Say which one it sits nearer.', expected: 'the bag of sugar' },
       ], '4 kg'),
       visual: 'No picture — this one is decided by what you already know about a school bag.',
     },
@@ -847,7 +847,7 @@ export const buildC19 = makeWeekBuilder({
           keywords: true,
           hints: [
             'Which everyday things do you already know the mass of?',
-            'Hold the thing in one hand and something you know in the other, and let your hands do the comparing.',
+            'Hold the thing in one hand and something you know in the other. Let your hands do the comparing.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -856,7 +856,7 @@ export const buildC19 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: an amount written in kilograms is heavier than an amount written in grams. Say in one sentence how you know.',
+            'Always, sometimes, or never true? An amount in kilograms is heavier than an amount in grams. Say in one sentence how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -872,7 +872,7 @@ export const buildC19 = makeWeekBuilder({
           ],
           hints: [
             'Can you think of a small number of kilograms and a large number of grams?',
-            'Try a light thing measured in kilograms beside a heavy thing measured in grams, and see which one wins.',
+            'Try a light thing in kilograms beside a heavy thing in grams. Which one wins?',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -897,15 +897,15 @@ export const buildC19 = makeWeekBuilder({
       id: 'C19-PZ-01',
       title: 'Puzzle Grove: The Level Balance',
       puzzleType: 'logic',
-      prompt: `A pan balance is exactly level. On the left pan sits ${name}'s parcel, with a mass of ${qty(parcel, 'g')}. On the right pan sit a ${qty(weight, 'g')} weight and a handful of identical washers. Every washer has a mass of ${qty(each, 'g')}. How many washers are on the right pan? Then say how you know that no other number of washers would leave the balance level.`,
+      prompt: `A pan balance is exactly level. On the left pan sits ${name}'s parcel, with a mass of ${qty(parcel, 'g')}. On the right pan sit a ${qty(weight, 'g')} weight and some identical washers. Every washer has a mass of ${qty(each, 'g')}. How many washers are on the right pan? Then explain why no other number of washers keeps the balance level.`,
       answer: {
         value: String(washers),
         acceptableForms: [countNoun(washers, 'washers')],
         validation: 'exact-numeric',
       },
       hintLadder: [
-        'What has to be true about the two pans of a balance that is sitting level?',
-        'Take the weight off the right pan, take the same amount off the parcel side, and see how many washers fill the gap that is left.',
+        'What must be true about the two pans of a level balance?',
+        'Take the weight off the right pan, and the same amount off the parcel. Then see how many washers fill the gap left.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };

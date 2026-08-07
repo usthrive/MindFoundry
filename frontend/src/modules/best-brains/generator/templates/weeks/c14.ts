@@ -233,8 +233,8 @@ const sitKnownFactShift = withFigure(
         params: { a, b: tensOf(t), known: a * t },
         units: noun,
         hints: [
-          'Which fact is hiding inside this one, and what is different about what each string carries?',
-          'Work the small fact first, then remember that every one of those stands for a whole ten and say what that many tens comes to.',
+          'Which small fact is hiding inside this one?',
+          'Work the small fact first. Every one of those stands for a whole ten. Say what that many tens comes to.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -271,7 +271,7 @@ const sitBasketOfTens = withFigure(
         units: noun,
         hints: [
           'Is a basket here holding single things, or bundles of ten?',
-          'Count how many tens the baskets hold between them, and read that many tens as a number.',
+          'Count how many tens the baskets hold between them. Then read that many tens as a number.',
         ],
         errorTags: ['representation-misread', 'concept-misconception'],
       };
@@ -314,7 +314,7 @@ const sitTrackLaps = situation({
       units: 'm',
       hints: [
         'How many tens of metres does a single lap cover?',
-        'Take the short fact the two numbers make, then let every one of those stand for ten metres.',
+        'Take the short fact the two numbers make. Then let each one stand for ten metres.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -335,14 +335,14 @@ const sitFairVisitors = situation({
     const noun = nounOf(r, 'attendance');
     const name = one(r);
     return {
-      prompt: `${name} counts ${countNoun(tensOf(t), noun)} through the door of the school book fair on every day it opens, and the fair runs for ${countNoun(a, 'days')}. How many ${unitFor(2, noun)} come to the fair in all?`,
+      prompt: `${name} counts ${countNoun(tensOf(t), noun)} through the door of the school book fair. That happens on every day it opens. The fair runs for ${countNoun(a, 'days')}. How many ${unitFor(2, noun)} come to the fair in all?`,
       answerValue: String(a * tensOf(t)),
       templateId: 'd_mul_v1',
       params: { a, b: tensOf(t) },
       units: noun,
       hints: [
         'Does each day bring a different number through the door, or the same number again?',
-        'Say how many tens arrive over the whole run, then write that count of tens as a number.',
+        'Say how many tens arrive over the whole run. Then write that count of tens as a number.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -374,8 +374,8 @@ const sitPassPrice = situation({
       units: 'dollars',
       acceptableForms: [wholeMoney(a * tensOf(t))],
       hints: [
-        'Would it help to price a single pass in tens of dollars before anything is added up?',
-        'Work the price and the number of passes as a small fact, then let each one of those count ten dollars.',
+        'Would it help to price one pass in tens of dollars first?',
+        'Work the price and the number of passes as a small fact. Then let each one count ten dollars.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -383,7 +383,7 @@ const sitPassPrice = situation({
 });
 const sitPassPriceEstimate = withEstimateFirst(
   sitPassPrice,
-  'will the whole set of passes come to more than five hundred dollars, or to less?',
+  'will the passes come to more than five hundred dollars, or to less?',
 );
 
 // ---------------------------------------------------------------------------
@@ -408,7 +408,7 @@ const msSacksAndBox = multiStep({
     const noun = nounOf(r, 'weighing');
     const name = one(r);
     return {
-      prompt: `Every ${unitFor(1, noun)} in the store weighs ${countNoun(tensOf(t), 'kg')}. ${name} loads ${countNoun(a, noun)} onto the trailer, then puts a toolbox weighing ${countNoun(extra, 'kg')} on beside them. What weight is on the trailer?`,
+      prompt: `Every ${unitFor(1, noun)} in the store weighs ${countNoun(tensOf(t), 'kg')}. ${name} loads ${countNoun(a, noun)} onto the trailer. Then a toolbox weighing ${countNoun(extra, 'kg')} goes on beside them. What weight is on the trailer?`,
       initN: tensOf(t),
       steps: [
         { op: 'mul', n: a, d: 1 },
@@ -417,7 +417,7 @@ const msSacksAndBox = multiStep({
       units: 'kg',
       hints: [
         'Which part of this load is made of equal tens, and which part is not?',
-        'Settle the equal ones first, and bring the odd weight in only once that part is finished.',
+        'Settle the equal ones first. Bring the odd weight in only after that.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -448,8 +448,8 @@ const msPalletsThenOff = multiStep({
       ],
       units: noun,
       hints: [
-        'Are both moves in this story working in whole tens, or is one of them not?',
-        'Build the full load first, take the returned amount off it, and then look at what is standing in the ones column.',
+        'Are both moves in this story working in whole tens?',
+        'Build the full load first. Take the returned amount off it. Then look at the ones column.',
       ],
       errorTags: ['procedure-slip', 'concept-misconception'],
     };
@@ -482,8 +482,8 @@ const msPencilBoxes = multiStep({
       ],
       units: noun,
       hints: [
-        'Does the story tell you how many boxes there are, or only what is inside all of them together?',
-        'Break the whole count into its tens to find the number of boxes, and only then take what is asked from each one.',
+        'Does the story tell you how many boxes there are?',
+        'Break the whole count into its tens to find the number of boxes. Only then take what is asked from each one.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -527,8 +527,8 @@ const discrimCountTheRightThing = discrimination({
         },
       ],
       hints: [
-        'How many eggs does one whole tray hold, and is that number anywhere in the story?',
-        'Work out what a single tray holds before you look at the options, then find the calculation that uses that number.',
+        'How many eggs does one whole tray hold?',
+        'Work out what one tray holds before you look at the options. Then find the calculation that uses that number.',
       ],
       errorTags: ['representation-misread', 'task-comprehension'],
     };
@@ -566,8 +566,8 @@ const discrimTenTimesNotTenMore = discrimination({
         },
       ],
       hints: [
-        'Does making every group ten times bigger change the total by a fixed amount, or by a number of times?',
-        'Try the pair of calculations on a number small enough to count out, and put the two answers side by side.',
+        'Does a group ten times bigger add a fixed amount, or multiply?',
+        'Try both calculations on a number small enough to count out. Then put the two answers side by side.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -596,11 +596,11 @@ const eaTensCountedAsOnes = errorAnalysis({
     const a = numOf(p, 'a');
     const t = numOf(p, 't');
     return {
-      prompt: `A student was asked to work out ${a} × ${tensOf(t)}. Their page reads: "${a} groups of ${countNoun(t, 'tens')} — and ${a} × ${t} is ${a * t}, so that is ${countNoun(a * t, 'tens')}." On the answer line the student has written ${v.wrong}.`,
-      extension: 'Write down the number the answer line should carry, then write one sentence saying what the student\'s figure was counting.',
+      prompt: `A student was asked to work out ${a} × ${tensOf(t)}. Their page reads: ${a} groups of ${countNoun(t, 'tens')}. Then ${a} × ${t} is ${a * t}, so that is ${countNoun(a * t, 'tens')}. On the answer line the student has written ${v.wrong}.`,
+      extension: 'Write down the number the answer line should carry. Then write one sentence saying what the student\'s figure was counting.',
       hints: [
         'What is the student counting when that number goes down on the line?',
-        'Name the unit the count is in, then say what that many of them are worth in single things.',
+        'Name the unit the count is in. Then say what that many are worth in single things.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -625,12 +625,12 @@ export const buildC14 = makeWeekBuilder({
     'C11 and C13 both built a hard fact out of an easy one, but the two facts always lived in the same place: 6 × 7 and 5 × 7 count the same kind of thing. C14 changes the UNIT instead of the fact. The digits do not move at all — 3 × 4 is still 3 × 4 — and what changes is what each of the twelve is worth, which is why the answer is the known fact standing one column to the left rather than a new fact to learn. That is also the first time a product has to be read as a count of something other than ones, which is what C15 will need when a fraction names a part.',
   explanation: {
     hook:
-      'Nobody has to learn 3 × 40. If you know 3 × 4, you have known 3 × 40 all along — it is that same answer standing one place further to the left.',
+      'Nobody has to learn 3 × 40. If you know 3 × 4, you have known 3 × 40 all along. It is that same answer standing one place further left.',
     whyBeforeHow:
-      'A ten is one thing you can count, and that is why multiplying by a ten never needs a new fact. 3 × 40 is 3 × 4 tens, because every one of the three groups holds four TENS rather than four ones — so the counting is the counting you already do, and only the size of what you are counting has changed. Four tens taken three times is twelve tens, and twelve tens is 120. Look at what happened to the digits: nothing was added to them. The 1 and the 2 are exactly the digits of the fact you already owned, and each of them slid one column to the left, so the 2 that was worth two is now worth twenty. That left the ones column with nothing at all in it, and the zero on the end is what says so. It is worth holding on to that reason rather than the rule "add a zero", since a zero added on is a mark, and what really happened is that every digit changed what it is worth.',
+      'A ten is one thing you can count. That is why multiplying by a ten never needs a new fact. 3 × 40 is 3 × 4 tens. Every one of the three groups holds four TENS rather than four ones. So the counting is the counting you already do. Only the size of what you are counting has changed. Four tens taken three times is twelve tens, and twelve tens is 120. Look at what happened to the digits. Nothing was added to them. The 1 and the 2 are the digits of the fact you already owned. Each of them slid one column to the left. So the 2 that was worth two is now worth twenty. That left the ones column with nothing in it. The zero on the end is what says so. Hold on to that reason rather than the rule "add a zero". A zero added on is only a mark. What really happened is that every digit changed what it is worth.',
     script: [
       {
-        say: 'Watch me meet 3 × 40. I do not know it, but I do know 3 × 4, and I am going to look hard at what these groups are holding. Three groups, four in each — except that every one of those four is a whole ten. So what I have laid out is twelve tens, not twelve.',
+        say: 'Watch me meet 3 × 40. I do not know it, but I do know 3 × 4. So I look hard at what these groups are holding. Three groups, four in each. Except that every one of those four is a whole ten. So what I have laid out is twelve tens, not twelve.',
         visual: 'Three rows of four blocks, with a ten written inside every block.',
         figure: areaGrid(
           { rows: 3, cols: 4, cellLabels: Array.from({ length: 12 }, () => '10') },
@@ -638,7 +638,7 @@ export const buildC14 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now I read twelve tens as a number. Ten tens make one hundred, and two tens are twenty, so twelve tens is 120. And look where the digits went: the 1 and the 2 are the very digits of the fact I started from, and each has moved one column to the left. The 1 that stood for one ten now stands for one hundred. Nothing was added to my fact. It changed places.',
+        say: 'Now I read twelve tens as a number. Ten tens make one hundred, and two tens are twenty. So twelve tens is 120. And look where the digits went. The 1 and the 2 are the digits of the fact I started from. Each has moved one column to the left. The 1 that stood for one ten now stands for one hundred. Nothing was added to my fact. It changed places.',
         visual: 'A place-value chart holding one hundred and twenty, with the tens column marked.',
         figure: placeValueChart(120, {
           showValues: true,
@@ -647,7 +647,7 @@ export const buildC14 = makeWeekBuilder({
         }),
       },
       {
-        say: 'Before I write anything down I check that the size is sensible. Three fours is twelve; three forties has to be about ten times that, so somewhere near a hundred and not anywhere near a thousand. When my answer came out at 120 I could see straight away it was the right size, and that check costs me nothing.',
+        say: 'Before I write anything down I check that the size is sensible. Three fours is twelve. Three forties has to be about ten times that. So somewhere near a hundred, and nowhere near a thousand. My answer came out at 120. Straight away I could see it was the right size. That check costs nothing.',
         visual: 'A short bar for three fours beside a long bar for three forties.',
         figure: barModel(
           [
@@ -658,7 +658,7 @@ export const buildC14 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One last look at that zero, because it is the part people turn into a trick. Here is my old fact on its own: the 2 sits in the ones column and it is worth two single things. In my new answer the ones column is empty, because twelve tens is a whole number of tens with nothing left over. The zero is not something I added. It is a report that there is nothing in that column — and if my story had one more egg in it, that column would not be a zero at all.',
+        say: 'One last look at that zero. It is the part people turn into a trick. Here is my old fact on its own. The 2 sits in the ones column, worth two single things. In my new answer the ones column is empty. Twelve tens is a whole number of tens with nothing left over. The zero is not something I added. It reports that there is nothing in that column. Give my story one more single thing, and that column would not be zero.',
         visual: 'A place-value chart holding twelve, with the ones column marked.',
         figure: placeValueChart(12, {
           showValues: true,
@@ -668,7 +668,7 @@ export const buildC14 = makeWeekBuilder({
       },
     ],
     summary:
-      'Multiplying by a ten multiplies the COUNT of tens, so the answer is a fact you already know wearing a new place. Work the small fact, then remember that each one of them is a ten: the digits slide one column to the left, the ones column is left empty, and the zero on the end is what reports that. Change the story so something IS left over, and the zero goes.',
+      'Multiplying by a ten multiplies the COUNT of tens. So the answer is a fact you already know wearing a new place. Work the small fact. Then remember that each one of them is a ten. The digits slide one column to the left. The ones column is left empty. The zero on the end is what reports that. Change the story so something IS left over, and the zero goes.',
     vocabulary: [
       { term: 'a ten', kidGloss: 'a bundle of ten ones, counted as a single thing' },
       { term: 'multiple of ten', kidGloss: 'a number you land on counting in tens, like 20, 30 or 40' },
@@ -711,7 +711,7 @@ export const buildC14 = makeWeekBuilder({
         asserts: assertsAnswer,
       }),
     },
-    ge(14, 3, 'prompted', 'Ria works out 8 × 50. Name the fact she should start from, say what it is counting, then give the answer.', [
+    ge(14, 3, 'prompted', 'Ria works out 8 × 50. Name the fact she should start from. Say what it is counting, then give the answer.', [
       { childDo: 'Say the small fact out loud, then say what each one of them is worth.', expected: '400' },
     ], '400'),
     ge(14, 4, 'independent', 'A path is laid in 9 rows with 60 paving stones in every row. How many paving stones are in the path? Solve cold.', [
@@ -767,14 +767,14 @@ export const buildC14 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Work out 4 × 20, 4 × 30 and 4 × 50. Every one of your three answers ends in a zero. Write one or two sentences saying WHY that zero has to be there — what the zero is doing in the answer, and what would be standing in its place if it were not a zero.',
+            'Work out 4 × 20, 4 × 30 and 4 × 50. Every one of your three answers ends in a zero. Write one or two sentences saying WHY that zero has to be there. Say what the zero is doing in the answer. Say what would stand in its place if it were not a zero.',
           value:
             'each answer is a whole number of tens, so nothing at all is left over for the ones column; the zero holds that column empty, and any other digit there would mean some single ones were left over',
           acceptableForms: ['whole number of tens', 'nothing in the ones', 'ones column', 'holds the column', 'no ones left over'],
           keywords: true,
           hints: [
-            'What would have to be left over for the last digit to be something other than a zero?',
-            'Write each of your answers as a number of tens, then look at what is standing in the ones column of each one.',
+            'What would have to be left over for that last digit to change?',
+            'Write each of your answers as a number of tens. Then look at the ones column of each one.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -798,8 +798,8 @@ export const buildC14 = makeWeekBuilder({
             },
           ],
           hints: [
-            'How much bigger does a group get when what is inside it changes from ones to tens?',
-            'Work both calculations out on paper and put the two answers side by side before you choose.',
+            'How much bigger does a group get when ones become tens?',
+            'Work both calculations out on paper. Put the two answers side by side before you choose.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -833,7 +833,7 @@ export const buildC14 = makeWeekBuilder({
       id: 'C14-PZ-01',
       title: 'Puzzle Grove: The Second Zero',
       puzzleType: 'logic',
-      prompt: `${name} is hunting for products that end in TWO zeros. One number must come from the top row — ${digits.join(', ')} — and the other from the bottom row — ${tens.join(', ')}. Write down EVERY pair whose product ends in two zeros, and then explain how you know that no pair is missing from your list.`,
+      prompt: `${name} is hunting for products that end in TWO zeros. The top row is ${digits.join(', ')}. The bottom row is ${tens.join(', ')}. One number must come from each row. Write down EVERY pair whose product ends in two zeros. Then explain how you know no pair is missing.`,
       answer: {
         // A `set`: the task is the whole list, and a child who finds the easy
         // pair has not yet made the argument the puzzle is asking for.
@@ -843,19 +843,22 @@ export const buildC14 = makeWeekBuilder({
       },
       hintLadder: [
         'A product from these rows already ends in one zero. What would have to happen for a second one to appear?',
-        'Take one number from the top row and try it against every number in the bottom row before moving on, keeping the two digits you multiply first in view.',
+        'Take one number from the top row. Try it against every number in the bottom row. Keep the two digits you multiply first in view.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
   puzzleMeta: { stepCount: 2, cognitiveOp: 'pattern-search' },
   sprint: {
-    skill: 'Multiplication facts ×8 and ×9 — the digit facts a multiply-by-tens answer stands on',
+    // mult_facts_v1 reads only factorRange (a `tables` param is silently
+    // ignored and the range defaulted to [2,9]), so the old "×8 and ×9" label
+    // was false as served. Declare the real range honestly.
+    skill: 'Multiplication facts to nine — the digit facts a multiply-by-tens answer stands on',
     sourceWeek: C12,
     itemCount: 18,
     scheduledDay: 3,
     templateId: 'mult_facts_v1',
-    params: { tables: [8, 9], max: 10 },
+    params: { factorRange: [2, 9] },
   },
   mastery: [
     { gen: sitKnownFactShift, diff: 3 },
@@ -866,7 +869,7 @@ export const buildC14 = makeWeekBuilder({
     { gen: msPalletsThenOff, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step multiplications by a ten in three representations — the handed-over digit fact with its place-value chart, one group drawn as its tens with the tens bar, and a length taken a number of times — with both figure affordances preserved. 02/04/06: the three chains — tens then a loose remainder, the inverse-start cupboard whose stated total must first be broken into its tens, and tens taken back off tens. No operand surface reused from Form A or from the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step multiplications by a ten in three representations — the handed-over digit fact with its place-value chart, one group drawn as its tens with the tens bar, and a length taken a number of times — with both figure affordances preserved. 02/04/06: the three chains — tens then a loose remainder, the inverse-start cupboard whose stated total must first be broken into its tens, and tens taken back off tens. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

@@ -120,14 +120,14 @@ const wPanes = asWarmup(
       const rows = r.int(2, 6);
       const cols = r.pick(TAUGHT);
       return {
-        prompt: `A tall window is made of ${countNoun(rows, 'rows')} of glass panes, with ${countNoun(cols, 'panes')} in every row. How many panes are in the window?`,
+        prompt: `A tall window has ${countNoun(rows, 'rows')} of glass panes. Every row holds ${countNoun(cols, 'panes')}. How many panes are in the window?`,
         answerValue: String(rows * cols),
         templateId: 'd_mul_v1',
         params: { a: rows, b: cols },
         units: 'panes',
         hints: [
-          'Are all the rows in this window the same size, or does one of them differ?',
-          'Find what a single row holds, then build the window up one whole row at a time.',
+          'Are all the rows in this window the same size?',
+          'Find what one row holds. Then build the window up one row at a time.',
         ],
         errorTags: ['representation-misread', 'procedure-slip'],
       };
@@ -151,8 +151,8 @@ const wCountOn = asWarmup(
         templateId: 'd_multiple_v1',
         params: { base: step, k },
         hints: [
-          'Is this count going up by the same amount every time, or by a changing one?',
-          'Say the count aloud from its beginning and carry it one step past where it stopped.',
+          'Is this count going up by the same amount every time?',
+          'Say the count aloud from the start. Carry it one step past where it stopped.',
         ],
         errorTags: ['fact-recall', 'procedure-slip'],
       };
@@ -185,8 +185,8 @@ const sitShareCards = withFigure(
         params: { a: total, b: players },
         units: 'cards',
         hints: [
-          'Does this story tell you how many players there are, or how many cards one player ends up with?',
-          'Deal the pile out one card to each player at a time, and count what a single player is holding when the pile runs out.',
+          'Which fact is given: the number of players, or one player\'s share?',
+          'Deal the pile out one card at a time to each player. Count what one player holds when the pile runs out.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -223,8 +223,8 @@ const sitPaintPots = situation({
       // bare-dollar prompt).
       acceptableForms: [wholeMoney(each)],
       hints: [
-        'Which price does this story give you — the price of the whole set, or the price of one pot?',
-        'Split the set price into as many equal parts as there are pots, and read off one part.',
+        'Which price is given: the whole set, or one pot?',
+        'Split the set price into one equal part for every pot. Then read off one part.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -245,14 +245,14 @@ const sitLeftover = situation({
     const over = r.int(1, friends - 1);
     const name = one(r);
     return {
-      prompt: `${name} shares ${countNoun(friends * each + over, 'conkers')} equally between ${countNoun(friends, 'cousins')}, handing out as many as can be given fairly. How many conkers are left in ${name}'s hand?`,
+      prompt: `${name} shares ${countNoun(friends * each + over, 'conkers')} equally between ${countNoun(friends, 'cousins')}. ${name} hands out as many as can be given fairly. How many conkers are left in ${name}'s hand?`,
       answerValue: String(over),
       templateId: 'd_interpret_rem_v1',
       params: { a: friends * each + over, b: friends, mode: 'remainder' },
       units: 'conkers',
       hints: [
         'Is the question asking what each cousin ends up with, or what nobody could take?',
-        'Hand them out in full rounds, and stop the moment there are too few for another full round.',
+        'Hand them out in full rounds. Stop when there are too few for another round.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -279,8 +279,8 @@ const sitGroupTubes = withFigure(
         params: { a: perTube * tubes, b: perTube },
         units: 'tubes',
         hints: [
-          'Does this story tell you how many tubes there are, or how many balls one tube holds?',
-          'Fill one tube, then keep filling tubes that size until the balls run out, and count the tubes you filled.',
+          'Does the story give the number of tubes, or the balls in one tube?',
+          'Fill one tube. Keep filling tubes that size until the balls run out. Then count your tubes.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -302,14 +302,14 @@ const sitRibbonBows = withFigure(
       const piece = r.pick([3, 4, 5, 10] as const);
       const parcels = r.int(4, 9);
       return {
-        prompt: `[image: one parcel length of ${countNoun(piece, 'cm')} marked at the start of a tape] A florist has a ribbon ${countNoun(piece * parcels, 'cm')} long and cuts it into equal pieces, one for each parcel. Every piece is ${countNoun(piece, 'cm')} long. How many parcels can be tied?`,
+        prompt: `[image: one parcel length of ${countNoun(piece, 'cm')} marked at the start of a tape] A florist has a ribbon ${countNoun(piece * parcels, 'cm')} long. It is cut into equal pieces, one for each parcel. Every piece is ${countNoun(piece, 'cm')} long. How many parcels can be tied?`,
         answerValue: String(parcels),
         templateId: 'd_div_v1',
         params: { a: piece * parcels, b: piece },
         units: 'parcels',
         hints: [
-          'Which length does this story hand you — the whole ribbon, or the piece one parcel needs?',
-          'Lay the piece length along the ribbon again and again, and count how many times it fits before the ribbon ends.',
+          'Is the whole ribbon given, or the piece one parcel needs?',
+          'Lay the piece along the ribbon again and again. Count how many times it fits.',
         ],
         errorTags: ['representation-misread', 'task-comprehension'],
       };
@@ -359,7 +359,7 @@ const sitPhotoPages = situation({
       params: { a: perPage * pages, b: perPage },
       units: 'pages',
       hints: [
-        'Is the number this story repeats the number of pages, or the number of photos on one page?',
+        'Are you told the number of pages, or the photos on one page?',
         'Fill one page, then count on in that page-size until every photo has a home.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
@@ -392,7 +392,7 @@ const msShareThenLeftover = multiStep({
     if (loose === each) loose = each === 2 ? 3 : each - 1;
     const name = one(r);
     return {
-      prompt: `${name} shares ${countNoun(bags * each, 'tent pegs')} equally between ${countNoun(bags, 'kit bags')}. The ${countNoun(loose, 'tent pegs')} still rolling about in the car boot then all go into one of those bags. How many tent pegs are in that bag?`,
+      prompt: `${name} shares ${countNoun(bags * each, 'tent pegs')} equally between ${countNoun(bags, 'kit bags')}. ${countNoun(loose, 'tent pegs')} are still rolling about in the car boot. They all go into one of those bags. How many tent pegs are in that bag?`,
       initN: bags * each,
       steps: [
         { op: 'div', n: bags, d: 1 },
@@ -400,8 +400,8 @@ const msShareThenLeftover = multiStep({
       ],
       units: 'tent pegs',
       hints: [
-        'Which bag is the last question about — all of them, or the one the loose pegs went into?',
-        'Make the equal shares first; the loose ones only join in once the sharing is finished.',
+        'Is the last question about every bag, or just one bag?',
+        'Make the equal shares first. The loose ones join in afterwards.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -427,7 +427,7 @@ const msGroupThenMore = multiStep({
       ],
       units: 'teams',
       hints: [
-        'What does the first sentence give you — how many teams there are, or how big a team is?',
+        'Does the first sentence give the number of teams, or the team size?',
         'Build the teams from the players first, then add the ones that arrive already built.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
@@ -452,7 +452,7 @@ const msInverseShare = multiStep({
     const eaten = r.int(3, Math.min(8, pots * each - 2));
     const name = one(r);
     return {
-      prompt: `${name} shared a bowl of cherries equally into ${countNoun(pots, 'pots')}, and every pot ended up holding ${countNoun(each, 'cherries')}. ${name} then ate ${countNoun(eaten, 'cherries')}. How many cherries are left in the pots?`,
+      prompt: `${name} shared a bowl of cherries equally into ${countNoun(pots, 'pots')}. Every pot ended up holding ${countNoun(each, 'cherries')}. ${name} then ate ${countNoun(eaten, 'cherries')}. How many cherries are left in the pots?`,
       initN: pots,
       steps: [
         { op: 'mul', n: each, d: 1 },
@@ -460,8 +460,8 @@ const msInverseShare = multiStep({
       ],
       units: 'cherries',
       hints: [
-        'Does this story tell you how many were in the bowl to start with, or only what one pot ended up holding?',
-        'Rebuild the bowl from the pots first — that is the only way to reach a number the last sentence can act on.',
+        'Does the story tell you what was in the bowl at the start?',
+        'Rebuild the bowl from the pots first. The last sentence needs that number.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -485,7 +485,7 @@ const msCaseWithSpare = multiStep({
     const others = r.int(6, 9);
     const name = one(r);
     return {
-      prompt: `A museum has ${countNoun(cases * each, 'fossils')}. ${name} shares them equally between ${countNoun(cases, 'display cases')}, then lifts ${countNoun(lifted, 'fossils')} out of one case for a school visit. A poster by the entrance lists ${countNoun(others, 'other museums')} in the city. How many fossils are left in that case?`,
+      prompt: `A museum has ${countNoun(cases * each, 'fossils')}. ${name} shares them equally between ${countNoun(cases, 'display cases')}. Then ${name} lifts ${countNoun(lifted, 'fossils')} out of one case for a school visit. A poster by the entrance lists ${countNoun(others, 'other museums')} in the city. How many fossils are left in that case?`,
       initN: cases * each,
       steps: [
         { op: 'div', n: cases, d: 1 },
@@ -494,7 +494,7 @@ const msCaseWithSpare = multiStep({
       units: 'fossils',
       hints: [
         'Every number here is counting something — which of them are counting fossils?',
-        'Share out only what the question is about, then handle the case that was opened; one number never enters the working at all.',
+        'Share out the fossils first. Then handle the case that was opened. One number never gets used.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -541,8 +541,8 @@ const discrimWhichCalc = discrimination({
         },
       ],
       hints: [
-        'Does this story break one pile into equal parts, or take a piece off it once?',
-        'Set the containers out empty, then deal the pile round them until nothing is left in your hand.',
+        'Is one pile being broken into equal parts, or cut once?',
+        'Set the containers out empty. Deal the pile round them until your hand is empty.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -567,10 +567,10 @@ const discrimSortStory = discrimination({
     // grammar and never do the sorting. Both options must be fluent either way,
     // so the only thing that separates them is the mathematics.
     const opening = isGrouping
-      ? `${name} has ${countNoun(size * count, 'balloons')} and packs them into party bags with ${countNoun(size, 'balloons')} in every bag.`
+      ? `${name} has ${countNoun(size * count, 'balloons')} and packs them into party bags. Every bag holds ${countNoun(size, 'balloons')}.`
       : `${name} has ${countNoun(size * count, 'balloons')} and shares them equally between ${countNoun(size, 'party bags')}.`;
-    const grouping = 'a grouping story — it says how many balloons go in one bag, so the answer counts the bags';
-    const sharing = 'a sharing story — it says how many bags there are, so the answer counts the balloons in one bag';
+    const grouping = 'a grouping story. You are told what one bag holds, so the answer counts bags.';
+    const sharing = 'a sharing story. You are told how many bags, so the answer counts one bag\'s balloons.';
     return {
       prompt: `${opening} Which kind of division story is this?`,
       correct: isGrouping ? grouping : sharing,
@@ -581,14 +581,14 @@ const discrimSortStory = discrimination({
           rationale: 'Hands the stated number to the other role, swapping "how many groups there are" with "how big a group is" — the one move that changes what the answer counts.',
         },
         {
-          text: 'either one — both numbers are there, so the story can be read whichever way you like',
+          text: 'either one — both numbers are there, so you may read it either way',
           errorTag: 'task-comprehension',
           rationale: 'Treats the numbers as the whole story and the words as decoration, when the words are the only thing deciding which quantity the answer names.',
         },
       ],
       hints: [
-        'Which fact does this story hand you outright — how many groups there are, or how big one group is?',
-        'The fact you were NOT given is the one your answer will count; name it before you choose.',
+        'Are you told how many groups there are, or how big one group is?',
+        'Your answer counts the fact you were NOT given. Name it before you choose.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -616,11 +616,11 @@ const eaTakeAway = errorAnalysis({
     return { a: b * q, b, op: '/', wrongOp: '-' };
   },
   build: (v, p) => ({
-    prompt: `A lunch club shares ${countNoun(Number(p.a), 'carrot sticks')} equally between ${countNoun(Number(p.b), 'lunch boxes')}. Asked how many carrot sticks go into one box, a student wrote ${p.a} − ${p.b} = ${v.wrong}.`,
-    extension: 'Work out how many carrot sticks really go into one box, then write one sentence saying what the student did to the pile.',
+    prompt: `A lunch club shares ${countNoun(Number(p.a), 'carrot sticks')} equally between ${countNoun(Number(p.b), 'lunch boxes')}. A student was asked how many carrot sticks go into one box. The student wrote ${p.a} − ${p.b} = ${v.wrong}.`,
+    extension: 'Work out how many carrot sticks really go into one box. Then write one sentence about what the student did to the pile.',
     hints: [
-      'If the student\'s move were the right one, would every box end up with the same amount?',
-      'Draw the boxes and deal the sticks round them, then look again at what the student\'s move did to the pile.',
+      'If the student were right, would every box hold the same amount?',
+      'Draw the boxes and deal the sticks round them. Then look at what the student\'s move did.',
     ],
     errorTags: ['concept-misconception', 'task-comprehension'],
   }),
@@ -644,12 +644,12 @@ export const buildC09 = makeWeekBuilder({
     'C6–C8 built equal groups and then made the facts quick, always in the same direction: the number of groups and the size of a group were both given, and the total was wanted. C9 turns that around. One of the two is now missing, and which one is missing decides what the answer counts — so for the first time the child has to read a story for its structure before any fact can help.',
   explanation: {
     hook:
-      '12 counters shared between 3 friends gives 4. 12 counters made into groups of 3 gives 4 again — and the two fours are not the same thing. One of them counts counters in a hand; the other counts the groups themselves.',
+      '12 counters shared between 3 friends gives 4. 12 counters made into groups of 3 gives 4 again. The two fours are not the same thing. One counts counters in a hand. The other counts whole groups.',
     whyBeforeHow:
-      'A division story always holds two facts and asks you for the third, and because only ONE of those facts is ever handed to you, the same division sign ends up doing two different jobs. If the story tells you how many groups there are, you are sharing, and the answer counts what one group gets. If it tells you how big each group is, you are grouping, and the answer counts the groups. So we give the two jobs their own names: sharing and grouping — the two meanings a single division sign carries. The arithmetic is identical either way, which is exactly why the number can never tell you which story you are in; only the words can. Read for the fact you were given, and the meaning of your answer follows from it.',
+      'A division story always holds two facts and asks you for the third. Only ONE of those facts is ever handed to you. That is why the same division sign does two different jobs. If the story tells you how many groups there are, you are sharing. Then the answer counts what one group gets. If it tells you how big each group is, you are grouping. Then the answer counts the groups. We call them sharing and grouping — the two meanings a division sign carries. The arithmetic is the same either way. That is why the numbers can never tell you which story you are in. Only the words can. So read for the fact you were given. The meaning of your answer follows from it.',
     script: [
       {
-        say: 'Watch me share. I have 12 counters and 3 plates, and I deal them out one at a time, round and round, until my hand is empty. Every plate ended up with 4. I knew how many plates there were before I started — what I did not know was how many counters one plate would hold.',
+        say: 'Watch me share. I have 12 counters and 3 plates. I deal them out one at a time, round and round. I stop when my hand is empty. Every plate ended up with 4. I knew how many plates there were before I started. What I did not know was how many counters one plate holds.',
         visual: 'Three plates, each holding four counters.',
         figure: counterGroups(
           [
@@ -661,7 +661,7 @@ export const buildC09 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now the same 12 counters, and a different question. This time nobody tells me how many plates to use — I am told to make groups of 3 and keep going until the counters run out. I made 4 groups. Notice what changed: I was handed the SIZE of a group, and the number of groups is what I found.',
+        say: 'Now the same 12 counters, and a different question. This time nobody tells me how many plates to use. I am told to make groups of 3. I keep going until the counters run out. I made 4 groups. Notice what changed. I was handed the SIZE of a group. The number of groups is what I found.',
         visual: 'Four groups of three counters.',
         figure: counterGroups(
           [
@@ -674,7 +674,7 @@ export const buildC09 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Both times I wrote 12 ÷ 3, and both times the answer was 4. But the first 4 was counters sitting on one plate, and the second 4 was whole groups. Same number, different thing counted — and if I cannot say which one I am holding, I cannot answer the question that was asked.',
+        say: 'Both times I wrote 12 ÷ 3, and both times the answer was 4. The first 4 was counters sitting on one plate. The second 4 was whole groups. Same number, different thing counted. If I cannot say which one I am holding, I cannot answer.',
         visual: 'One bar of twelve split into three shares of four, above the same bar split into four groups of three.',
         figure: barModel(
           [
@@ -685,7 +685,7 @@ export const buildC09 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before I work any division out: I ask myself roughly how big the answer ought to be. Sharing 12 between 3 must give each plate less than 12 and more than 1 — so an answer of 9 would be far too large, and I would check my thinking rather than my counting. Then I check at the end by counting the groups back up: 4, 8, 12.',
+        say: 'One habit before I work any division out. I ask myself roughly how big the answer ought to be. Sharing 12 between 3 must give each plate less than 12. It must also give more than 1. So an answer of 9 would be far too large. Then I would check my thinking, not my counting. At the end I count the groups back up: 4, 8, 12.',
         visual: 'A number line from zero to twelve with four equal jumps of three marked along it.',
         figure: numberLine(
           {
@@ -705,7 +705,7 @@ export const buildC09 = makeWeekBuilder({
       },
     ],
     summary:
-      'Division splits an amount into equal parts. Read the story for the fact you were given: if you know how many groups, you are sharing and your answer counts what one group gets; if you know how big a group is, you are grouping and your answer counts the groups. Check by counting the groups back up to the total, and say out loud what your answer counts before you write it down.',
+      'Division splits an amount into equal parts. Read the story for the fact you were given. If you know how many groups, you are sharing. Your answer then counts what one group gets. If you know how big a group is, you are grouping. Your answer then counts the groups. Check by counting the groups back up to the total. Say out loud what your answer counts before you write it.',
     vocabulary: [
       { term: 'division (÷)', kidGloss: 'breaking an amount into equal parts' },
       { term: 'sharing', kidGloss: 'you know how many groups — you work out how many are in one group' },
@@ -718,10 +718,10 @@ export const buildC09 = makeWeekBuilder({
       ...ge(9, 1, 'modeled', 'Pia deals 24 picture cards out equally between 4 players. How many cards does one player get?', [
         {
           teacherSay:
-            'Watch what I hunt for first. The story hands me the number of players, so the thing I do not know is what one player ends up holding — that tells me I am sharing, and I can deal the cards out round and round until the pile is gone.',
+            'Watch what I hunt for first. The story hands me the number of players. So the thing I do not know is what one player holds. That tells me I am sharing. I can deal the cards out round and round until the pile is gone.',
         },
         {
-          teacherSay: 'One card to each player uses 4 cards, so every full round costs me 4. How many full rounds can I deal before the pile runs out?',
+          teacherSay: 'One card to each player uses 4 cards. So every full round costs me 4. How many full rounds can I deal before the pile runs out?',
           expected: '6',
         },
       ], '6'),
@@ -739,7 +739,7 @@ export const buildC09 = makeWeekBuilder({
     {
       ...ge(9, 2, 'completion', 'A florist has 45 cm of ribbon and cuts it into equal pieces. Each parcel needs 5 cm. How many parcels can be tied?', [
         { teacherSay: 'Which of these two lengths is the size of ONE piece?', expected: '5 cm' },
-        { childDo: 'Count up in that piece length until you reach the whole ribbon, and count how many jumps it took.', expected: '9' },
+        { childDo: 'Count up in that piece length until you reach the whole ribbon. Count your jumps.', expected: '9' },
       ], '9'),
       visual: 'A tape from zero to forty-five with the first parcel length marked off.',
       figure: numberLine(
@@ -754,14 +754,14 @@ export const buildC09 = makeWeekBuilder({
         { alt: 'a tape from 0 to 45 with the first parcel length of 5 cm marked off from 0' },
       ),
     },
-    ge(9, 3, 'prompted', 'Ben shares 29 conkers equally between 4 cousins, handing out as many as can be given fairly. How many conkers are left in his hand?', [
-      { childDo: 'Hand them out in full rounds, then say what is still in your hand when another full round cannot be made.', expected: '1' },
+    ge(9, 3, 'prompted', 'Ben shares 29 conkers equally between 4 cousins. He hands out as many as can be given fairly. How many conkers are left in his hand?', [
+      { childDo: 'Hand them out in full rounds. Stop when another full round cannot be made. Then say what is still in your hand.', expected: '1' },
     ], '1'),
     {
       // Independent stage: ONE team only. Deciding which meaning the first
       // sentence uses IS the task here, so drawing the other teams would hand
       // the child the very thing the item exists to ask for.
-      ...ge(9, 4, 'independent', 'A club has 36 players. The coach puts them into teams of 4, and then 2 more teams travel in from a club across town. How many teams play in the tournament? Solve cold.', [
+      ...ge(9, 4, 'independent', 'A club has 36 players. The coach puts them into teams of 4. Then 2 more teams travel in from a club across town. How many teams play in the tournament? Solve cold.', [
         { childDo: 'Decide which fact the first two sentences give you before you calculate anything.', expected: '11' },
       ], '11'),
       visual: 'One team of four players. The rest of the teams are yours to work out.',
@@ -817,13 +817,13 @@ export const buildC09 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'One division, two stories. Write a SHARING story for 30 ÷ 5 — a story where you already know there are 5 groups. Then write a GROUPING story for 30 ÷ 5 — a story where you already know each group holds 5. Work out both, then write one sentence saying what your answer counts in each of your stories.',
+            'One division, two stories. Write a SHARING story for 30 ÷ 5. In it you already know there are 5 groups. Then write a GROUPING story for 30 ÷ 5. In that one you already know each group holds 5. Work out both answers. Then write one sentence saying what each answer counts.',
           value: 'a sharing story gives the number of groups, so the answer counts what one group gets; a grouping story gives the size of a group, so the answer counts the groups',
           acceptableForms: ['shares', 'shared', 'equally', 'groups of', 'how many groups', 'in each', 'one group'],
           keywords: true,
           hints: [
-            'Which fact does a sharing story hand you before you start, and which fact does a grouping story hand you?',
-            'Write the first story so the number of groups is already known, then write the second so the size of a group is already known.',
+            'Which fact does a sharing story hand you before you start?',
+            'Write the first story so the number of groups is already known. Write the second so the group size is already known.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -832,7 +832,7 @@ export const buildC09 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: a sharing story and a grouping story built from the same two numbers land on the same answer. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? Build a sharing story and a grouping story from the same two numbers. They land on the same answer. In one sentence, explain how you know.',
           correct: 'always',
           distractors: [
             {
@@ -848,7 +848,7 @@ export const buildC09 = makeWeekBuilder({
           ],
           hints: [
             'Do the two stories set you the same calculation, or two different ones?',
-            'Deal one pile out into equal shares, then count the same pile into groups of that size, and hold the two results side by side.',
+            'Deal one pile out into equal shares. Now count the same pile into groups of that size. Hold the two results side by side.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -884,27 +884,33 @@ export const buildC09 = makeWeekBuilder({
       id: 'C9-PZ-01',
       title: 'Puzzle Grove: The Leftover Clue',
       puzzleType: 'logic',
-      prompt: `${name} has more than 20 acorns and fewer than 40. Shared equally between 4 friends, ${countNoun(overFour, 'acorns')} would be left over. Shared equally between 5 friends, ${countNoun(overFive, 'acorns')} would be left over. How many acorns does ${name} have, and how can you be sure that no other number in that range would work?`,
+      prompt: `${name} has more than 20 acorns and fewer than 40. Shared equally between 4 friends, ${countNoun(overFour, 'acorns')} would be left over. Shared equally between 5 friends, ${countNoun(overFive, 'acorns')} would be left over. How many acorns does ${name} have? How can you be sure no other number in that range works?`,
       answer: {
         value: String(total),
         acceptableForms: [countNoun(total, 'acorns')],
         validation: 'exact-numeric',
       },
       hintLadder: [
-        'Which numbers in that range would leave the right amount over when they are shared between the smaller group of friends?',
-        'Write that short list out, then test each number on it against the second clue and see how few survive.',
+        'Which numbers in that range fit the first clue?',
+        'Write that short list out. Then test each number against the second clue.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
   sprint: {
-    skill: 'Multiplication facts ×2, ×5, ×10 — the facts every division undoes',
+    // factorRange [2,5]: mult_facts_v1 draws BOTH factors from this range, so
+    // [2,10] served ×6-×9 facts first taught in C11/C12 — a forward leak into a
+    // timed sprint (FACT FIDELITY, header). [2,5] keeps every servable fact
+    // inside the C7/C8 taught set, like c11's [3,5] and c12's [2,5].
+    // sourceWeek stays C7 (DD11 needs a source ≥2 weeks back; C8 is 1). The
+    // [2,5] range spans C7-and-C8-taught facts — all strictly prior to C9.
+    skill: 'Multiplication facts to five — the facts every division undoes',
     sourceWeek: C7,
     itemCount: 16,
     scheduledDay: 3,
     templateId: 'mult_facts_v1',
-    params: { factorRange: [2, 10] },
+    params: { factorRange: [2, 5] },
   },
   mastery: [
     { gen: sitShareCards, diff: 3 },
@@ -915,7 +921,7 @@ export const buildC09 = makeWeekBuilder({
     { gen: msInverseShare, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step division — one sharing story and two grouping stories (a count and a length), the three models the week teaches, with the whole-bar and one-group figure affordances preserved. 02/04/06: two-step division — share then the leftover, group then more groups, and an inverse-start story whose stated quantity is the result of the sharing. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step division — one sharing story and two grouping stories (a count and a length), the three models the week teaches, with the whole-bar and one-group figure affordances preserved. 02/04/06: two-step division — share then the leftover, group then more groups, and an inverse-start story whose stated quantity is the result of the sharing. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',
@@ -946,7 +952,7 @@ export const buildC09 = makeWeekBuilder({
       subtype: 'lost-the-count',
       description: 'Chooses the right meaning, then loses the thread while dealing out or counting the groups up, landing one group over or one group short.',
       exampleWrongAnswer: '30 shared between 5 answered as 7',
-      distractorRationale: 'Offer the share that is one group short.',
+      distractorRationale: 'Offer the share that is one group off the true one.',
       reteachPointer: 'guidedExamples/C9-GE-01 (say the running total aloud once per round), then the 2-minute multiplication sprint',
     },
   ],

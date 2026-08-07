@@ -136,13 +136,13 @@ const wCountGap = asWarmup(
       const gap = r.int(3, len - 1);
       const written = Array.from({ length: len }, (_, i) => (i + 1 === gap ? '__' : String(step * (i + 1)))).join(', ');
       return {
-        prompt: `${one(r)} is counting in ${step}s and writes the count down, but one number is smudged: ${written}. Which number belongs where the smudge is?`,
+        prompt: `${one(r)} is counting in ${step}s and writes the count down. One number is smudged: ${written}. Which number belongs where the smudge is?`,
         answerValue: String(step * gap),
         templateId: 'd_multiple_v1',
         params: { base: step, k: gap },
         hints: [
           'How much does this count grow by from one number to the number after it?',
-          'Start at the number just in front of the smudge and take one more step of that size.',
+          'Start at the number just in front of the smudge. Take one more step of that size.',
         ],
         errorTags: ['fact-recall', 'procedure-slip'],
       };
@@ -167,7 +167,7 @@ const wEqualGroups = asWarmup(
         units: 'guppies',
         hints: [
           'Do all the tanks in this story hold the same amount, or different amounts?',
-          'Take what one tank holds, and take it again once for every tank the shop has.',
+          'Take what one tank holds. Take it again once for every tank the shop has.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -202,7 +202,7 @@ const factWheels = withFigure(
         units: 'wheels',
         hints: [
           'Does every bicycle in this story need the same number of wheels?',
-          'Count the rack in twos, one bicycle at a time, until the last bicycle has its pair.',
+          'Count the rack in twos, one bicycle at a time. Stop when the last bicycle has its pair.',
         ],
         errorTags: ['fact-recall', 'concept-misconception'],
       };
@@ -230,7 +230,7 @@ const factTallyGates = withFigure(
       const gates = r.int(3, 12);
       const name = one(r);
       return {
-        prompt: `[image: one full tally gate] ${name}'s class keeps a bird-watch chart by the window, and a full tally gate on it stands for ${countNoun(5, 'birds')}. By Friday the chart shows ${countNoun(gates, 'full gates')} and no loose strokes. How many birds have been counted?`,
+        prompt: `[image: one full tally gate] ${name}'s class keeps a bird-watch chart by the window. A full tally gate on it stands for ${countNoun(5, 'birds')}. By Friday the chart shows ${countNoun(gates, 'full gates')} and no loose strokes. How many birds have been counted?`,
         answerValue: String(5 * gates),
         templateId: 'd_mul_v1',
         params: { a: 5, b: gates },
@@ -260,7 +260,7 @@ const factCubeTowers = withFigure(
       const towers = r.int(3, 12);
       const name = one(r);
       return {
-        prompt: `[image: one tower of ten cubes] ${name} builds towers out of linking cubes, ${countNoun(10, 'cubes')} to a tower and every tower the same height. ${name} has built ${countNoun(towers, 'towers')} so far. How many cubes are standing on the table?`,
+        prompt: `[image: one tower of ten cubes] ${name} builds towers out of linking cubes. Every tower is the same height: ${countNoun(10, 'cubes')} to a tower. ${name} has built ${countNoun(towers, 'towers')} so far. How many cubes are standing on the table?`,
         answerValue: String(10 * towers),
         templateId: 'd_mul_v1',
         params: { a: 10, b: towers },
@@ -330,7 +330,7 @@ const factDominoLine = situation({
       units: 'cm',
       hints: [
         'Which of the three counts steps along this line one domino at a time?',
-        'Take that step once for every domino on the table, and read the number you stop on.',
+        'Take that step once for every domino on the table. Then read the number you stop on.',
       ],
       errorTags: ['task-comprehension', 'fact-recall'],
     };
@@ -359,7 +359,7 @@ const msStampStrips = multiStep({
     const loose = r.int(1, 9);
     const name = one(r);
     return {
-      prompt: `A strip of stamps from the post office holds ${countNoun(10, 'stamps')}. ${name} buys ${countNoun(strips, 'strips')} for a collection, then finds ${countNoun(loose, 'loose stamps')} in a drawer at home and adds those to the same album. How many stamps go into the album?`,
+      prompt: `A strip of stamps from the post office holds ${countNoun(10, 'stamps')}. ${name} buys ${countNoun(strips, 'strips')} for a collection. Then ${name} finds ${countNoun(loose, 'loose stamps')} in a drawer at home. Those go into the same album. How many stamps go into the album?`,
       initN: 10,
       steps: [
         { op: 'mul', n: strips, d: 1 },
@@ -368,7 +368,7 @@ const msStampStrips = multiStep({
       units: 'stamps',
       hints: [
         'Which of these stamps arrived in whole strips, and which arrived on their own?',
-        'Count the strips in tens first, and bring in the ones from the drawer only after that count has finished.',
+        'Count the strips in tens first. Bring in the loose ones only after that count has finished.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -387,7 +387,7 @@ const msQuizPoints = multiStep({
     if (bonus === 5) bonus = 4;
     const name = one(r);
     return {
-      prompt: `In the fast round of a quiz every right answer is worth ${countNoun(5, 'points')}. ${name} gets ${countNoun(right, 'answers')} right in that round, and then earns ${countNoun(bonus, 'points')} for the picture question at the end. How many points does ${name} score altogether?`,
+      prompt: `In the fast round of a quiz every right answer is worth ${countNoun(5, 'points')}. ${name} gets ${countNoun(right, 'answers')} right in that round. Then ${name} earns ${countNoun(bonus, 'points')} for the picture question at the end. How many points does ${name} score altogether?`,
       initN: 5,
       steps: [
         { op: 'mul', n: right, d: 1 },
@@ -395,8 +395,8 @@ const msQuizPoints = multiStep({
       ],
       units: 'points',
       hints: [
-        'Are all of these points scored at the same rate, or does one of them come from somewhere else?',
-        'Score the fast round on its own first, then put the picture question on top of that total.',
+        'Are all of these points scored at the same rate? Or does one of them come from somewhere else?',
+        'Score the fast round on its own first. Then put the picture question on top of that total.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -420,7 +420,7 @@ const msLostProperty = multiStep({
     const odd = r.pick([1, 3, 5, 7] as const);
     const name = one(r);
     return {
-      prompt: `Work out how many shoes are in the lost-property box that ${name} has been asked to sort. Every pair in the box is ${countNoun(2, 'shoes')}. The box holds ${countNoun(pairs, 'pairs')}, along with ${countNoun(odd, 'shoes')} that never found a partner.`,
+      prompt: `Work out how many shoes are in the lost-property box. ${name} has been asked to sort it. Every pair in the box is ${countNoun(2, 'shoes')}. The box holds ${countNoun(pairs, 'pairs')}, along with ${countNoun(odd, 'shoes')} that never found a partner.`,
       initN: 2,
       steps: [
         { op: 'mul', n: pairs, d: 1 },
@@ -428,8 +428,8 @@ const msLostProperty = multiStep({
       ],
       units: 'shoes',
       hints: [
-        'Which shoes in this box come two at a time, and which ones arrived alone?',
-        'Count the matched pairs in twos before you go anywhere near the ones on their own.',
+        'Which shoes come two at a time? Which ones arrived alone?',
+        'Count the matched pairs in twos first. Only then go near the ones on their own.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -472,7 +472,7 @@ const discrimDoubleOrTwoMore = discrimination({
         },
       ],
       hints: [
-        'Does doubling copy what someone already has, or slip a couple more onto the top of it?',
+        'Does doubling copy what someone already has? Or does it slip a couple more onto the top?',
         'Picture the first pile, then build a second pile exactly like it, and count both.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
@@ -495,7 +495,7 @@ const discrimInTheCount = discrimination({
     const rung = r.int(4, 9);
     const name = one(r);
     return {
-      prompt: `${name} is counting in tens and stops before the count passes one hundred: ten, twenty, thirty, and on. Which of these numbers does ${name} say?`,
+      prompt: `${name} is counting in tens: ten, twenty, thirty, and on. The count stops before it passes one hundred. Which of these numbers does ${name} say?`,
       correct: String(10 * rung),
       distractors: [
         {
@@ -510,8 +510,8 @@ const discrimInTheCount = discrimination({
         },
       ],
       hints: [
-        'What do all the numbers in a count of tens have in common when you look at their last digit?',
-        'Say the tens count aloud from its start and listen for each of these numbers as you pass.',
+        'Look at the last digit of every number in a count of tens. What do they all have in common?',
+        'Say the tens count aloud from its start. Listen for each of these numbers as you pass.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -534,10 +534,10 @@ const eaTenAsPlusTen = errorAnalysis({
   drawParams: (r) => ({ a: r.int(3, 9), b: 10, op: '*', wrongOp: '+' }),
   build: (v, p) => ({
     prompt: `The art cupboard is being counted. There are ${countNoun(Number(p.a), 'boxes')} on the shelf, and every box holds ${countNoun(Number(p.b), 'pencils')}. Asked how many pencils the cupboard holds, a student wrote ${p.a} + ${p.b} = ${v.wrong}.`,
-    extension: 'Draw the shelf, write how many pencils are really in the cupboard, and say in one sentence what the student did with the two numbers in the story.',
+    extension: 'Draw the shelf. Write how many pencils are really in the cupboard. Then say in one sentence what the student did with the two numbers.',
     hints: [
-      'Would a whole shelf of boxes really hold only a handful more pencils than one box does on its own?',
-      'Open the boxes one at a time, taking a full ten out of each, and see where that count finishes.',
+      'Would a whole shelf of boxes really hold only a handful more pencils?',
+      'Open the boxes one at a time. Take a full ten out of each. See where that count finishes.',
     ],
     errorTags: ['concept-misconception', 'fact-recall'],
   }),
@@ -561,12 +561,12 @@ export const buildC07 = makeWeekBuilder({
     'C6 asked only whether a story was an equal-groups story at all, and any picture it drew could honestly be counted one thing at a time. C7 keeps that structure and changes what has to be quick: on the three ladders a child already owns — twos, fives and tens — the count becomes a named fact, and the naming exposes a pattern in the products that counting one by one never shows.',
   explanation: {
     hook:
-      'You have been saying 5, 10, 15, 20, 25, 30 since you were small. This week that count gets a shorter name — and the moment it has a name, it starts showing you patterns the counting was hiding.',
+      'You have been saying 5, 10, 15, 20, 25, 30 since you were small. This week that count gets a shorter name. The moment it has a name, it starts showing you patterns. Those are patterns the counting was hiding.',
     whyBeforeHow:
-      'You already know how to count in twos, in fives and in tens, and because a times fact only ever asks where one of those counts lands, the ×2, ×5 and ×10 facts are not new things to learn — they are things you can already do, wearing a shorter name. Picture the skip-count ladder: every rung is one more equal group, so climbing six rungs of the fives ladder puts you on 30, and 6 × 5 is simply the name of that rung. Knowing the rung instead of climbing to it is the whole difference between counting and a fact. The three ladders also leave tracks: the tens ladder only ever lands on numbers ending in zero, and the fives ladder swings between five and zero, so a fives answer ending in a three has to be a slip. And the shortest ladder is the one to watch, since taking two AGAIN is not the same as taking two MORE.',
+      'You already know how to count in twos, in fives and in tens. A times fact only ever asks where one of those counts lands. That is why the ×2, ×5 and ×10 facts are nothing new. They are things you can already do, wearing a shorter name. Picture the skip-count ladder. Every rung is one more equal group. Climbing six rungs of the fives ladder puts you on 30. And 6 × 5 is simply the name of that rung. Knowing the rung instead of climbing to it is what matters. That is the whole difference between counting and a fact. The three ladders also leave tracks. The tens ladder only ever lands on numbers ending in zero. The fives ladder swings between five and zero. So a fives answer ending in a three has to be a slip. And the shortest ladder is the one to watch. Taking two AGAIN is not the same as taking two MORE.',
     script: [
       {
-        say: 'Watch me climb. I am counting in fives, and each jump is one whole group of five: five, ten, fifteen, twenty, twenty-five, thirty. Six jumps got me to thirty. Notice that I said six numbers and I landed on thirty — the number of jumps and the number I land on are two different things, and I keep them apart on purpose.',
+        say: 'Watch me climb. I am counting in fives. Each jump is one whole group of five: five, ten, fifteen, twenty, twenty-five, thirty. Six jumps got me to thirty. Notice that I said six numbers and I landed on thirty. The number of jumps and the number I land on are two different things. I keep them apart on purpose.',
         visual: 'A number line from 0 to 30 with the fives marked, and the first two jumps drawn.',
         figure: numberLine(
           {
@@ -587,7 +587,7 @@ export const buildC07 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Here is the same climb as groups. Six groups, five in each, thirty in all. So when I write 6 × 5 = 30 I am not learning a new number — I am giving the rung I landed on its name. That is why a fact I have forgotten is never lost: I can always climb back up to it.',
+        say: 'Here is the same climb as groups. Six groups, five in each, thirty in all. So when I write 6 × 5 = 30, I am not learning a new number. I am giving the rung I landed on its name. That is why a forgotten fact is never lost. I can always climb back up to it.',
         visual: 'Six groups of five counters, thirty counters in all.',
         figure: counterGroups(
           [
@@ -602,7 +602,7 @@ export const buildC07 = makeWeekBuilder({
         ),
       },
       {
-        say: 'The tens ladder is the friendliest of the three. Four rows of ten cubes: ten, twenty, thirty, forty. Every rung of this ladder ends in a zero, every single time — and that is worth trusting, because it is what tells me the answer forty belongs to the tens and the answer fourteen does not.',
+        say: 'The tens ladder is the friendliest of the three. Four rows of ten cubes: ten, twenty, thirty, forty. Every rung of this ladder ends in a zero, every single time. That is worth trusting. It tells me the answer forty belongs to the tens. It tells me the answer fourteen does not.',
         visual: 'Four rows of ten cubes, forty cubes in all.',
         figure: areaGrid(
           { rows: 4, cols: 10, rowLabels: ['10', '10', '10', '10'] },
@@ -610,7 +610,7 @@ export const buildC07 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One last habit before any answer goes down: I check the size and the last digit. Double seven is seven taken twice, which is fourteen. Seven and two more is only nine. If I am about to double and my answer is barely bigger than what I started with, I joined when I should have copied — and if a fives answer ends in anything but a five or a zero, I have slipped somewhere on the ladder.',
+        say: 'One last habit before any answer goes down. I check the size and the last digit. Double seven is seven taken twice, which is fourteen. Seven and two more is only nine. Say I am about to double. If my answer is barely bigger than what I started with, I joined. I should have copied. And say a fives answer ends in anything but a five or a zero. Then I have slipped somewhere on the ladder.',
         visual: 'A long bar for double seven beside a short bar for seven and two.',
         figure: barModel(
           [
@@ -622,7 +622,7 @@ export const buildC07 = makeWeekBuilder({
       },
     ],
     summary:
-      'The ×2, ×5 and ×10 facts are counts you already own, named. If a fact will not come, climb the ladder to it — then check what you landed on: a tens answer ends in zero, a fives answer ends in five or zero, and a double is always the amount taken a second time, never the amount with two more on top.',
+      'The ×2, ×5 and ×10 facts are counts you already own, named. If a fact will not come, climb the ladder to it. Then check what you landed on. A tens answer ends in zero. A fives answer ends in five or zero. A double is always the amount taken a second time. It is never the amount with two more on top.',
     vocabulary: [
       { term: 'skip-count', kidGloss: 'counting in equal jumps — 5, 10, 15, 20 …' },
       { term: 'times fact', kidGloss: 'the number a skip-count lands on, known straight off rather than counted up to' },
@@ -635,10 +635,10 @@ export const buildC07 = makeWeekBuilder({
       ...ge(7, 1, 'modeled', 'The school rack holds 6 bicycles. Every bicycle needs 2 wheels. How many wheels are on the bicycles in the rack?', [
         {
           teacherSay:
-            'First I check that the groups really do match: every bicycle needs two wheels, not two for some and three for others. That is what lets me count the whole rack in twos instead of counting wheels one at a time.',
+            'First I check that the groups really do match. Every bicycle needs two wheels, not two for some and three for others. That is what lets me count the whole rack in twos. I do not have to count wheels one at a time.',
         },
         {
-          teacherSay: 'Now I climb the twos ladder, one bicycle per rung — two, four, six… where does the sixth bicycle put me?',
+          teacherSay: 'Now I climb the twos ladder, one bicycle per rung. Two, four, six… where does the sixth bicycle put me?',
           expected: '12',
         },
       ], '12'),
@@ -658,21 +658,21 @@ export const buildC07 = makeWeekBuilder({
     {
       ...ge(7, 2, 'completion', 'Ben builds towers of 10 linking cubes, all the same height. Ben has built 8 towers. How many cubes are standing on the table?', [
         { teacherSay: 'Which ladder does a story about towers of ten hand you?', expected: 'the tens' },
-        { childDo: 'Climb the tens ladder once for every tower, and say where the eighth tower puts you.', expected: '80' },
+        { childDo: 'Climb the tens ladder once for every tower. Say where the eighth tower puts you.', expected: '80' },
       ], '80'),
       // COMPLETION fade: the child produces 80, so the picture shows only what a
       // single tower holds. Drawing all eight would finish the climb for them.
       visual: 'One tower of ten cubes. The other towers are yours to count on.',
       figure: counters(10, 'blocks', { arrangement: 'a tower', alt: 'one tower of ten cubes' }),
     },
-    ge(7, 3, 'prompted', 'A bird-watch chart records what the class sees in tally gates, and a full gate stands for 5 birds. By Friday the chart shows 7 full gates and no loose strokes. How many birds have been counted?', [
+    ge(7, 3, 'prompted', 'A bird-watch chart records what the class sees in tally gates. A full gate stands for 5 birds. By Friday the chart shows 7 full gates and no loose strokes. How many birds have been counted?', [
       { childDo: 'Say what one gate is worth, then run the fives count along the chart.', expected: '35' },
     ], '35'),
     {
       // Independent stage: no picture at all. Deciding that the fast round is one
       // job and the picture question is another IS the task, so any drawing of
       // the two parts would hand over the plan the item exists to ask for.
-      ...ge(7, 4, 'independent', 'In the fast round of a quiz every right answer is worth 5 points. Zoe gets 6 right in that round, then earns 3 points for the picture question at the end. How many points does Zoe score altogether? Solve cold.', [
+      ...ge(7, 4, 'independent', 'In the fast round of a quiz every right answer is worth 5 points. Zoe gets 6 right in that round. Then Zoe earns 3 points for the picture question at the end. How many points does Zoe score altogether? Solve cold.', [
         { childDo: 'Settle the fast round first, then deal with the picture question.', expected: '33' },
       ], '33'),
     },
@@ -727,13 +727,13 @@ export const buildC07 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Count in fives and write down the first ten numbers you say. Now cover everything except the LAST digit of each number, and read those digits along the row. Write what those last digits do, then write one sentence saying why the count has no choice but to keep doing it.',
+            'Count in fives and write down the first ten numbers you say. Now cover everything except the LAST digit of each number. Read those digits along the row. Write what those last digits do. Then say in one sentence why the count must keep doing it.',
           value: 'the last digits take turns — five, zero, five, zero all the way along — because every jump of five carries the last digit on by five, which turns a zero into a five and a five back into a zero',
           acceptableForms: ['five', 'zero', 'last digit', 'jump of five', 'take turns'],
           keywords: true,
           hints: [
             'What do you notice about the last digits as your eye travels along the row?',
-            'Take one jump of five from a number ending in zero, then one more from where that lands, and watch what the end digit does each time.',
+            'Take one jump of five from a number ending in zero. Then take one more from where that lands. Watch what the end digit does each time.',
           ],
           errorTags: ['representation-misread', 'concept-misconception'],
         }),
@@ -742,7 +742,7 @@ export const buildC07 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: doubling a number gives the same answer as adding two to it. In one sentence, say how you know.',
+            'Always, sometimes, or never true? Doubling a number gives the same answer as adding two to it. In one sentence, say how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -757,8 +757,8 @@ export const buildC07 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Is there a number small enough that copying it and putting two more with it finish in the same place?',
-            'Work up from the smallest numbers, one at a time, and watch the gap between the two answers open out.',
+            'Is there a number where both moves finish in the same place? Try copying it, then try putting two more with it.',
+            'Work up from the smallest numbers, one at a time. Watch the gap between the two answers open out.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -785,7 +785,7 @@ export const buildC07 = makeWeekBuilder({
       id: 'C7-PZ-01',
       title: 'Puzzle Grove: Where the Ladders Meet',
       puzzleType: 'logic',
-      prompt: `${counterA} counts in twos: two, four, six, and on. ${counterB} counts in fives: five, ten, fifteen, and on. Both of them stop as soon as the count would pass ${cap}. Write down every number that BOTH of them say, then say how you can be sure that no number is missing from your list.`,
+      prompt: `${counterA} counts in twos: two, four, six, and on. ${counterB} counts in fives: five, ten, fifteen, and on. Both of them stop as soon as the count would pass ${cap}. Write down every number that BOTH of them say. Then say how you can be sure that none is missing.`,
       answer: {
         // `set` and not `short-text-keyword`: the task is to find EVERY meeting
         // point, and a keyword check would mark a child correct for naming one
@@ -796,8 +796,8 @@ export const buildC07 = makeWeekBuilder({
         validation: 'set',
       },
       hintLadder: [
-        'What does a number have to be like to turn up in the twos count AND in the fives count?',
-        'Walk the shorter of the two counts and test each number you say against the other count, stopping when the cap is passed.',
+        'What must a number be like to turn up in both counts? It must appear in the twos count and the fives count.',
+        'Walk the shorter of the two counts. Test each number you say against the other count. Stop when the cap is passed.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };

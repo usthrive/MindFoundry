@@ -95,7 +95,10 @@ export function withReasonableness(base: ItemGen, benchmark: string): ItemGen {
     const d = base(rng, guard, difficulty);
     return {
       ...d,
-      prompt: `${d.prompt} After you solve, check: ${benchmark}`,
+      // Closed lead sentence for the same reason as PROBE_LEAD above: a colon
+      // would weld these words onto the benchmark's first sentence and count
+      // them against its ≤15-word budget.
+      prompt: `${d.prompt} After you solve, check yourself. ${sentenceCase(benchmark)}`,
       authorMeta: markMetacog(d.authorMeta),
     };
   };
@@ -108,7 +111,8 @@ export function withCheckBack(base: ItemGen, check: string): ItemGen {
     const d = base(rng, guard, difficulty);
     return {
       ...d,
-      prompt: `${d.prompt} Then check your answer: ${check}`,
+      // Closed lead sentence — same rationale as PROBE_LEAD and withReasonableness.
+      prompt: `${d.prompt} Then check your answer. ${sentenceCase(check)}`,
       authorMeta: markMetacog(d.authorMeta),
     };
   };

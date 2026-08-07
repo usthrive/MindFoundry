@@ -291,7 +291,7 @@ const discrimMarks = withDrawn(
         ],
         hints: [
           'How many minutes does ONE small mark between two numerals stand for?',
-          'Count round in fives as far as the numeral, then count the small marks after it one at a time.',
+          'Count round in fives as far as the numeral. Then count the small marks one at a time.',
         ],
         errorTags: ['representation-misread', 'task-comprehension'],
       };
@@ -327,15 +327,15 @@ const sitFinishTime = withFigure(
       const dur = r.int(12, 59 - start);
       const event = r.pick(EVENTS);
       return {
-        prompt: `[image: ${clockAlt(h, start)}] ${opens(event)} begins at the time on the clock, ${minutesPastPhrase(h, start)}, and lasts ${countNoun(dur, 'minutes')}. What time does it finish?`,
+        prompt: `[image: ${clockAlt(h, start)}] ${opens(event)} begins at ${minutesPastPhrase(h, start)}, the time on the clock. It lasts ${countNoun(dur, 'minutes')}. What time does it finish?`,
         answerValue: digitalTime(h, start + dur),
         templateId: 'clock_read_v1',
         params: { h, m: start + dur, start, dur },
         validation: 'short-text-keyword',
         acceptableForms: [spokenTime(h, start + dur)],
         hints: [
-          'Does the question ask how long something lasts, or what the clock will say when it ends?',
-          'Start from the minutes the face already shows and count on by the length of the event.',
+          'Does the question ask a LENGTH of time, or a time on the clock?',
+          'Start from the minutes the face shows. Then count on by the length of the event.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -370,7 +370,7 @@ const sitMinutesToHour = withFigure(
         units: 'minutes',
         hints: [
           'Where does the long hand have to reach before the next hour begins?',
-          'Count on round the face from the long hand up to the top of the clock.',
+          'Count on round the face, from the long hand up to the top.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -380,7 +380,7 @@ const sitMinutesToHour = withFigure(
 );
 const sitMinutesToHourEstimate = withEstimateFirst(
   sitMinutesToHour,
-  'will there be more than half an hour to wait, or less than half an hour?',
+  'will the wait be more than half an hour, or less?',
 );
 
 // ---------------------------------------------------------------------------
@@ -412,7 +412,7 @@ const msLongerBy = withDrawn(
       const [e1, e2] = twoEvents(r);
       longerBox.last = { h, m: finish };
       return {
-        prompt: `[image: ${clockAlt(h, finish)}] ${opens(e1)} finishes at ${minutesPastPhrase(h, finish)}, the time on the clock, and it began at ${digitalTime(h, begin)}. ${opens(e2)} lasts ${countNoun(other, 'minutes')}. How many minutes longer is ${e1} than ${e2}?`,
+        prompt: `[image: ${clockAlt(h, finish)}] ${opens(e1)} finishes at ${minutesPastPhrase(h, finish)}, the time on the clock. It began at ${digitalTime(h, begin)}. ${opens(e2)} lasts ${countNoun(other, 'minutes')}. How many minutes longer is ${e1} than ${e2}?`,
         initN: finish,
         steps: [
           { op: 'sub', n: begin, d: 1 },
@@ -421,7 +421,7 @@ const msLongerBy = withDrawn(
         units: 'minutes',
         hints: [
           'Which two lengths of time is this question holding side by side?',
-          'Work out how long the first one lasts, then take the length of the second off it.',
+          'Work out how long the first one lasts. Then take the second length off it.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
@@ -454,7 +454,7 @@ const msBackToStart = withDrawn(
       const event = r.pick(EVENTS);
       backBox.last = { h, m: finish };
       return {
-        prompt: `[image: ${clockAlt(h, finish)}] ${opens(event)} finished at ${minutesPastPhrase(h, finish)}, the time on the clock. It lasted ${countNoun(main, 'minutes')}, and the ${countNoun(setup, 'minutes')} before it were spent setting out the chairs. At how many minutes past ${h} did the chair-setting begin?`,
+        prompt: `[image: ${clockAlt(h, finish)}] ${opens(event)} finished at ${minutesPastPhrase(h, finish)}, the time on the clock. It lasted ${countNoun(main, 'minutes')}. The ${countNoun(setup, 'minutes')} before it were spent setting out the chairs. At how many minutes past ${h} did the chair-setting begin?`,
         initN: finish,
         steps: [
           { op: 'sub', n: main, d: 1 },
@@ -462,8 +462,8 @@ const msBackToStart = withDrawn(
         ],
         units: 'minutes',
         hints: [
-          'Does the time on this clock belong to the beginning of the story, or to its end?',
-          'Wind the face back one stretch at a time, starting with the stretch nearest the end.',
+          'Does this clock show the beginning of the story, or the end?',
+          'Wind the face back one stretch at a time. Start with the stretch nearest the end.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -492,31 +492,31 @@ export const buildC18 = makeWeekBuilder({
     hook:
       'Two hands, twelve numbers, and sixty minutes to name — the numbers cannot possibly be minutes. So what are they worth, and where have the other forty-eight hiding places gone?',
     whyBeforeHow:
-      'A clock face has sixty minutes on it but only twelve numerals, and that is exactly why the numerals cannot be read as minutes: the minute marks ride in fives, so the numeral 7 is not seven minutes, it is thirty-five, and the small marks in between are the single minutes it skipped. Count round in fives to the numeral, then count the small marks one at a time, and you can name any minute of the hour. The short hand needs the same care, because it does not sit on its numeral waiting for the hour to end — it creeps the whole way round while the long hand goes once round the face. That is why a time near the end of an hour is the dangerous one: the short hand is almost touching the next numeral, and naming the numeral it is NEAREST gives an hour that has not started yet.',
+      'A clock face carries sixty minutes but only twelve numerals. So the numerals cannot be minutes, because the minute marks ride in fives. The numeral 7 is not seven minutes; it is thirty-five. The small marks in between are the single minutes it skipped. Count round in fives to the numeral. Then count the small marks one at a time. Now you can name any minute of the hour. The short hand needs the same care. It does not sit on its numeral waiting for the hour to end. It creeps the whole way round while the long hand goes once round. That is why a time near the end of an hour is dangerous. The short hand is then almost touching the next numeral. Naming the numeral it is NEAREST gives an hour that has not started.',
     script: [
       {
-        say: 'Watch which hand I read first. The LONG hand tells me the minutes, so I start there and count round in fives — five, ten, fifteen, twenty, twenty-five, thirty, thirty-five. It is pointing at the 7, and the 7 is worth thirty-five minutes. The numerals ride in fives; they never mean themselves.',
+        say: 'Watch which hand I read first. The LONG hand tells me the minutes, so I start there. I count round in fives: five, ten, fifteen, twenty, twenty-five, thirty, thirty-five. It is pointing at the 7, and the 7 is worth thirty-five minutes. The numerals ride in fives; they never mean themselves.',
         visual: 'A clock face with the long hand on the 7 and every single-minute mark drawn.',
         figure: clockFigure({ h: 4, m: 35 }, { marks: 'minutes', highlight: 'minute' }),
       },
       {
-        say: 'Now a face where the long hand has gone past the 7 and stopped between two marks. I count in fives to the 7 — thirty-five — and then I count the little marks one at a time: thirty-six, thirty-seven, thirty-eight. The fives get me most of the way; the single marks finish the job.',
+        say: 'Now the long hand has gone past the 7. It stopped between two marks. I count in fives to the 7: thirty-five. Then I count the little marks one at a time. Thirty-six, thirty-seven, thirty-eight. The fives get me most of the way; the single marks finish the job.',
         visual: 'The same face with the long hand three small marks past the 7.',
         figure: clockFigure({ h: 4, m: 38 }, { marks: 'minutes', highlight: 'minute' }),
       },
       {
-        say: 'Here is the one that catches everybody. Look at the SHORT hand — it is a whisker away from the 3. My eye wants to say three o\'clock. But the short hand only ARRIVES at the 3 when the long hand comes back to the top, and the long hand is nowhere near the top yet. So which hour are we still inside?',
+        say: 'Here is the one that catches everybody. Look at the SHORT hand — it is a whisker away from the 3. My eye wants to say three o\'clock. But the short hand has not ARRIVED at the 3 yet. It arrives when the long hand comes back to the top. The long hand is nowhere near the top yet. So which hour are we still inside?',
         visual: 'A clock at five minutes to three: the short hand almost touching the 3, the long hand on the 11.',
         figure: clockFigure({ h: 2, m: 55 }, { marks: 'minutes', highlight: 'hour' }),
       },
       {
-        say: 'One last habit, for the questions that ask how LONG something took. Before I count anything I check roughly how big the answer should be: if the long hand has travelled less than halfway round, the answer has to be under half an hour, and if I ever land above sixty I have counted right past the hour and must start again.',
+        say: 'One last habit, for the questions that ask how LONG something took. Before I count, I check roughly how big the answer should be. The long hand may have travelled less than halfway round. Then the answer is under half an hour. And if I ever land above sixty, I have counted past the hour. Then I start again.',
         visual: 'A clock at ten past four, with the long hand only a sixth of the way round the face.',
         figure: clockFigure({ h: 4, m: 10 }, { marks: 'minutes' }),
       },
     ],
     summary:
-      'The long hand tells the minutes: count round in fives to the numeral, then the single marks one at a time. The short hand tells the hour, and it creeps — near the end of an hour it is almost at the next numeral, so name the hour it has NOT reached yet. To find how long something lasts, count on from the first mark to the second, and check that the size of your answer makes sense.',
+      'The long hand tells the minutes. Count round in fives to the numeral. Then add the single marks one at a time. The short hand tells the hour, and it creeps. Near the end of an hour it is almost at the next numeral. Name the hour it has NOT reached yet. To find how long something lasts, count on from one mark to the other. Then check that the size of your answer makes sense.',
     vocabulary: [
       { term: 'minute mark', kidGloss: 'one of the sixty little marks round the edge — each one is a single minute' },
       { term: 'five-minute marks', kidGloss: 'the twelve numerals; each one is five minutes further round than the last' },
@@ -526,14 +526,14 @@ export const buildC18 = makeWeekBuilder({
   },
   guidedExamples: [
     {
-      ...ge(18, 1, 'modeled', 'The short hand is almost touching the 3 and the long hand is on the 11. What time does the clock show?', [
+      ...ge(18, 1, 'modeled', 'The short hand is almost touching the 3. The long hand is on the 11. What time does the clock show?', [
         {
           teacherSay:
-            'Watch me read this face in the right order, because the order is what keeps me safe. I take the LONG hand first: I count round in fives — five, ten, fifteen — all the way to the 11, and that lands me on fifty-five minutes. Fifty-five minutes of this hour have gone.',
+            'Watch the order I read this face in, because the order keeps me safe. I take the LONG hand first. I count round in fives: five, ten, fifteen, all the way to the 11. That lands me on fifty-five minutes. Fifty-five minutes of this hour have gone.',
         },
         {
           teacherSay:
-            'Now the short hand, and here is where I slow down. It is a whisker from the 3, so my eye wants to say three. But it only reaches the 3 when the long hand comes back to the top, and the long hand still has five minutes to travel — so which hour have we not finished yet?',
+            'Now the short hand, and here is where I slow down. It is a whisker from the 3, so my eye wants to say three. But it only reaches the 3 when the long hand is back on top. The long hand still has five minutes to travel. So which hour have we not finished yet?',
           expected: '2',
         },
       ], '2:55'),
@@ -550,7 +550,7 @@ export const buildC18 = makeWeekBuilder({
     {
       ...ge(18, 2, 'completion', 'The reading circle begins at 2:10 and finishes at 2:45. How many minutes does it last?', [
         { teacherSay: 'Which of these two times does the circle reach LAST?', expected: 'the finishing time' },
-        { childDo: 'Count on round the face in fives from the first mark to the second, and say how many minutes that is.', expected: '35' },
+        { childDo: 'Count on round the face in fives, from one mark to the other. Then say how many minutes that is.', expected: '35' },
       ], '35'),
       visual: 'A clock at ten past two — where the reading circle begins. The finishing mark is yours to count on to.',
       figure: clockFigure(
@@ -564,8 +564,8 @@ export const buildC18 = makeWeekBuilder({
     {
       // Independent stage: the face and nothing else. Deciding which hand to read
       // first IS the task here, so no hand is highlighted and no count is begun.
-      ...ge(18, 4, 'independent', 'The short hand has nearly reached the 8 and the long hand is three small marks past the 9. Write the time in numerals. Solve cold.', [
-        { childDo: 'Read the long hand to its numeral in fives, then the marks after it, and only then name the hour.', expected: '7:48' },
+      ...ge(18, 4, 'independent', 'The short hand has nearly reached the 8. The long hand is three small marks past the 9. Write the time in numerals. Solve cold.', [
+        { childDo: 'Read the long hand to its numeral in fives, then the marks after it. Only then name the hour.', expected: '7:48' },
       ], '7:48'),
       visual: 'A clock face with every minute mark drawn and neither hand marked out.',
       figure: clockFigure(
@@ -633,13 +633,13 @@ export const buildC18 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Here is part of one morning. Story time runs from 10:05 to 10:35. The class then spends 5 minutes tidying, and the spelling quiz runs from 10:40 until 10:55. Write how many minutes story time lasts and how many minutes the quiz lasts. Then write one question about this morning that CANNOT be answered without using both of those lengths.',
+            'Here is part of one morning. Story time runs from 10:05 to 10:35. The class then spends 5 minutes tidying. The spelling quiz runs from 10:40 until 10:55. Write how many minutes story time lasts. Write how many minutes the quiz lasts. Then write one question about this morning. It must be a question that needs BOTH of those lengths.',
           value: 'story time lasts 30 minutes and the quiz lasts 15 minutes, and a question needing both asks how many minutes of the morning the two together fill',
           acceptableForms: ['30', '15', 'both', 'together', 'altogether', 'how many minutes'],
           keywords: true,
           hints: [
             'Which two marks on the face does each part of the morning run between?',
-            'Find the length of each part first, then look for a question that one length alone cannot answer.',
+            'Find the length of each part first. Then look for a question that needs both lengths.',
           ],
           errorTags: ['task-comprehension', 'concept-misconception'],
         }),
@@ -648,7 +648,7 @@ export const buildC18 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: when the long hand is pointing at the 11, the short hand is nearer to the next numeral than to the numeral that names the hour. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? The long hand is pointing at the 11. So the short hand is nearer the next numeral than the hour\'s own numeral. In one sentence, explain how you know.',
           correct: 'always',
           distractors: [
             {
@@ -663,8 +663,8 @@ export const buildC18 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Where has the short hand travelled to by the time the long hand comes back to the top?',
-            'Picture the short hand at the start of an hour and again just before that hour ends, and say how far it has moved.',
+            'Where has the short hand crept to by the time the long hand returns?',
+            'Picture the short hand at the start of an hour. Picture it again just before that hour ends. Then say how far it has moved.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -692,7 +692,7 @@ export const buildC18 = makeWeekBuilder({
       id: 'C18-PZ-01',
       title: 'Puzzle Grove: The Empty Minutes',
       puzzleType: 'logic',
-      prompt: `[image: ${clockAlt(h, start)}] The school hall is free from ${minutesPastPhrase(h, start)} — the time on the clock — until ${minutesPastPhrase(h, start + window)}. ${opens(e1)} needs ${countNoun(first, 'minutes')} in the hall and ${e2} needs ${countNoun(second, 'minutes')}, and ${countNoun(changeover, 'minutes')} must be left empty between them so one group can leave before the other arrives. Both fit. How many minutes of the free time are still empty at the end — and how can you be sure that no other order of the two would leave more?`,
+      prompt: `[image: ${clockAlt(h, start)}] The clock shows when the school hall becomes free. It is free from ${minutesPastPhrase(h, start)} until ${minutesPastPhrase(h, start + window)}. ${opens(e1)} needs ${countNoun(first, 'minutes')} in the hall. ${opens(e2)} needs ${countNoun(second, 'minutes')}. ${countNoun(changeover, 'minutes')} must be left empty between them, so one group can leave first. Both fit. How many minutes of the free time are still empty at the end? How can you be sure that no other order would leave more?`,
       figure: clockFigure(
         { h, m: start },
         { marks: 'minutes', alt: clockAlt(h, start) },
@@ -703,8 +703,8 @@ export const buildC18 = makeWeekBuilder({
         validation: 'exact-numeric',
       },
       hintLadder: [
-        'How many minutes long is the free stretch, from its first mark to its last?',
-        'Lay the two activities and the changeover end to end inside that stretch, then read what is still empty.',
+        'How many minutes long is the free stretch on the clock?',
+        'Lay the two activities and the changeover end to end inside that stretch. Then read what is still empty.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -727,7 +727,7 @@ export const buildC18 = makeWeekBuilder({
     { gen: msBackToStart, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step face work — read a face to the minute, count a gap that rides in fives, and build a face from a spoken time (that one keeps its empty-face affordance). 02/04/06: two-step elapsed work — compare two durations, a stretch and one more stretch, and an inverse-start story wound back from its finishing time, each keeping the finish-clock figure it asserts against. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step face work — read a face to the minute, count a gap that rides in fives, and build a face from a spoken time (that one keeps its empty-face affordance). 02/04/06: two-step elapsed work — compare two durations, a stretch and one more stretch, and an inverse-start story wound back from its finishing time, each keeping the finish-clock figure it asserts against. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

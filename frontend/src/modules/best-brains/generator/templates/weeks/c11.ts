@@ -201,7 +201,7 @@ const wFiveFact = asWarmup(
         units: 'photographs',
         hints: [
           'Are the album pages carrying equal loads, or different ones?',
-          'Say what a single page holds, then keep a running count as you turn through the five.',
+          'Say what one page holds. Then keep a running count as you turn the five.',
         ],
         errorTags: ['fact-recall', 'procedure-slip'],
       };
@@ -232,7 +232,7 @@ const wMissingFactor = asWarmup(
         units: 'cards',
         hints: [
           'Is this question asking about the whole deal, or about one pile of it?',
-          'Think of a fact whose two partners are the number of piles and the number dealt out.',
+          'Think of a fact built from the pile count and the whole deal.',
         ],
         errorTags: ['fact-recall', 'task-comprehension'],
       };
@@ -266,14 +266,14 @@ const sitPlanterRow = withFigure(
       const per = r.int(4, 12);
       const name = one(r);
       return {
-        prompt: `[image: the five planters already filled] A line of ${countNoun(6, 'planters')} stands along the school path, and every planter takes ${countNoun(per, 'bulbs')}. ${name} has filled five of them, which is ${countNoun(5 * per, 'bulbs')} in the ground. How many bulbs will the whole line take?`,
+        prompt: `[image: the five planters already filled] A line of ${countNoun(6, 'planters')} stands along the school path. Every planter takes ${countNoun(per, 'bulbs')}. ${name} has filled five of them, which is ${countNoun(5 * per, 'bulbs')} in the ground. How many bulbs will the whole line take?`,
         answerValue: String(6 * per),
         templateId: 'd_mul_v1',
         params: { a: 6, b: per, five: 5 * per },
         units: 'bulbs',
         hints: [
           'What has been counted here already, and what has not?',
-          'Look at what a single planter takes, and carry the number the story hands you on by that much.',
+          'Look at what one planter takes. Carry the stated count on by that much.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
@@ -311,14 +311,14 @@ const sitEggCartons = situation({
   draw: (r) => {
     const cartons = r.int(3, 12);
     return {
-      prompt: `A farm shop packs ${countNoun(6, 'eggs')} to a carton, and ${countNoun(cartons, 'cartons')} are sold before lunch. How many eggs is that?`,
+      prompt: `A farm shop packs ${countNoun(6, 'eggs')} to a carton. ${countNoun(cartons, 'cartons')} are sold before lunch. How many eggs is that?`,
       answerValue: String(6 * cartons),
       templateId: 'd_mul_v1',
       params: { a: 6, b: cartons },
       units: 'eggs',
       hints: [
         'Which number in this story tells you how many eggs travel together?',
-        'Land on the five-carton count first, then walk on one carton at a time until you reach the number the shop sold.',
+        'Land on the five-carton count first. Then walk on one carton at a time.',
       ],
       errorTags: ['fact-recall', 'representation-misread'],
     };
@@ -338,14 +338,14 @@ const sitWeekPractice = situation({
     const per = r.int(4, 12);
     const name = one(r);
     return {
-      prompt: `${name} is learning a tune and practises it for ${countNoun(per, 'minutes')} on every day of the week. How many minutes of practice does that come to over the ${countNoun(7, 'days')}?`,
+      prompt: `${name} is learning a tune. ${name} practises it for ${countNoun(per, 'minutes')} on every day of the week. How many minutes of practice does that come to over the ${countNoun(7, 'days')}?`,
       answerValue: String(7 * per),
       templateId: 'd_mul_v1',
       params: { a: 7, b: per },
       units: 'minutes',
       hints: [
         'Is the practice the same length on every one of those days?',
-        'Reach the five-day total first, then walk the last two days on from it, a day at a time.',
+        'Reach the five-day total first. Then walk the last two days on, one at a time.',
       ],
       errorTags: ['fact-recall', 'task-comprehension'],
     };
@@ -373,8 +373,8 @@ const sitAcornHoard = situation({
       params: { a: per, b: times },
       units: 'acorns',
       hints: [
-        'Does the second child have a few more than the first, or several helpings of what the first has?',
-        'Set the first hoard out, then keep setting out that same amount until there are as many helpings as the story names.',
+        'Does the second child have a few more, or several helpings?',
+        'Set the first hoard out. Then set out that same amount again and again. Stop at the number of helpings the story names.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -415,13 +415,13 @@ const msBakeryTrays = multiStep({
             { op: 'add' as const, n: per, d: 1 },
           ];
     return {
-      prompt: `A baker's tray holds ${countNoun(per, 'rolls')}. Five trays come out of the oven together, and ${extra === 1 ? 'one more tray follows' : 'two more trays follow'} a minute behind them. How many rolls have come out of the oven?`,
+      prompt: `A baker's tray holds ${countNoun(per, 'rolls')}. Five trays come out of the oven together. Then ${extra === 1 ? 'one more tray follows' : 'two more trays follow'} a minute behind. How many rolls have come out of the oven?`,
       initN: per,
       steps,
       units: 'rolls',
       hints: [
-        'Which part of this bake is a count you already own, and which part is still to come?',
-        'Finish the five-tray count before you let a single roll from the later trays into it.',
+        'Which part of this bake do you already own?',
+        'Finish the five-tray count first. Only then bring in the later trays.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -458,7 +458,7 @@ const msGreenhouseBench = multiStep({
       units: 'seedlings',
       hints: [
         'Does the story tell you what ONE row holds, or what the whole bench holds?',
-        'Break the bench count into its five equal rows first, and only then bring in the row that has just been planted.',
+        'Break the bench count into its five equal rows first. Only then bring in the new row.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -484,7 +484,7 @@ const msPostcardRack = multiStep({
     let sold = r.int(3, 20);
     if (sold === per) sold += 1;
     return {
-      prompt: `A postcard rack holds ${countNoun(per, 'postcards')} on every shelf, and ${countNoun(shelves, 'shelves')} are full when the shop opens. By closing time ${countNoun(sold, 'postcards')} have been sold. How many are still on the rack?`,
+      prompt: `A postcard rack holds ${countNoun(per, 'postcards')} on every shelf. ${countNoun(shelves, 'shelves')} are full when the shop opens. By closing time ${countNoun(sold, 'postcards')} have been sold. How many are still on the rack?`,
       initN: per,
       steps: [
         { op: 'mul' as const, n: shelves, d: 1 },
@@ -493,7 +493,7 @@ const msPostcardRack = multiStep({
       units: 'postcards',
       hints: [
         'How many postcards were on the rack before anybody bought one?',
-        'Fill the whole rack in your head first, and take the sold ones off only once it is full.',
+        'Fill the whole rack in your head first. Take the sold ones off after that.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -547,8 +547,8 @@ const discrimRebuildTheArray = discriminationFig({
         },
       ],
       hints: [
-        'What is missing from the count so far — a single patch, one row, or a whole second blanket?',
-        'Read off how many patches make one row of this blanket, and add that much to the block already counted.',
+        'What is missing so far: one patch, one row, or a whole blanket?',
+        'Read off how many patches make one row. Add that much to the block already counted.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
       figure: areaGrid(
@@ -592,7 +592,7 @@ const discrimOneMoreNet = discrimination({
       ],
       hints: [
         'Does one more net put one more orange on the pile, or a whole netful?',
-        'Carry the five-net count on by as much as a single net holds, and stop there.',
+        'Carry the five-net count on by one whole netful. Then stop.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -626,11 +626,11 @@ const eaOneNotOneGroup = errorAnalysis({
     const per = Number(p.a);
     const known = Number(p.x);
     return {
-      prompt: `A wildlife group hangs ${countNoun(known + 1, 'feeders')} along the hedge, and every feeder takes ${countNoun(per, 'scoops')} of seed. A student who is certain about ${countNoun(known, 'feeders')} wrote ${known} × ${per} + 1 = ${v.wrong}.`,
-      extension: 'Work out how many scoops the whole hedge really takes, then write one sentence saying what the student put on top of the count they were certain of.',
+      prompt: `A wildlife group hangs ${countNoun(known + 1, 'feeders')} along the hedge. Every feeder takes ${countNoun(per, 'scoops')} of seed. A student who is certain about ${countNoun(known, 'feeders')} wrote ${known} × ${per} + 1 = ${v.wrong}.`,
+      extension: 'Work out how many scoops the whole hedge really takes. Then write one sentence. Say what the student put on top of the count they were sure of.',
       hints: [
         'Would one more feeder on the hedge really cost a single scoop of seed?',
-        'Fill the feeders one at a time, taking a whole feeder-load of scoops for each, and see where the count finishes.',
+        'Fill the feeders one at a time. Take a whole feeder-load of scoops for each. See where the count finishes.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -655,12 +655,12 @@ export const buildC11 = makeWeekBuilder({
     'C7 made the easy facts quick by leaning on a count the child already had, and C8 built ×4 out of a doubling done twice. Neither route reaches the sixes and sevens: the ladders are long enough to lose your place on, and doubling lands on 4 and 8 but never on 6 or 7. C11 changes what a fact is BUILT from — not a count and not a repeated move, but another fact, plus one more group. That is a smaller and more general step than doubling, it reaches every fact rather than a family of them, and it is the first appearance of the split C13 will state outright.',
   explanation: {
     hook:
-      'There is no such thing as a fact you have to meet cold. Six of something is five of it with one more group beside it — and you have owned the fives since you were small.',
+      'There is no such thing as a fact you have to meet cold. Six of something is five of it with one more group beside it. And you have owned the fives since you were small.',
     whyBeforeHow:
-      'Six groups of a number are five groups and one more group, and because the fives are already yours, every six-times fact is a fact you can answer with one short step on the end. That is why this week never asks you to memorise anything. Picture the last row of a blanket being sewn: the rows above it are the fact you were sure of, the row below the line is the step, and nothing on the blanket moved when you drew that line. The sevens follow from the sixes the same way, one more group again. Watch the size of that step, though — it is a whole group, never a single thing, and a number that lands only one past the fact you started from is a step that never happened. And when a fact matters, build it twice from two different easy facts: two routes that finish in the same place are worth more than one route you are hoping about.',
+      'Six groups of a number are five groups and one more group. The fives are already yours. That is why every six-times fact needs only one short step on the end. This week never asks you to memorise anything. Picture the last row of a blanket being sewn. The rows above the line are the fact you were sure of. The row below the line is the step. Nothing on the blanket moved when you drew that line. The sevens follow from the sixes the same way, one more group again. Watch the size of that step. It is a whole group, never a single thing. A number that lands one past your starting fact never took the step. And when a fact matters, build it twice from two different easy facts. Two routes that finish in the same place beat one hopeful route.',
     script: [
       {
-        say: 'Watch what I do when a fact will not come. I want six sevens and I cannot picture them at all. But five sevens I am certain of — 5 × 7 = 35, and that has been mine since we counted in fives. Six sevens are those five sevens with one more seven standing beside them, so 35 + 7 = 42. I did not remember six sevens. I built them.',
+        say: 'Watch what I do when a fact will not come. I want six sevens and I cannot picture them at all. But five sevens I am certain of: 5 × 7 = 35. That fact has been mine since we counted in fives. Six sevens are those five sevens with one more seven beside them. So 35 + 7 = 42. I did not remember six sevens. I built them.',
         visual: 'A bar of five sevens, a short bar of one more seven, and the two of them together.',
         figure: barModel(
           [
@@ -672,7 +672,7 @@ export const buildC11 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Here are the same six sevens drawn as a block: six rows with seven in every row. I draw one line, between the fifth row and the sixth. On one side of it sit the five sevens I was sure of; on the other side sits a single row, and that row is the one more group. The block did not change when I drew the line, and that is exactly why the rebuild is safe rather than a trick.',
+        say: 'Here are the same six sevens drawn as a block. Six rows, with seven in every row. I draw one line, between the fifth row and the sixth. On one side sit the five sevens I was sure of. On the other side sits a single row. That row is the one more group. The block did not change when I drew the line. That is why the rebuild is safe rather than a trick.',
         visual: 'Six rows of seven, with five of the rows shaded as the block already known.',
         figure: areaGrid(
           { rows: 6, cols: 7, shadedRows: 5 },
@@ -680,7 +680,7 @@ export const buildC11 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now watch me cut the very same block the other way. Six columns of six is 6 × 6 = 36, which I know cold, and the column left standing holds six more. So 36 + 6 = 42 as well. Two different cuts, two different easy facts, one answer — because it was one block all along and cutting a block never changes how much is in it.',
+        say: 'Now watch me cut the very same block the other way. Six columns of six is 6 × 6 = 36. I know that one cold. The column left standing holds six more. So 36 + 6 = 42 as well. Two different cuts, two different easy facts, one answer. It was one block all along. Cutting a block never changes how much is in it.',
         visual: 'The same six rows of seven, cut down its length instead: six columns shaded, one column standing.',
         figure: areaGrid(
           { rows: 6, cols: 7, shadedCols: 6 },
@@ -688,7 +688,7 @@ export const buildC11 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before any answer goes down: I check the size of my step. Six sevens have to land a whole seven past thirty-five, not one past it, so an answer of thirty-six would tell me I put a single thing on where a whole group belonged. I ask roughly where the answer ought to sit before I start, and then I look at where it actually landed.',
+        say: 'One habit before any answer goes down. I check the size of my step. Six sevens have to land a whole seven past thirty-five. Not one past it. So an answer of thirty-six would tell me something. It would tell me I stepped on by a single thing. I ask roughly where the answer ought to sit before I start. Then I look at where it actually landed.',
         visual: 'A long bar for the known fact and one more group, beside a barely longer bar for the known fact and one more thing.',
         figure: barModel(
           [
@@ -700,7 +700,7 @@ export const buildC11 = makeWeekBuilder({
       },
     ],
     summary:
-      'A hard fact is an easy fact with one more group on the end. Land on a fact you are sure of — the fives always work, and now the sixes do too — then step on by one whole group of the same size, never by one single thing. When the fact matters, reach it a second time from a different easy fact: if both routes finish in the same place, the answer is yours.',
+      'A hard fact is an easy fact with one more group on the end. Land on a fact you are sure of. The fives always work, and now the sixes do too. Then step on by one whole group of the same size. Never by one single thing. When the fact matters, reach it a second time. Start from a different easy fact. If both routes finish in the same place, the answer is yours.',
     vocabulary: [
       { term: 'known fact', kidGloss: 'a fact you can answer without stopping to think about it' },
       { term: 'one more group', kidGloss: 'the step from one fact to the next along a row — another whole group of the same size' },
@@ -713,7 +713,7 @@ export const buildC11 = makeWeekBuilder({
       ...ge(11, 1, 'modeled', 'A florist ties 6 bunches with 8 stems in every bunch. How many stems is that?', [
         {
           teacherSay:
-            'Watch me refuse to guess at this. Six eights I am not sure of, but five eights I have known for ages — that is forty. So I put forty on the table and I look at what is still missing: one whole bunch, not one stem.',
+            'Watch me refuse to guess at this. Six eights I am not sure of. But five eights I have known for ages. That is forty. So I put forty on the table. Then I look at what is still missing. One whole bunch, not one stem.',
         },
         {
           teacherSay: 'One more bunch is one more eight. Forty, and eight more on top of it — where does that land?',
@@ -737,7 +737,7 @@ export const buildC11 = makeWeekBuilder({
     {
       ...ge(11, 2, 'completion', 'A baker sets out 7 rows with 6 buns in every row. How many buns are on the tray?', [
         { teacherSay: 'Which easy fact sits exactly one group short of seven sixes?', expected: 'six sixes' },
-        { childDo: 'Start from six sixes, bring in the one row still missing, and say how many buns are on the tray.', expected: '42' },
+        { childDo: 'Start from six sixes. Bring in the one row still missing. Then say how many buns are on the tray.', expected: '42' },
       ], '42'),
       visual: 'Seven rows of six buns, with six of the rows shaded as the fact already known.',
       figure: areaGrid(
@@ -749,14 +749,14 @@ export const buildC11 = makeWeekBuilder({
       ),
     },
     ge(11, 3, 'prompted', 'A gardener plants 6 rows with 9 onion sets in every row. How many onion sets is that?', [
-      { childDo: 'Name the easy fact you will start from, take one more group from there, and say the total.', expected: '54' },
+      { childDo: 'Name the easy fact you will start from. Take one more group from there. Then say the total.', expected: '54' },
     ], '54'),
     {
       // Independent stage: no picture at all. Deciding which fact to jump from
       // and how far past it to go IS the task here, so any drawing of the trays
       // would settle the plan the item exists to ask for.
-      ...ge(11, 4, 'independent', 'A baker\'s tray holds 8 rolls. Five trays come out of the oven together, and two more trays follow a minute behind them. How many rolls have come out of the oven? Solve cold.', [
-        { childDo: 'Settle the five trays first, then bring in the trays that follow, one tray at a time.', expected: '56' },
+      ...ge(11, 4, 'independent', 'A baker\'s tray holds 8 rolls. Five trays come out of the oven together. Then two more trays follow a minute behind. How many rolls have come out of the oven? Solve cold.', [
+        { childDo: 'Settle the five trays first. Then bring in the trays that follow, one at a time.', expected: '56' },
       ], '56'),
     },
   ],
@@ -810,13 +810,13 @@ export const buildC11 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Choose a fact from the six-times or seven-times row that you do NOT know by heart. Write down an easy fact you are certain of, write what you add to it, and write the answer you reach. Now reach the very same fact a second time, starting from a different easy fact, and write what you notice about the two answers you got.',
+            'Choose a six-times or seven-times fact you do NOT know by heart. Write down an easy fact you are certain of. Write what you add to it. Then write the answer you reach. Now reach that same fact a second time. Start from a different easy fact. Write what you notice about your two answers.',
           value: 'start from a fact you are sure of and add one more group of the same size to reach the harder fact; a different easy fact needs a different number of groups added, and both routes land on the same number',
           acceptableForms: ['one more group', 'add a group', 'the same number', 'same answer', 'known fact'],
           keywords: true,
           hints: [
-            'Which facts in the six-times and seven-times rows do you already answer without stopping to think?',
-            'Take the fact you are certain of and add one whole group of the same size to it, then check where that lands.',
+            'Which six-times and seven-times facts do you already answer without thinking?',
+            'Take the fact you are certain of. Add one whole group of the same size. Then check where that lands.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -825,7 +825,7 @@ export const buildC11 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes or never true: two children who build the same hard fact from two different easy facts finish with two different answers. In one sentence, say how you know.',
+            'Always, sometimes or never true? Two children build the same hard fact from two different easy facts. They finish with two different answers. In one sentence, say how you know.',
           correct: 'never',
           distractors: [
             {
@@ -841,7 +841,7 @@ export const buildC11 = makeWeekBuilder({
           ],
           hints: [
             'Do two different paths across a room change how far apart its two walls are?',
-            'Build one hard fact twice, starting from a different easy fact each time, and compare where the two builds finish.',
+            'Build one hard fact twice. Start from a different easy fact each time. Then compare where the two builds finish.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -850,13 +850,13 @@ export const buildC11 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'A friend says the one-more-group step only works because the numbers this week happen to be small. Write one sentence saying what stays the same every time you step from one fact to the next along a row, and why that would still be true for a row you have never practised.',
+            'A friend says the one-more-group step only works with small numbers. What stays the same every time you step along a row? Write one sentence. Say why that would still be true for a row you have never practised.',
           value: 'each step along a row puts on one more group of exactly the same size, so the step is the same whatever the numbers are and the rebuild works for any row',
           acceptableForms: ['same size', 'one more group', 'every step', 'any row', 'always the same group'],
           keywords: true,
           hints: [
             'What is the same about every single step you take along a times-table row?',
-            'Write out one row far enough to see the gaps, then look at what the gap between neighbours is made of.',
+            'Write out one row far enough to see the gaps. Then look at what one gap is made of.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -885,7 +885,7 @@ export const buildC11 = makeWeekBuilder({
       id: 'C11-PZ-01',
       title: 'Puzzle Grove: The Torn Strip',
       puzzleType: 'logic',
-      prompt: `${name} finds a strip torn out of a times-table poster. The numbers left on it read ${strip.join(', ')}, and one number has been torn off each end. Write down BOTH of the missing numbers, then say which table the strip came from and how the strip itself told you.`,
+      prompt: `${name} finds a strip torn out of a times-table poster. The numbers left on it read ${strip.join(', ')}. One number has been torn off each end. Write down BOTH of the missing numbers. Then say which table the strip came from. Say how the strip itself told you.`,
       answer: {
         // A `set`, not a single value: the task is to rebuild both ends, and a
         // child who finds only the easier one has not finished the deduction.
@@ -894,8 +894,8 @@ export const buildC11 = makeWeekBuilder({
         validation: 'set',
       },
       hintLadder: [
-        'How much does this strip grow by as your eye moves from one number to the number beside it?',
-        'Step backwards by that same jump from the number at the front, and forwards by it from the number at the end.',
+        'How much does this strip grow between one number and the next?',
+        'Step backwards by that same jump from the front number. Step forwards by it from the last number.',
       ],
       errorTags: ['representation-misread', 'procedure-slip'],
     };
@@ -918,7 +918,7 @@ export const buildC11 = makeWeekBuilder({
     { gen: msPostcardRack, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step sixes and sevens — a part-whole with its five-group block already counted and drawn, a half-dozen carton where the six sits on the other side of the fact, and a week of equal practice sessions — with the one-block figure affordance preserved on the first. 02/04/06: the three chains — the estimate-first rebuild, the inverse-start bench whose stated quantity is a five-row result, and a rack filled then sold from. No operand surface reused from Form A or from the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step sixes and sevens — a part-whole with its five-group block already counted and drawn, a half-dozen carton where the six sits on the other side of the fact, and a week of equal practice sessions — with the one-block figure affordance preserved on the first. 02/04/06: the three chains — the estimate-first rebuild, the inverse-start bench whose stated quantity is a five-row result, and a rack filled then sold from. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

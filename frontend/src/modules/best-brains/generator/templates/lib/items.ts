@@ -163,8 +163,8 @@ export function compareWhole(digits = 6): ItemGen {
       const wrongSymbols: Array<{ text: string; errorTag: 'concept-misconception' | 'representation-misread'; rationale: string }> =
         a === b
           ? [
-            { text: '>', errorTag: 'representation-misread', rationale: 'Reads the two numbers as different without checking every place — these two agree in all six.' },
-            { text: '<', errorTag: 'representation-misread', rationale: 'Reads the two numbers as different without checking every place — these two agree in all six.' },
+            { text: '>', errorTag: 'representation-misread', rationale: 'Reads the two numbers as different without checking every place — these two agree in every place.' },
+            { text: '<', errorTag: 'representation-misread', rationale: 'Reads the two numbers as different without checking every place — these two agree in every place.' },
           ]
           : [
             { text: a > b ? '<' : '>', errorTag: 'concept-misconception', rationale: 'Symbol reversed — the open mouth must face the larger number.' },
@@ -230,7 +230,7 @@ export function subWhole(lo: number, hi: number, acrossZeros = false): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_sub_v1', params: { a, b }, seed: r.uint() },
-        hintLadder: ['Subtract from the ones; if a column cannot pay, trade one from the place to its left.', 'When you cross a zero, trade from the next place that has something.'],
+        hintLadder: ['Subtract from the ones first. If a column cannot pay, trade one from the place to its left.', 'When you cross a zero, trade from the next place that has something.'],
         errorTags: ['procedure-slip'],
       };
     });

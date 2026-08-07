@@ -160,14 +160,14 @@ const sitCartonGroups = situation({
     const per = r.int(6, 12);
     const name = one(r);
     return {
-      prompt: `${name} loads ${countNoun(boxes, 'cool boxes')} onto the sports-day trolley, and every cool box is filled with ${countNoun(per, 'juice cartons')}. How many juice cartons go out to the field?`,
+      prompt: `${name} loads ${countNoun(boxes, 'cool boxes')} onto the sports-day trolley. Every cool box is filled with ${countNoun(per, 'juice cartons')}. How many juice cartons go out to the field?`,
       answerValue: String(boxes * per),
       templateId: 'd_mul_v1',
       params: { a: boxes, b: per },
       units: 'juice cartons',
       hints: [
-        'Does this story describe one pile already counted, or the same load appearing again and again?',
-        'Take what a single cool box carries and count it once for every box on the trolley.',
+        'Does this story describe one pile, or the same load appearing again and again?',
+        'Take what a single cool box carries. Count it once for every box.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -185,14 +185,14 @@ const sitBadgeShare = situation({
     const boards = r.int(3, 8);
     const per = r.int(5, 12);
     return {
-      prompt: `The swimming club has ${countNoun(boards * per, 'badges')} to pin up and puts the same number on each of its ${countNoun(boards, 'display boards')}. How many badges go on one board?`,
+      prompt: `The swimming club has ${countNoun(boards * per, 'badges')} to pin up. It puts the same number on each of its ${countNoun(boards, 'display boards')}. How many badges go on one board?`,
       answerValue: String(per),
       templateId: 'd_div_v1',
       params: { a: boards * per, b: boards },
       units: 'badges',
       hints: [
         'Which is the whole thing here — the badges, or the boards?',
-        'Deal the badges out board by board until the pile is gone, then look at what one board is holding.',
+        'Deal the badges out board by board until the pile is gone. Then look at one board.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -215,7 +215,7 @@ const sitFundShare = situation({
       acceptableForms: [wholeMoney(each)],
       hints: [
         'Is the fund being gathered up in this story, or broken into equal parts?',
-        'Cut the fund into one part per team, then read off the size of a single part.',
+        'Cut the fund into one part per team. Then read off one part.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -241,7 +241,7 @@ const sitBulbFraction = withFigure(
         params: { a: d * per, b: d },
         units: 'tulip bulbs',
         hints: [
-          'What does the bottom number of a fraction tell you about how many equal groups there are?',
+          'What does the bottom number of a fraction tell you about the groups?',
           'Break the box into that many equal groups, then pick up exactly one of them.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
@@ -281,7 +281,7 @@ const sitCoverBoard = withFigure(
         units: 'cards',
         hints: [
           'What is the smallest patch of that board a single card can hide?',
-          'One card hides one space, so work out how many spaces the whole board is made of.',
+          'One card hides one space. Work out how many spaces the board is made of.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -308,7 +308,7 @@ const sitLanternGap = situation({
     const hall = r.int(180, 640);
     const corridor = r.int(60, hall - 70);
     return {
-      prompt: `${n1} counted ${countNoun(hall, 'paper cranes')} hanging over the hall for the summer concert, and ${n2} counted ${countNoun(corridor, 'paper cranes')} hanging over the corridor. How many more cranes hang over the hall than over the corridor?`,
+      prompt: `${n1} counted ${countNoun(hall, 'paper cranes')} hanging over the hall. ${n2} counted ${countNoun(corridor, 'paper cranes')} hanging over the corridor. How many more cranes hang over the hall than over the corridor?`,
       answerValue: String(hall - corridor),
       templateId: 'd_sub_v1',
       params: { a: hall, b: corridor },
@@ -340,7 +340,7 @@ const msLabelsThenCabins = multiStep({
     const strips = r.int(4, 9);
     const name = one(r);
     return {
-      prompt: `${name} picks up ${countNoun(strips, 'strips')} of camp name labels, with ${countNoun(perStrip, 'labels')} printed on every strip, and shares all of those labels equally between ${countNoun(cabins, 'cabins')}. How many labels does one cabin get?`,
+      prompt: `${name} picks up ${countNoun(strips, 'strips')} of camp name labels. Every strip has ${countNoun(perStrip, 'labels')} printed on it. ${name} shares all of those labels equally between ${countNoun(cabins, 'cabins')}. How many labels does one cabin get?`,
       initN: strips,
       steps: [
         { op: 'mul', n: perStrip, d: 1 },
@@ -348,7 +348,7 @@ const msLabelsThenCabins = multiStep({
       ],
       units: 'labels',
       hints: [
-        'Which of the two moves in this story has to happen before the other one can?',
+        'Which of the two moves has to happen first?',
         'Gather every label into a single pile first, and only then start dealing them out.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -374,8 +374,8 @@ const msTicketsThenPoints = multiStep({
       ],
       units: 'points',
       hints: [
-        'Does the chart count every ticket in the book, or only the ones that have gone?',
-        'Find the sold pile first, then count what a single ticket is worth for every ticket in it.',
+        'Does the chart count every ticket in the book, or only the sold ones?',
+        'Find the sold pile first. Then count what one ticket is worth, for every ticket.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -392,7 +392,7 @@ const msBoardThenGap = multiStep({
     const down = r.int(3, Math.min(8, across - 2));
     const already = r.int(4, across * down - 6);
     return {
-      prompt: `The end-of-year gallery wall holds ${countNoun(across, 'paintings')} across and ${countNoun(down, 'paintings')} down when it is full. ${countNoun(already, 'paintings')} are already pinned up. How many more paintings are needed to fill the wall?`,
+      prompt: `The end-of-year gallery wall is full at ${countNoun(across, 'paintings')} across and ${countNoun(down, 'paintings')} down. ${countNoun(already, 'paintings')} are already pinned up. How many more paintings are needed to fill the wall?`,
       initN: across,
       steps: [
         { op: 'mul', n: down, d: 1 },
@@ -400,7 +400,7 @@ const msBoardThenGap = multiStep({
       ],
       units: 'paintings',
       hints: [
-        'Does the question ask about the finished wall, or only about the space still bare on it?',
+        'Does the question ask about the finished wall, or the space still bare?',
         'Fill the wall in your head, then take off the paintings that are already hanging.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
@@ -424,7 +424,7 @@ const msSharedThenLost = multiStep({
     const each = r.int(8, 14);
     const lost = r.int(5, Math.min(40, tables * each - 20));
     return {
-      prompt: `In September the class's crayons were shared equally between ${countNoun(tables, 'tables')}, and every table was handed ${countNoun(each, 'crayons')}. Since then ${countNoun(lost, 'crayons')} have gone missing. How many crayons does the class still have altogether?`,
+      prompt: `In September the class's crayons were shared equally between ${countNoun(tables, 'tables')}. Every table was handed ${countNoun(each, 'crayons')}. Since then ${countNoun(lost, 'crayons')} have gone missing. How many crayons does the class still have altogether?`,
       initN: tables,
       steps: [
         { op: 'mul', n: each, d: 1 },
@@ -432,8 +432,8 @@ const msSharedThenLost = multiStep({
       ],
       units: 'crayons',
       hints: [
-        'Does this story tell you how big the whole set was, or only what one table was handed?',
-        'Put every table\'s handful back together to rebuild the set, then take off what has gone.',
+        'Does this story give the whole set, or only one table\'s share?',
+        'Put every table\'s handful back together to rebuild the set. Then take off what has gone.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -491,7 +491,7 @@ const msWaxCandles = multiStep({
     const made = r.int(6, 15);
     const ready = r.int(6, 30);
     return {
-      prompt: `A craft club has ${countNoun(perCandle * made, 'wax blocks')} and melts ${countNoun(perCandle, 'blocks')} for every candle it pours. Last week's ${countNoun(ready, 'candles')} are already standing on the shelf. How many candles will stand on the shelf once this week's pouring is done?`,
+      prompt: `A craft club has ${countNoun(perCandle * made, 'wax blocks')}. It melts ${countNoun(perCandle, 'blocks')} for every candle it pours. Last week's ${countNoun(ready, 'candles')} are already standing on the shelf. How many candles will stand on the shelf once this week's pouring is done?`,
       initN: perCandle * made,
       steps: [
         { op: 'div', n: perCandle, d: 1 },
@@ -508,7 +508,7 @@ const msWaxCandles = multiStep({
 });
 const msWaxCandlesEstimate = withEstimateFirst(
   msWaxCandles,
-  'will the answer come out bigger than the number this story opens with, or smaller?',
+  'will the answer be bigger than the story\'s opening number, or smaller?',
 );
 
 // ---------------------------------------------------------------------------
@@ -528,7 +528,7 @@ const discrimWhichCalculation = discrimination({
     const chairs = trolleys * perTrolley;
     const name = one(r);
     return {
-      prompt: `${name} finds ${countNoun(chairs, 'chairs')} in the sports hall, stacked on ${countNoun(trolleys, 'trolleys')} with the same number on each trolley. Which calculation finds how many chairs are on one trolley?`,
+      prompt: `${name} finds ${countNoun(chairs, 'chairs')} in the sports hall. They are stacked on ${countNoun(trolleys, 'trolleys')}, with the same number on each. Which calculation finds how many chairs are on one trolley?`,
       correct: `${chairs} ÷ ${trolleys}`,
       distractors: [
         {
@@ -544,7 +544,7 @@ const discrimWhichCalculation = discrimination({
       ],
       hints: [
         'Does this story hand you one trolley\'s load, or the load of the whole hall?',
-        'Picture the chairs being dealt out trolley by trolley, then name the move that does it.',
+        'Picture the chairs being dealt out trolley by trolley. Then name that move.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -608,7 +608,7 @@ const discrimUnusedNumber = discrimination({
     for (let v = 3; v <= 14; v++) pool.push(v);
     const [choirs, songs, days] = r.shuffle(pool);
     return {
-      prompt: `${countNoun(choirs, 'choirs')} are taking part in the summer festival. Every choir is learning ${countNoun(songs, 'songs')}, and the festival runs for ${countNoun(days, 'days')}. To work out how many songs the choirs are learning altogether, which number is NOT needed?`,
+      prompt: `${countNoun(choirs, 'choirs')} are taking part in the summer festival. Every choir is learning ${countNoun(songs, 'songs')}, and the festival runs for ${countNoun(days, 'days')}. Which number is NOT needed to find how many songs they are learning?`,
       correct: String(days),
       distractors: [
         {
@@ -654,11 +654,11 @@ const eaCueWordSlip = errorAnalysis({
   build: (v, p, r) => {
     const name = one(r);
     return {
-      prompt: `${name}'s farm shop packed ${countNoun(Number(p.a), 'apples')} into ${countNoun(Number(p.b), 'baskets')}, with the same number of apples in each basket. Asked how many apples one basket holds, a student wrote ${p.a} × ${p.b} = ${v.wrong}.`,
-      extension: 'Work out how many apples one basket really holds, then write one sentence saying what a number the size of the student\'s could possibly be a count of.',
+      prompt: `${name}'s farm shop packed ${countNoun(Number(p.a), 'apples')} into ${countNoun(Number(p.b), 'baskets')}. Each basket got the same number of apples. Asked how many apples one basket holds, a student wrote ${p.a} × ${p.b} = ${v.wrong}.`,
+      extension: 'Work out how many apples one basket really holds. Then write one sentence about what a number that big could count.',
       hints: [
         'Can one basket hold more apples than the whole shop packed?',
-        'Draw the baskets and share the apples out yourself, then hold your total up beside the one on the page.',
+        'Draw the baskets and share the apples out yourself. Then hold your total beside the one on the page.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
       answerKeywords: ['share', 'one basket', 'smaller'],
@@ -684,12 +684,12 @@ export const buildC24 = makeWeekBuilder({
     'C3 to C23 each handed the child the tool by naming itself: C6 was the equal-groups page, C9 the sharing page, C17 the fraction-of-a-set page, C20 the covering page. A child could be fluent in all twenty-three and never once have CHOSEN. C24 removes the label and then makes the surface cues unreliable on purpose — a story that says "each" wants a division, a story that says "shared equally" opens with a multiplication, and one story states a number the question does not want. Every two-step item here crosses TWO of the level\'s chapters rather than repeating one: a fraction of a set feeding an equal-groups count, a covering feeding a subtraction, a share that has already happened and must be undone before anything else can begin. Retrieval is raised to the top of the band and drawn from across the whole level, so what is revisited is the year, not last week.',
   explanation: {
     hook:
-      'Here are two stories. A crate of 48 apples is shared equally between 6 baskets. Six baskets each hold 48 apples. The same two numbers both times — and the answers are 8 and 288. This week is about telling those two shapes apart before you write a single thing down.',
+      'Here are two stories. A crate of 48 apples is shared equally between 6 baskets. Six baskets each hold 48 apples. The same two numbers both times — and the answers are 8 and 288. This week is about telling those two shapes apart. Do it before you write anything down.',
     whyBeforeHow:
-      'Two stories can carry exactly the same numbers and still need opposite moves, because the numbers themselves never say what is happening to them — the shape of the story does. A group repeated makes a bigger pile; one pile split fairly makes a smaller one; two amounts held side by side make a gap; a surface filled with squares makes a covering. That is why this last week of the level asks for the shape first and the arithmetic second: the words are not reliable signposts, and a story leaning on the word each is just as likely to be asking you to share as to multiply. Every tool you have collected this year is still exactly the tool it was. What is new is that nothing on the page tells you which one to pick up, and some jobs want two of them, one after the other.',
+      'Two stories can carry exactly the same numbers and still need opposite moves. That is because the numbers never say what is happening to them. The shape of the story does. A group repeated makes a bigger pile. One pile split fairly makes a smaller one. Two amounts held side by side make a gap. A surface filled with squares makes a covering. So this last week asks for the shape first and the arithmetic second. The words are not reliable signposts. A story leaning on the word each may be asking you to share. Every tool you have collected this year is still exactly the tool it was. What is new is that nothing tells you which one to pick up. Some jobs want two of them, one after the other.',
     script: [
       {
-        say: 'Watch what I do with two stories that hold the same two numbers. The first one: a crate of 48 apples is shared equally between 6 baskets. I am splitting one whole pile into fair parts, so whatever I get must be smaller than the pile I started with. One basket holds 8 apples.',
+        say: 'Watch what I do with two stories that hold the same two numbers. The first one: a crate of 48 apples is shared equally between 6 baskets. I am splitting one whole pile into fair parts. So my answer must be smaller than the pile I started with. One basket holds 8 apples.',
         visual: 'One bar of 48 apples cut into six equal baskets of 8.',
         figure: barModel(
           [
@@ -710,15 +710,15 @@ export const buildC24 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now the second story: there are 6 baskets and every one of them holds 48 apples. Nothing is being split here at all — one load is repeating, so 6 × 48 = 288 apples in all. Same two numbers, opposite shapes, and two answers that are nowhere near each other.',
+        say: 'Now the second story. There are 6 baskets, and every one holds 48 apples. Nothing is being split here at all. One load is repeating, so 6 × 48 = 288 apples. Same two numbers, opposite shapes, and two answers that are nowhere near each other.',
         visual: 'Six baskets side by side, each one a full crate rather than a share of one.',
       },
       {
-        say: 'Notice that the word each turned up in both of those stories, and it pointed a different way each time. That is the reason I never let a single word choose my move for me. I ask what is happening to the pile, and the word can say what it likes.',
+        say: 'The word each turned up in both of those stories. It pointed a different way each time. That is the reason I never let a single word choose my move for me. I ask what is happening to the pile. The word can say what it likes.',
         visual: 'The word each written once between the two stories, with an arrow to each of them.',
       },
       {
-        say: 'Some jobs want two tools, one after the other. A gallery wall holds 9 paintings across and 4 down, so a full wall takes 9 × 4 = 36 paintings. If 14 are already pinned up and the question wants the ones still missing, that leaves 22 — and I had to pick two different moves to get there.',
+        say: 'Some jobs want two tools, one after the other. A gallery wall holds 9 paintings across and 4 down. A full wall takes 9 × 4 = 36 paintings. If 14 are already pinned up, the ones still missing come to 22. I had to pick two different moves to get there.',
         visual: 'A gallery wall drawn as four rows of nine spaces, with some spaces filled.',
         figure: areaGrid(
           { rows: 4, cols: 9, showCounts: true },
@@ -726,12 +726,12 @@ export const buildC24 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One last habit before any arithmetic: I check roughly how big my answer ought to be. Sharing a pile makes the number smaller, repeating a group makes it bigger, and if my answer lands on the wrong side of that I go back and look at the shape of the story again, not at my columns.',
+        say: 'One last habit before any arithmetic. I check roughly how big my answer ought to be. Sharing a pile makes the number smaller. Repeating a group makes it bigger. If my answer lands on the other side of that, I stop. Then I look at the shape of the story again, not at my columns.',
         visual: 'Two arrows from a starting number, one running up and one running down.',
       },
     ],
     summary:
-      'The numbers in a story never tell you what to do with them — the shape of the story does. Ask first whether one group is repeating, one whole is being split, two amounts are being compared, or a surface is being covered. Then check that the size of your answer fits the shape you chose. Some jobs want two tools, one after the other, and a few stories mention a number the question never wanted.',
+      'The numbers in a story never tell you what to do with them. The shape of the story does. Ask first what is happening. Is one group repeating, or is one whole being split? Are two amounts being compared, or is a surface being covered? Then check that the size of your answer fits the shape you chose. Some jobs want two tools, one after the other. And a few stories mention a number the question never wanted.',
     vocabulary: [
       { term: 'the shape of a story', kidGloss: 'what the story does to the numbers: repeats, splits, compares or covers' },
       { term: 'choosing the move', kidGloss: 'deciding which calculation the story needs, before doing any of it' },
@@ -744,7 +744,7 @@ export const buildC24 = makeWeekBuilder({
       ...ge(24, 1, 'modeled', 'A crate holds 42 apples. They are shared equally between 6 baskets, with the same number in every basket. How many apples are in one basket?', [
         {
           teacherSay:
-            'Watch me read the whole story before I touch a number. I am hunting for its shape: is one load repeating here, or is one whole pile being cut up? The 42 apples are a single pile and the baskets cut it up, so the move I need is one that makes my number smaller.',
+            'Watch me read the whole story before I touch a number. I am hunting for its shape. Is one load repeating here, or is one pile being cut up? The 42 apples are a single pile, and the baskets cut it up. So I need a move that makes my number smaller.',
         },
         {
           teacherSay: 'Now the arithmetic is the easy half of the job. What does one basket end up holding?',
@@ -770,7 +770,7 @@ export const buildC24 = makeWeekBuilder({
         { scaleMax: 42, alt: 'one bar of 42 apples cut into six equal parts of 7' },
       ),
     },
-    ge(24, 2, 'completion', 'The same two numbers, a different shape: there are 6 baskets and every basket holds 42 apples. How many apples is that in all?', [
+    ge(24, 2, 'completion', 'The same two numbers, a different shape. There are 6 baskets, and every basket holds 42 apples. How many apples is that in all?', [
       { teacherSay: 'Which of the two things is repeating this time — the crate, or the basket?', expected: 'the basket' },
       { childDo: 'Name the move this shape needs, then work it out.', expected: '252' },
     ], '252 apples'),
@@ -778,7 +778,7 @@ export const buildC24 = makeWeekBuilder({
       { childDo: 'Decide how many jobs this story needs before you start, then take them in order.', expected: '26' },
     ], '26 paintings'),
     ge(24, 4, 'independent', 'A club fund of $72 is split evenly between 9 teams. One team then puts $3 of its share back into the fund. How much does that team keep? Solve it cold.', [
-      { childDo: 'Two jobs, and no words telling you which is which — name each one before you write it.', expected: '5' },
+      { childDo: 'Two jobs, and no words telling you which is which. Name each one before you write it.', expected: '5' },
     ], '$5'),
   ],
   days: [
@@ -834,14 +834,14 @@ export const buildC24 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Three jobs from the summer fair, all built from the same two numbers. (1) 96 raffle tickets are shared equally between 8 stalls — how many does one stall get? (2) Each of 8 stalls sells 96 cups of lemonade — how many cups is that? (3) There are 96 cups and 8 jugs — how many more cups than jugs? Write the calculation you would do for each job and work it out. Then write one sentence for each saying what in the WORDS made you sure.',
+            'Three jobs from the summer fair, all built from the same two numbers. Job 1: 96 raffle tickets are shared equally between 8 stalls. How many does one stall get? Job 2: each of 8 stalls sells 96 cups of lemonade. How many cups is that? Job 3: there are 96 cups and 8 jugs. How many more cups than jugs? Write the calculation you would do for each job and work it out. Then write one sentence for each saying what in the WORDS made you sure.',
           value:
             'job 1 is 96 divided by 8, which is 12; job 2 is 8 times 96, which is 768; job 3 is 96 take away 8, which is 88 — the shapes are a share, a repeat and a comparison',
           acceptableForms: ['12', '768', '88', 'share', 'repeat', 'compare'],
           keywords: true,
           hints: [
             'Which words in each job tell you what is happening to the numbers?',
-            'Say each job aloud in your own words, then name the move it is asking for.',
+            'Say each job aloud in your own words. Then name the move it needs.',
           ],
           errorTags: ['task-comprehension', 'concept-misconception'],
         }),
@@ -850,7 +850,7 @@ export const buildC24 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: when a story uses the word each, the job is a multiplication. Say in one sentence how you know.',
+            'Always, sometimes, or never true? When a story uses the word each, the job is a multiplication. Say in one sentence how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -865,8 +865,8 @@ export const buildC24 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Can you think of a story that uses that word and still needs a different move?',
-            'Write one story where the word appears and the move is a multiplying one, and one where it is not.',
+            'Can a story use that word and still need a different move?',
+            'Write one story where that word means multiplying. Then write one where it does not.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -890,7 +890,7 @@ export const buildC24 = makeWeekBuilder({
       id: 'C24-PZ-01',
       title: 'Puzzle Grove: Two Numbers, Four Jobs',
       puzzleType: 'construction',
-      prompt: `${name} is allowed only two numbers all afternoon: ${big} and ${small}. Write FOUR different summer-fair questions that use just those two numbers — one you would answer by adding, one by taking away, one by repeating a group, and one by sharing equally. Work out all four answers. Then say which of your four questions was the hardest one to word, and what made it hard.`,
+      prompt: `${name} is allowed only two numbers all afternoon: ${big} and ${small}. Write FOUR different summer-fair questions that use just those two numbers. Answer one by adding, and one by taking away. Answer one by repeating a group, and one by sharing equally. Work out all four answers. Then say which question was the hardest one to word. What made it hard?`,
       answer: {
         value: `${big + small}; ${big - small}; ${big * small}; ${big / small}`,
         acceptableForms: [String(big + small), String(big - small), String(big * small), String(big / small)],
@@ -898,14 +898,16 @@ export const buildC24 = makeWeekBuilder({
       },
       hintLadder: [
         'Which of the four moves is the one that makes the numbers grow the most?',
-        'Take the moves one at a time, and for each one ask what kind of story would have to be true for it.',
+        'Take the moves one at a time. For each one, ask what kind of story fits.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
   puzzleMeta: { stepCount: 4, cognitiveOp: 'invent-the-question' },
   sprint: {
-    skill: 'Multiplication and division facts — the pair the level ends on',
+    // mult_facts_v1 emits only a × b items — a division claim in this label
+    // would promise what the realizer cannot serve.
+    skill: 'Multiplication facts — the recall the level ends on',
     sourceWeek: C12,
     itemCount: 20,
     scheduledDay: 3,
@@ -921,7 +923,7 @@ export const buildC24 = makeWeekBuilder({
     { gen: msBoardThenGap, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: the three single-step shapes the week keeps unsignalled — a whole pile split between boards, one load repeated over boxes, and a unit fraction of a set (with its whole-bar figure preserved). 02/06: two-chapter forward chains — equal groups then a share, and a covering then the gap to full. 04: the inverse-start chain, where the share has already happened and has to be undone before anything else can start. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: the three single-step shapes the week keeps unsignalled — a whole pile split between boards, one load repeated over boxes, and a unit fraction of a set (with its whole-bar figure preserved). 02/06: two-chapter forward chains — equal groups then a share, and a covering then the gap to full. 04: the inverse-start chain, where the share has already happened and has to be undone before anything else can start. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

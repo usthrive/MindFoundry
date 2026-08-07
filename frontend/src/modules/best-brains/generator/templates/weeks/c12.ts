@@ -10,11 +10,12 @@
  * that need the least remembering. Nine of something is TEN of it with one group
  * given back, and eight of something is a four-count doubled — so both rows are
  * reached from counts the child has owned since C7 and C8. And because 9n is
- * 10n − n, the answer is forced to look a particular way: the ten-count puts the
- * number of groups in the tens place, giving one group back drops that digit by
- * one and pays the difference into the ones, so the two digits are always one
- * below the number of groups and whatever is left of a whole ten — a pair that
- * cannot help adding to nine. The content is built so the child SEES that rather
+ * 10n − n, the answer is forced to look a particular way: the ten-count puts
+ * what one group holds (n, the counted number — NOT the group count) in the
+ * tens place, giving one group back drops that digit by one and pays the
+ * difference into the ones, so the two digits are always one below what one
+ * group holds and whatever is left of a whole ten — a pair that cannot help
+ * adding to nine. The content is built so the child SEES that rather
  * than being told it:
  *  - the anchor item hands over the ten-group count as a drawn, finished block
  *    and asks for the nine-group count, so the block and the group being given
@@ -215,14 +216,14 @@ const wTenFact = asWarmup(
       const strings = r.int(3, 9);
       const name = one(r);
       return {
-        prompt: `${name} hangs ${countNoun(strings, 'strings')} of bunting along the school fence, and every string carries ${countNoun(10, 'flags')}. How many flags are flying?`,
+        prompt: `${name} hangs ${countNoun(strings, 'strings')} of bunting along the school fence. Every string carries ${countNoun(10, 'flags')}. How many flags are flying?`,
         answerValue: String(10 * strings),
         templateId: 'd_mul_v1',
         params: { a: 10, b: strings },
         units: 'flags',
         hints: [
           'What does a single string of this bunting carry?',
-          'Say the tens count aloud, one number for each string on the fence, and stop on the last one.',
+          'Say the tens count aloud, one number for each string. Stop on the last one.',
         ],
         errorTags: ['fact-recall', 'representation-misread'],
       };
@@ -249,7 +250,7 @@ const wFourFact = asWarmup(
         units: 'runners',
         hints: [
           'Do all the teams in this race carry the same number of runners?',
-          'Take what a single team puts on the track, and take it again once for every team at the start.',
+          'Take what one team puts on the track. Take it again for every team.',
         ],
         errorTags: ['fact-recall', 'procedure-slip'],
       };
@@ -283,13 +284,13 @@ const sitParkTrain = withFigure(
       const per = r.int(3, 9);
       const name = one(r);
       return {
-        prompt: `[image: the ten carriages the park train pulls] The park train pulls ${countNoun(10, 'carriages')} and every carriage seats ${countNoun(per, 'children')}, which is ${countNoun(10 * per, 'seats')} in all. This morning ${name} finds one carriage roped off while its door is mended. How many children can ride?`,
+        prompt: `[image: the ten carriages the park train pulls] The park train pulls ${countNoun(10, 'carriages')}. Every carriage seats ${countNoun(per, 'children')}, which is ${countNoun(10 * per, 'seats')} in all. This morning ${name} finds one carriage roped off while its door is mended. How many children can ride?`,
         answerValue: String(9 * per),
         templateId: 'd_mul_v1',
         params: { a: 9, b: per, ten: 10 * per },
         units: 'children',
         hints: [
-          'Does the number the story hands you belong to the whole train, or to one carriage more than the question asks about?',
+          'Is the stated count for the whole train, or for the part that runs?',
           'Take the full count the story states and let one whole carriage-load go from it.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
@@ -355,7 +356,7 @@ const sitPizzaSlices = situation({
     const pizzas = r.int(3, 12);
     const name = one(r);
     return {
-      prompt: `Every pizza at the party is cut into quarters and each quarter is cut again, which makes ${countNoun(8, 'slices')}. ${name} carries ${countNoun(pizzas, 'pizzas')} out to the long table. How many slices is that?`,
+      prompt: `Every pizza at the party is cut into quarters. Each quarter is cut again, making ${countNoun(8, 'slices')}. ${name} carries ${countNoun(pizzas, 'pizzas')} out to the long table. How many slices is that?`,
       answerValue: String(8 * pizzas),
       templateId: 'd_mul_v1',
       params: { a: 8, b: pizzas },
@@ -399,8 +400,8 @@ const sitFeedSacks = situation({
       params: { a: each, b: sacks },
       units: 'kg',
       hints: [
-        'Which nearby count would you rather start from here — one you reach by doubling, or one you reach in tens?',
-        'Follow the route you named right to the end, then set what you land on beside the ten-count and see whether it sits where it should.',
+        'Which known count sits closest to the one being asked for?',
+        'Follow the route you named right to the end. Then set what you land on beside the ten-count. Does it sit where it should?',
       ],
       errorTags: ['task-comprehension', 'fact-recall'],
     };
@@ -408,7 +409,7 @@ const sitFeedSacks = situation({
 });
 const sitFeedSacksEstimate = withEstimateFirst(
   sitFeedSacks,
-  'does this load come from a four-count doubled, or from a ten-count with one group handed back?',
+  'does this load come from a doubled four-count, or from a ten-count?',
 );
 
 // ---------------------------------------------------------------------------
@@ -469,8 +470,8 @@ const msSwimGala = multiStep({
       ],
       units: 'medals',
       hints: [
-        'Which club\'s medals does this story make you work out, and which club\'s does it simply tell you?',
-        'Build one club\'s season up event by event first, and only then set the two hauls side by side.',
+        'Which club\'s medals must you work out, and which are you told?',
+        'Build one club\'s season up event by event first. Only then compare the two hauls.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -495,7 +496,7 @@ const msPlumBoxes = multiStep({
     // the two steps stop being two different ideas.
     const loose = r.int(2, 7);
     return {
-      prompt: `A grower packs ${countNoun(8, 'plums')} into every box. The market stall opens at 9 o'clock with ${countNoun(boxes, 'boxes')} on the table and ${countNoun(loose, 'loose plums')} in a bowl beside them. How many plums has the stall got altogether?`,
+      prompt: `A grower packs ${countNoun(8, 'plums')} into every box. The market stall opens at 9 o'clock. There are ${countNoun(boxes, 'boxes')} on the table. A bowl beside them holds ${countNoun(loose, 'loose plums')}. How many plums has the stall got altogether?`,
       initN: 8,
       steps: [
         { op: 'mul' as const, n: boxes, d: 1 },
@@ -503,8 +504,8 @@ const msPlumBoxes = multiStep({
       ],
       units: 'plums',
       hints: [
-        'Which of these numbers has nothing to do with how much fruit is on the stall?',
-        'Deal with the packed fruit first, bring the bowl in after that, and let the number that tells the time stay where it is.',
+        'Which number here has nothing to do with the fruit?',
+        'Deal with the packed fruit first. Bring the bowl in after that. Leave the time alone.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -552,7 +553,7 @@ const discrimGiveOneBack = discriminationFig({
       ],
       hints: [
         'Is one whole jar coming off this count, or a single conker out of it?',
-        'Find what one jar holds, and let exactly that much go from the count the story has already made.',
+        'Find what one jar holds. Let exactly that much go from the counted total.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
       figure: areaGrid(
@@ -585,7 +586,7 @@ const discrimWhichRow = discrimination({
     const k = r.int(4, 8);
     const name = one(r);
     return {
-      prompt: `Two counts are pinned above ${name}'s desk. One opens 8, 16, 24 and climbs in eights; the other opens 9, 18, 27 and climbs in nines. Which of these numbers turns up on the NINES count?`,
+      prompt: `Two counts are pinned above ${name}'s desk. One opens 8, 16, 24 and climbs in eights. The other opens 9, 18, 27 and climbs in nines. Which of these numbers turns up on the NINES count?`,
       correct: String(9 * k),
       distractors: [
         {
@@ -601,7 +602,7 @@ const discrimWhichRow = discrimination({
       ],
       hints: [
         'What happens to the two digits of a number as a count in nines climbs?',
-        'Test each number against both counts: run up the eights, then run up the nines, and see which list says it.',
+        'Test each number against both counts. Run up the eights, then the nines. See which list says it.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -629,11 +630,11 @@ const eaPatternSlip = errorAnalysis({
   build: (v, p) => {
     const groups = numOf(p, 'groups');
     return {
-      prompt: `A class is filling in the nines row of a fact chart. One student says they never work a nines fact out at all: the tens digit climbs a step at every fact, and the ones digit falls a step. Asked for ${countNoun(groups, 'nines')}, they wrote 9 × ${groups} = ${v.wrong}.`,
-      extension: 'Work out what that many nines really comes to, then write one sentence saying what the two digits of the student\'s number add up to and what that tells you.',
+      prompt: `A class is filling in the nines row of a fact chart. One student says they never work a nines fact out. The tens digit climbs a step at every fact. The ones digit falls a step. Asked for ${countNoun(groups, 'nines')}, they wrote 9 × ${groups} = ${v.wrong}.`,
+      extension: 'Work out what that many nines really comes to. Then add the two digits of the student\'s number. Write one sentence saying what that tells you.',
       hints: [
         'What do the two digits of a nines answer come to, every single time?',
-        'Take the ten-count of that many, hand one whole group back, and read the two digits of what you land on.',
+        'Take the ten-count of that many. Hand one whole group back. Then read the two digits.',
       ],
       errorTags: ['procedure-slip', 'representation-misread'],
     };
@@ -658,12 +659,12 @@ export const buildC12 = makeWeekBuilder({
     'C7 made the easiest facts quick by naming a count the child already had, C8 built the fours by doubling a doubling, and C11 reached the sixes and sevens by stepping ONTO a known fact — five groups and one more group. C12 turns that step round. The nines are reached by overshooting deliberately and coming back: ten groups, then one group given back, which is the first time this level asks a child to pass the answer on purpose. And because that route is a subtraction from a ten-count, it does something none of the earlier rebuilds did — it forces the shape of the answer, so this is also the first week whose facts can be CHECKED without being worked out again.',
   explanation: {
     hook:
-      'The two rows children dread are the two that need the least remembering. Nine of something is ten of it with one group handed back — and ten of anything you have never had to think about.',
+      'The two rows children dread are the two that need the least remembering. Nine of something is ten of it with one group handed back. And ten of anything you have never had to think about.',
     whyBeforeHow:
-      'Nine groups are ten groups with one group given back, and because a ten-count is the easiest count there is, every nines fact is a fact you can reach by overshooting on purpose and stepping back once. That is why this week never asks you to memorise a nines row. Watch what the give-back does to the answer, though, because it is the same every time: ten of them puts the number of groups in the tens place with a zero behind it, and handing one group back breaks one of those tens open — so the tens digit drops to one below the number of groups, and the broken ten pays back whatever is left of it into the ones. One digit one below the number of groups, the other digit whatever is left of a whole ten: those two always fill a nine between them. The eights need no giving back at all. Eight of something is a four-count doubled, and since four is itself a double, an eights fact is a doubling done to a doubling — no row to recite, just the same move twice more.',
+      'Nine groups are ten groups with one group given back. A ten-count is the easiest count there is. That is why every nines fact can be reached by overshooting on purpose. You go one group too far, then step back once. This week never asks you to memorise a nines row. Watch what the give-back does to the answer. A ten-count writes what one group holds with a zero behind it. Handing one group back breaks one of those tens open. So the tens digit drops to one below what one group holds. The broken ten pays back whatever is left of it into the ones. One digit sits one below what one group holds. The other is whatever is left of a whole ten. Those two always fill a nine between them. The eights need no giving back at all. Eight of something is a four-count doubled. Four is itself a double. So an eights fact is one move done twice more.',
     script: [
       {
-        say: 'Watch what I do when a nines fact will not come. I want nine sevens, and nine sevens I am not sure of. But ten sevens I have never had to think about, because a ten-count only ever writes the number of groups in front of a zero: 10 × 7 = 70. Nine groups is ten groups with one group given back, so I take one seven off seventy and land on sixty-three. I did not remember nine sevens. I overshot and stepped back.',
+        say: 'A nines fact can hide. I do not chase it. I overshoot it, then step back. I want nine sevens, and nine sevens I am not sure of. But ten sevens I have never had to think about. A ten-count writes what one group holds in front of a zero. So 10 × 7 = 70. Nine groups is ten groups with one group given back. I take one seven off seventy and land on sixty-three. I did not remember nine sevens. I overshot and stepped back.',
         visual: 'A bar of ten sevens, and beneath it the same bar with one seven handed back.',
         figure: barModel(
           [
@@ -678,7 +679,7 @@ export const buildC12 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now look at what that give-back does to the two digits, because it is worth more than the answer. Seventy has a seven in the tens and nothing in the ones. Handing one seven back breaks one of those tens open, so the tens digit drops to six — always one below the number of groups — and the broken ten pays back what is left of it, which is three. Six and three. One digit sits one below the number of groups and the other is whatever is left of a whole ten, so the two of them are forced to make nine, in every single nines fact there is.',
+        say: 'Now look at what that give-back does to the two digits. It is worth more than the answer. Seventy has a seven in the tens and nothing in the ones. Handing one seven back breaks one of those tens open. So the tens digit drops to six, always one below what one group holds. The broken ten pays back what is left of it, which is three. Six and three. One digit sits one below what one group holds. The other is whatever is left of a whole ten. So the two of them are forced to make nine. That holds in every single nines fact there is.',
         visual: 'Ten rows of seven with nine rows shaded, the tenth row left plain as the group given back.',
         figure: areaGrid(
           { rows: 10, cols: 7, shadedRows: 9 },
@@ -686,7 +687,7 @@ export const buildC12 = makeWeekBuilder({
         ),
       },
       {
-        say: 'The eights ask for no give-back at all. Four sevens is twenty-eight, and eight sevens is that same amount twice over: 28 + 28 = 56. I never touched a nine and I never recited an eights row — I doubled a fact I was sure of, and four is itself a double, so an eights fact is really one move done twice more.',
+        say: 'The eights ask for no give-back at all. Four sevens is twenty-eight. Eight sevens is that same amount twice over. So 28 + 28 = 56. I never touched a nine. I never recited an eights row. I doubled a fact I was sure of. And four is itself a double. So an eights fact is one move twice more.',
         visual: 'A bar of four sevens above a bar of eight sevens, twice its length.',
         figure: barModel(
           [
@@ -697,7 +698,7 @@ export const buildC12 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before any answer goes down: I check it rather than trust it. A nines answer has to land just below the ten-count, near it and not miles off, and its two digits have to come to nine. An eights answer has to be even, because doubling cannot finish anywhere else. Those checks cost a second each, and the answer they catch is nearly always the one that is a single step out — sixty-two where sixty-three belonged.',
+        say: 'One habit before any answer goes down. I check it rather than trust it. A nines answer has to land just below the ten-count. It should be near it, not miles off. Its two digits have to come to nine. An eights answer has to be even, because doubling cannot finish anywhere else. Those checks cost a second each. The answer they catch is nearly always a single step out. Sixty-two where sixty-three belonged.',
         visual: 'A bar for the answer whose digits make nine beside a barely shorter bar for the answer one below it.',
         figure: barModel(
           [
@@ -709,9 +710,9 @@ export const buildC12 = makeWeekBuilder({
       },
     ],
     summary:
-      'Overshoot and step back: ten groups, then one group given back, and the nines are yours without a row to recite. Double a doubling and the eights are yours too. Then check what you wrote before you leave it — a nines answer sits just under the ten-count and its two digits make nine, and an eights answer is always even.',
+      'Overshoot and step back. Ten groups, then one group given back. The nines are yours without a row to recite. Double a doubling and the eights are yours too. Then check what you wrote before you leave it. A nines answer sits just under the ten-count. Its two digits make nine. An eights answer is always even.',
     vocabulary: [
-      { term: 'ten-count', kidGloss: 'ten of something — the easiest count there is, because it writes the number of groups in front of a zero' },
+      { term: 'ten-count', kidGloss: 'ten of something — the easiest count there is, because it writes what one group holds in front of a zero' },
       { term: 'give a group back', kidGloss: 'go one group too far on purpose, then take one whole group off again' },
       { term: 'digit check', kidGloss: 'adding the two digits of an answer to see whether it can belong to the nines' },
       { term: 'eight times as many (×8)', kidGloss: 'a four-count doubled' },
@@ -722,7 +723,7 @@ export const buildC12 = makeWeekBuilder({
       ...ge(12, 1, 'modeled', 'A gardener sets out 9 window boxes and plants 7 crocuses in every box. How many crocuses is that?', [
         {
           teacherSay:
-            'Watch me refuse to hunt for nine sevens. Ten window boxes I could do in my sleep — that is seventy — and nine boxes is one box short of ten. So I put seventy on the table and look at what has to leave it: one whole box of seven, not one crocus.',
+            'Watch me refuse to hunt for nine sevens. Ten window boxes I could do in my sleep. That is seventy. And nine boxes is one box short of ten. So I put seventy on the table. Then I look at what has to leave it. One whole box of seven, not one crocus.',
         },
         {
           teacherSay: 'Seventy, with one box of seven handed back — where does that land?',
@@ -743,9 +744,9 @@ export const buildC12 = makeWeekBuilder({
       ),
     },
     {
-      ...ge(12, 2, 'completion', 'A cafe cuts every pizza into 8 slices and puts 7 pizzas out on the counter. How many slices are on the counter?', [
+      ...ge(12, 2, 'completion', 'A cafe cuts every pizza into 8 slices. It puts 7 pizzas out on the counter. How many slices are on the counter?', [
         { teacherSay: 'Which easy fact sits exactly halfway to eight sevens?', expected: 'four sevens' },
-        { childDo: 'Count the slices there would be if every pizza were still in quarters, double that, and say how many slices are on the counter.', expected: '56' },
+        { childDo: 'Count the slices if every pizza were still in quarters. Double that. Then say how many slices are on the counter.', expected: '56' },
       ], '56'),
       visual: 'Eight rows of seven slices, with the bottom four shaded as the fact already known.',
       figure: areaGrid(
@@ -757,14 +758,14 @@ export const buildC12 = makeWeekBuilder({
       ),
     },
     ge(12, 3, 'prompted', 'A stall stands 9 jars on a shelf with 6 conkers in every jar. How many conkers are on the shelf?', [
-      { childDo: 'Take the ten-jar count first, hand one jar back, and check the two digits of what you land on.', expected: '54' },
+      { childDo: 'Take the ten-jar count first. Hand one jar back. Then check the two digits of what you land on.', expected: '54' },
     ], '54'),
     {
       // Independent stage: no picture at all. Deciding which numbers are counting
       // plums IS the task here, so drawing the boxes would sort the story for the
       // child before they had read it.
-      ...ge(12, 4, 'independent', 'A grower packs 8 plums into every box. The market stall opens at 9 o\'clock with 6 boxes on the table and 5 loose plums in a bowl beside them. How many plums has the stall got altogether? Solve cold.', [
-        { childDo: 'Work out what the boxes hold before you go near anything else, and leave alone any number that is not counting plums.', expected: '53' },
+      ...ge(12, 4, 'independent', 'A grower packs 8 plums into every box. The market stall opens at 9 o\'clock. There are 6 boxes on the table. A bowl beside them holds 5 loose plums. How many plums has the stall got altogether? Solve cold.', [
+        { childDo: 'Work out what the boxes hold before anything else. Leave alone any number that is not counting plums.', expected: '53' },
       ], '53'),
     },
   ],
@@ -819,13 +820,13 @@ export const buildC12 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Write any nines fact out as a ten-count with one whole group given back. Say what the ten-count puts in the tens place, then say what giving the group back does to the tens digit and what it does to the ones digit. Finish by saying why the two digits of a nines answer have no choice at all about what they add up to.',
+            'Write any nines fact out as a ten-count with one whole group given back. Say what the ten-count puts in the tens place. Then say what the give-back does to the tens digit. Say what it does to the ones digit. Finish by saying why those two digits must always add up to nine.',
           value:
-            'the ten-count writes the number of groups in the tens place with a zero behind it; giving one group back breaks a ten open, so the tens digit drops to one below the number of groups and the ones digit becomes whatever is left of that broken ten, and those two pieces are a whole ten less one group and one group less than a ten, so together they always make nine',
+            'the ten-count writes what one group holds in the tens place with a zero behind it; giving one group back breaks a ten open, so the tens digit drops to one below what one group holds and the ones digit becomes whatever is left of that broken ten, and those two pieces are a whole ten less one group and one group less than a ten, so together they always make nine',
           acceptableForms: ['one below', 'left of a ten', 'broken ten', 'tens digit', 'ones digit', 'make nine'],
           hints: [
-            'Where does the tens digit of a nines answer come from — the number of groups, or one below it?',
-            'Write a ten-count with the nines answer under it, and watch which column loses and which column picks up.',
+            'Where does the tens digit come from: what one group holds, or one below that?',
+            'Write a ten-count with the nines answer under it. Watch which column loses and which picks up.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -834,14 +835,14 @@ export const buildC12 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Write out the eights row and the nines row, as far as ten of each. Write down one thing that is true of every answer in the eights row, and one thing that is true of every answer in the nines row. Then write one sentence saying how a mark like that can tell you an answer is wrong without your working the fact out again.',
+            'Write out the eights row and the nines row, as far as ten of each. Write down one thing that is true of every eights answer. Do the same for every nines answer. Then write one sentence. Say how a mark like that can catch a slip without any working.',
           value:
             'every eights answer is even because it was reached by doubling, and the two digits of every nines answer add up to nine; a mark like that can only tell you an answer is wrong, and it does it without the fact being worked out a second time',
           acceptableForms: ['even', 'add up to nine', 'digits', 'doubling', 'wrong'],
           keywords: true,
           hints: [
             'What do all the answers in one of these two rows have in common?',
-            'Write both rows out to the end, then read down each list on its own and say what never changes about it.',
+            'Write both rows out to the end. Then read down each list on its own. Say what never changes about it.',
           ],
           errorTags: ['representation-misread', 'concept-misconception'],
         }),
@@ -850,7 +851,7 @@ export const buildC12 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes or never true: if the two digits of a two-digit number add up to nine, that number is one you say when you count in nines. In one sentence, say how you know.',
+            'Always, sometimes or never true? The two digits of a two-digit number add up to nine. That number is one you say when you count in nines. In one sentence, say how you know.',
           correct: 'always',
           distractors: [
             {
@@ -865,8 +866,8 @@ export const buildC12 = makeWeekBuilder({
             },
           ],
           hints: [
-            'How many two-digit numbers are there whose digits come to nine — a handful, or too many to write down?',
-            'Write down every two-digit number whose digits make nine, and check each one of them against the count in nines.',
+            'How many two-digit numbers have digits that come to nine?',
+            'Write down every two-digit number whose digits make nine. Check each one against the count in nines.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -897,7 +898,7 @@ export const buildC12 = makeWeekBuilder({
       id: 'C12-PZ-01',
       title: 'Puzzle Grove: The Spoiled Row',
       puzzleType: 'pattern',
-      prompt: `${name} copies the nines row off the board and gets one of the numbers wrong: ${row.join(', ')}. Write down the number that has been copied wrongly and the number that belongs in its place, and then say how the row itself told you which one it was — without any multiplying.`,
+      prompt: `${name} copies the nines row off the board. One of the numbers comes out wrong. The row reads ${row.join(', ')}. Write down the number that was copied wrongly. Write the number that belongs in its place. Then say how the row itself told you, without any multiplying.`,
       answer: {
         // A `set`, not a single value: the task is to name the spoiled number AND
         // repair it, and a child who does only one half has not finished the job.
@@ -906,8 +907,8 @@ export const buildC12 = makeWeekBuilder({
         validation: 'set',
       },
       hintLadder: [
-        'How much does this row grow by as your eye travels from one number to the number beside it?',
-        'Add the two digits of each number in turn, and stop at the one that does not behave like its neighbours.',
+        'How big is the jump from each number to the one beside it?',
+        'Add the two digits of each number in turn. Stop at the one that behaves differently.',
       ],
       errorTags: ['representation-misread', 'procedure-slip'],
     };
@@ -930,7 +931,7 @@ export const buildC12 = makeWeekBuilder({
     { gen: msPlumBoxes, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step eights and nines — a part-whole whose ten-group count is already made and drawn, a real nine carried by a skittle frame, and an eights fact carried by an object that performs its own doubling — with the ten-group figure affordance preserved on the first. 02/04/06: the three chains — the give-back run as a ten-hour print run, the eights fact followed by a compare, and the stall chain carrying a time of day that never enters the working. No operand surface reused from Form A or from the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step eights and nines — a part-whole whose ten-group count is already made and drawn, a real nine carried by a skittle frame, and an eights fact carried by an object that performs its own doubling — with the ten-group figure affordance preserved on the first. 02/04/06: the three chains — the give-back run as a ten-hour print run, the eights fact followed by a compare, and the stall chain carrying a time of day that never enters the working. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

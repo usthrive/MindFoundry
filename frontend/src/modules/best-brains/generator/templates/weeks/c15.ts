@@ -256,7 +256,7 @@ const sitOnePart = withFigure(
         validation: 'equivalent-fraction',
         hints: [
           'Does every part in this cut hold the same amount as the others?',
-          'Count the equal parts the whole was cut into and write that number underneath; one single part sits on top.',
+          'Count the equal parts the whole was cut into. Write that number underneath. One single part sits on top.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -297,8 +297,8 @@ const sitShadedFraction = withFigure(
         params: { k, n: 1, d, whole: s.whole, part: s.part, piece: s.piece },
         validation: 'equivalent-fraction',
         hints: [
-          'Which parts does the question ask you to name — the coloured ones, or the ones left plain?',
-          'Put the count of every equal part in the whole underneath, and the count of the parts the question names on top.',
+          'Which parts does the question name: the coloured ones, or the plain ones?',
+          'Put the count of every equal part underneath. Put the count of the named parts on top.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -333,7 +333,7 @@ const sitNumberLine = withFigure(
       const k = coprimeIn(r, d, 2, d - 1);
       const name = one(r);
       return {
-        prompt: `[image: a number line from 0 to 1 divided into ${countNoun(d, 'equal steps')}, with one step marked] A number line runs from 0 to 1, and the space between them is divided into ${countNoun(d, 'equal steps')}. ${name} starts at 0 and hops ${countNoun(k, 'steps')} forward. Which fraction names the mark ${name} lands on?`,
+        prompt: `[image: a number line from 0 to 1 divided into ${countNoun(d, 'equal steps')}, with one step marked] A number line runs from 0 to 1. The space between them is divided into ${countNoun(d, 'equal steps')}. ${name} starts at 0 and hops ${countNoun(k, 'steps')} forward. Which fraction names the mark ${name} lands on?`,
         answerValue: fmtFrac(k, d, 'partition-anchored'),
         templateId: 'd_frac_times_whole_v1',
         params: { k, n: 1, d, unit: fmtFrac(1, d, 'partition-anchored') },
@@ -391,14 +391,14 @@ const sitRecut = withFigure(
       const s = r.pick(CUT_SCENES);
       const name = one(r);
       return {
-        prompt: `[image: a ${s.whole} cut into ${countNoun(pieces, 'pieces')} that are not all the same size] A ${s.whole} has been cut into ${countNoun(pieces, 'pieces')}, but the pieces are not all the same size, so not one of them can be named as a fraction of the ${s.whole}. ${name} takes a fresh ${s.whole} and cuts it into ${countNoun(d, s.part)} instead. What fraction of that whole ${s.whole} is one of ${name}'s ${unitFor(2, s.part)}?`,
+        prompt: `[image: a ${s.whole} cut into ${countNoun(pieces, 'pieces')} that are not all the same size] A ${s.whole} has been cut into ${countNoun(pieces, 'pieces')}. But the pieces are not all the same size. So not one of them can be named as a fraction. ${name} takes a fresh ${s.whole}. It is cut into ${countNoun(d, s.part)} instead. What fraction of that whole ${s.whole} is one of ${name}'s ${unitFor(2, s.part)}?`,
         answerValue: fmtFrac(1, d, 'partition-anchored'),
         templateId: 'd_frac_times_whole_v1',
         params: { k: 1, n: 1, d, plan: [...plan], planTotal: plan.reduce((a, b) => a + b, 0), whole: s.whole, part: s.part },
         validation: 'equivalent-fraction',
         hints: [
           'Which of the two cuts in this story can a fraction actually name?',
-          'Work with the cut whose parts all match, and count how many of those parts the whole holds.',
+          'Work with the cut whose parts all match. Then count how many parts the whole holds.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -440,8 +440,8 @@ const sitEqualLengths = withFigure(
         params: { a: len, b: d },
         units: 'cm',
         hints: [
-          'Is the number in the story the length of the whole ribbon, or of one piece?',
-          'Share the whole length out equally, one turn for each piece, and read off what a single piece gets.',
+          'Is the stated length the whole ribbon, or one piece?',
+          'Share the whole length out equally, one turn for each piece. Then read off what one piece gets.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -481,14 +481,14 @@ const sitCakeShare = situation({
     const s = r.pick(EDIBLE_SCENES);
     const name = one(r);
     return {
-      prompt: `${name} cuts a ${s.whole} into ${countNoun(d, s.part)} and shares it out at a party. By the end, ${countNoun(k, s.piece)} have been eaten. What fraction of the whole ${s.whole} has been eaten?`,
+      prompt: `${name} cuts a ${s.whole} into ${countNoun(d, s.part)}. It is shared out at a party. By the end, ${countNoun(k, s.piece)} have been eaten. What fraction of the whole ${s.whole} has been eaten?`,
       answerValue: fmtFrac(k, d, 'partition-anchored'),
       templateId: 'd_frac_times_whole_v1',
       params: { k, n: 1, d },
       validation: 'equivalent-fraction',
       hints: [
-        'Would the part that has gone fill up half of the whole, or not even that?',
-        'Count every equal part the whole was cut into for the bottom number, then count the ones that have gone for the top.',
+        'Would the part that has gone fill half of the whole?',
+        'Count every equal part the whole was cut into. That is the bottom number. Then count the ones that have gone.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -496,7 +496,7 @@ const sitCakeShare = situation({
 });
 const sitCakeShareEstimate = withEstimateFirst(
   sitCakeShare,
-  'will the part that has been eaten be more or less than half of the whole?',
+  'will the part eaten be more or less than half the whole?',
 );
 
 // ---------------------------------------------------------------------------
@@ -515,7 +515,7 @@ const msCountPieces = multiStep({
     const taken = r.int(2, 9);
     const name = one(r);
     return {
-      prompt: `Every tray of fudge is cut into ${countNoun(perTray, 'equal pieces')}. ${name} fills ${countNoun(trays, 'trays')} that way, and then ${countNoun(taken, 'pieces')} are taken for the tasting table. How many pieces are left?`,
+      prompt: `Every tray of fudge is cut into ${countNoun(perTray, 'equal pieces')}. ${name} fills ${countNoun(trays, 'trays')} that way. Then ${countNoun(taken, 'pieces')} are taken for the tasting table. How many pieces are left?`,
       initN: perTray,
       steps: [
         { op: 'mul', n: trays, d: 1 },
@@ -523,7 +523,7 @@ const msCountPieces = multiStep({
       ],
       units: 'pieces',
       hints: [
-        'Does the question ask about one tray, or about everything that is left at the end?',
+        'Does the question ask about one tray, or about everything left?',
         'Count what all the trays hold first, then take off the ones that leave.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -568,7 +568,7 @@ const discrimEqualThirds = discrimination({
         },
       ],
       hints: [
-        'Which of these strips could you fold so that every piece lands exactly on top of the others?',
+        'Which strip could you fold so every piece lands on top of the others?',
         'Count the parts, then check their sizes: a fraction name needs both to be right.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
@@ -614,7 +614,7 @@ const discrimShadedName = discrimination({
       ],
       hints: [
         'What does the bottom number of a fraction have to count?',
-        'Count every equal part in the whole for the bottom, then only the parts the question names for the top.',
+        'Count every equal part in the whole for the bottom. Then count only the named parts for the top.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -647,11 +647,11 @@ const eaCountedThePlainParts = errorAnalysis({
     const s = r.pick(PANEL_SCENES);
     const name = one(r);
     return {
-      prompt: `${name} builds a ${s.whole} from equal parts: ${countNoun(Number(p.p), 'parts')} are gold and ${countNoun(Number(p.q), 'parts')} are plain. Asked what fraction of the whole ${s.whole} is gold, a student wrote ${v.wrong}.`,
-      extension: `Draw the whole ${s.whole} with all of its equal parts, write the fraction that really names the gold part, and say in one sentence which parts the student was counting underneath the line.`,
+      prompt: `${name} builds a ${s.whole} from equal parts. ${countNoun(Number(p.p), 'parts')} are gold and ${countNoun(Number(p.q), 'parts')} are plain. Asked what fraction of the whole ${s.whole} is gold, a student wrote ${v.wrong}.`,
+      extension: `Draw the whole ${s.whole} with all of its equal parts. Write the fraction that really names the gold part. Then say in one sentence which parts the student counted underneath the line.`,
       hints: [
         'What does the bottom number of a fraction have to count?',
-        'Count every equal part in the whole first, and only then decide which of those parts the question names.',
+        'Count every equal part in the whole first. Only then decide which parts the question names.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
       answerKeywords: ['every equal part', 'the whole', 'all the parts'],
@@ -677,12 +677,12 @@ export const buildC15 = makeWeekBuilder({
     'B22 named two special cuts — halves and quarters — on shapes that were already folded for the child. C15 widens that to any number of parts, adds the number line as a second whole, and makes the EQUALITY of the parts something the child has to check rather than assume. Naming a fraction is genuinely single-step at this stage, so the week does not force a two-step: the one multi-step it carries composes this week\'s unit — a piece of an equally-cut tray — with C6\'s equal groups (usesPriorSkill), and the measurement item composes it with C9\'s equal sharing. Renaming and comparing fractions stay closed until C16.',
   explanation: {
     hook:
-      'Cut a cake into three pieces and you have three pieces. Cut it into three pieces that are all the same size and you have thirds — and only then is there anything for a fraction to name.',
+      'Cut a cake into three pieces and you have three pieces. Cut it into three pieces of the same size and you have thirds. Only then is there anything for a fraction to name.',
     whyBeforeHow:
-      'A fraction is a name for parts of one whole, and the name only tells the truth because every part is exactly the same size — so equal-parts naming starts with a check, not with a count. The bottom number says how many equal parts the whole was cut into; the top number says how many of those parts you are talking about. That is why three pieces are not automatically thirds: if one piece is longer than the others there is no single size for a part to have, and no fraction fits. Check that the parts match, count them, and the name writes itself.',
+      'A fraction is a name for parts of one whole. The name only tells the truth if every part is exactly the same size. That is why equal-parts naming starts with a check, not with a count. The bottom number says how many equal parts the whole was cut into. The top number says how many of those parts you mean. So three pieces are not automatically thirds. If one piece is longer than the others, a part has no single size. Then no fraction fits. Check that the parts match, count them, and the name writes itself.',
     script: [
       {
-        say: 'Watch me name a part. I have cut this strip into four parts, and before I say one word about fractions I check that the four parts match each other exactly. They do — so one of them is one quarter of the strip, and I write that as 1/4.',
+        say: 'Watch me name a part. I have cut this strip into four parts. Before I say one word about fractions, I check that the four parts match. They do. So one of them is one quarter of the strip. I write that as 1/4.',
         visual: 'A strip cut into four equal parts, with one part coloured.',
         figure: areaGrid(
           { rows: 1, cols: 4, shaded: 1 },
@@ -690,7 +690,7 @@ export const buildC15 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now watch this strip. It is cut into three pieces too, but look at the middle one — it is as long as the other two put together. Three pieces, yes. Thirds, no. There is no fraction I can write for these parts at all, because the parts do not have one size between them.',
+        say: 'Now watch this strip. It is cut into three pieces too. But look at the middle one. It is as long as the other two put together. Three pieces, yes. Thirds, no. There is no fraction I can write for these parts. The parts do not have one size between them.',
         visual: 'A strip cut into three pieces, the middle one twice as long as the others.',
         figure: barModel(
           [{ segments: [{ value: 1 }, { value: 2 }, { value: 1 }] }],
@@ -698,7 +698,7 @@ export const buildC15 = makeWeekBuilder({
         ),
       },
       {
-        say: 'The same idea rides on a number line. I divide the space between 0 and 1 into three equal steps. One step from zero lands on the mark called 1/3, and two steps land on 2/3. If my steps were not equal the marks would name nothing.',
+        say: 'The same idea rides on a number line. I divide the space between 0 and 1 into three equal steps. One step from zero lands on the mark called 1/3. Two steps land on 2/3. If my steps were not equal the marks would name nothing.',
         visual: 'A number line from 0 to 1 in three equal steps, with the first two marks named.',
         figure: numberLine(
           {
@@ -716,7 +716,7 @@ export const buildC15 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One more habit before I write any fraction down: I check the size I expect. Half of this strip is four of its eight parts, so a coloured piece smaller than that has to get a name smaller than one half. Three parts out of eight is a little under half — and if I had written something bigger than half I would go back and count the parts again.',
+        say: 'One more habit before I write any fraction down. I check the size I expect. Half of this strip is four of its eight parts. So a smaller coloured piece has to get a name smaller than one half. Three parts out of eight is a little under half. If I had written something bigger than half, I would count the parts again.',
         visual: 'Half a strip coloured, beside three eighths of the same strip coloured.',
         figure: barModel(
           [
@@ -728,7 +728,7 @@ export const buildC15 = makeWeekBuilder({
       },
     ],
     summary:
-      'Count the parts, then check that they match — a fraction only names EQUAL parts of one whole. The bottom number tells how many equal parts the whole was cut into, and the top number counts the parts you mean. Three pieces that do not match are not thirds, on a strip, on a cake or on a number line.',
+      'Count the parts, then check that they match. A fraction only names EQUAL parts of one whole. The bottom number tells how many equal parts the whole was cut into. The top number counts the parts you mean. Three pieces that do not match are not thirds. That holds on a strip, on a cake and on a number line.',
     vocabulary: [
       { term: 'equal parts', kidGloss: 'parts of one whole that are all exactly the same size' },
       { term: 'fraction', kidGloss: 'a name for equal parts of one whole' },
@@ -742,10 +742,10 @@ export const buildC15 = makeWeekBuilder({
       ...ge(15, 1, 'modeled', 'A ribbon is cut into 4 equal pieces, and 3 of them are painted gold. What fraction of the whole ribbon is gold?', [
         {
           teacherSay:
-            'First I hunt for the words that promise the pieces match: "equal pieces". That is what lets me use a fraction at all — without it I would just have four pieces of ribbon and nothing to name.',
+            'First I hunt for the words that promise the pieces match: "equal pieces". That is what lets me use a fraction at all. Without it I would have four pieces of ribbon and nothing to name.',
         },
         {
-          teacherSay: 'Now the bottom number counts every equal piece in the whole ribbon, and the top number counts only the gold ones. What fraction does that give me?',
+          teacherSay: 'Now the bottom number counts every equal piece in the whole ribbon. The top number counts only the gold ones. What fraction does that give me?',
           expected: '3/4',
         },
       ], '3/4'),
@@ -767,7 +767,7 @@ export const buildC15 = makeWeekBuilder({
       ),
     },
     {
-      ...ge(15, 3, 'prompted', 'The space between 0 and 1 on a number line is divided into 6 equal steps. Which fraction names the mark 5 steps from 0?', [
+      ...ge(15, 3, 'prompted', 'A number line runs from 0 to 1. The space between them is divided into 6 equal steps. Which fraction names the mark 5 steps from 0?', [
         { childDo: 'Name what one single step is worth first, then count the steps in the hop.', expected: '5/6' },
       ], '5/6'),
       visual: 'A number line from 0 to 1 divided into six equal steps, with nothing marked yet.',
@@ -834,7 +834,7 @@ export const buildC15 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Fold a strip of paper so that it makes three equal parts, and colour one of them. Write one sentence saying how you KNOW your three parts really are thirds. Then draw a second strip cut into three pieces that are not thirds, and write what is different about it.',
+            'Fold a strip of paper into three equal parts. Colour one of them. Write one sentence saying how you KNOW your three parts really are thirds. Then draw a second strip cut into three pieces that are not thirds. Write what is different about it.',
           value:
             'the three folded parts land exactly on top of each other, so each one is one third; the second strip has three pieces that are not the same size, so no piece of it can be called a third',
           hints: [
@@ -848,7 +848,7 @@ export const buildC15 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: when a shape is cut into three pieces, one of those pieces is one third of the shape. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? A shape is cut into three pieces. One of those pieces is one third of the shape. In one sentence, explain how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -864,7 +864,7 @@ export const buildC15 = makeWeekBuilder({
           ],
           hints: [
             'Can you picture a three-piece cut where the pieces do not match?',
-            'Try one cut with matching pieces and one with a long piece and two short ones, then see whether a single answer covers both.',
+            'Try one cut with matching pieces. Try another with a long piece and two short ones. Does a single answer cover both?',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -892,7 +892,7 @@ export const buildC15 = makeWeekBuilder({
       id: 'C15-PZ-01',
       title: 'Puzzle Grove: The Piece That Cheats',
       puzzleType: 'logic',
-      prompt: `[image: a strip cut into ${countNoun(small + 1, 'pieces')} — ${countNoun(small, 'pieces')} the same size, and one longer piece] A strip is cut into ${countNoun(small + 1, 'pieces')}. ${countNoun(small, 'pieces')} are exactly the same size, and the last one is as long as ${countNoun(big, 'small pieces')} put together. What fraction of the whole strip is ONE small piece — and how do you know that no piece of this strip can be named until the long one has been measured?`,
+      prompt: `[image: a strip cut into ${countNoun(small + 1, 'pieces')} — ${countNoun(small, 'pieces')} the same size, and one longer piece] A strip is cut into ${countNoun(small + 1, 'pieces')}. ${countNoun(small, 'pieces')} are exactly the same size. The last one is as long as ${countNoun(big, 'small pieces')} put together. What fraction of the whole strip is ONE small piece? Why can no piece be named until the long one is measured?`,
       figure: barModel(
         [{ segments: plan.map((value) => ({ value })) }],
         {
@@ -906,8 +906,8 @@ export const buildC15 = makeWeekBuilder({
         validation: 'equivalent-fraction',
       },
       hintLadder: [
-        'Could you cut the long piece so that every piece on the strip is the same size?',
-        'Lay the small piece along the long one to see how many times it fits, then count how many small pieces the whole strip would make.',
+        'Could you cut the long piece so every piece matches?',
+        'Lay the small piece along the long one. How many times does it fit? Then count how many small pieces the whole strip would make.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -930,7 +930,7 @@ export const buildC15 = makeWeekBuilder({
     { gen: sitEqualLengths, diff: 3 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: naming one equal part, naming several coloured parts, and naming a mark on a partitioned number line — the three models the week teaches, one each, with the cell-count, shaded-count and one-step figure affordances preserved. 02: the piece-counting two-step. 04: the re-cut judgement, whose unequal bar is redrawn from its own fresh plan. 06: equal parts of a measured length. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: naming one equal part, naming several coloured parts, and naming a mark on a partitioned number line — the three models the week teaches, one each, with the cell-count, shaded-count and one-step figure affordances preserved. 02: the piece-counting two-step. 04: the re-cut judgement, whose unequal bar is redrawn from its own fresh plan. 06: equal parts of a measured length. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

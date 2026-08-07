@@ -147,7 +147,7 @@ const wCorridor = asWarmup(
         units: 'doors',
         hints: [
           'Do all the floors of this hotel carry the same number of doors?',
-          'Walk one floor, then walk a floor exactly like it once for every storey the hotel stands.',
+          'Walk one floor. Then walk a floor just like it for every storey.',
         ],
         errorTags: ['procedure-slip', 'fact-recall'],
       };
@@ -172,7 +172,7 @@ const wBundles = asWarmup(
         units: 'bundles',
         hints: [
           'Which of the two amounts here is the pile the gardener started from?',
-          'Tie one bundle, then keep tying bundles that size until the pile is gone, and count what you tied.',
+          'Tie one bundle. Keep tying bundles that size until the pile is gone. Then count them.',
         ],
         errorTags: ['representation-misread', 'procedure-slip'],
       };
@@ -193,14 +193,14 @@ const sitMarinaPontoons = withFigure(
       const perPontoon = r.pick(TAUGHT);
       const pontoons = keepFactorsApart(perPontoon, r.int(3, 9));
       return {
-        prompt: `[image: one pontoon with ${countNoun(perPontoon, 'boats')} moored along it] The marina has ${countNoun(pontoons, 'pontoons')} running out into the water, with ${countNoun(perPontoon, 'boats')} moored along each one. How many boats are moored at the marina?`,
+        prompt: `[image: one pontoon with ${countNoun(perPontoon, 'boats')} moored along it] The marina has ${countNoun(pontoons, 'pontoons')} running out into the water. ${countNoun(perPontoon, 'boats')} are moored along each one. How many boats are moored at the marina?`,
         answerValue: String(perPontoon * pontoons),
         templateId: 'd_mul_v1',
         params: { a: perPontoon, b: pontoons, group: 'pontoon' },
         units: 'boats',
         hints: [
-          'Are the two numbers this story hands you both parts of the family, or is one of them the whole?',
-          'Moor up one pontoon, then moor an identical pontoon beside it for every pontoon the marina puts out.',
+          'Are both numbers here parts of the family, or is one the whole?',
+          'Moor up one pontoon. Then repeat that pontoon once for every pontoon the marina puts out.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -242,8 +242,8 @@ const sitJugglerBeanbags = withFigure(
         params: { n: perJuggler * jugglers, f: perJuggler },
         units: 'jugglers',
         hints: [
-          'Which of these two amounts is the whole set, and which one is a single part of it?',
-          'Lift the whole set off the top corner and break it into parts the size the story handed you.',
+          'Which of these two amounts is the whole set?',
+          'Lift the whole set off the top corner. Break it into parts of the stated size.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -267,14 +267,14 @@ const sitLanternRows = withFigure(
       const perRow = r.pick(TAUGHT);
       const rows = keepFactorsApart(perRow, r.int(3, 8));
       return {
-        prompt: `[image: one row of the parade, ${countNoun(perRow, 'lanterns')} across] For the winter parade, ${countNoun(perRow * rows, 'lanterns')} are strung above the square in equal rows, ${countNoun(perRow, 'lanterns')} to a row. How many rows of lanterns hang above the square?`,
+        prompt: `[image: one row of the parade, ${countNoun(perRow, 'lanterns')} across] For the winter parade, ${countNoun(perRow * rows, 'lanterns')} are strung above the square in equal rows. There are ${countNoun(perRow, 'lanterns')} to a row. How many rows of lanterns hang above the square?`,
         answerValue: String(rows),
         templateId: 'd_factor_pair_v1',
         params: { n: perRow * rows, f: perRow },
         units: 'rows',
         hints: [
-          'Which of the two numbers here counts every lantern above the square, and which counts one row of them?',
-          'String a row of that width, then keep stringing rows the same width until no lanterns are left, counting as you go.',
+          'Which number counts every lantern above the square, and which counts one row?',
+          'String a row of that width. Keep stringing rows the same width until no lanterns are left. Count as you go.',
         ],
         errorTags: ['representation-misread', 'task-comprehension'],
       };
@@ -309,8 +309,8 @@ const sitTrackPieces = situation({
       params: { n: piece * pieces, f: piece },
       units: 'pieces',
       hints: [
-        'Does this story measure the whole run for you, or just one piece of it, or both of them?',
-        'Set a piece down at the start of the run and step it along, keeping a tally of the steps until the run ends.',
+        'Does this story measure the whole run, one piece, or both?',
+        'Set a piece down at the start of the run. Step it along to the end. Keep a tally of the steps.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -318,7 +318,7 @@ const sitTrackPieces = situation({
 });
 const sitTrackPiecesCheck = withCheckBack(
   sitTrackPieces,
-  'does your count of pieces, laid end to end at the stated piece length, rebuild the whole run?',
+  'does your count of pieces rebuild the whole run?',
 );
 
 /**
@@ -340,8 +340,8 @@ const sitRecorderPrice = situation({
       params: { n: each * bought, f: each },
       units: 'recorders',
       hints: [
-        'Which of the two amounts on the receipt is the whole spend, and which is the price of a single instrument?',
-        'Pay for one recorder out of the bill, then keep paying that same amount until the bill is spent, and count the recorders on the table.',
+        'Which amount on the receipt is the whole spend, and which is one recorder?',
+        'Pay for one recorder out of the bill. Keep paying that amount until the bill is spent. Then count the recorders on the table.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -349,7 +349,7 @@ const sitRecorderPrice = situation({
 });
 const sitRecorderPriceEstimate = withEstimateFirst(
   sitRecorderPrice,
-  'is the count of recorders going to come out above the price of a single one, or below it?',
+  'will the number of recorders come out above the price of one, or below?',
 );
 
 // ---------------------------------------------------------------------------
@@ -388,8 +388,8 @@ const msPrizesThenHampers = multiStep({
       ],
       units: 'hampers',
       hints: [
-        'Which number does this story never say out loud, even though nothing can happen until you have it?',
-        'Tip every box into one heap first, then break that heap into helpings of the size the last sentence names.',
+        'Which number does this story never say out loud?',
+        'Tip every box into one heap first. Then break that heap into helpings of the stated size.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -412,7 +412,7 @@ const msRailsThenSome = multiStep({
     const perRail = r.int(3, 9);
     const some = r.int(2, rails - 1);
     return {
-      prompt: `${countNoun(rails * perRail, 'coats')} hang in the cloakroom on ${countNoun(rails, 'rails')}, with the same number on every rail. How many coats hang on ${some} of those rails?`,
+      prompt: `${countNoun(rails * perRail, 'coats')} hang in the cloakroom on ${countNoun(rails, 'rails')}. Every rail holds the same number. How many coats hang on ${some} of those rails?`,
       initN: rails * perRail,
       steps: [
         { op: 'div', n: rails, d: 1 },
@@ -421,7 +421,7 @@ const msRailsThenSome = multiStep({
       units: 'coats',
       hints: [
         'Does the cloakroom ever tell you what a single rail is carrying?',
-        'Uncover that single-rail number first out of the whole cloakroom, and only then take as many rails as the question wants.',
+        'Find the single-rail number first. Only then take as many rails as the question wants.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -454,7 +454,7 @@ const msRosettesWithSpare = multiStep({
       units: 'rosettes',
       hints: [
         'Before you begin, which of these numbers is counting something that is not a rosette?',
-        'Gather every rosette in the show into one heap, then split that heap the way the second sentence asks; one number you read will still be sitting there unused.',
+        'Gather every rosette into one heap. Then split that heap as the second sentence asks. One number will stay unused.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -481,7 +481,7 @@ const discrimCompleteFamily = discrimination({
     const big = keepFactorsApart(small, r.int(3, 9));
     const whole = small * big;
     return {
-      prompt: `Three sentences of one fact family are already on the board: ${small} × ${big} = ${whole}, ${big} × ${small} = ${whole} and ${whole} ÷ ${big} = ${small}. Which sentence completes the family?`,
+      prompt: `Three sentences of one fact family are already on the board. They are ${small} × ${big} = ${whole}, ${big} × ${small} = ${whole} and ${whole} ÷ ${big} = ${small}. Which sentence completes the family?`,
       correct: `${whole} ÷ ${small} = ${big}`,
       distractors: [
         {
@@ -496,8 +496,8 @@ const discrimCompleteFamily = discrimination({
         },
       ],
       hints: [
-        'Which corner of the triangle has not yet had a turn at standing alone on the far side of the equals sign?',
-        'Cover each of the three numbers in turn and read what the other two would have to do to reach it.',
+        'Which corner has not yet stood alone after the equals sign?',
+        'Cover each of the three numbers in turn. Read what the other two must do to reach it.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -529,7 +529,7 @@ const discrimBoxPlacement = discrimination({
     const s = r.pick(BOX_SCENES);
     const name = one(r);
     return {
-      prompt: `Every ${s.container} holds the same number of ${s.noun}. ${name} counts ${countNoun(holders, s.container)} and ${countNoun(whole, s.noun)} in all, but has never counted what a single ${s.container} holds on its own. Which number sentence puts the empty box where ${name}'s question belongs?`,
+      prompt: `Every ${s.container} holds the same number of ${s.noun}. ${name} counts ${countNoun(holders, s.container)} and ${countNoun(whole, s.noun)} in all. Nobody has counted what a single ${s.container} holds. Which number sentence puts the empty box where ${name}'s question belongs?`,
       correct: `${holders} × ▢ = ${whole}`,
       distractors: [
         {
@@ -545,7 +545,7 @@ const discrimBoxPlacement = discrimination({
       ],
       hints: [
         'Which one of the three amounts in this story has nobody counted yet?',
-        'Say the story aloud as a sentence with a gap in it, then find the written sentence whose gap sits in the same place.',
+        'Say the story aloud as a sentence with a gap in it. Then find the written sentence whose gap sits in the same place.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -572,11 +572,11 @@ const eaMultipliedTheFamily = errorAnalysis({
     return { a: b * q, b, op: '/', wrongOp: '*' };
   },
   build: (v, p) => ({
-    prompt: `A wildlife group has ${countNoun(Number(p.a), 'nesting boxes')} to put up, and ${countNoun(Number(p.b), 'boxes')} go on each tree. Asked how many trees the group will need, a student wrote ${p.a} ÷ ${p.b} = ${v.wrong}.`,
-    extension: 'Work out how many trees the group really needs, then write one sentence about what the student did with the two numbers.',
+    prompt: `A wildlife group has ${countNoun(Number(p.a), 'nesting boxes')} to put up. ${countNoun(Number(p.b), 'boxes')} go on each tree. Asked how many trees the group will need, a student wrote ${p.a} ÷ ${p.b} = ${v.wrong}.`,
+    extension: 'Work out how many trees the group really needs. Then write one sentence about what the student did.',
     hints: [
       'Could hanging boxes on trees ever call for more trees than there are boxes?',
-      'Draw the trees and hang the boxes on them, then hold your own count up beside the number on the page.',
+      'Draw the trees and hang the boxes on them. Then hold your count beside the number on the page.',
     ],
     errorTags: ['concept-misconception', 'fact-recall'],
   }),
@@ -600,12 +600,12 @@ export const buildC10 = makeWeekBuilder({
     'B8 built fact families out of adding and taking away, where the three numbers sit in a line: two parts side by side and a whole across them. C10 rebuilds the same idea on a relationship that is not a line — the whole here is what the parts MAKE, not what they add up to — and adds the move B8 had no need of: with one bottom corner covered, the answer is a factor nobody has counted, and it is reached by dividing. C6 and C9 met the two operations one at a time; this is the week they stop being two.',
   explanation: {
     hook:
-      'Three numbers — 4, 5 and 20 — and they will not leave each other alone. Turn them one way and they multiply. Turn them the other way and they divide. This week we meet the whole family at once, and learn which of its four sentences is the one you can actually answer.',
+      'Three numbers — 4, 5 and 20 — and they will not leave each other alone. Turn them one way and they multiply. Turn them the other way and they divide. This week we meet the whole family at once. We learn which of its four sentences you can answer.',
     whyBeforeHow:
-      'Two numbers multiplied together make a third, and because that is the only relationship the three of them have, they can be written down in the part-part-whole triangle once and then read four different ways. The bottom corners are the parts; the top corner is the whole those parts make. Which corner is covered decides everything. Cover the top and both parts are in your hands, so you put them together and multiply. Cover a bottom corner and you are holding the whole and one part, so the whole has to be broken up — and breaking a whole into equal parts is a division. That is why a missing factor is never a new kind of question. It is a division wearing a multiplication sign.',
+      'Two numbers multiplied together make a third. That is the only link the three of them have. That is why they fit into the part-part-whole triangle. One drawing, read four different ways. The bottom corners are the parts. The top corner is the whole those parts make. Which corner is covered decides everything. Cover the top and both parts are in your hands. So you put them together and multiply. Cover a bottom corner and you hold the whole and one part. Now the whole has to be broken up. Breaking a whole into equal parts is a division. That is why a missing factor is never a new kind of question. It is a division wearing a multiplication sign.',
     script: [
       {
-        say: 'Watch me build one family from nothing. I lay out four counters in a row, then another row of four, and I keep going until there are five rows. Four, eight, twelve, sixteen, twenty. Three numbers came out of that — four, five and twenty — and every sentence I am about to write uses those three and nothing else.',
+        say: 'Watch me build one family from nothing. I lay out four counters in a row. Then another row of four. I keep going until there are five rows. Four, eight, twelve, sixteen, twenty. Three numbers came out of that: four, five and twenty. Every sentence I write next uses those three and nothing else.',
         visual: 'Five rows with four counters in each row.',
         figure: areaGrid(
           { rows: 5, cols: 4, rowLabels: ['4', '4', '4', '4', '4'] },
@@ -613,7 +613,7 @@ export const buildC10 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now the triangle. Twenty goes at the top, because twenty is what the other two made; four and five go in the bottom corners. Cover the top corner and the two parts are still showing, so I put them together: 4 × 5 = 20, and turning the row the other way, 5 × 4 = 20. One covered corner, two sentences.',
+        say: 'Now the triangle. Twenty goes at the top, because twenty is what the other two made. Four and five go in the bottom corners. Cover the top corner and the two parts are still showing. So I put them together: 4 × 5 = 20. Turn the row the other way and I get 5 × 4 = 20. One covered corner, two sentences.',
         visual: 'A bar of twenty built from five equal parts of four.',
         figure: barModel(
           [
@@ -627,7 +627,7 @@ export const buildC10 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now I cover a bottom corner instead. What is left showing is twenty and five — the whole, and one of its parts. I cannot put those two together: twenty fives would be an enormous number, and the part I am hunting has to be smaller than twenty, not bigger. So the whole gets broken up into parts of five: 20 ÷ 5 = 4. Cover the other bottom corner and exactly the same move gives 20 ÷ 4 = 5.',
+        say: 'Now I cover a bottom corner instead. What is left showing is twenty and five — the whole, and one of its parts. I cannot put those two together. Twenty fives would be an enormous number. The part I am hunting has to be smaller than twenty, not bigger. So the whole gets broken up into parts of five: 20 ÷ 5 = 4. Cover the other bottom corner and exactly the same move gives 20 ÷ 4 = 5.',
         visual: 'The same twenty counters with a single row of four marked off.',
         figure: areaGrid(
           { rows: 5, cols: 4, shadedRows: 1 },
@@ -635,7 +635,7 @@ export const buildC10 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before I write any family sentence down: I check the size I am expecting. If the corner I am hunting is the top one, my answer has to be the biggest of the three. If it is a bottom corner, my answer has to be smaller than the top. An answer that breaks that is not telling me I counted badly — it is telling me I covered one corner and reached for the move that belongs to another.',
+        say: 'One habit before I write any family sentence down. I check the size I am expecting. If I am hunting the top corner, my answer must be the biggest. If it is a bottom corner, my answer must be smaller than the top. An answer that breaks that is not telling me I counted badly. It is telling me I reached for the wrong move.',
         visual: 'The whole bar of twenty above a single part of four, drawn to the same scale.',
         figure: barModel(
           [
@@ -647,7 +647,7 @@ export const buildC10 = makeWeekBuilder({
       },
     ],
     summary:
-      'One triple, four sentences. The two bottom corners multiply to make the top corner; the top corner divided by either bottom corner hands back the other one. Read a story for the corner that is covered: if it is the top, multiply the parts; if it is a bottom corner, you are hunting a missing factor, and a missing factor is found by dividing. Check any answer by multiplying the two smaller numbers back up to the biggest.',
+      'One triple, four sentences. The two bottom corners multiply to make the top corner. Divide the top corner by either bottom corner and you get the other one. Read a story for the corner that is covered. If it is the top, multiply the parts. If it is a bottom corner, you are hunting a missing factor. A missing factor is found by dividing. Check any answer by multiplying the two smaller numbers back up.',
     vocabulary: [
       { term: 'fact family', kidGloss: 'the four number sentences that three numbers make together' },
       { term: 'fact triangle', kidGloss: 'the three numbers drawn in their corners: parts at the bottom, whole at the top' },
@@ -660,7 +660,7 @@ export const buildC10 = makeWeekBuilder({
       ...ge(10, 1, 'modeled', 'The bottom corners of a fact triangle show 4 and 5. What number belongs in the top corner?', [
         {
           teacherSay:
-            'Watch which way I read this triangle before I do anything. Both bottom corners are showing, and the bottom corners are the parts — so the number I am missing is the one they build between them, which means I already have everything I need in my hands.',
+            'Watch which way I read this triangle first. Both bottom corners are showing. The bottom corners are the parts. So the number I am missing is the one they build together. I already have everything I need in my hands.',
         },
         {
           teacherSay: 'So I lay out a row of four, and another, until there are five rows. Four, eight, twelve… where does the fifth row leave me?',
@@ -676,7 +676,7 @@ export const buildC10 = makeWeekBuilder({
     {
       ...ge(10, 2, 'completion', 'A fact triangle shows 30 at the top and 5 in one bottom corner. What number is hidden under the other bottom corner?', [
         { teacherSay: 'Which of these two numbers is the whole that the other two make?', expected: '30' },
-        { childDo: 'Break that whole into parts the size of the corner you can see, and count the parts you made.', expected: '6' },
+        { childDo: 'Break that whole into parts the size of the corner you can see. Count the parts.', expected: '6' },
       ], '6'),
       visual: 'A bar of thirty split into six equal parts of five.',
       figure: barModel(
@@ -690,7 +690,7 @@ export const buildC10 = makeWeekBuilder({
         { scaleMax: 30, alt: 'a bar of thirty split into six equal parts of five' },
       ),
     },
-    ge(10, 3, 'prompted', '32 lanterns are strung above the square in equal rows, with 4 lanterns in every row. How many rows of lanterns are there?', [
+    ge(10, 3, 'prompted', '32 lanterns are strung above the square in equal rows. Every row holds 4 lanterns. How many rows of lanterns are there?', [
       { childDo: 'Say which of the two numbers counts every lantern there is, before you calculate anything.', expected: '8' },
     ], '8'),
     {
@@ -755,13 +755,13 @@ export const buildC10 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'A fact triangle has 30 at the top and 5 in one bottom corner. Write all four number sentences this triangle makes. Then cover the 5 as well, and write one sentence explaining why a covered bottom corner can only ever be found by dividing, and never by multiplying.',
+            'A fact triangle has 30 at the top and 5 in one bottom corner. Write all four number sentences this triangle makes. Then cover the 5 as well. Write one sentence explaining why a covered bottom corner is always found by dividing. Never by multiplying.',
           value: 'a covered bottom corner is a missing factor; what is left showing is the whole and one part, so the whole has to be broken up, and that is a division',
           acceptableForms: ['divide', 'division', 'missing factor', 'break', 'the whole', 'part', 'smaller'],
           keywords: true,
           hints: [
-            'Which corner of a triangle holds the biggest of the three numbers, and which two build it?',
-            'Try both moves on the two numbers still showing, and see which one could possibly land on something smaller than the whole.',
+            'Which corner of a triangle holds the biggest of the three numbers?',
+            'Try both moves on the two numbers still showing. Which one could land on something smaller than the whole?',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -770,7 +770,7 @@ export const buildC10 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: in a fact family built from two numbers that are each bigger than one, the biggest of the three numbers can be the answer to one of the family\'s division sentences. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? Build a fact family from two numbers, each bigger than one. The biggest of the three numbers can answer one of the family\'s division sentences. In one sentence, explain how you know.',
           correct: 'never',
           distractors: [
             {
@@ -785,8 +785,8 @@ export const buildC10 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Where does the biggest number of a family sit in the triangle, and where does it end up in a division sentence?',
-            'Write out both division sentences of a family you already know, and look at which number lands after the equals sign each time.',
+            'Where does the biggest number of a family sit in the triangle?',
+            'Write out both division sentences of a family you know well. Look at which number lands after the equals sign.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -815,27 +815,31 @@ export const buildC10 = makeWeekBuilder({
       id: 'C10-PZ-01',
       title: 'Puzzle Grove: The Family That Came Up Short',
       puzzleType: 'pattern',
-      prompt: `A fact family normally gives four different number sentences. ${name} builds one from ${shown}, ${shown} and ${shown * shown}, writes carefully, and ends up with only two. Explain why this family comes up short, then find two more triples below a hundred that do the same thing.`,
+      prompt: `A fact family normally gives four different number sentences. ${name} builds one from ${shown}, ${shown} and ${shown * shown}. ${name} writes carefully and ends up with only two. Explain why this family comes up short. Then find two more triples below a hundred that do the same.`,
       answer: {
         value: triples.join('; '),
         acceptableForms: triples,
         validation: 'short-text-keyword',
       },
       hintLadder: [
-        'What has to be true about the two bottom corners for all four sentences to look different from each other?',
-        'Write the four sentences out for a family you know well, then put the same number into both bottom corners and see which of the four become twins.',
+        'What has to be true about the two bottom corners here?',
+        'Write the four sentences out for a family you know well. Now put the same number into both bottom corners. See which sentences become twins.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
   },
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
   sprint: {
-    skill: 'Multiplication facts ×3 and ×4 — the products a missing factor searches',
+    // factorRange [2,5]: mult_facts_v1 draws BOTH factors from this range, so
+    // [2,10] served ×6-×9 facts first taught in C11/C12 — a forward leak into a
+    // timed sprint (FACT FIDELITY, header). [2,5] keeps every servable fact
+    // inside the C7/C8 taught set.
+    skill: 'Multiplication facts to five — the products a missing factor searches',
     sourceWeek: C8,
     itemCount: 16,
     scheduledDay: 2,
     templateId: 'mult_facts_v1',
-    params: { factorRange: [2, 10] },
+    params: { factorRange: [2, 5] },
   },
   mastery: [
     { gen: sitMarinaPontoons, diff: 3 },
@@ -846,7 +850,7 @@ export const buildC10 = makeWeekBuilder({
     { gen: msRosettesWithSpare, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step family members — one with the TOP corner covered (both parts given) and two with a BOTTOM corner covered (the whole and one part given, a missing factor wanted), with the one-group figure affordance preserved. 02/04/06: two-step families — build the whole then repack it at a new group size, an inverse-start whose first move is the division that undoes the stated total, and one carrying a quantity that never enters the working. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step family members — one with the TOP corner covered (both parts given) and two with a BOTTOM corner covered (the whole and one part given, a missing factor wanted), with the one-group figure affordance preserved. 02/04/06: two-step families — build the whole then repack it at a new group size, an inverse-start whose first move is the division that undoes the stated total, and one carrying a quantity that never enters the working. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',
@@ -877,7 +881,7 @@ export const buildC10 = makeWeekBuilder({
       subtype: 'family-reached-but-fact-slips',
       description: 'Picks the right corner and the right move, then lands one group out because the multiplication fact underneath it is not yet automatic.',
       exampleWrongAnswer: '30 ÷ 5 answered as 7',
-      distractorRationale: 'Offer the factor that is one group short of the true one.',
+      distractorRationale: 'Offer the factor that is one group off the true one.',
       reteachPointer: 'guidedExamples/C10-GE-01 (say the running total aloud once per row), then the 2-minute multiplication sprint',
     },
   ],
