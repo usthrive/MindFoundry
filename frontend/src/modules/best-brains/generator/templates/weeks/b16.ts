@@ -518,9 +518,9 @@ export const buildB16 = makeWeekBuilder({
     'Money is not a new operation — it is the addition and subtraction of B13 and B14 wearing coins, where the numbers no longer arrive one per object. The new load is that each thing counted is worth a different amount, so the week composes strictly-prior skills for its two-step pages: the jar chain adds whole tens on (B10 adding tens), and the spending chain takes two prices off in turn (B14 subtraction within 100). Both are marked usesPriorSkill; what is genuinely new is the value order the counting runs in.',
   explanation: {
     hook:
-      'Tip out a purse and you are holding two different numbers at once. One of them is how many coins are lying there. The other is how much money they make — and they are almost never the same number.',
+      'Tip out a purse and you are holding two different numbers at once. One of them is how many coins are lying there. The other is how much money they make. The two are almost never the same number.',
     whyBeforeHow:
-      'A coin does not tell you what it is worth by how big it is, because a dime is smaller than a nickel and worth twice as much. That is why a handful of coins cannot be counted like a handful of buttons: buttons are all worth one button each, and coins are not. Counting coins in value order settles it. Start with the coin worth the most, hold that number in your head, and count on by what each next coin is worth — never by how many coins are left to go. Three pennies are three coins and three cents. One dime is one coin and ten cents. So the taller pile is not the richer one, and the only way to know which is which is to count what each coin is worth.',
+      'A coin does not tell you what it is worth by how big it is. You can see that because a dime is smaller than a nickel. The dime is worth twice as much. That is why a handful of coins cannot be counted like a handful of buttons. Buttons are all worth one button each, and coins are not. Counting coins in value order settles it. Start with the coin worth the most and hold that number in your head. Then count on by what each next coin is worth. Never count by how many coins are left to go. Three pennies are three coins and three cents. One dime is one coin and ten cents. So the taller pile is not the richer one. The only way to know is to count what each coin is worth.',
     script: [
       {
         say: 'Watch me count this pile. I do not reach for the biggest coin. I reach for the coin that is WORTH the most — the quarter. Twenty-five. The dime takes me to thirty-five. The two pennies bring me to thirty-seven cents.',
@@ -562,7 +562,7 @@ export const buildB16 = makeWeekBuilder({
       },
     ],
     summary:
-      'Sort the coins with the most valuable first, then count on by what each coin is WORTH, not by how many coins there are. A quarter counts as twenty-five, a dime as ten, a nickel as five, a penny as one. A hundred cents is one dollar. More coins in the hand does not mean more money in the hand.',
+      'Sort the coins with the most valuable first. Then count on by what each coin is WORTH, not by how many there are. A quarter counts as twenty-five and a dime as ten. A nickel counts as five and a penny as one. A hundred cents is one dollar. More coins in the hand does not mean more money in the hand.',
     vocabulary: [
       { term: 'cent', kidGloss: 'the smallest amount of money we count in — one penny is worth one cent' },
       { term: 'nickel', kidGloss: 'the fat silver coin worth five cents — never count it as one' },
@@ -596,9 +596,9 @@ export const buildB16 = makeWeekBuilder({
     {
       ...ge(16, 2, 'completion', 'A purse holds one quarter, one dime and two pennies. A sticker costs 45¢. How many more cents are needed?', [
         {
-          teacherSay: 'I count the purse in value order and land on thirty-seven cents. The price is higher than that, so the question is how far the money still has to travel.',
+          teacherSay: 'I count the purse in value order and land on thirty-seven cents. The price is higher than that. So the question is how far the money still has to travel.',
         },
-        { childDo: 'Count on from what the purse holds up to the price, and say how many cents that takes.', expected: '8¢' },
+        { childDo: 'Count on from what the purse holds up to the price. Say how many cents that takes.', expected: '8¢' },
       ], '8¢'),
       visual: 'A quarter, a dime and two pennies beside a sticker marked with its price.',
       figure: coinSetFigure([
@@ -610,7 +610,7 @@ export const buildB16 = makeWeekBuilder({
     {
       ...ge(16, 3, 'prompted', 'One quarter makes 25¢. Make 25¢ a second way, using exactly three coins.', [
         {
-          childDo: 'Swap the large coin for smaller coins that fill the same value, and keep going until you are holding three.',
+          childDo: 'Swap the large coin for smaller coins that fill the same value. Keep going until you are holding three.',
           expected: 'dime, dime, nickel',
         },
       ], 'dime, dime, nickel'),
@@ -621,7 +621,7 @@ export const buildB16 = makeWeekBuilder({
       // Independent stage: the picture hands over the START and nothing more.
       // Working out what survives two purchases IS the task.
       ...ge(16, 4, 'independent', 'A purse holds 48¢ in coins. A pencil costs 20¢ and a badge costs 15¢. Both are bought. How many cents are left? Solve cold.', [
-        { childDo: 'Pay for the first thing, count what the hand still holds, then pay for the second.', expected: '13¢' },
+        { childDo: 'Pay for the first thing and count what the hand still holds. Then pay for the second.', expected: '13¢' },
       ], '13¢'),
       visual: 'A quarter, two dimes and three pennies — the purse before anything is spent.',
       figure: coinSetFigure([

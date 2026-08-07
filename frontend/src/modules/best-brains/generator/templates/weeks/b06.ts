@@ -787,7 +787,7 @@ export const buildB06 = makeWeekBuilder({
     hook:
       'Two pans hang from one bar. Load one side and the bar tips, load both sides evenly and it sits flat. The equals sign is that bar, and it has been telling you so all along.',
     whyBeforeHow:
-      'An equals sign is not a door that the answer walks through. It is the balance scale, because it makes one promise and only one: what sits on this side is worth the same as what sits on that side. So a sentence is allowed an add on BOTH sides — three and four on the left, five and two on the right, and the bar sits flat, so the sentence is true. It is allowed a single number first and the adding after it, since the promise never said which side had to be short. And a box in the middle of a line is not asking for the answer to the part in front of it; it is asking what that side still needs before the bar will sit flat. Read the sign as "is worth the same as", and every number sentence turns into a scale you can check for yourself.',
+      'An equals sign is not a door that the answer walks through. It is the balance scale, because it makes one promise and only one. What sits on this side is worth the same as what sits on that side. So a sentence is allowed an add on BOTH sides. Put three and four on the left, and five and two on the right. The bar sits flat, so the sentence is true. It is also allowed a single number first and the adding after it. The promise never said which side had to be short. A box in the middle of a line is not asking for the answer. It is not asking what the part in front of it comes to. It is asking what that side still needs before the bar will sit flat. Read the sign as "is worth the same as". Then every number sentence turns into a scale you can check for yourself.',
     script: [
       {
         say: 'Watch me load this scale. Three corks on the left, and four corks beside them. Seven corks in one heap on the right. The bar sits flat. Both sides are worth the same, so the sentence underneath it is a true one.',
@@ -819,7 +819,7 @@ export const buildB06 = makeWeekBuilder({
       },
     ],
     summary:
-      'The equals sign means "is worth the same as". Gather everything on the left, gather everything on the right, and compare the two amounts: match means true, and no match means false. Both sides are allowed an add. The single number is allowed to come first. A box is asking what its own side still needs, never what the other side comes to.',
+      'The equals sign means "is worth the same as". Gather everything on the left, then gather everything on the right. Compare the two amounts: match means true, and no match means false. Both sides are allowed an add. The single number is allowed to come first. A box is asking what its own side still needs. It never asks what the other side comes to.',
     vocabulary: [
       { term: 'equals sign (=)', kidGloss: 'the two sides of the line are worth the same amount' },
       { term: 'balance', kidGloss: 'the bar sits flat, because neither pan is carrying more than the other' },
