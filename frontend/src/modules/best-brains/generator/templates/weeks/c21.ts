@@ -222,7 +222,7 @@ const perCardRibbon = situation({
       units: 'centimeters',
       hints: [
         'Where does the ribbon actually sit — around the rim, or across the face?',
-        'Follow the ribbon along all four edges, taking the long edge and the short edge twice each.',
+        'Follow the ribbon along all four edges. Take the long edge and the short edge twice each.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -279,7 +279,7 @@ const areaMissingSide = situation({
       params: { a: l * w, b: l },
       units: 'centimeters',
       hints: [
-        'If you know the whole covering and one side, what has the other side got to be?',
+        'If you know the whole covering and one side, what is the other side?',
         'Share the covering squares into rows as long as the side you already know.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
@@ -322,7 +322,7 @@ const areaBlanketBase = withFigure(
 );
 const areaBlanketEstimate = withEstimateFirst(
   areaBlanketBase,
-  'will the squares hidden underneath outnumber the meters around the rim, or fall short of them?',
+  'will the squares hidden underneath outnumber the meters around the rim?',
 );
 
 // ---------------------------------------------------------------------------
@@ -405,7 +405,7 @@ const msFenceToArea = multiStep({
       units: 'square meters',
       hints: [
         'What can the length of the fence tell you about the side nobody measured?',
-        'Half the way round is one length and one width together, so take the known length out of that half.',
+        'Half the way round is one length and one width together. Take the known length out of that half.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -432,7 +432,7 @@ const msAreaToFence = multiStep({
       units: 'meters',
       hints: [
         'What does the covering tell you about the side you were not given?',
-        'Split the covering into rows as long as the known side, then walk all four sides.',
+        'Split the covering into rows as long as the known side. Then walk all four sides.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -492,7 +492,7 @@ const discrimWhichNumber = discrimination({
       ],
       hints: [
         'Which part of the shape does this job actually touch?',
-        'Say the job back in your own words, then match it to a walk around the rim or a covering of the inside.',
+        'Say the job back in your own words. Then match it to a walk around the rim, or a covering inside.',
       ],
       errorTags: ['concept-misconception', 'representation-misread', 'task-comprehension'],
     };
@@ -597,8 +597,8 @@ const eaAddedTheSides = errorAnalysis({
   build: (v, p, r) => {
     const name = one(r);
     return {
-      prompt: `A student measured ${name}'s rug: ${countNoun(Number(p.a), 'meters')} along one side and ${countNoun(Number(p.b), 'meters')} along the next. The question asked how much floor the rug covers. The student put the two measurements together and wrote ${v.wrong} square meters.`,
-      extension: 'Draw the rug on squared paper, count what it really covers, and write one sentence saying what the student\'s number does measure.',
+      prompt: `A student measured ${name}'s rug. It was ${countNoun(Number(p.a), 'meters')} along one side and ${countNoun(Number(p.b), 'meters')} along the next. The question asked how much floor the rug covers. The student put the two measurements together and wrote ${v.wrong} square meters.`,
+      extension: 'Draw the rug on squared paper and count what it really covers. Then write one sentence about what the student\'s number does measure.',
       hints: [
         'Which of the two measurements on its own tells you how much floor is covered?',
         'Draw the rug on squares and count what fits inside it.',
@@ -627,12 +627,12 @@ export const buildC21 = makeWeekBuilder({
     'C20 taught one measure of a rectangle — the covering, found by rows × columns. C21 puts a second measure beside it and never signals which one a job wants, so the new load is the CHOICE (and its label), plus the inverse direction: a stated fence length or a stated covering now reveals the side nobody measured.',
   explanation: {
     hook:
-      'Fencing is sold by the meter. Turf is sold by the square meter. Two children measure the same garden, come back with two different numbers, and both of them are right — this week is about knowing which number a job is asking for.',
+      'Fencing is sold by the meter. Turf is sold by the square meter. Two children measure the same garden and come back with two different numbers. Both of them are right. This week is about knowing which number a job wants.',
     whyBeforeHow:
-      'A rectangle can be measured in two completely different ways, and the two answers are not rivals — they answer different questions. The way round is a LENGTH, because you are walking a line from corner to corner to corner, and a line is measured in meters. The covering is a SURFACE, because you are filling the inside with squares, and a surface is counted in square meters. That is the difference between the fence and the field: the fence is a line you walk, the field is a space you cover. So the first job is never arithmetic — it is deciding which of the two the question wants, because the wrong one gives a number that looks perfectly reasonable and is useless.',
+      'A rectangle can be measured in two completely different ways. The two answers are not rivals; they answer different questions. The way round is a LENGTH, because you walk a line round the edge. A line is measured in meters. The covering is a SURFACE, because you fill the inside with squares. A surface is counted in square meters. That is the difference between the fence and the field. The fence is a line you walk; the field is a space you cover. So the first job is never arithmetic. It is deciding which of the two the question wants. Choosing the other one gives a number that looks reasonable and is useless.',
     script: [
       {
-        say: 'Watch me measure this garden the first way. I put my finger on a corner and walk the edge like a fence: five meters, then three, then five, then three. That walk is the perimeter, and it is measured in meters.',
+        say: 'Watch me measure this garden the first way. I put my finger on a corner and walk the edge like a fence. Five meters, then three, then five, then three. That walk is the perimeter, and it is measured in meters.',
         visual: 'A garden drawn in unit squares with the border traced right around.',
         figure: areaGrid(
           { rows: 3, cols: 5 },
@@ -654,7 +654,7 @@ export const buildC21 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now the second way, on the same garden. I fill the inside with square meters: three rows of five squares, fifteen squares in all. That count is the area, and it is counted in square meters, not meters.',
+        say: 'Now the second way, on the same garden. I fill the inside with square meters. Three rows of five squares, fifteen squares in all. That count is the area, and it is counted in square meters, not meters.',
         visual: 'The same garden filled with fifteen square meters, in three rows of five.',
         figure: areaGrid(
           { rows: 3, cols: 5, showCounts: true },
@@ -662,7 +662,7 @@ export const buildC21 = makeWeekBuilder({
         ),
       },
       {
-        say: 'And here is the surprise. I bend that same sixteen meters of fence into a square garden instead. The fence has not changed one bit, but now sixteen squares fit inside where fifteen fitted before. The fence does not decide the field.',
+        say: 'And here is the surprise. I bend that same sixteen meters of fence into a square garden instead. The fence has not changed one bit. But now sixteen squares fit inside, where fifteen fitted before. The fence does not decide the field.',
         visual: 'A square garden with the same length of fence around it, holding one more square.',
         figure: areaGrid(
           { rows: 4, cols: 4, showCounts: true },
@@ -688,12 +688,12 @@ export const buildC21 = makeWeekBuilder({
       ...ge(21, 1, 'modeled', 'A garden is 7 meters long and 4 meters wide. It needs a fence right around the edge and turf over the whole inside. How much of each?', [
         {
           teacherSay:
-            'First I ask what each job touches, because that is what decides everything else. The fence lives on the EDGE, so I walk it: seven, then four, then seven, then four. How far is that walk?',
+            'First I ask what each job touches, because that is what decides everything else. The fence lives on the EDGE, so I walk it. Seven, then four, then seven, then four. How far is that walk?',
           expected: '22',
         },
         {
           teacherSay:
-            'Now the turf. Turf lies on the INSIDE, so I stop walking and start counting squares: four rows with seven square meters in each row.',
+            'Now the turf. Turf lies on the INSIDE. So I stop walking and start counting squares. Four rows, with seven square meters in each row.',
           expected: '28',
           figure: areaGrid(
             { rows: 4, cols: 7, showCounts: true },
@@ -702,7 +702,7 @@ export const buildC21 = makeWeekBuilder({
         },
         {
           teacherSay:
-            'Two jobs, two numbers, two labels — and I write the labels on, because twenty-two and twenty-eight would be meaningless to the person buying the fence.',
+            'Two jobs, two numbers, two labels. I write the labels on every time. Twenty-two and twenty-eight would mean nothing to the person buying the fence.',
         },
       ], '22 meters of fence and 28 square meters of turf'),
       visual: 'One garden, measured twice: the edge walked, then the inside filled.',
@@ -719,13 +719,13 @@ export const buildC21 = makeWeekBuilder({
       ),
     },
     ge(21, 3, 'prompted', 'A card is 9 centimeters long and 5 centimeters wide. Ribbon is glued right around its rim. How much ribbon is that?', [
-      { childDo: 'Decide whether the job travels the rim or fills the middle, then work it out and write the label.', expected: '28' },
+      { childDo: 'Decide whether the job travels the rim or fills the middle. Then work it out and label it.', expected: '28' },
     ], '28 centimeters'),
     {
       // Independent stage: ONE row is drawn. Choosing which measure each half of
       // the question wants IS the task, so a full grid would answer the second
       // half before the child had read it.
-      ...ge(21, 4, 'independent', 'A sandpit is 5 meters long and 4 meters wide. Work out the meters of edging for its border and the square meters of sand that fill it. Solve cold.', [
+      ...ge(21, 4, 'independent', 'A sandpit is 5 meters long and 4 meters wide. Work out the meters of edging for its border. Then work out the square meters of sand inside. Solve cold.', [
         { childDo: 'Take the two jobs one at a time, and label both answers.', expected: '18 meters and 20 square meters' },
       ], '18 meters of edging and 20 square meters of sand'),
       visual: 'One row of the sandpit marked into square meters. The rest is yours to work out.',
@@ -779,7 +779,7 @@ export const buildC21 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Two dog pens are built from the same 24 meters of fencing. One is 8 meters by 4 meters. The other is 10 meters by 2 meters. Check that both really do use all 24 meters. Then work out the floor space of each, and write one sentence saying how the same fencing can hold two different amounts of space.',
+            'Two dog pens are built from the same 24 meters of fencing. One is 8 meters by 4 meters. The other is 10 meters by 2 meters. Check that both really do use all 24 meters. Then work out the floor space of each. Write one sentence saying how the same fencing can hold different amounts of space.',
           value:
             'both pens use 24 meters of fencing; the 8 by 4 pen covers 32 square meters and the 10 by 2 pen covers 20 square meters, so the same way round can hold different coverings',
           acceptableForms: ['32', '20', 'square meters', 'same fence', 'different'],
@@ -795,7 +795,7 @@ export const buildC21 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: a rectangle with a longer fence around it covers more space than one with a shorter fence. Say in one sentence how you know.',
+            'Always, sometimes, or never true? Two rectangles have fences of different lengths. The one with the longer fence covers more space. Say in one sentence how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -811,7 +811,7 @@ export const buildC21 = makeWeekBuilder({
           ],
           hints: [
             'Can you picture a long thin rectangle beside a fat one?',
-            'Give each of your two rectangles a fence length and a covering, then see whether the longer fence always wins.',
+            'Give each rectangle a fence length and a covering. Then see whether the longer fence always wins.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -838,11 +838,11 @@ export const buildC21 = makeWeekBuilder({
       id: 'C21-PZ-01',
       title: 'Puzzle Grove: One Fence, Many Fields',
       puzzleType: 'construction',
-      prompt: `${name} has ${countNoun(half * 2, 'meters')} of fencing for a rectangular tortoise run, and the sides must be whole meters. Find EVERY rectangle that uses all of the fencing, work out the floor space of each one, and say which shape gives the tortoise the most room.`,
+      prompt: `${name} has ${countNoun(half * 2, 'meters')} of fencing for a rectangular tortoise run. The sides must be whole meters. Find EVERY rectangle that uses all of the fencing. Work out the floor space of each one. Then say which shape gives the tortoise the most room.`,
       answer: { value: ways.join('; '), acceptableForms: ways, validation: 'short-text-keyword' },
       hintLadder: [
-        'How could you be sure you had found EVERY rectangle, and not just some of them?',
-        'One length and one width make half of the way round, so try each width in turn and see what length is left for it.',
+        'How could you be sure you had found EVERY rectangle?',
+        'One length and one width make half of the way round. Try each width in turn, and see what length is left.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };

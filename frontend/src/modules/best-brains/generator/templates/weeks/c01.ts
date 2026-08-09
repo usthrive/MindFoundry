@@ -205,14 +205,14 @@ const sitBuildFromBundles = situation({
     const t = r.int(1, 9);
     const o = r.int(1, 9);
     return {
-      prompt: `A play crate of toy bricks arrives in three sizes of pack: ${countNoun(h, 'boxes')} of 100 bricks, ${countNoun(t, 'bags')} of 10 bricks, and ${countNoun(o, 'loose bricks')}. How many bricks are in the crate altogether?`,
+      prompt: `A play crate of toy bricks arrives. It holds ${countNoun(h, 'boxes')} of 100 bricks. It holds ${countNoun(t, 'bags')} of 10 bricks. It also holds ${countNoun(o, 'loose bricks')}. How many bricks are in the crate altogether?`,
       answerValue: String(100 * h + 10 * t + o),
       templateId: 'compose_3digit_v1',
       params: { h, t, o },
       units: 'bricks',
       hints: [
-        'Which of the three packs is worth the most, and which column does each one fill?',
-        'Give every pack size its own column — hundreds, tens, ones — then read the three digits straight across.',
+        'Which pack is worth the most? Which column does each pack fill?',
+        'Give each pack size a column: hundreds, tens, ones. Then read the three digits straight across.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -232,14 +232,14 @@ const sitZeroTens = situation({
     const h = r.int(2, 9);
     const o = r.int(1, 9);
     return {
-      prompt: `The bags of ten in a sewing room were all used up last week, so nobody could open one. The button jar was filled from ${countNoun(h, 'sealed tubes')} of 100 and topped up with ${countNoun(o, 'single buttons')}. What count goes on the jar's label?`,
+      prompt: `The sewing room ran out of bags of ten last week. Nobody could open one. The button jar was filled from ${countNoun(h, 'sealed tubes')} of 100. Then it was topped up with ${countNoun(o, 'single buttons')}. What count goes on the jar's label?`,
       answerValue: String(100 * h + o),
       templateId: 'compose_3digit_v1',
       params: { h, t: 0, o },
       units: 'buttons',
       hints: [
-        'What happens to the digits on either side if a column with nothing in it is simply left out?',
-        'Stand a zero in the column the story never mentions, so the digits around it keep the columns they earned.',
+        'What if a column with nothing in it is left out? What happens to the digits beside it?',
+        'Stand a zero in the column the story never mentions. Then the digits around it keep their own columns.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -260,14 +260,14 @@ const sitBuildFromValues = situation({
     const t = r.int(1, 9);
     const o = r.int(1, 9);
     return {
-      prompt: `A cafe counts up its straws before opening. The big box still has ${countNoun(h * 100, 'straws')} in it, a part-used packet has ${countNoun(t * 10, 'straws')}, and the jar by the till holds ${countNoun(o, 'straws')}. How many straws does the cafe have in all?`,
+      prompt: `A cafe counts up its straws before opening. The big box still holds ${countNoun(h * 100, 'straws')}. A part-used packet has ${countNoun(t * 10, 'straws')}. The jar by the till holds ${countNoun(o, 'straws')}. How many straws does the cafe have in all?`,
       answerValue: String(100 * h + 10 * t + o),
       templateId: 'expanded_3digit_v1',
       params: { h, t, o },
       units: 'straws',
       hints: [
         'What size is each of these three amounts made of — hundreds, tens, or ones?',
-        'Slot each amount into the column its size names, then read the columns across as one count.',
+        'Slot each amount into the column its size names. Then read the columns across as one count.',
       ],
       errorTags: ['concept-misconception', 'fact-recall'],
     };
@@ -306,7 +306,7 @@ const sitDigitWorth = withFigure(
         params: { n, digit, place },
         hints: [
           'Which of the three columns is this digit standing in?',
-          'Name the column out loud first, then say how many of that column\'s size the digit is counting.',
+          'Name the column out loud first. Then say how many of that size the digit counts.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -350,8 +350,8 @@ const sitNameToNumeral: ItemGen = (rng, guard, difficulty) => {
     isRetrieval: false,
     generator: { templateId: 'write_words_3digit_v1', params: { n }, seed: rng.uint() },
     hintLadder: [
-      'How many columns does a count with a hundreds part need before any digit is written?',
-      'Set the hundreds part down first, fill in whatever the rest of the words name, and give any column the words skip a zero of its own.',
+      'How many columns does a count with a hundreds part need?',
+      'Set the hundreds part down first. Then fill in whatever the rest of the words name. Any column the words skip still gets a zero.',
     ],
     errorTags: ['representation-misread', 'procedure-slip'],
   };
@@ -387,7 +387,7 @@ const msBuildThenCompare = multiStep({
     const built = 100 * h + 10 * t + o;
     const gap = r.int(24, 168);
     return {
-      prompt: `A library keeps its reading-challenge total on a hundreds-tens-ones board and fills it in one column at a time. This year the hundreds column is worth ${countNoun(h * 100, 'bookmarks')}, the tens column ${countNoun(t * 10, 'bookmarks')}, and the ones column ${countNoun(o, 'bookmarks')}. Last year the challenge finished on ${countNoun(built - gap, 'bookmarks')}. How many more bookmarks does this year's board show than last year's?`,
+      prompt: `A library keeps its reading-challenge total on a hundreds-tens-ones board. It is filled in one column at a time. This year the hundreds column is worth ${countNoun(h * 100, 'bookmarks')}. The tens column is worth ${countNoun(t * 10, 'bookmarks')}. The ones column is worth ${countNoun(o, 'bookmarks')}. Last year the challenge finished on ${countNoun(built - gap, 'bookmarks')}. How many more bookmarks does this year's board show than last year's?`,
       initN: h * 100,
       steps: [
         { op: 'add', n: t * 10, d: 1 },
@@ -396,8 +396,8 @@ const msBuildThenCompare = multiStep({
       ],
       units: 'bookmarks',
       hints: [
-        'Which count in this story has to be built before the two years can stand side by side?',
-        'Gather the three columns into one count first, then measure the distance between that count and the earlier one.',
+        'Which count has to be built before the two years can be compared?',
+        'Gather the three columns into one count first. Then measure the distance between that count and the earlier one.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -405,7 +405,7 @@ const msBuildThenCompare = multiStep({
 });
 const msBuildThenCompareEstimate = withEstimateFirst(
   msBuildThenCompare,
-  'will the two boards turn out to be more than a hundred apart, or less than that?',
+  'will the two boards land more than a hundred apart, or less?',
 );
 
 /**
@@ -431,7 +431,7 @@ const msRippleCount = withFigure(
       const k = r.int(10 - o, 9);
       const j = r.int(11, 40);
       return {
-        prompt: `[image: a hundreds-tens-ones chart holding the count the board already shows] A fruit stall's tally board shows ${countNoun(n, 'punnets')} sold so far today. In the last hour another ${countNoun(k, 'punnets')} are sold at the front counter, and then another ${countNoun(j, 'punnets')} at the gate stall. What does the tally board show once both are added on?`,
+        prompt: `[image: a hundreds-tens-ones chart holding the count the board already shows] A fruit stall's tally board shows ${countNoun(n, 'punnets')} sold so far today. In the last hour the front counter sells another ${countNoun(k, 'punnets')}. The gate stall then sells another ${countNoun(j, 'punnets')}. What does the tally board show once both are added on?`,
         initN: n,
         steps: [
           { op: 'add', n: k, d: 1 },
@@ -440,7 +440,7 @@ const msRippleCount = withFigure(
         units: 'punnets',
         hints: [
           'Which column of this count is already filled right up to its top digit?',
-          'Take the first amount on and watch what the ones column hands to its neighbour, then bring the second amount to whatever the board reads by then.',
+          'Add the first amount on. Watch what the ones column hands to its neighbour. Then add the second amount to whatever the board reads by then.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
@@ -496,7 +496,7 @@ const discrimWorthOfDigit = discrimination({
       ],
       hints: [
         'How many of what does one digit in the hundreds column stand for?',
-        'Say the column\'s name, then say how many of that size the digit is counting, and let the two together give the worth.',
+        'Say the column\'s name out loud. Then say how many of that size the digit counts. The two together give the worth.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -532,8 +532,8 @@ const discrimWhichNumber = discrimination({
         },
       ],
       hints: [
-        'Which column would a digit have to be standing in to be worth ten of itself?',
-        'Point at the named digit in each number in turn and say the column underneath it before you choose.',
+        'Which column makes a digit worth ten of itself?',
+        'Point at the named digit in each number in turn. Say the column underneath it before you choose.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -569,8 +569,8 @@ const riddleEmptyColumn: ItemGen = (rng, guard, difficulty) => {
     isRetrieval: false,
     generator: { templateId: 'pv_riddle_v1', params: { n: 100 * h + o }, seed: rng.uint() },
     hintLadder: [
-      'Which of my three columns have I already told you about, and which one is still a secret?',
-      'Take the digits you have been handed away from the total I gave you, and put whatever is left in the column that is still open.',
+      'Which of my three columns have I told you about? Which one is still a secret?',
+      'Take the digits you were handed away from the total. Put whatever is left in the column that is still open.',
     ],
     errorTags: ['task-comprehension', 'concept-misconception'],
   };
@@ -598,11 +598,11 @@ const eaSwappedColumns = errorAnalysis({
     return { n: 100 * h + o, h, o };
   },
   build: (v, p) => ({
-    prompt: `The sequin drawer in a costume room carries a numeral label on its front, and the stock book behind it spells the same count out. The book's line reads "${numberWords(Number(p.n))}" sequins. Setting the label to match, a student wrote ${v.wrong} on it.`,
-    extension: 'Write the numeral those words really name, and say in one sentence which column each of the two spoken digits belongs in.',
+    prompt: `A costume room has a sequin drawer with a numeral label. The stock book behind it spells the same count out. The book's line reads "${numberWords(Number(p.n))}" sequins. Setting the label to match, a student wrote ${v.wrong} on it.`,
+    extension: 'Write the numeral those words really name. Then say which column each spoken digit belongs in.',
     hints: [
-      'Which columns do these words actually name, and which column do they leave unmentioned?',
-      'Draw three empty columns, fill only the ones the words name, and then decide what has to stand in the column they walked straight past.',
+      'Which columns do these words name? Which column do they leave unmentioned?',
+      'Draw three empty columns. Fill only the ones the words name. Then decide what stands in the column they walked past.',
     ],
     errorTags: ['representation-misread', 'concept-misconception'],
     answerKeywords: ['hundreds column', 'ones column', 'the zero holds the tens'],
@@ -633,12 +633,12 @@ export const buildC01 = makeWeekBuilder({
   },
   explanation: {
     hook:
-      'The digit 4 can be worth four, or forty, or four hundred. Nothing about the 4 has changed in any of those — the only thing that moved is which column it was standing in.',
+      'The digit 4 can be worth four, or forty, or four hundred. Nothing about the 4 has changed. Only one thing moved. It is the column the 4 was standing in.',
     whyBeforeHow:
-      'Ten ones bundle into one ten and ten tens bundle into one hundred, and because every bundle is worth exactly ten of the bundle on its right, the hundreds-tens-ones chart can give each size a column of its own and let the position of a digit do all the work. That is why ten digits are enough to name every number up to a thousand: a digit has a face, which is the mark you see, and a worth, which is its face times whatever the column is holding. It is also why a column with nothing counted in it still needs a zero written into it. The zero is not an empty space and it is not nothing — it is what keeps every digit to its left in the column it earned. Rub it out and those digits slide one column to the right, and a four hundred quietly becomes a forty.',
+      'Ten ones bundle into one ten. Ten tens bundle into one hundred. Every bundle is worth ten of the bundle on its right. So the hundreds-tens-ones chart gives each size a column. Then the position of a digit does all the work. That is why ten digits can name every number up to a thousand. A digit has a face, which is the mark you see. It also has a worth. The worth is its face times whatever the column holds. It is also why an empty column still needs a zero. The zero is not nothing. It holds every digit to its left in the column it earned. Rub the zero out and those digits slide one column right. A four hundred quietly becomes a forty.',
     script: [
       {
-        say: 'Watch me build a number one column at a time. Three hundreds go in the left column, four tens in the middle, six ones on the right. Look at what happened to my 3 the moment I put it down: on its own it means three, but standing in that column it means three hundred. I say that out loud every time, because it is the only thing this whole week is about.',
+        say: 'Watch me build a number one column at a time. Three hundreds go in the left column. Four tens go in the middle. Six ones go on the right. Look at my 3 the moment I put it down. On its own it means three. Standing in that column it means three hundred. I say that out loud every time. It is the only thing this whole week is about.',
         visual: 'A hundreds-tens-ones chart filling from the left, with each column\'s worth appearing beneath its digit.',
         figure: placeValueChart(346, {
           showValues: true,
@@ -646,7 +646,7 @@ export const buildC01 = makeWeekBuilder({
         }),
       },
       {
-        say: 'Now here is a number with two of the same digit in it: 484. Both 4s look identical, and one of them is worth a hundred times the other. The 4 on the left is four hundred and the 4 on the right is four. Neither digit is bigger than the other — one of them is just standing somewhere better.',
+        say: 'Now here is 484. It has two of the same digit in it. Both 4s look identical. One of them is worth a hundred times the other. The 4 on the left is four hundred. The 4 on the right is four. Neither digit is bigger than the other. One of them is just standing somewhere better.',
         visual: 'The two 4s of 484 lit in turn, with the worth of each column printed beneath.',
         figure: placeValueChart(484, {
           showValues: true,
@@ -655,7 +655,7 @@ export const buildC01 = makeWeekBuilder({
         }),
       },
       {
-        say: 'Here is the one that catches people. Four hundred seven. I have four hundreds and seven ones and absolutely nothing in the tens — and the tens column still has to be filled in, with a zero. If I skip it and write just the 4 and the 7 side by side, my four hundred has walked into the tens column and turned into forty.',
+        say: 'Here is the one that catches people. Four hundred seven. I have four hundreds and seven ones. There is nothing at all in the tens. The tens column still has to be filled in. A zero goes there. Say I skip it and write just the 4 and the 7. My four hundred has walked into the tens column. It has turned into forty.',
         visual: 'An empty tens column with a zero sliding into it; the digits either side stay where they are.',
         figure: placeValueChart(407, {
           showValues: true,
@@ -663,12 +663,12 @@ export const buildC01 = makeWeekBuilder({
         }),
       },
       {
-        say: 'One habit before I write any three-digit number down. I check roughly how big it ought to be from its hundreds column alone: four hundreds and a few tens has to land somewhere near four hundred and fifty. So if my answer came out as forty-seven I would not go hunting for a slip in my digits — I would go and count my columns.',
+        say: 'One habit before I write any three-digit number down. I check roughly how big it ought to be. The hundreds column alone can tell me. Four hundreds and a few tens must land near four hundred and fifty. So say my answer came out as forty-seven. I would not hunt for a slip in my digits. I would go and count my columns.',
         visual: 'Two labelled bars side by side, one about four hundred and fifty long, one only forty-seven.',
       },
     ],
     summary:
-      'Three columns — hundreds, tens, ones — and the column a digit stands in decides what the digit is worth. Read a digit\'s face and its worth as two different things. Every column gets a digit even when nothing was counted in it, because the zero is what holds the other digits in place.',
+      'Three columns: hundreds, tens, ones. The column a digit stands in decides what it is worth. Read a digit\'s face and its worth as two different things. Every column gets a digit, even when nothing was counted in it. The zero is what holds the other digits in place.',
     vocabulary: [
       { term: 'column (place)', kidGloss: 'hundreds, tens or ones — where a digit stands, which decides what it is worth' },
       { term: 'face', kidGloss: 'the mark you see: the 4 in 407 has a face of four' },
@@ -678,10 +678,10 @@ export const buildC01 = makeWeekBuilder({
   },
   guidedExamples: [
     {
-      ...ge(1, 1, 'modeled', 'Build the number that is 3 hundreds, 4 tens and 6 ones, and say what each digit is worth.', [
+      ...ge(1, 1, 'modeled', 'Build the number that is 3 hundreds, 4 tens and 6 ones. Say what each digit is worth.', [
         {
           teacherSay:
-            'Watch me before I write a single digit. I do not start with the number — I start with the columns, and I say what each one is going to hold: hundreds on the left, tens in the middle, ones on the right. I do that first because the moment a digit lands in a column it stops being a mark and starts being an amount, and I want to know which amount before I commit.',
+            'Watch me before I write a single digit. I do not start with the number. I start with the columns. I say what each one will hold. Hundreds on the left, tens in the middle, ones on the right. I do that first for a reason. The moment a digit lands in a column, it stops being a mark. It starts being an amount. I want to know which amount before I commit.',
         },
         {
           teacherSay: 'Three hundreds, four tens, six ones. How many columns is this number going to need?',
@@ -695,13 +695,13 @@ export const buildC01 = makeWeekBuilder({
         asserts: assertsAnswer,
       }),
     },
-    ge(1, 2, 'completion', 'Write the number that is 5 hundreds and 2 ones, with nothing at all counted in the tens.', [
+    ge(1, 2, 'completion', 'Write the number that is 5 hundreds and 2 ones. Nothing at all is counted in the tens.', [
       { teacherSay: 'The tens column has nothing to put in it. Does that mean this number only needs two columns?', expected: 'no' },
-      { childDo: 'Stand a zero in the column nothing was counted in, then read all three digits across.', expected: '502' },
+      { childDo: 'Stand a zero in the column nothing was counted in. Then read all three digits across.', expected: '502' },
     ], '502'),
     {
       ...ge(1, 3, 'prompted', 'How much is the 7 in 273 worth?', [
-        { childDo: 'Name the column the digit is standing in, then say how many of that column\'s size it counts.', expected: '70' },
+        { childDo: 'Name the column the digit is standing in. Then say how many of that size it counts.', expected: '70' },
       ], '70'),
       // The chart holds the number the question GIVES and prints no worths: the
       // worth of a column is precisely what is being asked for here (L33).
@@ -712,7 +712,7 @@ export const buildC01 = makeWeekBuilder({
       }),
     },
     ge(1, 4, 'independent', 'Write "eight hundred nine" as a numeral. Solve cold.', [
-      { childDo: 'Give every column a digit, then check that no column has been left out on the way.', expected: '809' },
+      { childDo: 'Give every column a digit. Then check that no column was left out.', expected: '809' },
     ], '809'),
   ],
   days: [
@@ -768,7 +768,7 @@ export const buildC01 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: a three-digit number with a 0 in its tens column can have that 0 rubbed out and still name the same amount. In one sentence, say how you know.',
+            'Always, sometimes, or never true? Take a three-digit number with a 0 in its tens column. Rub that 0 out. It still names the same amount. In one sentence, say how you know.',
           correct: 'never',
           distractors: [
             {
@@ -784,7 +784,7 @@ export const buildC01 = makeWeekBuilder({
           ],
           hints: [
             'What is a zero doing in a column where nothing was counted?',
-            'Write one such number down, rub the zero out, and read both of them aloud before you decide.',
+            'Write one such number down and rub the zero out. Read both of them aloud before you decide.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -810,15 +810,15 @@ export const buildC01 = makeWeekBuilder({
       id: 'C1-PZ-01',
       title: 'Puzzle Grove: The Card That Cannot Lead',
       puzzleType: 'logic',
-      prompt: `You have three digit cards: ${a}, ${b} and 0. Using each card exactly once, build EVERY three-digit number you can. List them all, then say how you know that none is missing from your list.`,
+      prompt: `You have three digit cards: ${a}, ${b} and 0. Using each card exactly once, build EVERY three-digit number you can. List them all. Then say how you know none is missing.`,
       answer: {
         value: built.join(', '),
         acceptableForms: built.map(String),
         validation: 'short-text-keyword',
       },
       hintLadder: [
-        'Which one of your three cards can never take the left-hand column, and what would the number turn into if it did?',
-        'Settle the left-hand column first: put one card there, list what the other two can do behind it, then swap the leading card and do the same again.',
+        'Which of your three cards can never take the left-hand column? What would the number turn into if it did?',
+        'Settle the left-hand column first. Put one card there and list what the other two can do. Then swap the leading card and do the same again.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };

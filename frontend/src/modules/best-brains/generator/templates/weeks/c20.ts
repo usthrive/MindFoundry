@@ -202,7 +202,7 @@ const covTiles = withFigure(
         units: s.noun,
         hints: [
           'Are the rows of this covering all the same size?',
-          'Tile one row first, then lay that same row again for each row the shape has.',
+          'Tile one row first. Then lay that same row again for each row the shape has.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -245,7 +245,7 @@ const covSquareUnits = situation({
       units: s.squared,
       hints: [
         'What size is the square this covering is being measured in?',
-        'Fit the little squares along the longer measurement first, then stack that line of them down the shorter one.',
+        'Fit the little squares along the longer side first. Then stack that line of them down the shorter side.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -265,7 +265,7 @@ const covStepRows = situation({
     const under = r.int(2, top - 1);
     const name = one(r);
     return {
-      prompt: `${name} colours a shape on squared paper. The top row of it is ${countNoun(top, 'squares')} long, and the row underneath is ${countNoun(under, 'squares')} long. How many squares does the shape cover?`,
+      prompt: `${name} colours a shape on squared paper. The top row is ${countNoun(top, 'squares')} long. The row underneath is ${countNoun(under, 'squares')} long. How many squares does the shape cover?`,
       answerValue: String(top + under),
       templateId: 'd_add_v1',
       params: { a: top, b: under },
@@ -317,14 +317,14 @@ const covSlabBase = situation({
     const rows = r.int(3, 6);
     const name = one(r);
     return {
-      prompt: `${name} unwraps a slab of chocolate scored into squares: ${countNoun(per, 'squares')} across, and ${countNoun(rows, 'rows')} down. How many squares of chocolate is that?`,
+      prompt: `${name} unwraps a slab of chocolate scored into squares. It is ${countNoun(per, 'squares')} across and ${countNoun(rows, 'rows')} down. How many squares of chocolate is that?`,
       answerValue: String(per * rows),
       templateId: 'd_area_v1',
       params: { l: per, w: rows },
       units: 'squares',
       hints: [
         'Is one row of squares the whole slab, or a part of it?',
-        'Skip-count down the slab: say what a row holds, say it again for the next row, and keep going to the bottom.',
+        'Skip-count down the slab. Say what a row holds, then say it again for the next row. Keep going to the bottom.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -354,7 +354,7 @@ const msQuiltThenStrip = multiStep({
     if (extra === per) extra = per === 2 ? 3 : per - 1;
     const name = one(r);
     return {
-      prompt: `${name} sews a quilt from ${countNoun(rows, 'rows')} of ${countNoun(per, 'square patches')}, then sews ${countNoun(extra, 'patches')} more along one end. How many patches has ${name} used in all?`,
+      prompt: `${name} sews a quilt from ${countNoun(rows, 'rows')} of ${countNoun(per, 'square patches')}. Then ${name} sews ${countNoun(extra, 'patches')} more along one end. How many patches has ${name} used in all?`,
       initN: rows,
       steps: [
         { op: 'mul', n: per, d: 1 },
@@ -363,7 +363,7 @@ const msQuiltThenStrip = multiStep({
       units: 'patches',
       hints: [
         'Which part of this quilt is made of matching rows, and which part is not?',
-        'Count the matching rows first, and only then add on the few sewn at the end.',
+        'Count the matching rows first. Only then add the few sewn at the end.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -404,7 +404,7 @@ const msStaircase = multiStep({
     const top = r.int(2, 5);
     const name = one(r);
     return {
-      prompt: `${name} draws a staircase shape on squared paper. Its top row is ${countNoun(top, 'squares')} long, the next row is ${countNoun(top + 1, 'squares')} long, the next is ${countNoun(top + 2, 'squares')} long, and the bottom row is ${countNoun(top + 3, 'squares')} long. How many squares does the staircase cover?`,
+      prompt: `${name} draws a staircase shape on squared paper. Its top row is ${countNoun(top, 'squares')} long. The next row is ${countNoun(top + 1, 'squares')} long. The next is ${countNoun(top + 2, 'squares')} long. The bottom row is ${countNoun(top + 3, 'squares')} long. How many squares does the staircase cover?`,
       initN: top,
       steps: [
         { op: 'add', n: top + 1, d: 1 },
@@ -414,7 +414,7 @@ const msStaircase = multiStep({
       units: 'squares',
       hints: [
         'Are all four rows of this shape the same length?',
-        'Take the rows in order from the top, keeping a running total as you go down.',
+        'Take the rows in order from the top. Keep a running total as you go down.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -437,7 +437,7 @@ const msSameRowsLongerRow = multiStep({
     const wider = per + r.int(2, 3);
     const name = one(r);
     return {
-      prompt: `A baking tray holds ${countNoun(rows * per, 'square biscuits')}, set out in rows of ${countNoun(per, 'biscuits')}. ${name} fills a wider tray that has the same number of rows, with ${countNoun(wider, 'biscuits')} in every row. How many biscuits does the wider tray hold?`,
+      prompt: `A baking tray holds ${countNoun(rows * per, 'square biscuits')}, set out in rows of ${countNoun(per, 'biscuits')}. ${name} fills a wider tray with the same number of rows. It holds ${countNoun(wider, 'biscuits')} in every row. How many biscuits does the wider tray hold?`,
       initN: rows * per,
       steps: [
         { op: 'div', n: per, d: 1 },
@@ -445,8 +445,8 @@ const msSameRowsLongerRow = multiStep({
       ],
       units: 'biscuits',
       hints: [
-        'Do both trays have the same number of rows, and can you work out what that number is?',
-        'Split the first tray into its rows to see how many there are, then fill each of those rows to the new length.',
+        'Do both trays have the same number of rows?',
+        'Split the first tray into its rows to see how many there are. Then fill each row to the new length.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -477,7 +477,7 @@ const discrimCoverOrEdge = discrimination({
     const s = r.pick(['locker wall', 'pigeonhole rack', 'display cabinet'] as const);
     const name = one(r);
     return {
-      prompt: `${name} looks at a ${s} built from square compartments: ${countNoun(across, 'compartments')} across the top and ${countNoun(down, 'compartments')} down the side. Which number tells how many compartments the whole ${s} holds?`,
+      prompt: `${name} looks at a ${s} built from square compartments. There are ${countNoun(across, 'compartments')} across the top and ${countNoun(down, 'compartments')} down the side. Which number tells how many compartments the whole ${s} holds?`,
       correct: countNoun(across * down, 'compartments'),
       distractors: [
         {
@@ -497,8 +497,8 @@ const discrimCoverOrEdge = discrimination({
         },
       ],
       hints: [
-        'Does this question want the squares along one edge, or the squares filling the whole thing?',
-        'Point at what is being asked for: a single line of squares, or every square in the block.',
+        'Does this question want the squares along one edge, or all of them?',
+        'Point at what is asked for. A single line of squares, or every square?',
       ],
       errorTags: ['task-comprehension', 'concept-misconception', 'representation-misread'],
     };
@@ -518,7 +518,7 @@ const discrimShortcutSafe = discrimination({
     const last = r.int(2, full - 1);
     const name = one(r);
     return {
-      prompt: `${name} covers a shape on squared paper. Its first row takes ${countNoun(full, 'squares')}, its second row takes ${countNoun(full, 'squares')}, and its last row takes only ${countNoun(last, 'squares')}. Which move counts the squares that cover this shape?`,
+      prompt: `${name} covers a shape on squared paper. Its first row takes ${countNoun(full, 'squares')}. Its second row takes ${countNoun(full, 'squares')} too. Its last row takes only ${countNoun(last, 'squares')}. Which move counts the squares that cover this shape?`,
       correct: 'count each row on its own and add the three counts',
       distractors: [
         {
@@ -534,7 +534,7 @@ const discrimShortcutSafe = discrimination({
       ],
       hints: [
         'Do all the rows of this shape hold the same number of squares?',
-        'A move that copies one row is only safe while every row matches it; otherwise the rows have to be taken one at a time.',
+        'Copying one row is only safe while every row matches it. Otherwise, take the rows one at a time.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -566,11 +566,11 @@ const eaShortRowSkipped = errorAnalysis({
     const covered = Number(p.covered);
     const name = one(r);
     return {
-      prompt: `A student checks ${name}'s patio plan on squared paper. The patio covers ${countNoun(covered, 'square slabs')} altogether: every full row holds ${countNoun(per, 'slabs')}, and the last row is a short one holding ${countNoun(last, 'slabs')}. Running a finger down the side of the plan, the student counted the rows and wrote ${countNoun(Number(v.wrong), 'rows')}.`,
-      extension: 'Work the rows out for yourself, then write one sentence saying what a single row is worth in a count like this one.',
+      prompt: `A student checks ${name}'s patio plan on squared paper. The patio covers ${countNoun(covered, 'square slabs')} altogether. Every full row holds ${countNoun(per, 'slabs')}. The last row is a short one holding ${countNoun(last, 'slabs')}. The student ran a finger down the side of the plan. Counting the rows, the student wrote ${countNoun(Number(v.wrong), 'rows')}.`,
+      extension: 'Work the rows out for yourself. Then write one sentence about what a single row is worth here.',
       hints: [
         'Does a row that is shorter than the others still count as a row?',
-        'Take the short row off the total first, and see how many full rows the slabs that are left will make.',
+        'Take the short row off the total first. How many full rows do the rest make?',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
       answerKeywords: ['rows', 'short row', 'last row', 'squares'],
@@ -596,12 +596,12 @@ export const buildC20 = makeWeekBuilder({
     'C6 and B20 built equal rows as a way of COUNTING things that were already there. C20 turns that arrangement into a way of MEASURING a surface: the squares are a unit the child supplies, the count of them is the area, and rows × columns is demoted from a rule to a shortcut that is only legal while the rows match. The new load is the unit square itself and the label it forces — a covering is answered in squares, or in square centimeters and square meters.',
   explanation: {
     hook:
-      'Two children each draw a shape and argue about which one is bigger. They could argue all afternoon — or they could lay the same little squares over both drawings and count. This week the argument ends with a number.',
+      'Two children each draw a shape and argue about which one is bigger. They could argue all afternoon. Or they could lay the same little squares over both drawings and count. This week the argument ends with a number.',
     whyBeforeHow:
-      'Area is not a formula, it is a count. To measure how much surface something has you cover and count: lay equal squares over it with no gaps and no overlaps, and the number of squares you used IS the area — that is a fair measurement because every square is the same size, so two coverings can be compared by their counts alone. Rows times columns arrives afterwards, and only because a tidy covering repeats itself: if every row holds the same number of squares, counting one row and taking it once for every row lands on exactly the same total as counting the whole lot one at a time. That is why the shortcut is safe on a rectangle and unsafe on a shape whose rows do not match, and why the answer is given in SQUARES — squares are what was counted.',
+      'Area is not a formula, it is a count. To measure a surface you cover and count. Lay equal squares over it, with no gaps and no overlaps. The number of squares you used IS the area. That is a fair measurement, because every square is the same size. So two coverings can be compared by their counts alone. Rows times columns arrives afterwards, because a tidy covering repeats itself. Say every row holds the same number of squares. Then counting one row and taking it once per row gives the same total. That is why the shortcut is safe on a rectangle. It is unsafe on a shape whose rows do not match. And the answer is given in SQUARES, because squares are what was counted.',
     script: [
       {
-        say: 'Watch me measure this shape without a ruler. I lay squares over it until none of it is showing, and then I count them one at a time — one, two, three, all the way to fifteen. That count is the area. Area is nothing more mysterious than how many squares it takes to cover something.',
+        say: 'Watch me measure this shape without a ruler. I lay squares over it until none of it is showing. Then I count them one at a time. One, two, three, all the way to fifteen. That count is the area. Area is nothing more mysterious than how many squares it takes to cover something.',
         visual: 'A shape covered with unit squares, waiting to be counted.',
         figure: areaGrid(
           { rows: 3, cols: 5 },
@@ -609,7 +609,7 @@ export const buildC20 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Counting one square at a time is slow, and halfway down I nearly lost my place. So let me look at what I built: every row holds the same five squares, and there are three rows. Instead of counting fifteen separate squares I can count one row and take it three times. The multiplying is a shortcut for the counting — it is not a different idea.',
+        say: 'Counting one square at a time is slow. Halfway down I nearly lost my place. So look at what I built. Every row holds the same five squares, and there are three rows. Instead of counting fifteen squares, I count one row three times. The multiplying is a shortcut for the counting. It is not a different idea.',
         visual: 'The same covering with every row labelled by what it holds.',
         figure: areaGrid(
           { rows: 3, cols: 5, rowLabels: ['5', '5', '5'] },
@@ -617,7 +617,7 @@ export const buildC20 = makeWeekBuilder({
         ),
       },
       {
-        say: 'The shortcut only holds while the rows match, and here is a shape where they do not: four squares, then four, then a short row of two. If I copy the longest row into all three rows I am counting squares that are not on the paper. With a shape like this I go back to what I did first and take the rows one at a time.',
+        say: 'The shortcut only holds while the rows match. Here is a shape where they do not. Four squares, then four, then a short row of two. Copying the longest row into all three rows counts squares that are not there. With a shape like this I count the rows one at a time.',
         visual: 'A shape on squared paper whose bottom row stops early.',
         figure: areaGrid(
           { rows: 3, cols: 4, shaded: 10 },
@@ -625,7 +625,7 @@ export const buildC20 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Before I write anything down I check two things. Roughly, about how many squares should this take? If my number comes out wildly bigger than my estimate I have counted something twice. Then the label: each of these squares measures one centimeter along every side, so what I counted is square centimeters, not centimeters. Centimeters would measure a line; I measured a covering.',
+        say: 'Before I write anything down I check two things. Roughly, about how many squares should this take? If my number comes out much bigger than my estimate, I counted something twice. Then the label. Each of these squares measures one centimeter along every side. So what I counted is square centimeters, not centimeters. Centimeters would measure a line; I measured a covering.',
         visual: 'One unit square, one centimeter along each side.',
         figure: areaGrid(
           { rows: 1, cols: 1 },
@@ -633,7 +633,7 @@ export const buildC20 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One last surprise. Twelve squares can be laid out as two rows of six, or as three rows of four, or as a stepped shape that is not a rectangle at all. Those shapes look nothing like each other, and every one of them covers exactly twelve squares. The area is the count, not the outline.',
+        say: 'One last surprise. Twelve squares can be laid out as two rows of six. They can be three rows of four. They can even be a stepped shape that is not a rectangle. Those shapes look nothing like each other. Every one of them covers exactly twelve squares. The area is the count, not the outline.',
         visual: 'Twelve squares laid out as two rows of six.',
         figure: areaGrid(
           { rows: 2, cols: 6, showCounts: true },
@@ -642,7 +642,7 @@ export const buildC20 = makeWeekBuilder({
       },
     ],
     summary:
-      'Area is how many equal squares it takes to cover a shape, with no gaps and no overlaps. When every row holds the same amount you can count one row and take it once for every row — that is rows times columns, a shortcut for counting rather than a rule to remember. When the rows do not match, count them one at a time. And always write the label: a covering comes out in squares, or in square centimeters and square meters when the squares are that size.',
+      'Area is how many equal squares it takes to cover a shape. There must be no gaps and no overlaps. When every row holds the same amount, count one row. Then take it once for every row. That is rows times columns, a shortcut for counting. When the rows do not match, count them one at a time. And always write the label. A covering comes out in squares, or in square centimeters and square meters.',
     vocabulary: [
       { term: 'area', kidGloss: 'how much surface a shape covers, counted in squares' },
       { term: 'unit square', kidGloss: 'the one square you cover with — every one of them the same size' },
@@ -655,12 +655,12 @@ export const buildC20 = makeWeekBuilder({
       ...ge(20, 1, 'modeled', 'A tray of fudge is cut into 4 rows, with 6 squares in every row. How many squares of fudge is that?', [
         {
           teacherSay:
-            'Watch what I do first: I do not reach for a rule, I look for the squares. One row along the top gives me six of them, and I check the rows underneath match it before I trust that six. How many rows have I got to copy it into?',
+            'Watch what I do first. I do not reach for a rule; I look for the squares. One row along the top gives me six. I check that the rows underneath match it before I trust that six. How many rows have I got to copy it into?',
           expected: '4',
         },
         {
           teacherSay:
-            'Now I lay that row down again for every row of the tray, saying the running count out loud as I go — six, twelve, eighteen. Where does the fourth row land me?',
+            'Now I lay that row down again for every row of the tray. I say the running count out loud: six, twelve, eighteen. Where does the fourth row land me?',
           expected: '24',
           figure: areaGrid(
             { rows: 4, cols: 6, showCounts: true },
@@ -669,7 +669,7 @@ export const buildC20 = makeWeekBuilder({
         },
         {
           teacherSay:
-            'Twenty-four squares of fudge. I say the label as I write it, because the squares are what I counted and the number means nothing without them.',
+            'Twenty-four squares of fudge. I say the label as I write it. The squares are what I counted, and the number means nothing without them.',
         },
       ], '24 squares of fudge'),
       visual: 'The tray of fudge, cut into four rows of six squares.',
@@ -677,7 +677,7 @@ export const buildC20 = makeWeekBuilder({
     {
       ...ge(20, 2, 'completion', 'A luggage label is drawn on centimeter squares: 5 squares across and 3 squares down. How much does the label cover?', [
         { teacherSay: 'Does the label cover the squares on the paper, or only run along their edges?', expected: 'covers them' },
-        { childDo: 'Count the squares in the top row, then bring in a row at a time until the label is full.', expected: '15' },
+        { childDo: 'Count the squares in the top row. Then bring in a row at a time until the label is full.', expected: '15' },
       ], '15 square centimeters'),
       visual: 'The label drawn on centimeter squares, three rows of five.',
       figure: areaGrid(
@@ -686,13 +686,13 @@ export const buildC20 = makeWeekBuilder({
       ),
     },
     ge(20, 3, 'prompted', 'A noticeboard is filled with square cards: 7 rows, with 4 cards in every row. How many cards cover the board?', [
-      { childDo: 'Name what one row holds and how many rows there are, then count the rows up.', expected: '28' },
+      { childDo: 'Name what one row holds and how many rows there are. Then count the rows up.', expected: '28' },
     ], '28 cards'),
     {
       // Independent stage: ONE row is drawn. Deciding to build the matching rows
       // first and only then bring in the spare slabs IS the task, so a full grid
       // would plan the item for the child.
-      ...ge(20, 4, 'independent', 'A path is laid with square slabs: 5 rows with 6 slabs in each row, and then 3 spare slabs at the gate. How many slabs cover the path? Solve cold.', [
+      ...ge(20, 4, 'independent', 'A path is laid with square slabs: 5 rows of 6 slabs. Then 3 spare slabs are set down at the gate. How many slabs cover the path? Solve cold.', [
         { childDo: 'Build the matching rows first, then deal with the spares.', expected: '33' },
       ], '33 slabs'),
       visual: 'One row of the path, marked into six square slabs. The rest is yours to work out.',
@@ -747,14 +747,14 @@ export const buildC20 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Draw two shapes on squared paper that each cover exactly 12 squares. Make one of them a rectangle, and make the other one a shape that is not a rectangle. Then write one sentence saying how you know that both of your shapes cover the same amount.',
+            'Draw two shapes on squared paper that each cover exactly 12 squares. Make one of them a rectangle. Make the other one a shape that is not a rectangle. Then write one sentence saying how you know they cover the same amount.',
           value:
             'both shapes cover 12 squares, because each one is built from 12 whole squares however differently they are arranged',
           acceptableForms: ['12', '12 squares', 'same amount', 'count the squares', 'different shapes'],
           keywords: true,
           hints: [
             'Which shapes can be built out of whole squares?',
-            'Count the squares in each of your drawings, then hold the two counts side by side.',
+            'Count the squares in each drawing. Then hold the two counts side by side.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -763,7 +763,7 @@ export const buildC20 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: two shapes that cover the same number of squares must be the same shape. Say in one sentence how you know.',
+            'Always, sometimes, or never true? Two shapes that cover the same number of squares must be the same shape. Say in one sentence how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -778,8 +778,8 @@ export const buildC20 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Could you build two shapes that look nothing alike out of the same handful of squares?',
-            'Lay twelve squares out as a long strip, then as a fat block, and count both.',
+            'Could two shapes look nothing alike and still use the same squares?',
+            'Lay twelve squares out as a long strip. Then lay them as a fat block. Count both.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -805,7 +805,7 @@ export const buildC20 = makeWeekBuilder({
       id: 'C20-PZ-01',
       title: 'Puzzle Grove: Two Ways to Split It',
       puzzleType: 'construction',
-      prompt: `Draw this shape on squared paper: ${countNoun(rows - 1, 'rows')} of ${countNoun(across, 'squares')}, and then a bottom row that holds only ${countNoun(last, 'squares')}. ${name} says a shape like this can be cut into two rectangles. Find one way to cut it, work out the squares in each rectangle, and add them. Then find a DIFFERENT cut and work it out again. How many squares does the shape cover, and what happens to that total when you cut it the other way?`,
+      prompt: `Draw this shape on squared paper. It has ${countNoun(rows - 1, 'rows')} of ${countNoun(across, 'squares')}. Its bottom row holds only ${countNoun(last, 'squares')}. ${name} says a shape like this can be cut into two rectangles. Find one way to cut it. Work out the squares in each rectangle, and add them. Then find a DIFFERENT cut and work it out again. How many squares does the shape cover? What happens to that total with the other cut?`,
       answer: {
         value: `${total} squares, and both cuts give the same total`,
         acceptableForms: [String(total), `${total} squares`, 'the same total either way'],
@@ -813,7 +813,7 @@ export const buildC20 = makeWeekBuilder({
       },
       hintLadder: [
         'Where could one straight cut leave you with two rectangles?',
-        'One cut runs straight across under the matching rows; another runs straight down the edge where the bottom row stops short.',
+        'One cut runs straight across under the matching rows. Another runs straight down where the bottom row stops short.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -836,7 +836,7 @@ export const buildC20 = makeWeekBuilder({
     { gen: msSameRowsLongerRow, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: the three single-step forms the week teaches — a covering counted in real squares (with its one-row figure preserved), a covering measured in square centimeters or square meters from two stated lengths, and the inverse that reads a row size off a whole covering. 02/04: the two forward chains, rows × columns then a strip added, and rows × columns then a tray subtracted. 06: the inverse-start chain, where the row count has to be recovered from the first covering before the second one can be built. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: the three single-step forms the week teaches — a covering counted in real squares (with its one-row figure preserved), a covering measured in square centimeters or square meters from two stated lengths, and the inverse that reads a row size off a whole covering. 02/04: the two forward chains, rows × columns then a strip added, and rows × columns then a tray subtracted. 06: the inverse-start chain, where the row count has to be recovered from the first covering before the second one can be built. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

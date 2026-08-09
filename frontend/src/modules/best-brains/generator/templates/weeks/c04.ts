@@ -265,14 +265,14 @@ const wStallStock = asWarmup(
       const b = r.int(1, tens - 1) * 10 + r.int(ones + 1, 9);
       const noun = r.pick(['punnets', 'bunches'] as const);
       return {
-        prompt: `A market stall set out ${countNoun(a, noun)} of strawberries at dawn and sold ${countNoun(b, noun)} before noon. How many ${unitFor(2, noun)} are still on the stall?`,
+        prompt: `A market stall set out ${countNoun(a, noun)} of strawberries at dawn. It sold ${countNoun(b, noun)} before noon. How many ${unitFor(2, noun)} are still on the stall?`,
         answerValue: String(a - b),
         templateId: 'd_sub_v1',
         params: { a, b },
         units: noun,
         hints: [
-          'Does the question ask how many were sold, or how many are still out on the stall?',
-          'Take the sold amount off the dawn count, trading one ten for ten ones if the ones column runs short.',
+          'Does the question ask how many were sold? Or how many are still out on the stall?',
+          'Take the sold amount off the dawn count. Trade one ten for ten ones if the ones column runs short.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -305,14 +305,14 @@ const sitStraightThrough = situation({
     const { a, b } = drawNoTrade(r);
     const s = r.pick(STOCK_SCENES);
     return {
-      prompt: `A ${s.place} ${s.made} ${countNoun(a, s.noun)} ${s.why}, and ${countNoun(b, s.noun)} ${s.gone}. How many ${unitFor(2, s.noun)} ${s.left}?`,
+      prompt: `A ${s.place} ${s.made} ${countNoun(a, s.noun)} ${s.why}. Since then ${countNoun(b, s.noun)} ${s.gone}. How many ${unitFor(2, s.noun)} ${s.left}?`,
       answerValue: String(a - b),
       templateId: 'd_sub_v1',
       params: { a, b },
       units: s.noun,
       hints: [
-        'Which number in this story is the whole batch, and which one is the part that has gone?',
-        'Stand the whole batch above the part with the columns lined up, then work along from the ones and watch whether every top digit can pay.',
+        'Which number in this story is the whole batch? Which one is the part that has gone?',
+        'Stand the whole batch above the part, with the columns lined up. Then work along from the ones. Watch whether every top digit can pay.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -340,14 +340,14 @@ const sitHowManyMore = withFigure(
       const s = r.pick(COMPARE_SCENES);
       const [n1, n2] = two(r);
       return {
-        prompt: `[image: a number line with ${countNoun(b, s.noun)} marked on it] ${n1} ${s.verb} ${countNoun(a, s.noun)} ${s.when} and ${n2} ${s.verb} ${countNoun(b, s.noun)}. How many more ${unitFor(2, s.noun)} has ${n1} ${s.verb.replace('has ', '')} than ${n2}?`,
+        prompt: `[image: a number line with ${countNoun(b, s.noun)} marked on it] ${n1} ${s.verb} ${countNoun(a, s.noun)} ${s.when}. ${n2} ${s.verb} ${countNoun(b, s.noun)}. How many more ${unitFor(2, s.noun)} has ${n1} ${s.verb.replace('has ', '')} than ${n2}?`,
         answerValue: String(a - b),
         templateId: 'd_sub_v1',
         params: { a, b, noun: s.noun },
         units: s.noun,
         hints: [
-          'Which of the two counts is the bigger one, and how far would you travel to get from the smaller one up to it?',
-          'Land on the nearest ten first, then on the nearest hundred, and collect the hops as you go.',
+          'Which of the two counts is the bigger one? How far would you travel from the smaller one up to it?',
+          'Land on the nearest ten first, then on the nearest hundred. Collect the hops as you go.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
@@ -400,7 +400,7 @@ const sitAcrossTheZero = withFigure(
         units: s.noun,
         hints: [
           'Look along the top number — is there a column with nothing standing in it?',
-          'When the column next door is empty, reach past it: one hundred becomes ten tens, and then one of those tens becomes ten ones.',
+          'When the column next door is empty, reach past it. One hundred becomes ten tens. Then one of those tens becomes ten ones.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -436,7 +436,7 @@ const sitWalkLeft = situation({
       units: 'm',
       hints: [
         'How many of the digits on top are smaller than the digit sitting underneath them?',
-        'Work from the ones end, and after each trade look again at what the column to the left is holding before you take from it.',
+        'Work from the ones end. After each trade, look again at the column to the left. See what it is holding before you take from it.',
       ],
       errorTags: ['procedure-slip', 'task-comprehension'],
     };
@@ -458,15 +458,15 @@ const sitTripFund = situation({
     const club = r.pick(['swimming club', 'chess club', 'walking club'] as const);
     const spend = r.pick(['coach hire', 'a set of new kit', 'the hall booking'] as const);
     return {
-      prompt: `The ${club} had ${wholeMoney(a)} in its trip fund and spent ${wholeMoney(b)} on ${spend}. How many dollars are left in the fund?`,
+      prompt: `The ${club} had ${wholeMoney(a)} in its trip fund. It spent ${wholeMoney(b)} on ${spend}. How many dollars are left in the fund?`,
       answerValue: String(a - b),
       templateId: 'd_sub_v1',
       params: { a, b },
       units: 'dollars',
       acceptableForms: [wholeMoney(a - b)],
       hints: [
-        'Does the question want the amount that was spent, or the amount still sitting in the fund?',
-        'Take the spending off the fund one column at a time, and trade wherever a column cannot pay.',
+        'Does the question want the amount that was spent? Or the amount still sitting in the fund?',
+        'Take the spending off the fund one column at a time. Trade wherever a column cannot pay.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -510,7 +510,7 @@ const msOutThenBack = withFigure(
       const back = r.int(40, Math.min(150, b - 10));
       const s = r.pick(LOAN_SCENES);
       return {
-        prompt: `[image: one bar for the ${a} that were there at the start] ${s.subject} started the day with ${countNoun(a, s.noun)}. It lends out ${countNoun(b, s.noun)} at ${s.stop}, and ${countNoun(back, s.noun)} come back before closing time. How many ${unitFor(2, s.noun)} are there at closing time?`,
+        prompt: `[image: one bar for the ${a} that were there at the start] ${s.subject} started the day with ${countNoun(a, s.noun)}. It lends out ${countNoun(b, s.noun)} at ${s.stop}. Then ${countNoun(back, s.noun)} come back before closing time. How many ${unitFor(2, s.noun)} are there at closing time?`,
         initN: a,
         steps: [
           { op: 'sub', n: b, d: 1 },
@@ -518,8 +518,8 @@ const msOutThenBack = withFigure(
         ],
         units: s.noun,
         hints: [
-          'Which of the two changes happens first, and does it leave more or fewer than the day began with?',
-          'Deal with what goes out before you deal with what comes back, and write the middle number somewhere you can still see it.',
+          'Which of the two changes happens first? Does it leave more or fewer than the day began with?',
+          'Deal with what goes out before what comes back. Write the middle number somewhere you can still see it.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -569,7 +569,7 @@ const msTakenTwice = multiStep({
       units: s.noun,
       hints: [
         'How many separate times does something leave the pile in this story?',
-        'Take the first amount off the starting batch, write down what that leaves, then take the second amount off that number.',
+        'Take the first amount off the starting batch. Write down what that leaves. Then take the second amount off that number.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -599,7 +599,7 @@ const msLakeCount = multiStep({
     const spare = r.int(3, 9);
     const s = r.pick(DEPART_SCENES);
     return {
-      prompt: `${s.subject} counted ${countNoun(a, s.noun)} ${s.at}. ${s.cue}, ${countNoun(dawn, s.noun)} ${s.left}, and another ${countNoun(midday, s.noun)} ${s.left2} before midday. There are ${countNoun(spare, s.spare)} ${s.spareWhere}. How many ${unitFor(2, s.noun)} were still there after midday?`,
+      prompt: `${s.subject} counted ${countNoun(a, s.noun)} ${s.at}. ${s.cue}, ${countNoun(dawn, s.noun)} ${s.left}. Another ${countNoun(midday, s.noun)} ${s.left2} before midday. There are ${countNoun(spare, s.spare)} ${s.spareWhere}. How many ${unitFor(2, s.noun)} were still there after midday?`,
       initN: a,
       steps: [
         { op: 'sub', n: dawn, d: 1 },
@@ -608,7 +608,7 @@ const msLakeCount = multiStep({
       units: s.noun,
       hints: [
         'Before you take anything away, ask what each number in this story is counting.',
-        'Only the counts that name the same thing as the question belong in the subtraction; leave the odd one where it is.',
+        'Only counts that name the same thing as the question belong here. Leave the odd one where it is.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -667,8 +667,8 @@ const discrimWhereTheTradeComesFrom = discrimination({
       correct,
       distractors: others.map((text) => ({ text, ...LENDER_WHY[text] })),
       hints: [
-        'Is the ones digit on top big enough to pay for itself, or will it have to ask for help?',
-        'If it has to ask, look at the column beside it — a column standing empty has nothing to give, so keep looking left.',
+        'Is the ones digit on top big enough to pay for itself? Or will it have to ask for help?',
+        'If it has to ask, look at the column beside it. A column standing empty has nothing to give. So keep looking left.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -709,12 +709,12 @@ const discrimHowManyBreaks = discrimination({
     const correct = BREAK_COUNTS[columnsBrokenOpen(pair.a, pair.b)];
     const others = BREAK_COUNTS.filter((t) => t !== correct);
     return {
-      prompt: `Before you work it out — how many columns of ${pair.a} have to be broken open to take ${pair.b} away?`,
+      prompt: `Do not work this out yet. How many columns of ${pair.a} must be broken open to take ${pair.b} away?`,
       correct,
       distractors: others.map((text) => ({ text, ...BREAK_COUNT_WHY[text] })),
       hints: [
-        'Which digits on top are already big enough to pay, and which of them are not?',
-        'Settle the ones column first, and remember that a column which has just lent is left one smaller before you judge the next one.',
+        'Which digits on top are already big enough to pay? Which of them are not?',
+        'Settle the ones column first. A column that has just lent is left one smaller. Remember that before you judge the next one.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -747,11 +747,11 @@ const eaSmallerFromLarger = errorAnalysis({
     const s = r.pick(HALL_SCENES);
     const name = one(r);
     return {
-      prompt: `${s.place} ${s.out} ${countNoun(a, s.noun)}, and ${countNoun(b, s.noun)} ${s.away}. ${name} worked the subtraction down the columns and put ${b % 10} in the ones, ${Math.floor(b / 10)} in the tens and ${a / 100} in the hundreds, so the answer came out as ${v.wrong}.`,
-      extension: `Work out how many ${unitFor(2, s.noun)} are really left, write down the trade that has to happen before the ones column can pay, and say in one sentence what ${name} did in the ones column.`,
+      prompt: `${s.place} ${s.out} ${countNoun(a, s.noun)}. Then ${countNoun(b, s.noun)} ${s.away}. ${name} worked the subtraction down the columns. ${name} put ${b % 10} in the ones and ${Math.floor(b / 10)} in the tens. Then ${a / 100} went in the hundreds. So the answer came out as ${v.wrong}.`,
+      extension: `Work out how many ${unitFor(2, s.noun)} are really left. Write down the trade that must happen before the ones column can pay. Then say in one sentence what ${name} did in the ones column.`,
       hints: [
-        'Which digit in the ones column was the one on top, and which one was underneath it?',
-        'Rebuild the top number as hundreds, tens and ones until the ones column has enough to pay, then work the columns again.',
+        'Which digit in the ones column was the one on top? Which one was underneath it?',
+        'Rebuild the top number as hundreds, tens and ones. Keep going until the ones column has enough to pay. Then work the columns again.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
       answerKeywords: ['trade', 'break a hundred', 'the top digit was smaller'],
@@ -793,11 +793,11 @@ const eaCheckedBySubtracting = errorAnalysis({
       { place: 'The ticket office', noun: 'wristbands', verb: 'were handed out at the gate' },
     ] as const);
     return {
-      prompt: `${scene.place} counted ${countNoun(diff + gone, scene.noun)} on Monday, and ${countNoun(gone, scene.noun)} ${scene.verb}. ${name} worked out that ${diff} were left, and then checked that answer by writing ${diff} − ${gone} = ${v.wrong}.`,
-      extension: `Carry out the check the way this week does it, write down the number it lands on, and say in one sentence what that number tells you about the answer ${name} first wrote.`,
+      prompt: `${scene.place} counted ${countNoun(diff + gone, scene.noun)} on Monday. Then ${countNoun(gone, scene.noun)} ${scene.verb}. ${name} worked out that ${diff} were left. ${name} then checked that answer by writing ${diff} − ${gone} = ${v.wrong}.`,
+      extension: `Carry out the check the way this week does it. Write down the number it lands on. Then say in one sentence what that number tells you. What does it say about the answer ${name} first wrote?`,
       hints: [
-        'What is a check supposed to rebuild — the amount that went, or the count you began with?',
-        'Put the amount that left back together with the amount that stayed, and see which number you arrive at.',
+        'What is a check supposed to rebuild? The amount that went, or the count you began with?',
+        'Put the amount that left back together with the amount that stayed. See which number you arrive at.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
       answerKeywords: ['adding back', 'put it back', 'rebuilds the starting count', 'the answer was right'],
@@ -823,17 +823,17 @@ export const buildC04 = makeWeekBuilder({
     'Level A took things away inside ten and Level B traded once, inside a hundred, where the column next door always had tens standing in it to lend. C4 keeps that same trade and puts a column in the way that has nothing to give, so the child has to reach one place further left and come back — and, for the first time, has a check worth doing, because a three-digit answer is no longer something you can see is right.',
   explanation: {
     hook:
-      'Take 246 away from 703 and the ones column turns to the tens for help — and the tens column is standing there empty. This week we find out where the help really comes from.',
+      'Take 246 away from 703. The ones column turns to the tens for help. But the tens column is standing there empty. This week we find out where the help really comes from.',
     whyBeforeHow:
-      'A zero is not an empty space in a number; it is a column with nothing standing in it yet, and because a column with nothing in it cannot lend anything to its neighbour, the trade has to travel one place further left and then come back. That is what breaking across a zero means: one hundred becomes ten tens, and then one of those tens becomes ten ones, so the ones column finally has something to take from. Nothing is created and nothing is lost on the way — 703 is still 703 after both trades, it is simply being held as 6 hundreds, 9 tens and 13 ones instead of 7 hundreds, 0 tens and 3 ones. That is also why putting your answer back together is such a good check: if the pieces were only moved around, then adding back what you took away has to land you exactly where you started.',
+      'A zero is not an empty space in a number. It is a column with nothing standing in it yet. A column with nothing in it cannot lend anything to its neighbour. That is why the trade travels one place further left and comes back. That is what breaking across a zero means. One hundred becomes ten tens. Then one of those tens becomes ten ones. Now the ones column finally has something to take from. Nothing is created and nothing is lost on the way. 703 is still 703 after both trades. It is simply held as 6 hundreds, 9 tens and 13 ones. Before, it was 7 hundreds, 0 tens and 3 ones. That is also why putting your answer back together is such a good check. The pieces were only moved around. So adding back what you took away must land you where you started.',
     script: [
       {
-        say: 'Watch what I do before I write a single digit. A gallery had 703 postcards and sold 246. I read the ones column first: three on top, six underneath. The three is the smaller one, so I know a trade is coming. Then I look next door for the ten I want, and the tens column is empty.',
+        say: 'Watch what I do before I write a single digit. A gallery had 703 postcards and sold 246. I read the ones column first: three on top, six underneath. The three is the smaller one, so I know a trade is coming. Then I look next door for the ten I want. The tens column is empty.',
         visual: 'A place-value chart holding 703, with nothing standing in the tens column.',
         figure: placeValueChart(703, { alt: chartAlt(703), highlight: 'tens' }),
       },
       {
-        say: 'So I reach past the empty column. I break one hundred into ten tens, which fills the tens column up, and then I break one of those tens into ten ones. Now the top row is holding 6 hundreds, 9 tens and 13 ones — and that is still the same 703 I started with, just held in different pieces.',
+        say: 'So I reach past the empty column. I break one hundred into ten tens. That fills the tens column up. Then I break one of those tens into ten ones. Now the top row is holding 6 hundreds, 9 tens and 13 ones. That is still the same 703 I started with. It is just held in different pieces.',
         visual: 'One bar of 703 shown as 600, 90 and 13 standing side by side.',
         figure: barModel(
           [
@@ -862,7 +862,7 @@ export const buildC04 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before I move on. I ask roughly how big the answer ought to be: 703 take away about 250 should land somewhere near 450, and 457 sits right there. Then I check it properly by putting the postcards back: 457 + 246 = 703, exactly the number I began with, so the trades did their job.',
+        say: 'One habit before I move on. I ask roughly how big the answer ought to be. 703 take away about 250 should land near 450. And 457 sits right there. Then I check it properly by putting the postcards back. 457 + 246 = 703. That is exactly the number I began with, so the trades did their job.',
         visual: 'A number line with a hop from 457 back up to 703.',
         figure: numberLine(
           {
@@ -881,7 +881,7 @@ export const buildC04 = makeWeekBuilder({
       },
     ],
     summary:
-      'Read the top number before you write anything, and find the first column that cannot pay. Trade from the place next door if it has something to give, and from the place beyond it if that column is empty — one hundred into ten tens, one ten into ten ones. The number never changes, only the pieces it is held in. Then add your answer back to what you took away and check that you land where you started.',
+      'Read the top number before you write anything. Find the first column that cannot pay. Trade from the place next door if it has something to give. If that column is empty, trade from the place beyond it. One hundred into ten tens, one ten into ten ones. The number never changes, only the pieces it is held in. Then add your answer back to what you took away. Check that you land where you started.',
     vocabulary: [
       { term: 'trade (regroup)', kidGloss: 'break one hundred into ten tens, or one ten into ten ones, without changing the number' },
       { term: 'breaking across a zero', kidGloss: 'when the column next door is empty, the trade comes from the place beyond it' },
@@ -894,7 +894,7 @@ export const buildC04 = makeWeekBuilder({
       ...ge(4, 1, 'modeled', 'A gallery had 703 postcards in the rack and sold 246 of them. How many postcards are left in the rack?', [
         {
           teacherSay:
-            'Watch me read before I write. I go to the ones column first — three on top, six underneath — and the top digit is the smaller one, so I am going to need a trade. Then I look next door for the ten I want to take, and the tens column has nothing standing in it at all.',
+            'Watch me read before I write. I go to the ones column first. Three on top, six underneath. The top digit is the smaller one, so a trade is coming. Then I look next door for the ten I want. The tens column has nothing standing in it at all.',
         },
         {
           teacherSay:
@@ -926,19 +926,19 @@ export const buildC04 = makeWeekBuilder({
     {
       ...ge(4, 2, 'completion', 'A depot began the week with 500 crates and sent out 328. How many crates are still in the depot?', [
         { teacherSay: 'Two columns on top have nothing standing in them here. Which place is the only one with anything to lend?', expected: 'the hundreds' },
-        { childDo: 'Break one hundred down through the empty columns, then work the three columns from the ones end.', expected: '172' },
+        { childDo: 'Break one hundred down through the empty columns. Then work the three columns from the ones end.', expected: '172' },
       ], '172'),
       visual: 'A place-value chart holding 500, with both the tens and the ones columns empty.',
       figure: placeValueChart(500, { alt: chartAlt(500), highlight: 'tens' }),
     },
     ge(4, 3, 'prompted', 'A festival sold 462 wristbands on Saturday and 275 on Sunday. How many more wristbands were sold on Saturday?', [
-      { childDo: 'Say which columns will need a trade before you start, then work them from the ones end.', expected: '187' },
+      { childDo: 'Say which columns will need a trade before you start. Then work them from the ones end.', expected: '187' },
     ], '187'),
     {
       // Independent stage: the chart shows the count the story hands over and
       // nothing else. Deciding where the trade comes from IS the task here.
       ...ge(4, 4, 'independent', 'A ferry counted 806 passengers on Saturday and 259 on Sunday. How many more passengers were counted on Saturday? Solve cold, then check by adding back.', [
-        { childDo: 'Work the difference, then add your answer to the Sunday count and see where it lands.', expected: '547' },
+        { childDo: 'Work the difference. Then add your answer to the Sunday count and see where it lands.', expected: '547' },
       ], '547'),
       visual: 'A place-value chart holding the Saturday count.',
       figure: placeValueChart(806, { alt: chartAlt(806), highlight: 'tens' }),
@@ -997,13 +997,13 @@ export const buildC04 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Work out 604 − 587 in two ways. First set it out in columns and trade wherever you need to. Then start at 587 and count up to 604 in easy hops, collecting the hops as you go. Write what you notice about the two answers, then say in one sentence which way you would choose for THESE two numbers.',
+            'Work out 604 − 587 in two ways. First set it out in columns and trade wherever you need to. Then start at 587 and count up to 604 in easy hops. Collect the hops as you go. Write what you notice about the two answers. Then say which way you would choose for THESE two numbers.',
           value: 'both ways give the same difference, and counting up is the quicker one here because the two numbers sit close together, so the hops are short while the column way has to break a hundred all the way down',
           acceptableForms: ['same', 'counting up', 'close together', 'short hops', 'trade'],
           keywords: true,
           hints: [
             'Which of your two ways needed more writing, and why do you think that was?',
-            'Look at how far apart the two numbers are before you decide — a short gap and a long gap suit different ways.',
+            'Look at how far apart the two numbers are. A short gap and a long gap suit different ways.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -1012,7 +1012,7 @@ export const buildC04 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: when the top number has a zero in its tens column, you have to break open the hundreds before you can take anything away. In one sentence, say how you know.',
+            'Always, sometimes, or never true? The top number has a zero in its tens column. You have to break open the hundreds before you can take anything away. In one sentence, say how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -1027,8 +1027,8 @@ export const buildC04 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Can you think of a top number with a zero in its tens where nothing has to be broken open at all?',
-            'Try one where the top ones digit is the bigger of the two, and one where it is the smaller, then see whether a single rule covers both.',
+            'Think of a top number with a zero in its tens. Can you find one where nothing has to be broken open?',
+            'Try one where the top ones digit is the bigger of the two. Then try one where it is the smaller. See whether a single rule covers both.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -1052,11 +1052,11 @@ export const buildC04 = makeWeekBuilder({
       id: 'C4-PZ-01',
       title: 'Puzzle Grove: The Missing Top Line',
       puzzleType: 'logic',
-      prompt: `A worked subtraction has lost its top line. All that is left on the page is: ▢▢▢ − ${b} = ${top - b}. What was the top number, and how can you be sure that no other number could have been sitting there?`,
+      prompt: `A worked subtraction has lost its top line. All that is left on the page is: ▢▢▢ − ${b} = ${top - b}. What was the top number? How can you be sure no other number could have been there?`,
       answer: { value: String(top), acceptableForms: [], validation: 'exact-numeric' },
       hintLadder: [
         'What would putting the amount that was taken away back onto the answer tell you?',
-        'Rebuild the missing line from the two numbers you can still see, then work the subtraction forwards and prove it lands on the answer that is printed.',
+        'Rebuild the missing line from the two numbers you can still see. Then work the subtraction forwards. Prove it lands on the answer that is printed.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };

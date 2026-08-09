@@ -208,14 +208,14 @@ const sitRectangleCount = situation({
     const b = r.int(2, 7);
     const name = one(r);
     return {
-      prompt: `${name} lays shape cards out on the board: ${countNoun(a, 'cards')} with ${CORNERS_TEST} and ${SIDES_TEST}, and ${countNoun(b, 'cards')} with ${CORNERS_TEST} and two sides longer than the other two. How many of the cards on the board are rectangles?`,
+      prompt: `${name} lays shape cards out on the board. ${countNoun(a, 'cards')} have ${CORNERS_TEST} and ${SIDES_TEST}. ${countNoun(b, 'cards')} have ${CORNERS_TEST}, and two sides longer than the other two. How many of the cards on the board are rectangles?`,
       answerValue: String(a + b),
       templateId: 'd_add_v1',
       params: { a, b },
       units: 'cards',
       hints: [
-        'Does a card have to give up being a square before it can count as a rectangle?',
-        'Hold each group against the one thing the rectangle family asks for, and keep every group that has it.',
+        'Must a card stop being a square to count as a rectangle?',
+        'Hold each group against the one thing the rectangle family asks for. Keep every group that has it.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -237,14 +237,14 @@ const sitRhombusCountBase = situation({
     const c = r.int(2, 6);
     const name = one(r);
     return {
-      prompt: `${name} tips a box of shape cards onto the mat: ${countNoun(a, 'cards')} with ${SIDES_TEST} and ${CORNERS_TEST}, ${countNoun(b, 'cards')} with ${SIDES_TEST} and not one square corner, and ${countNoun(c, 'cards')} with two sides longer than the other two. How many of the cards are rhombuses?`,
+      prompt: `${name} tips a box of shape cards onto the mat. ${countNoun(a, 'cards')} have ${SIDES_TEST} and ${CORNERS_TEST}. ${countNoun(b, 'cards')} have ${SIDES_TEST} and not one square corner. ${countNoun(c, 'cards')} have two sides longer than the other two. How many of the cards are rhombuses?`,
       answerValue: String(a + b),
       templateId: 'd_add_v1',
       params: { a, b, c },
       units: 'cards',
       hints: [
         'Which piles pass the matching-sides test, and is there a pile that never could?',
-        'Gather every pile whose four sides match, and leave the pile with a longer pair where it is.',
+        'Gather every pile whose four sides match. Leave the pile with a longer pair outside.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -252,7 +252,7 @@ const sitRhombusCountBase = situation({
 });
 const sitRhombusCountEstimate = withEstimateFirst(
   sitRhombusCountBase,
-  'will every card in the box join the rhombus family, or will some of them be left outside it?',
+  'will every card in the box join the rhombus family, or only some?',
 );
 
 /** The family property doing arithmetic: four corners a card, whatever its name. */
@@ -270,7 +270,7 @@ const sitCornerRate = situation({
       units: 'corners',
       hints: [
         'Do the different families change how many corners a card brings with it?',
-        'Every card brings the same four corners, so take four once for each card in the pile.',
+        'Every card brings the same four corners. Take four once for each card.',
       ],
       errorTags: ['concept-misconception', 'fact-recall'],
     };
@@ -289,14 +289,14 @@ const sitSquaresNotSquares = situation({
       // countNoun is the interpolation authority, so every quantity here names a
       // COUNTABLE NOUN and nothing else: an earlier draft passed it the phrase
       // "of them" and the pluraliser printed "4 of thems".
-      prompt: `Every card in ${name}'s folder has ${CORNERS_TEST}. The folder holds ${countNoun(total, 'cards')} in all, and ${countNoun(sq, 'cards')} also have ${SIDES_TEST}. How many of the cards are rectangles that are not squares?`,
+      prompt: `Every card in ${name}'s folder has ${CORNERS_TEST}. The folder holds ${countNoun(total, 'cards')} in all. ${countNoun(sq, 'cards')} also have ${SIDES_TEST}. How many of the cards are rectangles that are not squares?`,
       answerValue: String(total - sq),
       templateId: 'd_sub_v1',
       params: { a: total, b: sq },
       units: 'cards',
       hints: [
-        'Which family does every card in the folder already belong to, before anything else is checked?',
-        'Take the cards carrying the extra matching-sides property out of the folder, and count what is still there.',
+        'Which family does every card in the folder already belong to?',
+        'Take the cards with the extra matching-sides property out of the folder. Count what is left.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -319,13 +319,13 @@ const sitEqualSideDivide = withFigureOf(
       const lean = r.pick([60, 65, 70, 75, 80]);
       const name = one(r);
       return {
-        prompt: `[image: ${RHOMBUS_SCENE}] A rhombus has ${SIDES_TEST}. ${name} bends one straight piece of gold cord ${countNoun(4 * side, 'centimeters')} long into a rhombus name badge, with none of the cord left over. How long is one side of the badge?`,
+        prompt: `[image: ${RHOMBUS_SCENE}] A rhombus has ${SIDES_TEST}. ${name} bends one straight piece of gold cord into a rhombus name badge. The cord is ${countNoun(4 * side, 'centimeters')} long, with none left over. How long is one side of the badge?`,
         answerValue: String(side),
         templateId: 'd_div_v1',
         params: { a: 4 * side, b: 4, lean },
         units: 'centimeters',
         hints: [
-          'What does knowing the four sides match let you do with one whole length of cord?',
+          'What does knowing the four sides match let you do with the cord?',
           'Deal the cord out into four equal shares, one for each of the matching sides.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
@@ -352,7 +352,7 @@ const msRectanglesThenCorners = multiStep({
     const c = r.int(2, 6);
     const name = one(r);
     return {
-      prompt: `${name}'s tray holds ${countNoun(a, 'cards')} with ${CORNERS_TEST} and ${SIDES_TEST}, ${countNoun(b, 'cards')} with ${CORNERS_TEST} and two sides longer than the other two, and ${countNoun(c, 'cards')} with ${SIDES_TEST} and not one square corner. How many corners do the rectangle cards have altogether?`,
+      prompt: `${name} sorts a tray of shape cards. ${countNoun(a, 'cards')} have ${CORNERS_TEST} and ${SIDES_TEST}. ${countNoun(b, 'cards')} have ${CORNERS_TEST}, and two sides longer than the other two. ${countNoun(c, 'cards')} have ${SIDES_TEST} and not one square corner. How many corners do the rectangle cards have altogether?`,
       initN: a,
       steps: [
         { op: 'add', n: b, d: 1 },
@@ -360,8 +360,8 @@ const msRectanglesThenCorners = multiStep({
       ],
       units: 'corners',
       hints: [
-        'Which of the three piles pass the rectangle test, and which pile falls short of it?',
-        'Gather the piles that pass first, and only then give each of those cards its four corners.',
+        'Which of the three piles pass the rectangle test?',
+        'Gather the piles that pass first. Then give each of those cards its four corners.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -382,7 +382,7 @@ const msParallelogramHoop = multiStep({
     // numbers — the one duplication no per-pack gate reports.
     const name = one(r);
     return {
-      prompt: `${name} labels a sorting hoop on the mat PARALLELOGRAMS. Beside it lie ${countNoun(a, 'cards')} with ${SIDES_TEST} and ${CORNERS_TEST}, ${countNoun(b, 'cards')} with ${CORNERS_TEST} and two sides longer than the other two, ${countNoun(c, 'cards')} with ${SIDES_TEST} and not one square corner, and ${countNoun(d, 'cards')} with just one pair of parallel sides. How many of the cards belong inside the hoop?`,
+      prompt: `${name} labels a sorting hoop on the mat PARALLELOGRAMS. ${countNoun(a, 'cards')} beside it have ${SIDES_TEST} and ${CORNERS_TEST}. ${countNoun(b, 'cards')} have ${CORNERS_TEST}, and two sides longer than the other two. ${countNoun(c, 'cards')} have ${SIDES_TEST} and not one square corner. ${countNoun(d, 'cards')} have just one pair of parallel sides. How many of the cards belong inside the hoop?`,
       initN: a,
       steps: [
         { op: 'add', n: b, d: 1 },
@@ -390,8 +390,8 @@ const msParallelogramHoop = multiStep({
       ],
       units: 'cards',
       hints: [
-        'Which piles have both pairs of their sides running the same way, and which pile manages only one?',
-        'Add up every pile whose opposite sides run in matching pairs, and leave the pile that manages one pair outside.',
+        'Which piles have both pairs of sides running the same way?',
+        'Add up every pile whose opposite sides run in matching pairs. Leave the one-pair pile outside.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -413,7 +413,7 @@ const msCornersToSquares = multiStep({
     const longer = r.int(2, cards - 2);
     const name = one(r);
     return {
-      prompt: `${name} counts ${countNoun(4 * cards, 'corners')} in all across a pile of shape cards. Every card in the pile has ${CORNERS_TEST}, and ${countNoun(longer, 'cards')} in the pile have two sides longer than the other two. How many of the cards are squares?`,
+      prompt: `${name} counts ${countNoun(4 * cards, 'corners')} in all across a pile of shape cards. Every card in the pile has ${CORNERS_TEST}. ${countNoun(longer, 'cards')} have two sides longer than the other two. How many of the cards are squares?`,
       initN: 4 * cards,
       steps: [
         { op: 'div', n: 4, d: 1 },
@@ -421,8 +421,8 @@ const msCornersToSquares = multiStep({
       ],
       units: 'cards',
       hints: [
-        'What can a corner count tell you about how many cards are sitting in the pile?',
-        'Turn the corners back into cards by grouping them in fours, then set aside the cards carrying a longer pair.',
+        'What can a corner count tell you about the number of cards?',
+        'Turn the corners back into cards by grouping them in fours. Then set aside the cards with a longer pair.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -477,12 +477,12 @@ const discrimBothHoops = discrimination({
     const name = one(r);
     const others = [HOOP_CORNERS, HOOP_SIDES, HOOP_BOTH].filter((o) => o !== s.correct);
     return {
-      prompt: `Two hoops lie on the mat. One takes every shape with ${CORNERS_TEST}. The other takes every shape with ${SIDES_TEST}. ${name} holds up a card showing ${s.card}. Which hoop does that card belong in?`,
+      prompt: `Two hoops lie on the mat. One takes every shape with ${CORNERS_TEST}. The other takes every shape with ${SIDES_TEST}. ${name} holds up one card. It shows ${s.card}. Which hoop does that card belong in?`,
       correct: s.correct,
       distractors: others.map((o) => ({ text: o, ...hoopRationale(s.correct, o) })),
       hints: [
-        'Does a card have to pick one hoop, or is it allowed to pass both tests at once?',
-        'Run the two tests on the card one after the other, and keep every hoop whose test it passes.',
+        'Must a card pick one hoop, or can it pass both tests?',
+        'Run the two tests on the card, one after the other. Keep every hoop whose test it passes.',
       ],
       errorTags: ['concept-misconception', 'representation-misread', 'task-comprehension'],
     };
@@ -503,7 +503,7 @@ const discrimNameTilted = withFigureOf(
       const noun = r.pick(['card', 'tile', 'sticker', 'paper shape'] as const);
       const name = one(r);
       return {
-        prompt: `[image: ${TILT_SCENE}] ${name} turns a ${noun} until it is balanced on one of its corners. All four of its sides are the same length, and all four of its corners are square corners. What is the ${noun} now?`,
+        prompt: `[image: ${TILT_SCENE}] ${name} turns a ${noun} until it is balanced on one of its corners. All four of its sides are the same length. All four of its corners are square corners. What is the ${noun} now?`,
         correct: 'a square',
         distractors: [
           {
@@ -519,7 +519,7 @@ const discrimNameTilted = withFigureOf(
         ],
         hints: [
           'What can turning a card change about it, and what can it never change?',
-          'Check the two things a square needs on the card as it lies now, and see whether the turn touched either of them.',
+          'Check the two things a square needs, on the card as it lies now. Did the turn touch either of them?',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -590,12 +590,12 @@ const discrimAsn = discrimination({
     const correct = verdictFor(f, prop);
     const others = VERDICTS.filter((v) => v !== correct);
     return {
-      prompt: `Always, sometimes, or never true: a ${f.name} has ${prop}.`,
+      prompt: `Always, sometimes, or never true? A ${f.name} has ${prop}.`,
       correct,
       distractors: others.map((o) => ({ text: o, ...asnRationale(correct, o, f.name) })),
       hints: [
-        'Is this property one the family demands of every member, one it merely allows, or one it rules out?',
-        'Try to picture a member of the family without the property, and then one with it — whichever you cannot build settles the claim.',
+        'Does the family demand this property, allow it, or rule it out?',
+        'Picture a member of the family without the property, then one with it. Whichever you cannot build settles the claim.',
       ],
       errorTags: ['concept-misconception', 'representation-misread', 'task-comprehension'],
     };
@@ -615,12 +615,12 @@ const eaTiltedSquareSkipped = errorAnalysis({
     const flat = Number(p.n) - 1;
     const name = one(r);
     return {
-      prompt: `[image: ${TILT_SCENE}] On ${name}'s shape wall there are ${countNoun(flat, 'cards')} that each show ${SIDES_TEST} and ${CORNERS_TEST}, sitting flat on a bottom edge. One more card shows ${SIDES_TEST} and ${CORNERS_TEST} too, but it is pinned up balanced on a corner. A student counted the squares on the wall and wrote ${v.wrong}.`,
+      prompt: `[image: ${TILT_SCENE}] On ${name}'s shape wall there are ${countNoun(flat, 'cards')} sitting flat on a bottom edge. Each one shows ${SIDES_TEST} and ${CORNERS_TEST}. One more card shows ${SIDES_TEST} and ${CORNERS_TEST} too. It is pinned up balanced on a corner. A student counted the squares on the wall and wrote ${v.wrong}.`,
       extension:
-        'Look again at the card that is balanced on a corner, decide for yourself which families it belongs to, and write one sentence saying what a turn can and cannot change about a shape.',
+        'Look again at the card balanced on a corner. Decide for yourself which families it belongs to. Then write one sentence about what a turn can and cannot change.',
       hints: [
-        'Does turning a card change the length of its sides or the kind of corners it has?',
-        'Hold the turned card up against the two things a square needs, and then count the wall again.',
+        'Does turning a card change its side lengths or its corners?',
+        'Hold the turned card against the two things a square needs. Then count the wall again.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
       answerKeywords: ['square', 'turned', 'corners', 'sides the same length'],
@@ -646,37 +646,37 @@ export const buildC22 = makeWeekBuilder({
     'C20 and C21 measured rectangles — covered them, walked round them — but never asked what makes one a rectangle in the first place. C22 turns the same shapes into a question about MEMBERSHIP: a name is earned by properties, the families sit inside one another rather than side by side, and one card can honestly hold several names at once. The new load is that answers stop being exclusive, and that a turn changes a picture without changing a single property.',
   explanation: {
     hook:
-      'Two children argue over one card. "That is a square." "No, it is a rectangle." They are both right, and nobody has to give in — shape families are not separate boxes, they sit one inside another, and a card can honestly wear several names at once.',
+      'Two children argue over one card. One says it is a square. The other says it is a rectangle. They are both right, and nobody has to give in. Shape families are not separate boxes. They sit one inside another. A card can honestly wear several names at once.',
     whyBeforeHow:
-      'A shape\'s name is not a label somebody hands it — it is earned by the properties the shape carries, so a card belongs to every family whose tests it passes rather than to one box picked for it. That is why the families sit inside one another instead of side by side: the rectangle family asks for four square corners, the rhombus family asks for four sides the same length, and a card that carries both passes both tests at once, which is exactly what makes a square a rectangle AND a rhombus. This is property nesting — the more properties a card carries, the deeper inside the families it sits, and the fewer other cards keep it company. It also means that "is it a square or a rectangle?" is a false choice, because no square ever stops being a rectangle in order to be a square. And turning a card changes none of it: a turn moves a shape without touching one side length or one corner, so a square balanced on its corner is still every bit a square.',
+      'A shape\'s name is not a label somebody hands it. It is earned by the properties the shape carries. So a card belongs to every family whose tests it passes. That is why the families sit inside one another, instead of side by side. The rectangle family asks for four square corners. The rhombus family asks for four sides the same length. A card that carries both passes both tests at once. That is what makes a square a rectangle AND a rhombus. This is property nesting. The more properties a card carries, the deeper inside the families it sits. It also means "is it a square or a rectangle?" is a false choice. No square ever stops being a rectangle in order to be a square. And turning a card changes none of it. A turn moves a shape without touching one side length or one corner. So a square balanced on its corner is still every bit a square.',
     script: [
       {
-        say: 'Here is my first card. Four straight sides, four corners — and that alone earns it the family name quadrilateral. Every card I show you today has that name, whatever else it turns out to be.',
+        say: 'Here is my first card. Four straight sides, four corners — and that alone earns it the family name quadrilateral. Every card I show you today has that name, whatever else it is.',
         visual: 'A four-sided card with one pair of sides running the same way and one pair that does not.',
         figure: plainQuadFig(),
       },
       {
-        say: 'Now watch me run two tests on this next card. Test one: are all four corners square corners? Yes — so it has earned the name rectangle. Test two: are all four sides the same length? Yes again — so the very same card has earned the name rhombus as well. One card, both names, and the name we give a card that passes both is square.',
+        say: 'Now watch me run two tests on this next card. Test one: are all four corners square corners? Yes — so it has earned the name rectangle. Test two: are all four sides the same length? Yes again — so the very same card has earned the name rhombus as well. One card, both names. A card that passes both tests is called a square.',
         visual: 'A card marked with a tick on every side and a small square in every corner.',
         figure: flatSquareFig(),
       },
       {
-        say: 'Here is the same card, and all I have done is turn it until it balances on a corner. I did not cut it and I did not stretch it. The sides are the lengths they were, the corners are the corners they were, so every test it passed a moment ago it passes now. A turn changes the picture, never the shape.',
+        say: 'Here is the same card. All I have done is turn it onto a corner. I did not cut it and I did not stretch it. The sides are the lengths they were. The corners are the corners they were. So every test it passed a moment ago, it passes now. A turn changes the picture, never the shape.',
         visual: 'The same card, balanced on one of its corners.',
         figure: tiltedSquareFig(),
       },
       {
-        say: 'This card passes only one test. Its four sides do match, so it is a rhombus — but lean in and you will see its corners are not square corners, so the rectangle family will not take it, and neither will the square family. Passing one test is not passing both.',
+        say: 'This card passes only one test. Its four sides do match, so it is a rhombus. But lean in: its corners are not square corners. So the rectangle family will not take it. Neither will the square family. Passing one test is not passing both.',
         visual: 'A four-sided card with matching sides and leaning corners.',
         figure: rhombusFig(70),
       },
       {
-        say: 'So before I write a name on any card I check it against every test, not just the first one that fits — and I check whether I have stopped too early. If I have written down only one name, I ask myself which wider families that name is sitting inside.',
+        say: 'So before I write a name on any card, I check every test. Not just the first one that fits. I also check whether I have stopped too early. If I have written only one name, I ask which wider families it joins.',
         visual: 'One card with a name tag long enough for several names.',
       },
     ],
     summary:
-      'A shape earns its family names by the properties it carries, and the families nest: every square is a rectangle and a rhombus, every rectangle and every rhombus is a parallelogram, and all of them are quadrilaterals. Run every test, not just the first one that fits — and remember that turning a card changes the picture and nothing else.',
+      'A shape earns its family names by the properties it carries. The families nest. Every square is a rectangle and a rhombus. Every rectangle and every rhombus is a parallelogram. All of them are quadrilaterals. Run every test, not just the first one that fits. And remember: turning a card changes the picture and nothing else.',
     vocabulary: [
       { term: 'quadrilateral', kidGloss: 'any flat shape with four straight sides' },
       { term: 'square corner', kidGloss: 'a corner shaped like the corner of a book, marked with a small square' },
@@ -691,18 +691,18 @@ export const buildC22 = makeWeekBuilder({
       ...ge(22, 1, 'modeled', 'A card has four square corners and four sides the same length. Name it — and name every family it has earned.', [
         {
           teacherSay:
-            'Watch me name this card by testing it instead of guessing at it. Test one: are all four corners square corners? I take them one at a time, and every one of them is — so the rectangle family has to take this card. What do you think test two is going to ask about?',
+            'Watch me name this card by testing it instead of guessing at it. Test one: are all four corners square corners? I take them one at a time, and every one of them is. So the rectangle family has to take this card. What do you think test two is going to ask about?',
           expected: 'the sides',
         },
         {
           teacherSay:
-            'Test two: are all four sides the same length? They are, so the rhombus family takes it too. Notice I have not chosen between the two names. A card that passes both tests keeps both, and it earns a third name of its own.',
+            'Test two: are all four sides the same length? They are, so the rhombus family takes it too. Notice I have not chosen between the two names. A card that passes both tests keeps both. It earns a third name of its own.',
           expected: 'square',
           figure: flatSquareFig(),
         },
         {
           teacherSay:
-            'Now I turn the card until it balances on a corner. Nothing has been cut and nothing has been stretched, so every test it passed a moment ago it still passes. The picture moved; the shape did not.',
+            'Now I turn the card until it balances on a corner. Nothing has been cut and nothing has been stretched. So every test it passed a moment ago, it still passes. The picture moved; the shape did not.',
           expected: 'square',
           figure: tiltedSquareFig(),
         },
@@ -715,20 +715,20 @@ export const buildC22 = makeWeekBuilder({
     },
     {
       ...ge(22, 2, 'completion', 'A card has four square corners and two sides longer than the other two. Which family names has it earned?', [
-        { teacherSay: 'Which of the two tests does this card pass — the square-corners test, the matching-sides test, or both of them?', expected: 'the square-corners test' },
-        { childDo: 'Name the families this card has earned, then name the one family it just misses.', expected: 'rectangle, parallelogram, quadrilateral' },
+        { teacherSay: 'Which test does this card pass — square corners, matching sides, or both?', expected: 'the square-corners test' },
+        { childDo: 'Name the families this card has earned. Then name the one it just misses.', expected: 'rectangle, parallelogram, quadrilateral' },
       ], 'a rectangle, and so also a parallelogram and a quadrilateral — but not a rhombus and not a square'),
       visual: 'A card whose corners pass and whose sides do not match.',
     },
     {
       ...ge(22, 3, 'prompted', 'A card has four sides the same length and not one square corner. Which family names has it earned?', [
-        { childDo: 'Run both tests on the card, then say which names it keeps and which it loses.', expected: 'rhombus, parallelogram, quadrilateral' },
+        { childDo: 'Run both tests on the card. Then say which names it keeps, and which it loses.', expected: 'rhombus, parallelogram, quadrilateral' },
       ], 'a rhombus, and so also a parallelogram and a quadrilateral — but not a rectangle and not a square'),
       visual: 'A card with matching sides and leaning corners.',
       figure: rhombusFig(65),
     },
-    ge(22, 4, 'independent', 'Four cards lie on the table: one with four square corners and matching sides, one with four square corners and a longer pair of sides, one with matching sides and no square corners, and one with just one pair of parallel sides. How many of them belong in the hoop labelled PARALLELOGRAMS? Solve cold.', [
-      { childDo: 'Decide for each card whether both pairs of its sides run the same way, then count the cards that go in.', expected: '3' },
+    ge(22, 4, 'independent', 'Four cards lie on the table. The first has four square corners and matching sides. The second has four square corners and a longer pair of sides. The third has matching sides and no square corners. The fourth has just one pair of parallel sides. How many belong in the hoop labelled PARALLELOGRAMS? Solve cold.', [
+      { childDo: 'For each card, do both pairs of sides run the same way? Then count the cards that go in.', expected: '3' },
     ], '3 cards — only the card with a single pair of parallel sides stays outside'),
   ],
   days: [
@@ -794,8 +794,8 @@ export const buildC22 = makeWeekBuilder({
             },
           ],
           hints: [
-            'What is the one thing the rectangle box insists on, and which cards can show it?',
-            'Test each card against that one requirement in turn, and let a card in whatever else it also happens to be.',
+            'What is the one thing the rectangle box insists on?',
+            'Test each card against that one requirement in turn. Let a card in whatever else it also is.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -804,12 +804,12 @@ export const buildC22 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'A friend keeps one box for squares and one box for rectangles, and insists every card goes in exactly one box. Write two or three sentences telling your friend why the square cards honestly belong in the rectangle box as well, and then name the one extra thing a square carries that the other rectangles do not.',
+            'A friend keeps one box for squares and one box for rectangles. Every card must go in exactly one box, your friend says. Write two or three sentences for your friend. Explain why the square cards honestly belong in the rectangle box too. Then name the one extra thing a square carries.',
           value:
             'a square has four square corners, which is everything the rectangle box asks for, so every square is also a rectangle; the extra thing a square carries is that all four of its sides are the same length',
           hints: [
             'Can one card sit in two boxes at once, or must it choose?',
-            'Write down what the rectangle box asks for, hold a square card against that list, and then look for what the square brings on top.',
+            'Write down what the rectangle box asks for. Hold a square card against that list. Then look for what the square adds.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -826,10 +826,10 @@ export const buildC22 = makeWeekBuilder({
   ],
   puzzle: (r) => {
     const CARDS = [
-      { desc: `${SIDES_TEST} and ${CORNERS_TEST}`, names: ['square', 'rectangle', 'rhombus', 'parallelogram', 'quadrilateral'] },
-      { desc: `${CORNERS_TEST} and two sides longer than the other two`, names: ['rectangle', 'parallelogram', 'quadrilateral'] },
-      { desc: `${SIDES_TEST} and not one square corner`, names: ['rhombus', 'parallelogram', 'quadrilateral'] },
-      { desc: 'two pairs of parallel sides, two sides longer than the other two, and not one square corner', names: ['parallelogram', 'quadrilateral'] },
+      { desc: `${SIDES_TEST} and ${CORNERS_TEST}.`, names: ['square', 'rectangle', 'rhombus', 'parallelogram', 'quadrilateral'] },
+      { desc: `${CORNERS_TEST} and two sides longer than the other two.`, names: ['rectangle', 'parallelogram', 'quadrilateral'] },
+      { desc: `${SIDES_TEST} and not one square corner.`, names: ['rhombus', 'parallelogram', 'quadrilateral'] },
+      { desc: 'two pairs of parallel sides and no square corner. Two of its sides are longer than the other two.', names: ['parallelogram', 'quadrilateral'] },
     ];
     const pick = r.pick(CARDS);
     const name = one(r);
@@ -837,11 +837,11 @@ export const buildC22 = makeWeekBuilder({
       id: 'C22-PZ-01',
       title: 'Puzzle Grove: The Long Name Tag',
       puzzleType: 'logic',
-      prompt: `A name tag on a shape card has room for EVERY family the card belongs to, not just one. ${name}'s card has ${pick.desc}. Fill in the tag with every family name that honestly fits this one card, and be ready to say how you know your list has nothing missing from it.`,
+      prompt: `A name tag has room for EVERY family a card belongs to. Not just one. ${name} holds up one card. It has ${pick.desc} Fill in the tag with every family name that fits this card. Then be ready to say how you know nothing is missing.`,
       answer: { value: pick.names.join(', '), acceptableForms: pick.names, validation: 'short-text-keyword' as const },
       hintLadder: [
-        'How could you be sure a family name is missing from your tag rather than simply not fitting?',
-        'Start from the widest family and work inwards, keeping every name whose tests the card still passes.',
+        'How could you be sure no family name is missing from your tag?',
+        'Start from the widest family and work inwards. Keep every name whose tests the card passes.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'] as ErrorTag[],
     };
@@ -864,7 +864,7 @@ export const buildC22 = makeWeekBuilder({
     { gen: msParallelogramHoop, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01: the nesting total (a family count that is only right when its special members are counted in). 02: the defining property as a rate (four corners a card). 03: forward two-step — classify which piles are rectangles, then take four corners for each. 04: single-step share of one length among four sides the family guarantees are equal. 05: inverse-start two-step — a corner count turned back into cards, then the special members named. 06: forward two-step gather of every pile that passes the parallelogram test, with one pile that does not. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01: the nesting total (a family count that is only right when its special members are counted in). 02: the defining property as a rate (four corners a card). 03: forward two-step — classify which piles are rectangles, then take four corners for each. 04: single-step share of one length among four sides the family guarantees are equal. 05: inverse-start two-step — a corner count turned back into cards, then the special members named. 06: forward two-step gather of every pile that passes the parallelogram test, with one pile that does not. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

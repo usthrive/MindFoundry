@@ -225,11 +225,14 @@ unregistered id silently skips the QG-5 audit, so `bb-verify-packs` asserts ever
    unbalanced page once a uniqueness filter sits between them.** Measure what is served, never what you
    intended to draw.
 
-9. **The metacognition probe has a 7-word budget, not 15.** `lib/metacog.ts` prepends its own
-   lead-in, whose longest form is 8 words, so a probe of 8+ words breaks the Level-B/C 15-word
-   sentence ceiling however careful the rest of the pack is. Two authors measured this independently
-   (one at 17 words before trimming). Keep the probe ≤7 words — "will ten cubes reach the tail?" is
-   the shape that works.
+9. **The metacognition probe now stands as its own sentence — but keep it tight.** Historically
+   `lib/metacog.ts` welded its lead-in onto the probe (an em-dash on `withEstimateFirst`, later a
+   colon on `withCheckBack`/`withReasonableness`), so a probe of 8+ words broke the Level-B/C
+   15-word ceiling however careful the rest of the pack was; two authors measured it independently,
+   and a C10 check-back authored at 18 words shipped as a 22-word sentence. As of 2026-08 all three
+   wrappers emit CLOSED lead sentences, so the probe/check/benchmark carries the full ≤15-word
+   budget on its own. Still write it as one tight question — "will ten cubes reach the tail?" is
+   the shape that works — and remember it is sentence-cased automatically (author it lowercase).
 
 10. **Read your own generated week before you report done.** Every author who did this found things no
    gate did: a 9-metre sandpit, "Every sack holds 10 sacks", a bow described as a length, hints

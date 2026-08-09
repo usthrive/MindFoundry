@@ -127,8 +127,8 @@ const wCompareStory = asWarmup(
         params: { a: big, b: small },
         units: 'stamps',
         hints: [
-          'Is the question asking for a whole collection, or for the gap between two of them?',
-          'Lay the two collections side by side and read off how far the longer one reaches past the shorter.',
+          'Is the question asking for a whole collection? Or for the gap between two of them?',
+          'Lay the two collections side by side. Read off how far the longer one reaches past the shorter.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -157,7 +157,7 @@ const sitFestival = situation({
       units: 'visitors',
       hints: [
         'Does this story put two counts together, or take one away from the other?',
-        'Draw the two counts end to end on one bar, then read what the whole bar holds.',
+        'Draw the two counts end to end on one bar. Then read what the whole bar holds.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -204,14 +204,14 @@ const sitHiddenMiddle = situation({
     const found = r.int(64, 245);
     const name = one(r);
     return {
-      prompt: `${name} had ${countNoun(had, 'shells')} in a collection box. On the beach that afternoon ${name} found another ${countNoun(found, 'shells')} and put them all in the box. Later in the week some of the shells were given away. How many shells were in the box just BEFORE any were given away?`,
+      prompt: `${name} had ${countNoun(had, 'shells')} in a collection box. On the beach that afternoon ${name} found another ${countNoun(found, 'shells')}. They all went into the box. Later in the week some of the shells were given away. How many shells were in the box just BEFORE any were given away?`,
       answerValue: String(had + found),
       templateId: 'd_add_v1',
       params: { a: had, b: found },
       units: 'shells',
       hints: [
-        'Which moment in this story does the question ask about — the very end, or a moment part-way through?',
-        'Stop reading at the moment the question names, and work out only what has happened up to there.',
+        'Which moment in this story does the question ask about? The very end, or a moment part-way through?',
+        'Stop reading at the moment the question names. Work out only what has happened up to there.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -274,7 +274,7 @@ const msFairMoney = multiStep({
     const name = one(r);
     const item = r.pick(['a raffle ticket', 'a plant', 'a jar of jam', 'a badge'] as const);
     return {
-      prompt: `${name} takes ${wholeMoney(purse)} to the school fair and buys ${item} for ${wholeMoney(p1)} and a book for ${wholeMoney(p2)}. How much money does ${name} have left?`,
+      prompt: `${name} takes ${wholeMoney(purse)} to the school fair. ${name} buys ${item} for ${wholeMoney(p1)}. ${name} also buys a book for ${wholeMoney(p2)}. How much money does ${name} have left?`,
       initN: purse,
       steps: [
         { op: 'sub', n: p1, d: 1 },
@@ -313,7 +313,7 @@ const msCapRack = withFigure(
       const sold = r.int(35, 125);
       const now = r.int(putOut + 95, 470);
       return {
-        prompt: `[image: a number line with the ${now} caps on the rack now marked on it] The rack in the sports shop holds ${countNoun(now, 'caps')} NOW. Earlier today the shopkeeper put out ${countNoun(putOut, 'caps')}, and before that ${countNoun(sold, 'caps')} were sold. How many caps were on the rack when the shop opened?`,
+        prompt: `[image: a number line with the ${now} caps on the rack now marked on it] The rack in the sports shop holds ${countNoun(now, 'caps')} NOW. Earlier today the shopkeeper put out ${countNoun(putOut, 'caps')}. Before that, ${countNoun(sold, 'caps')} were sold. How many caps were on the rack when the shop opened?`,
         initN: now,
         steps: [
           { op: 'sub', n: putOut, d: 1 },
@@ -321,8 +321,8 @@ const msCapRack = withFigure(
         ],
         units: 'caps',
         hints: [
-          'Does the count this story hands you come from the start of the day, or from the end of it?',
-          'Walk the story backwards: undo the most recent change first, then undo the one before it.',
+          'Does this count come from the start of the day? Or from the end of it?',
+          'Walk the story backwards. Undo the most recent change first, then the one before it.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -375,8 +375,8 @@ const msBottleTops = withFigure(
         ],
         units: 'bottle tops',
         hints: [
-          'Which amount does this story name outright, and which one has to be uncovered before you can go on?',
-          'Take the named part off the whole first — that uncovers the part the question is really about.',
+          'Which amount does this story name outright? Which one has to be uncovered before you can go on?',
+          'Take the named part off the whole first. That uncovers the part the question is really about.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -422,7 +422,7 @@ const msWireCut = multiStep({
     const join = r.int(40, 195);
     const name = one(r);
     return {
-      prompt: `A workshop has a wire ${countNoun(len, 'cm')} long. ${name} cuts ${countNoun(cut, 'cm')} off one end, then joins a new piece ${countNoun(join, 'cm')} long onto the other end. How long is the wire now?`,
+      prompt: `A workshop has a wire ${countNoun(len, 'cm')} long. ${name} cuts ${countNoun(cut, 'cm')} off one end. Then ${name} joins a new piece ${countNoun(join, 'cm')} long onto the other end. How long is the wire now?`,
       initN: len,
       steps: [
         { op: 'sub', n: cut, d: 1 },
@@ -430,7 +430,7 @@ const msWireCut = multiStep({
       ],
       units: 'cm',
       hints: [
-        'Is the question about the piece that was cut off, or about the wire that is left in the workshop?',
+        'Is the question about the piece that was cut off? Or about the wire left in the workshop?',
         'Take the cut off first, then join the new piece onto what remains.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -465,7 +465,7 @@ const discrimWhichFirst = discrimination({
     if (bought === gave) bought = gave === 160 ? 45 : bought + 1;
     const name = one(r);
     return {
-      prompt: `${name} started the week with ${countNoun(start, 'stickers')} in an album, gave ${countNoun(gave, 'stickers')} to a friend, and then bought another ${countNoun(bought, 'stickers')}. Which calculation comes FIRST when you work out how many stickers are in the album now?`,
+      prompt: `${name} started the week with ${countNoun(start, 'stickers')} in an album. ${name} gave ${countNoun(gave, 'stickers')} to a friend. Then ${name} bought another ${countNoun(bought, 'stickers')}. You want to know how many stickers are in the album now. Which calculation comes FIRST?`,
       correct: `${start} − ${gave}`,
       distractors: [
         {
@@ -481,7 +481,7 @@ const discrimWhichFirst = discrimination({
       ],
       hints: [
         'Which of these things happened to the album first?',
-        'Follow the story in time order, and write only the move that the first change asks for.',
+        'Follow the story in time order. Write only the move that the first change asks for.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -541,11 +541,11 @@ const eaSentenceOrder = errorAnalysis({
   cognitiveOp: 'error-analysis',
   drawParams: (r) => ({ a: r.int(180, 460), b: r.int(45, 130), op: '-', wrongOp: '+' }),
   build: (v, p) => ({
-    prompt: `A bus pulled up at the school carrying ${countNoun(Number(p.a), 'riders')}. At the stop just before the school, ${countNoun(Number(p.b), 'riders')} had climbed on. Working out how many riders the bus was carrying before that stop, a student wrote ${p.a} + ${p.b} = ${v.wrong}.`,
-    extension: 'Write the plan this story really needs, work out how many riders the bus was carrying before that stop, and say in one sentence which words in the story the student was following.',
+    prompt: `A bus pulled up at the school carrying ${countNoun(Number(p.a), 'riders')}. At the stop just before the school, ${countNoun(Number(p.b), 'riders')} had climbed on. A student worked out how many riders the bus carried before that stop. The student wrote ${p.a} + ${p.b} = ${v.wrong}.`,
+    extension: 'Write the plan this story really needs. Work out how many riders the bus carried before that stop. Then say in one sentence which words the student was following.',
     hints: [
-      'Does the count the story hands you belong to the moment before the riders climbed on, or the moment after?',
-      'Draw the bus twice, once for each moment, and decide which of the two drawings should be the fuller one.',
+      'Does this count belong to the moment before the riders climbed on? Or the moment after?',
+      'Draw the bus twice, once for each moment. Decide which of the two drawings should be the fuller one.',
     ],
     errorTags: ['concept-misconception', 'task-comprehension'],
   }),
@@ -569,12 +569,12 @@ export const buildC05 = makeWeekBuilder({
     'C3 and C4 taught the two calculations one at a time, with the operation named by the page. C5 supplies neither: the child decides how many steps there are, which one opens, and — new this week — whether the stated quantity is a starting point at all or the RESULT of a change that has to be undone first.',
   explanation: {
     hook:
-      'Every two-step story hides a number in the middle that nobody says out loud. Find it and the story falls open; reach for your pencil before you find it and you are guessing.',
+      'Every two-step story hides a number in the middle that nobody says out loud. Find it and the story falls open. Reach for your pencil before you find it, and you are guessing.',
     whyBeforeHow:
-      'A two-step story keeps one number to itself, and because that hidden middle number has to be found before anything else can be worked out, the first move in a two-step story is never arithmetic — it is choosing which question to answer first. That is why this week we write the plan before the math. Sentences do not always run in the order the work does: a story can hand you the ending amount and then describe the changes that made it, and when it does, the words that sound like joining are asking you to take away. Plan first and the two calculations are easy ones you already own. Compute first and the arithmetic can be perfect while the answer is still the answer to a different question.',
+      'A two-step story keeps one number to itself. That hidden middle number has to be found before anything else. So the first move in a two-step story is never arithmetic. It is choosing which question to answer first. That is why this week we write the plan before the math. Sentences do not always run in the order the work does. A story can hand you the ending amount first. Then it describes the changes that made it. When that happens, joining words are asking you to take away. Plan first and the two calculations are easy ones you already own. Compute first and the arithmetic can be perfect. The answer will still be the answer to a different question.',
     script: [
       {
-        say: 'Watch what I do before I write anything at all. The story says a store room holds 348 cartons, a delivery brings 126 more in, then 95 cartons go out. I say my plan out loud first: line one is the delivery, line two is the load that leaves. Only then do I pick up my pencil.',
+        say: 'Watch what I do before I write anything at all. A store room holds 348 cartons. A delivery brings 126 more in. Then 95 cartons go out. I say my plan out loud first. Line one is the delivery. Line two is the load that leaves. Only then do I pick up my pencil.',
         visual: 'Three bars: the start, the start with the delivery added, and the bar after the load leaves.',
         figure: barModel(
           [
@@ -586,7 +586,7 @@ export const buildC05 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now notice the 474. Nobody in that story ever said it. It is the number hiding in the middle, and it only exists because I did the first line. Every two-step story has one, and uncovering it is the entire job of step one.',
+        say: 'Now notice the 474. Nobody in that story ever said it. It is the number hiding in the middle. It only exists because I did the first line. Every two-step story has one, and uncovering it is the entire job of step one.',
         visual: 'One bar of 348 and 126 joined, braced as the middle number 474.',
         figure: barModel(
           [
@@ -596,7 +596,7 @@ export const buildC05 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Here is the story that tries to trip me. A rack holds 208 caps NOW, and 75 of them were put out this morning. The words "put out" pull me towards adding — but the 208 already has those 75 standing in it, so my first line has to take them off. The sentence order and the plan run opposite ways.',
+        say: 'Here is the story that tries to trip me. A rack holds 208 caps NOW, and 75 of them were put out this morning. The words "put out" pull me towards adding. But the 208 already has those 75 standing in it. So my first line has to take them off. The sentence order and the plan run opposite ways.',
         visual: 'A number line with a backward hop from the count now to the count before the caps went out.',
         figure: numberLine(
           {
@@ -614,7 +614,7 @@ export const buildC05 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One more habit before the arithmetic: I ask roughly how big the answer ought to be. More cartons came in than went out, so a sensible ending sits a little above where I started — and if my answer landed far below 348 I would check my plan first, not my columns.',
+        say: 'One more habit before the arithmetic. I ask roughly how big the answer ought to be. More cartons came in than went out. So a sensible ending sits a little above where I started. Say my answer landed far below 348. I would check my plan first, not my columns.',
         visual: 'The starting bar beside a sensible ending bar, only a little longer.',
         figure: barModel(
           [
@@ -626,7 +626,7 @@ export const buildC05 = makeWeekBuilder({
       },
     ],
     summary:
-      'Read the whole story before you write anything. Find the number hidden in the middle, decide which question comes first, and write the plan before the math. Then work the two lines in that order, and check that your answer is the size the story led you to expect.',
+      'Read the whole story before you write anything. Find the number hidden in the middle. Decide which question comes first. Write the plan before the math. Then work the two lines in that order. Check that your answer is the size the story led you to expect.',
     vocabulary: [
       { term: 'two-step story', kidGloss: 'a story that needs two calculations, one after the other' },
       { term: 'the plan', kidGloss: 'the two questions you decide to answer, written down before any working' },
@@ -639,7 +639,7 @@ export const buildC05 = makeWeekBuilder({
       ...ge(5, 1, 'modeled', 'A store room holds 348 cartons. A delivery brings 126 more in. Later that day 95 cartons go out to the shops. How many cartons are in the store room then?', [
         {
           teacherSay:
-            'Watch me read the whole story before I write a thing. Two changes happen, and they happen in an order: first cartons arrive, then cartons leave. So my plan has two lines, and I know which line is which before I touch a number.',
+            'Watch me read the whole story before I write a thing. Two changes happen, and they happen in an order: first cartons arrive, then cartons leave. So my plan has two lines. I know which line is which before I touch a number.',
         },
         {
           teacherSay: 'Line one only, then — the store room and the delivery arriving. What is the middle number that gives me?',
@@ -658,7 +658,7 @@ export const buildC05 = makeWeekBuilder({
     {
       ...ge(5, 2, 'completion', 'A rack holds 208 caps now. Earlier today the shopkeeper put out 75 caps, and before that 46 caps were sold. How many caps were on the rack when the shop opened?', [
         { teacherSay: 'Which end of the story does the 208 come from — the beginning, or the end?', expected: 'the end' },
-        { childDo: 'Walk the story backwards one change at a time, and say what the rack held when the shop opened.', expected: '179' },
+        { childDo: 'Walk the story backwards one change at a time. Then say what the rack held when the shop opened.', expected: '179' },
       ], '179'),
       visual: 'A number line with the count now, and the backward hops that reach the opening count.',
       figure: numberLine(
@@ -679,7 +679,9 @@ export const buildC05 = makeWeekBuilder({
         { alt: 'a number line from 0 to 250 with the count now at 208 and a backward hop to an unknown opening count' },
       ),
     },
-    ge(5, 3, 'prompted', 'Ria takes $50 to the school fair and buys a raffle ticket for $12 and a plant for $19. How much money does Ria have left?', [
+    // "a book" second: the generator's second purchase is always a book, so the
+    // GE must show a story shape the generator can actually produce.
+    ge(5, 3, 'prompted', 'Ria takes $50 to the school fair. Ria buys a raffle ticket for $12 and a book for $19. How much money does Ria have left?', [
       { childDo: 'Say the plan out loud first, then work the two lines in that order.', expected: '19' },
     ], '$19'),
     {
@@ -752,12 +754,12 @@ export const buildC05 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Here is a situation, and one number that comes out of it. At a book fair there are 38 storybooks and 24 puzzle books on the table, and 12 books are sold before lunch. Working through this situation in two steps lands on the number 50. Write the QUESTION that 50 answers, then write the two steps of the plan that reach it.',
+            'Here is a situation, and one number that comes out of it. At a book fair there are 38 storybooks and 24 puzzle books on the table. Then 12 books are sold before lunch. Working through this situation in two steps lands on the number 50. Write the QUESTION that 50 answers. Then write the two steps of the plan that reach it.',
           value: 'how many books are still on the table after lunch — put the two kinds of book together, then take off the ones that were sold',
           acceptableForms: ['how many', 'left', 'still', 'on the table', 'together', 'take off'],
           keywords: true,
           hints: [
-            'Which two of the numbers in the situation have to meet before that number can appear at all?',
+            'Which two numbers have to meet before that number can appear?',
             'Say the situation out loud in two steps, and name what each step produces.',
           ],
           errorTags: ['task-comprehension', 'concept-misconception'],
@@ -767,7 +769,7 @@ export const buildC05 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: in a two-step story, the first step uses the two numbers that appear first in the story. In one sentence, say how you know.',
+            'Always, sometimes, or never true? In a two-step story, the first step uses the two numbers that appear first. In one sentence, say how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -782,8 +784,8 @@ export const buildC05 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Can you think of a story whose very first number is the amount at the END?',
-            'Try one story that runs forwards and one that hands you the ending amount, and see whether one rule covers both.',
+            'Think of a story whose very first number is the amount at the END.',
+            'Try one story that runs forwards. Try another that hands you the ending amount. See whether one rule covers both.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -807,7 +809,7 @@ export const buildC05 = makeWeekBuilder({
       id: 'C5-PZ-01',
       title: 'Puzzle Grove: The Missing Middle',
       puzzleType: 'logic',
-      prompt: `A car park held ${countNoun(start, 'cars')} at nine o'clock. During the morning some cars drove out. At lunchtime ${countNoun(drovein, 'cars')} drove in. At one o'clock the car park held ${countNoun(end, 'cars')}. How many cars drove out during the morning, and how can you be sure that no other number would work?`,
+      prompt: `A car park held ${countNoun(start, 'cars')} at nine o'clock. During the morning some cars drove out. At lunchtime ${countNoun(drovein, 'cars')} drove in. At one o'clock the car park held ${countNoun(end, 'cars')}. How many cars drove out during the morning? How can you be sure that no other number would work?`,
       answer: {
         value: String(out),
         acceptableForms: [countNoun(out, 'cars')],
@@ -815,7 +817,7 @@ export const buildC05 = makeWeekBuilder({
       },
       hintLadder: [
         'Which number in this story is the one nobody tells you?',
-        'Work back from the one-o\'clock count: take off the cars that drove in at lunchtime, then hold what is left beside the nine-o\'clock count.',
+        'Work back from the one-o\'clock count. Take off the cars that drove in at lunchtime. Then hold what is left beside the nine-o\'clock count.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };

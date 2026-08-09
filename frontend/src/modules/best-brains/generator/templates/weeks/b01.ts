@@ -514,10 +514,10 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
         'After 99, what comes next? Some kids say "ninety-ten"! Today we find out how ' +
         'numbers keep marching past 100 - without ever running out.',
       whyBeforeHow:
-        'Numbers follow one repeating song: the ones climb 0 to 9, then a new ten begins. ' +
-        '100 is not a wall - it is just ten tens, and the song keeps going: 101, 102, 103... ' +
-        'The why: once you hear the pattern, you can start counting from ANY number - no ' +
-        'need to go back to 1.',
+        'Numbers follow one repeating song. The ones climb 0 to 9, then a new ten begins. ' +
+        '100 is not a wall - it is just ten tens. The song keeps going: 101, 102, 103... ' +
+        'The why: once you hear the pattern, you can start counting from ANY number. ' +
+        'There is no need to go back to 1.',
       script: [
         {
           say: 'Listen to the count cross a ten: 37, 38, 39... the ones are full, so a new ten begins: 40!',
@@ -537,8 +537,8 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
         },
       ],
       summary:
-        'The ones climb 0-9, then a new ten begins; after 99 comes 100 and the count keeps ' +
-        'going to 120. Read and write numbers by their parts: hundreds, tens, ones.',
+        'The ones climb 0-9, then a new ten begins. After 99 comes 100 and the count ' +
+        'keeps going to 120. Read and write numbers by their parts: hundreds, tens, ones.',
       vocabulary: [
         { term: 'number path', kidGloss: 'the counting line where every number has a spot' },
         { term: 'hundred chart', kidGloss: 'the counting song written in rows of ten' },
@@ -553,7 +553,7 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
         steps: [
           {
             teacherSay:
-              'I count: 97, 98, 99... the ones are full AND the tens are full, so a whole new hundred begins: 100! Then the song keeps going: 101, 102, 103.',
+              'I count: 97, 98, 99... the ones are full AND the tens are full. So a whole new hundred begins: 100! Then the song keeps going: 101, 102, 103.',
             expected: '97, 98, 99, 100, 101, 102, 103',
           },
         ],

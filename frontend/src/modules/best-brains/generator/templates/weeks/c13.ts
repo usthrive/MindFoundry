@@ -190,14 +190,14 @@ const sitFinishTheArray = withFigure(
       const name = one(r);
       const known = rows * FRIENDLY;
       return {
-        prompt: `[image: the block ${name} has already counted — ${countNoun(rows, 'rows')} with ${countNoun(FRIENDLY, noun)} in each] The hall is set out in ${countNoun(rows, 'rows')}, and every row holds ${countNoun(cols, noun)}. ${name} has already counted the first ${countNoun(FRIENDLY, noun)} in every row — that is ${countNoun(known, noun)}. How many ${unitFor(2, noun)} are in the hall?`,
+        prompt: `[image: the block ${name} has already counted — ${countNoun(rows, 'rows')} with ${countNoun(FRIENDLY, noun)} in each] The hall is set out in ${countNoun(rows, 'rows')}, and every row holds ${countNoun(cols, noun)}. ${name} has already counted the first ${countNoun(FRIENDLY, noun)} in every row. That is ${countNoun(known, noun)}. How many ${unitFor(2, noun)} are in the hall?`,
         answerValue: String(rows * cols),
         templateId: 'd_mul_v1',
         params: { a: rows, b: cols, known, noun },
         units: noun,
         hints: [
           'How much of the hall has already been counted, and how much is left over?',
-          'Work out what the uncounted block holds, then join it to the block that is already counted.',
+          'Work out what the uncounted block holds. Then join it to the counted block.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
@@ -223,14 +223,14 @@ const sitKnownFact = situation({
     const noun = nounOf(r, 'warehouse');
     const name = one(r);
     return {
-      prompt: `${name} stacks ${countNoun(per, noun)} onto every pallet, and knows that ${per} × ${FRIENDLY} = ${per * FRIENDLY} without stopping to think. How many ${unitFor(2, noun)} are on ${countNoun(groups, 'pallets')}?`,
+      prompt: `${name} stacks ${countNoun(per, noun)} onto every pallet. ${name} knows that ${per} × ${FRIENDLY} = ${per * FRIENDLY} without stopping to think. How many ${unitFor(2, noun)} are on ${countNoun(groups, 'pallets')}?`,
       answerValue: String(per * groups),
       templateId: 'd_mul_v1',
       params: { a: per, b: groups },
       units: noun,
       hints: [
         'Which fact has the story already given you, and how many pallets does it cover?',
-        'Start from the fact you were handed, then count on the pallets it does not reach.',
+        'Start from the fact you were handed. Then count on the pallets it misses.',
       ],
       errorTags: ['concept-misconception', 'fact-recall'],
     };
@@ -294,7 +294,7 @@ const sitStripLine = withFigure(
         units: 'cm',
         hints: [
           'Is the question asking about one piece, or about the line they make together?',
-          'Lay the same length down once for every piece, and read how far the line reaches.',
+          'Lay the same length down once for every piece. Then read how far the line reaches.',
         ],
         errorTags: ['representation-misread', 'task-comprehension'],
       };
@@ -333,7 +333,7 @@ const sitStallPrice = situation({
       acceptableForms: [wholeMoney(price * count)],
       hints: [
         'What would the shopping cost if the price were a friendly ten dollars each?',
-        'Start from that friendly total, then take off what each one is short of ten — once for every one bought.',
+        'Start from that friendly total. Then take off what each one is short of ten. Do that once for every one bought.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -341,7 +341,7 @@ const sitStallPrice = situation({
 });
 const sitStallPriceEstimate = withEstimateFirst(
   sitStallPrice,
-  'if every one of them cost ten dollars, would the total be larger or smaller than the real total?',
+  'at ten dollars each, would the total be larger or smaller?',
 );
 
 // ---------------------------------------------------------------------------
@@ -423,7 +423,7 @@ const msNearTen = multiStep({
     const noun = nounOf(r, 'packing');
     const name = one(r);
     return {
-      prompt: `Every crate in the store holds ${countNoun(10, noun)}. ${name} loads ${countNoun(crates, 'crates')} onto the van, then lifts ${countNoun(short * crates, noun)} back out — ${countNoun(short, noun)} from each crate. How many ${unitFor(2, noun)} are on the van?`,
+      prompt: `Every crate in the store holds ${countNoun(10, noun)}. ${name} loads ${countNoun(crates, 'crates')} onto the van. Then ${name} lifts ${countNoun(short * crates, noun)} back out, ${countNoun(short, noun)} from each crate. How many ${unitFor(2, noun)} are on the van?`,
       initN: 10,
       steps: [
         { op: 'mul', n: crates, d: 1 },
@@ -431,7 +431,7 @@ const msNearTen = multiStep({
       ],
       units: noun,
       hints: [
-        'Would it be easier to fill every group right to the top first, and deal with the missing ones afterwards?',
+        'Would it be easier to fill every group right to the top first?',
         'Load every group full, then take back out what the story lifts away.',
       ],
       errorTags: ['procedure-slip', 'concept-misconception'],
@@ -457,7 +457,7 @@ const msGapsWithSpare = multiStep({
     for (let i = 0; i < 6 && (spare === gaps || spare === shelves); i++) spare = spare === 7 ? 3 : spare + 1;
     const name = one(r);
     return {
-      prompt: `A full shelf takes ${countNoun(10, 'books')}, but ${name} leaves ${countNoun(gaps, 'gaps')} on every shelf for new titles. ${name} fills ${countNoun(shelves, 'shelves')} that way. A trolley by the door holds ${countNoun(spare, 'magazines')}. How many books are on the shelves?`,
+      prompt: `A full shelf takes ${countNoun(10, 'books')}. But ${name} leaves ${countNoun(gaps, 'gaps')} on every shelf for new titles. ${name} fills ${countNoun(shelves, 'shelves')} that way. A trolley by the door holds ${countNoun(spare, 'magazines')}. How many books are on the shelves?`,
       initN: 10,
       steps: [
         { op: 'sub', n: gaps, d: 1 },
@@ -466,7 +466,7 @@ const msGapsWithSpare = multiStep({
       units: 'books',
       hints: [
         'Which numbers in this story are counting books, and which one is not?',
-        'Work out what one shelf really holds, then take that many once for every shelf — and leave the number that counts something else alone.',
+        'Work out what one shelf really holds. Then take that many once for every shelf. Leave alone the number that counts something else.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -508,7 +508,7 @@ const discrimValidSplit = discrimination({
       ],
       hints: [
         'Do the two parts add back to exactly the number that was cut?',
-        'Both pieces keep every row they started with, so each piece still has to be multiplied by the number of rows.',
+        'Both pieces keep every row they started with. So each piece must be multiplied by the number of rows.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -545,7 +545,7 @@ const discrimRebuildProduct = discrimination({
       ],
       hints: [
         'When a row is cut into two shorter pieces, does the number of rows change?',
-        'Put the two pieces of the row back end to end, and keep the rows exactly as they were.',
+        'Put the two pieces of the row back end to end. Keep the rows exactly as they were.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -574,11 +574,11 @@ const eaLeftoverAdded = errorAnalysis({
     const rowLen = FRIENDLY + rest;
     const firstPart = rows * FRIENDLY;
     return {
-      prompt: `A student worked out ${rows} × ${rowLen} by cutting the ${rowLen} into ${FRIENDLY} and ${rest}. For the first part the student wrote ${rows} × ${FRIENDLY} = ${firstPart}. For the second part the student wrote ${rows} + ${rest} = ${v.wrong}, and gave ${firstPart + Number(v.wrong)} as the answer.`,
-      extension: `Draw the array with the cut in it, write down what the SECOND part is really worth, and add one sentence saying what the student did to the leftover part.`,
+      prompt: `A student worked out ${rows} × ${rowLen} by cutting the ${rowLen} into ${FRIENDLY} and ${rest}. For the first part the student wrote ${rows} × ${FRIENDLY} = ${firstPart}. For the second part the student wrote ${rows} + ${rest} = ${v.wrong}. The answer given was ${firstPart + Number(v.wrong)}.`,
+      extension: `Draw the array with the cut in it. Write down what the SECOND part is really worth. Add one sentence saying what the student did to the leftover part.`,
       hints: [
         'Which piece of the picture does the second line describe?',
-        'Count the rows the leftover piece still has, then work out what that piece really holds.',
+        'Count the rows the leftover piece still has. Then work out what it really holds.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -603,9 +603,9 @@ export const buildC13 = makeWeekBuilder({
     'C11 used one split of one kind ("five 7s and one more 7") as a way to reach two hard facts. C13 makes the split itself the object: any factor may be cut, the cut may be additive or near-ten, the two parts must add back to exactly what was cut, and the factor that was not cut never changes — which is why three different splits of the same product all agree.',
   explanation: {
     hook:
-      '7 × 8 is a hard fact. 7 × 5 is an easy one, and so is 7 × 3 — and this week you will see that the hard fact is nothing but those two easy ones standing side by side.',
+      '7 × 8 is a hard fact. 7 × 5 is an easy one, and so is 7 × 3. This week you will see something. The hard fact is nothing but those two easy ones side by side.',
     whyBeforeHow:
-      'A hard fact is only a stack of easy facts, because an array can be cut into two smaller arrays without a single square moving. That is the split-the-array move: cut ONE factor into two friendly parts, work out what each part is worth, then put the two answers back together. Cutting the 8 in 7 × 8 into 5 and 3 is safe since the seven rows are still seven rows in both pieces — the cut changes how long a row is, never how many rows there are. And the two parts have to add back to exactly what was cut: if they overlap, a column sits in both pieces and gets counted twice.',
+      'A hard fact is only a stack of easy facts. An array can be cut into two smaller arrays without a single square moving. That is why the split-the-array move works. Cut ONE factor into two friendly parts. Work out what each part is worth. Then put the two answers back together. Cutting the 8 in 7 × 8 into 5 and 3 is safe. The seven rows are still seven rows in both pieces. The factor you cut breaks into parts. The factor you leave whole stays in every piece. And the two parts have to add back to exactly what was cut. If they overlap, a column sits in both pieces and gets counted twice.',
     script: [
       {
         say: 'Watch me take 7 × 8, which I do not know by heart. I cut every row after the fifth square. Now I have two blocks: 7 rows of 5, and 7 rows of 3. Nothing has moved — I have only drawn a line.',
@@ -624,7 +624,7 @@ export const buildC13 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Before I cut anything I check about how big the answer should be. Seven tens is 70, so seven eights has to land a good way below 70 — and near it, not near seven fives. When my two parts came to 56 I could see straight away that the size was sensible.',
+        say: 'Before I cut anything I check about how big the answer should be. Seven tens is 70. So seven eights has to land a good way below 70. It should land near 70, not near seven fives. My two parts came to 56. Straight away I could see that the size was sensible.',
         visual: 'Two reference bars: seven fives beside seven tens, with the answer sitting between them.',
         figure: barModel(
           [
@@ -635,7 +635,7 @@ export const buildC13 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Here is the cut that is not allowed. If I take 5 and 4 out of a row that is only 8 long, the two pieces overlap by one column. That column gets counted in both blocks, and 35 + 28 = 63 — one whole row of 7 too many. The parts must add back to exactly the number I cut.',
+        say: 'Here is the cut that is not allowed. A row is only 8 long. Take 5 and 4 out of it. The two pieces overlap by one column. That column gets counted in both blocks. So 35 + 28 = 63, one whole row of 7 too many. The parts must add back to exactly the number I cut.',
         visual: 'The same seven rows cut into a five-wide piece and a four-wide piece, with the shared column marked.',
         figure: areaGrid(
           { rows: 1, cols: 2, rowLabels: ['7'], colLabels: ['5', '4'], cellLabels: ['35', '28'] },
@@ -644,7 +644,7 @@ export const buildC13 = makeWeekBuilder({
       },
     ],
     summary:
-      'Any array can be cut into two smaller arrays. Cut one factor into two friendly parts, multiply EACH part by the other factor, then add the two answers. The two parts must add back to exactly what you cut, and the factor you did not cut stays exactly as it was.',
+      'Any array can be cut into two smaller arrays. Cut one factor into two friendly parts. Multiply EACH part by the other factor. Then add the two answers. The two parts must add back to exactly what you cut. The factor you did not cut stays exactly as it was.',
     vocabulary: [
       { term: 'array', kidGloss: 'equal rows of the same length, tidied into a rectangle' },
       { term: 'split-the-array', kidGloss: 'draw a line through the rows to make two smaller arrays' },
@@ -657,7 +657,7 @@ export const buildC13 = makeWeekBuilder({
       ...ge(13, 1, 'modeled', 'A wall has 6 rows of tiles with 8 tiles in every row. How many tiles are on the wall?', [
         {
           teacherSay:
-            'I do not know 6 × 8 by heart, so let me cut it where the counting is easy. I draw a line after the fifth tile of every row, because I know my fives — that gives me 6 rows of 5, which is 30.',
+            'I do not know 6 × 8 by heart. So let me cut it where the counting is easy. I draw a line after the fifth tile of every row. I know my fives. That gives me 6 rows of 5, which is 30.',
         },
         {
           teacherSay: 'The piece I have left is 6 rows of 3. What is that piece worth?',
@@ -689,7 +689,7 @@ export const buildC13 = makeWeekBuilder({
       { childDo: 'Say the two parts out loud, then join them.', expected: '54' },
     ], '54'),
     ge(13, 4, 'independent', 'A sticker sheet has 8 rows with 7 stickers in every row. Choose your own cut and find the total. Solve cold.', [
-      { childDo: 'Cut one factor where the facts are easy for you, and check your two parts add back to the number you cut.', expected: '56' },
+      { childDo: 'Cut one factor where the facts are easy for you. Check your two parts add back to the number you cut.', expected: '56' },
     ], '56'),
   ],
   days: [
@@ -738,13 +738,13 @@ export const buildC13 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Work out 7 × 8 three ways. First cut the 8 into 5 and 3. Then cut the 8 into 4 and 4. Then cut the 7 into 5 and 2. Write the two parts and the total for each cut, then write one sentence saying what you notice about the three totals.',
+            'Work out 7 × 8 three ways. First cut the 8 into 5 and 3. Then cut the 8 into 4 and 4. Then cut the 7 into 5 and 2. Write the two parts and the total for each cut. Then write one sentence about the three totals.',
           value: 'every cut lands on the same total, because each one cuts the same array into two pieces and puts them straight back together',
           acceptableForms: ['same total', 'the same', '56', 'one array', 'equal'],
           keywords: true,
           hints: [
             'Which of your three cuts changed the size of the array itself?',
-            'Lay the three pairs of parts under one another and read the totals down the page.',
+            'Lay the three pairs of parts under one another. Then read the totals down the page.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -753,7 +753,7 @@ export const buildC13 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: when you cut one factor of a multiplication into two parts, the other factor has to be cut as well. Explain how you know in one sentence.',
+            'Always, sometimes, or never true? You cut one factor of a multiplication into two parts. The other factor has to be cut as well. Explain how you know in one sentence.',
           correct: 'never',
           distractors: [
             {
@@ -764,12 +764,12 @@ export const buildC13 = makeWeekBuilder({
             {
               text: 'sometimes',
               errorTag: 'representation-misread',
-              rationale: 'Reads the two factors as playing the same part in the picture; the factor left whole is the number of rows, and cutting a row never changes how many rows there are.',
+              rationale: 'Reads the two factors as playing the same part in the picture; only the CUT factor breaks into parts, while the factor left whole appears unchanged in every piece.',
             },
           ],
           hints: [
             'When a row is cut in two, does the picture gain any extra rows?',
-            'Draw the cut, then count the rows in each piece and compare them with the rows you started with.',
+            'Draw the cut. Count the rows in each piece. Compare them with the rows you started with.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -797,23 +797,29 @@ export const buildC13 = makeWeekBuilder({
       // "one or more", not "a whole number": zero is a whole number, so a
       // 0-and-everything pair would balance the beam and sit outside the key —
       // and completeness is the very thing this puzzle asks the child to argue.
-      prompt: `${name} hangs ${rows} × ${rowLen} on the left pan of a balance beam. On the right pan go two weights: ${rows} × ▢ and ${rows} × ▢, with a counting number — one or more — in each box. Find EVERY pair of numbers that balances the beam, counting a pair and its swap as the same pair, and say how you know none is missing.`,
+      prompt: `${name} hangs ${rows} × ${rowLen} on the left pan of a balance beam. On the right pan go two weights: ${rows} × ▢ and ${rows} × ▢. Each box holds a counting number, one or more. Find EVERY pair of numbers that balances the beam. Count a pair and its swap as the same pair. Then say how you know none is missing.`,
       answer: { value: ways.join('; '), acceptableForms: ways, validation: 'short-text-keyword' },
       hintLadder: [
-        'How could you be sure you have found every pair, and not only some of them?',
-        'Walk the first box up in order — one, then two, then three — and stop once it passes halfway, since after that the pairs start repeating.',
+        'How could you be sure you have found every pair?',
+        'Walk the first box up in order: one, then two, then three. Stop once it passes halfway. After that the pairs start repeating.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
   },
   puzzleMeta: { stepCount: 2, cognitiveOp: 'multi-step' },
   sprint: {
-    skill: 'Multiplication facts ×2, ×5, ×10 — the friendly facts every split lands on',
-    sourceWeek: C7,
+    // mult_facts_v1 reads only factorRange (a `tables` param is silently
+    // ignored and the range defaulted to [2,9]), so the old "×2, ×5, ×10"
+    // label was false as served. [2,9] is every fact taught by C12 — declare
+    // that honestly rather than pretend a table restriction that never ran.
+    // [2,7]: every servable fact taught by C11, which is 2 weeks back (DD11);
+    // [2,9] would need C12 as source, only 1 week back.
+    skill: 'Multiplication facts to seven — the known facts every split lands on',
+    sourceWeek: C11,
     itemCount: 16,
     scheduledDay: 3,
     templateId: 'mult_facts_v1',
-    params: { tables: [2, 5, 10], max: 10 },
+    params: { factorRange: [2, 7] },
   },
   mastery: [
     { gen: sitFinishTheArray, diff: 3 },
@@ -824,7 +830,7 @@ export const buildC13 = makeWeekBuilder({
     { gen: msNearTen, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step splits — an array with one block already counted, a story that hands over the easy fact, and a length laid down again — each keeping its known-part figure. 02/04/06: two-step cuts — a ten-and-extras container, the part of an array not yet counted, and a near-ten load-and-lift. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step splits — an array with one block already counted, a story that hands over the easy fact, and a length laid down again — each keeping its known-part figure. 02/04/06: two-step cuts — a ten-and-extras container, the part of an array not yet counted, and a near-ten load-and-lift. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

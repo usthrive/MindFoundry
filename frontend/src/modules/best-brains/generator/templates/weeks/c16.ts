@@ -267,14 +267,14 @@ const sitRemarkTheTrail = withFigure(
       const s = r.pick(JOURNEY_SCENES);
       const spot = r.pick(LANDMARKS);
       return {
-        prompt: `[image: a line for the whole ${s.whole} marked into ${countNoun(d1, 'equal stretches')}, with a flag standing on the ${spot} at the ${fmtFrac(n1, d1, 'partition-anchored')} mark] The keepers marked a ${s.whole} into ${countNoun(d1, 'equal stretches')}, and the ${spot} stands at the ${fmtFrac(n1, d1, 'partition-anchored')} mark. They rub those marks out and mark the same ${s.whole} into ${countNoun(d2, 'equal stretches')} instead. How many of the new stretches lie between the ${s.from} and the ${spot}?`,
+        prompt: `[image: a line for the whole ${s.whole} marked into ${countNoun(d1, 'equal stretches')}, with a flag standing on the ${spot} at the ${fmtFrac(n1, d1, 'partition-anchored')} mark] The keepers marked a ${s.whole} into ${countNoun(d1, 'equal stretches')}. The ${spot} stands at the ${fmtFrac(n1, d1, 'partition-anchored')} mark. They rub those marks out. Then they mark the same ${s.whole} into ${countNoun(d2, 'equal stretches')}. How many new stretches lie between the ${s.from} and the ${spot}?`,
         answerValue: String(n1 * k),
         templateId: 'd_frac_equiv_v1',
         params: { n1, d1, d2, mark: fmtFrac(n1, d1, 'partition-anchored'), whole: s.whole, spot },
         acceptableForms: [fmtFrac(n1 * k, d2, 'partition-anchored')],
         hints: [
           'Has the landmark itself moved, or only the marks drawn underneath it?',
-          'Work out how many new stretches fit inside one old stretch, then take that many for every old stretch you pass.',
+          'Work out how many new stretches fit inside one old stretch. Then take that many for every old stretch you pass.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
@@ -329,7 +329,7 @@ const sitGatherIntoBunches = withFigure(
         units: s.group,
         hints: [
           'Does the paint stop part-way along a group, or exactly at the end of one?',
-          'Count how many pieces sit in a single group, then see how many of those groups the paint uses up.',
+          'Count how many pieces sit in one group. Then see how many groups the paint uses up.',
         ],
         errorTags: ['representation-misread', 'procedure-slip'],
       };
@@ -375,14 +375,14 @@ const sitTwoMaps = withFigure(
       const s = r.pick(COURSE_SCENES);
       const [first, second] = two(r);
       return {
-        prompt: `[image: one unbroken bar standing for the whole ${len} m ${s.whole}] A ${s.whole} runs ${countNoun(len, 'm')} from the ${s.from} to the ${s.to}. ${first} marks it into ${countNoun(d1, 'equal stretches')}, so one of ${first}'s stretches is ${fmtFrac(1, d1, 'partition-anchored')} of the whole ${s.whole}. ${second} marks the same ${s.whole} into ${countNoun(d2, 'equal stretches')}, so one of ${second}'s stretches is ${fmtFrac(1, d2, 'partition-anchored')} of it. How long is ONE of ${second}'s stretches?`,
+        prompt: `[image: one unbroken bar standing for the whole ${len} m ${s.whole}] A ${s.whole} runs from the ${s.from} to the ${s.to}. It is ${countNoun(len, 'm')} long. ${first} marks it into ${countNoun(d1, 'equal stretches')}. So one of ${first}'s stretches is ${fmtFrac(1, d1, 'partition-anchored')} of the whole ${s.whole}. ${second} marks the same ${s.whole} into ${countNoun(d2, 'equal stretches')}. So one of ${second}'s stretches is ${fmtFrac(1, d2, 'partition-anchored')} of it. How long is ONE of ${second}'s stretches?`,
         answerValue: String(per),
         templateId: 'd_div_v1',
         params: { a: len, b: d2, whole: s.whole },
         units: 'm',
         hints: [
-          'Which of the two markings chops the whole thing into more pieces, and what does that do to one piece?',
-          'Give every stretch on that marking an equal slice of the full length, then read off what a single stretch is worth.',
+          'Which of the two markings chops the whole into more pieces?',
+          'Give every stretch on that marking an equal slice of the full length. Then read off what one stretch is worth.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -417,7 +417,7 @@ const sitHalfWayCone = withFigure(
       const s = r.pick(JOURNEY_SCENES);
       const name = one(r);
       return {
-        prompt: `[image: a bare line for the whole ${s.whole}, with the two ends named and nothing marked in between] ${name} wants a marker post standing exactly half way along a ${s.whole} that carries ${countNoun(stretches, 'equal stretches')}. How many stretches from the ${s.from} does the post stand?`,
+        prompt: `[image: a bare line for the whole ${s.whole}, with the two ends named and nothing marked in between] ${name} wants a marker post standing exactly half way along a ${s.whole}. The ${s.whole} carries ${countNoun(stretches, 'equal stretches')}. How many stretches from the ${s.from} does the post stand?`,
         answerValue: String(stretches / 2),
         templateId: 'd_div_v1',
         params: { a: stretches, b: 2, whole: s.whole, from: s.from, to: s.to },
@@ -459,14 +459,14 @@ const sitStretchesWalked = situation({
     const s = r.pick(JOURNEY_SCENES);
     const name = one(r);
     return {
-      prompt: `${name} sets off along a ${s.whole} that carries ${countNoun(whole, 'equal stretches')}, and ${s.move} ${fmtFrac(n, d, 'partition-anchored')} of the way along it. How many stretches has ${name} covered?`,
+      prompt: `${name} sets off along a ${s.whole} that carries ${countNoun(whole, 'equal stretches')}. ${name} ${s.move} ${fmtFrac(n, d, 'partition-anchored')} of the way along it. How many stretches has ${name} covered?`,
       answerValue: String(n * k),
       templateId: 'd_frac_equiv_v1',
       params: { n1: n, d1: d, d2: whole },
       units: 'stretches',
       hints: [
         'Which number in the fraction says how many pieces the whole journey was broken into?',
-        'Cut the journey into that many matching parts, count the stretches in one part, then take as many parts as the top number asks for.',
+        'Cut the journey into that many matching parts. Count the stretches in one part. Then take as many parts as the top number asks for.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -476,7 +476,7 @@ const sitStretchesWalkedEstimate = withEstimateFirst(
   sitStretchesWalked,
   // "the journey", not "the walk": the scene's own verb may be runs or rides,
   // and a probe is fixed text — it has to fit every scene the base can draw.
-  'will the journey cover more than half of the stretches, or fewer than half of them?',
+  'will the journey cover more than half the stretches, or fewer?',
 );
 
 // ---------------------------------------------------------------------------
@@ -512,7 +512,7 @@ const msRenameThenCompare = multiStep({
     const s = r.pick(JOURNEY_SCENES);
     const [first, second] = two(r);
     return {
-      prompt: `${first} and ${second} set off along the same ${s.whole}, which carries ${countNoun(whole, 'equal stretches')}. ${first} ${s.move} ${fmtFrac(n, d, 'partition-anchored')} of the way along it, and ${second} ${s.move} ${countNoun(behind, 'stretches')}. How many more stretches has ${first} covered than ${second}?`,
+      prompt: `${first} and ${second} set off along the same ${s.whole}. It carries ${countNoun(whole, 'equal stretches')}. ${first} ${s.move} ${fmtFrac(n, d, 'partition-anchored')} of the way along it, and ${second} ${s.move} ${countNoun(behind, 'stretches')}. How many more stretches has ${first} covered than ${second}?`,
       initN: whole,
       steps: [
         { op: 'mul', n, d },
@@ -520,8 +520,8 @@ const msRenameThenCompare = multiStep({
       ],
       units: 'stretches',
       hints: [
-        'Are the two journeys described in the same units, or does one of them still need turning into stretches?',
-        'Turn the fraction into a count of stretches first, then set the two counts side by side and find the gap.',
+        'Are the two journeys described in the same units?',
+        'Turn the fraction into a count of stretches first. Then set the two counts side by side and find the gap.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -551,7 +551,7 @@ const msRenameThenAdd = multiStep({
     const s = r.pick(MADE_SCENES);
     const name = one(r);
     return {
-      prompt: `${name} makes a ${s.whole} from ${countNoun(whole, s.part)}, paints ${fmtFrac(n, d, 'partition-anchored')} of it gold, then paints ${extra} more ${unitFor(extra, s.piece)} gold. How many ${unitFor(2, s.piece)} are gold?`,
+      prompt: `${name} makes a ${s.whole} from ${countNoun(whole, s.part)}. ${name} paints ${fmtFrac(n, d, 'partition-anchored')} of it gold. Then ${name} paints ${extra} more ${unitFor(extra, s.piece)} gold. How many ${unitFor(2, s.piece)} are gold?`,
       initN: whole,
       steps: [
         { op: 'mul', n, d },
@@ -559,8 +559,8 @@ const msRenameThenAdd = multiStep({
       ],
       units: s.piece,
       hints: [
-        'Does the question ask about the first coat of paint, or about everything gold at the end?',
-        'Turn the fraction into a count of parts, then bring in the few that were painted afterwards.',
+        'Does the question ask about the first coat, or about everything gold?',
+        'Turn the fraction into a count of parts. Then bring in the ones painted afterwards.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -593,7 +593,7 @@ const msWholeFromOneShare = withFigure(
         units: 'stretches',
         hints: [
           'Is the number you are given one piece of the journey, or the whole journey?',
-          'Copy that piece once for every piece the whole journey holds, then take off the part already behind.',
+          'Copy that piece once for every piece the whole journey holds. Then take off the part already behind.',
         ],
         errorTags: ['task-comprehension', 'representation-misread'],
       };
@@ -636,7 +636,7 @@ const discrimBiggerPiece = discrimination({
     return {
       // Gender-free by construction: the names are drawn from a mixed pool, so a
       // "cuts hers" written into the template is wrong for half of every class.
-      prompt: `${first} and ${second} have a ${thing} each, and the two are exactly the same length. ${first} cuts one of them into ${countNoun(few, 'matching pieces')}, and ${second} cuts the other into ${countNoun(many, 'matching pieces')}. Each of them picks up ONE piece. Which fraction names the bigger piece?`,
+      prompt: `${first} and ${second} have a ${thing} each. The two are exactly the same length. ${first} cuts one of them into ${countNoun(few, 'matching pieces')}. ${second} cuts the other into ${countNoun(many, 'matching pieces')}. Each of them picks up ONE piece. Which fraction names the bigger piece?`,
       correct: fmtFrac(1, few, 'partition-anchored'),
       distractors: [
         {
@@ -651,8 +651,8 @@ const discrimBiggerPiece = discrimination({
         },
       ],
       hints: [
-        'If one whole thing is cut into more pieces, what happens to the size of a single piece?',
-        'Picture the same length broken into a handful of pieces and then into a great many, and look at one piece each time.',
+        'If one whole is cut into more pieces, what happens to each piece?',
+        'Picture the same length broken into a handful of pieces. Then picture it broken into a great many. Look at one piece each time.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -690,7 +690,7 @@ const discrimSameSpot = discrimination({
     const spot = r.pick(LANDMARKS);
     const name = one(r);
     return {
-      prompt: `${name} is drawing a map of a ${s.whole}. On the first map the ${s.whole} is chopped into ${countNoun(d2, 'equal stretches')}, and the ${spot} sits ${countNoun(m, 'stretches')} along. ${name} draws a second map of the same ${s.whole} with only ${countNoun(d1, 'stretches')} on it. Which fraction belongs beside the ${spot} on the second map?`,
+      prompt: `${name} is drawing a map of a ${s.whole}. On the first map the ${s.whole} is chopped into ${countNoun(d2, 'equal stretches')}. The ${spot} sits ${countNoun(m, 'stretches')} along. ${name} draws a second map of the same ${s.whole}. That map has only ${countNoun(d1, 'stretches')} on it. Which fraction belongs beside the ${spot} on the second map?`,
       correct: fmtFrac(n1, d1, 'partition-anchored'),
       distractors: [
         {
@@ -705,8 +705,8 @@ const discrimSameSpot = discrimination({
         },
       ],
       hints: [
-        'Does the landmark itself sit somewhere different on the second map, or only get a different name?',
-        'Work out how many of the first map\'s stretches fit inside one stretch of the second, then count the second map\'s stretches up to the landmark.',
+        'Does the landmark sit somewhere different, or only get a new name?',
+        'Work out how many first-map stretches fit inside one stretch of the second. Then count the second map\'s stretches up to the landmark.',
       ],
       errorTags: ['procedure-slip', 'task-comprehension'],
     };
@@ -745,11 +745,11 @@ const eaRenamedBySubtracting = errorAnalysis({
     const s = r.pick(JOURNEY_SCENES);
     const name = one(r);
     return {
-      prompt: `${name} marks a ${s.whole} into ${countNoun(stretches, 'equal stretches')}. A student was asked how many of those stretches make ${fmtFrac(1, d, 'partition-anchored')} of the whole ${s.whole}, and wrote ${v.wrong}.`,
-      extension: `Draw the ${s.whole} with all of its equal stretches, ring the ones that really do make that fraction of it, write how many there are, and use the half-way mark to say in one sentence why the student's number cannot be right.`,
+      prompt: `${name} marks a ${s.whole} into ${countNoun(stretches, 'equal stretches')}. A student was asked how many stretches make ${fmtFrac(1, d, 'partition-anchored')} of it. The student wrote ${v.wrong}.`,
+      extension: `Draw the ${s.whole} with all of its equal stretches. Ring the ones that really do make that fraction. Write how many there are. Then use the half-way mark. Say in one sentence why the student's number cannot be right.`,
       hints: [
-        'Is the fraction in this question a big part of the whole journey, or a small one?',
-        'Break the stretches into as many matching groups as the number below the line asks for, take one group, and hold it against the half-way mark.',
+        'Is this fraction a big part of the whole journey, or a small one?',
+        'Break the stretches into as many matching groups as the bottom number asks for. Take one group. Hold it against the half-way mark.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
       answerKeywords: ['half-way mark', 'matching groups', 'less than half'],
@@ -775,12 +775,12 @@ export const buildC16 = makeWeekBuilder({
     'C15 gave a child the name for one equal part of one whole and stopped there: every fraction it wrote was read off the cut in front of it, and no two fractions were ever set against each other. C16 puts TWO rulers on one whole. Renaming enters in both directions — a journey re-marked finer, and equal parts gathered into groups — and comparing enters as a decision the child has to defend, either by giving both fractions the same size of piece or by leaning each on the half-way mark. The bigger-bottom trap, which cannot appear at all while there is only one cut on the page, is the misconception the week is built around. Fractions of a SET of separate objects stay closed until C17.',
   explanation: {
     hook:
-      'Mark a trail into three long stretches; a friend marks the same trail into twelve short ones. Your bench has not budged, but it has two names now. And here is what catches almost everybody: twelve is a much bigger number than three, and yet a twelfth is a much smaller piece.',
+      'Mark a trail into three long stretches. A friend marks the same trail into twelve short ones. Your bench has not budged, but it has two names now. And here is what catches almost everybody. Twelve is a much bigger number than three. Yet a twelfth is a much smaller piece.',
     whyBeforeHow:
-      'Every fraction has one place of its own along a journey, and rubbing out the marks and drawing finer ones cannot shift it, because cutting each stretch into smaller ones changes what the pieces are CALLED and never changes where the mark sits. That is why the number line and its half-way mark settle every question this week asks: put both fractions on it, and the one further from the start is the larger, whatever the numbers underneath happen to say. The number below the line counts how many pieces one whole was broken into, so a bigger number below the line means MORE pieces cut out of the same whole — and more pieces from one whole means every piece is smaller. Eighths are smaller than thirds, every single time.',
+      'Every fraction has one place of its own along a journey. Rubbing out the marks and drawing finer ones cannot shift it. Cutting each stretch into smaller ones changes what the pieces are CALLED. It never changes where the mark sits. That is why the number line and its half-way mark settle every question. Put both fractions on it. The one further from the start is the larger. That holds whatever the numbers underneath happen to say. The number below the line counts how many pieces one whole was broken into. So a bigger number below the line means MORE pieces from the same whole. And more pieces from one whole means every piece is smaller. Eighths are smaller than thirds, every single time.',
     script: [
       {
-        say: 'Watch me give one mark two names. Here is a trail cut into four equal stretches, and my flag stands at the 1/4 mark. I am not going to move that flag at all — I am only going to change the marks drawn underneath it.',
+        say: 'Watch me give one mark two names. Here is a trail cut into four equal stretches. My flag stands at the 1/4 mark. I am not going to move that flag at all. I am only going to change the marks drawn underneath it.',
         visual: 'A line for the whole trail in four equal stretches, with a flag one stretch along.',
         figure: numberLine(
           {
@@ -791,7 +791,7 @@ export const buildC16 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now I cut every stretch in half, so the same trail carries eight equal stretches. Look hard at the flag: it has not moved one step, and yet it now stands at the 2/8 mark. Same place, new name — and that is the whole of what makes two fractions equal.',
+        say: 'Now I cut every stretch in half. The same trail now carries eight equal stretches. Look hard at the flag. It has not moved one step. Yet it now stands at the 2/8 mark. Same place, new name. That is the whole of what makes two fractions equal.',
         visual: 'The identical trail in eight equal stretches, the flag standing exactly where it was.',
         figure: numberLine(
           {
@@ -813,7 +813,7 @@ export const buildC16 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before I decide anything: I check each mark against the half-way flag. Does it get past the middle of the journey, or stop short of it? If one fraction is past half way and the other is not, I already know which is larger and I have not worked out a single sum.',
+        say: 'One habit before I decide anything. I check each mark against the half-way flag. Does it get past the middle of the journey, or stop short of it? Say one fraction is past half way and the other is not. Then I already know which is larger. And I have not worked out a single sum.',
         visual: 'A trail in eight equal stretches with the half-way flag standing at its middle mark.',
         figure: numberLine(
           {
@@ -825,7 +825,7 @@ export const buildC16 = makeWeekBuilder({
       },
     ],
     summary:
-      'Two fractions are equal when they name the same place: re-marking the ruler gives a mark a new name, never a new place. To compare, give both fractions the same size of piece, or lean each one on the half-way mark. A bigger number below the line means more pieces cut from one whole, so each piece is smaller.',
+      'Two fractions are equal when they name the same place. Re-marking the ruler gives a mark a new name, never a new place. To compare, give both fractions the same size of piece. Or lean each one on the half-way mark. A bigger number below the line means more pieces cut from one whole. So each piece is smaller.',
     vocabulary: [
       { term: 'equivalent fractions', kidGloss: 'two names for exactly the same place' },
       { term: 'rename', kidGloss: 'give a fraction a new name by cutting every piece the same way' },
@@ -835,13 +835,13 @@ export const buildC16 = makeWeekBuilder({
   },
   guidedExamples: [
     {
-      ...ge(16, 1, 'modeled', 'A trail is marked into 4 equal stretches and a bench stands at the 3/4 mark. The keepers re-mark the same trail into 8 equal stretches. Which mark stands beside the bench now?', [
+      ...ge(16, 1, 'modeled', 'A trail is marked into 4 equal stretches. A bench stands at the 3/4 mark. The keepers re-mark the same trail into 8 equal stretches. Which mark stands beside the bench now?', [
         {
           teacherSay:
-            'First I notice what is actually changing here. The bench is bolted to the ground, so it cannot go anywhere; the only thing being rubbed out and drawn again is the marks underneath it, twice as close together as before.',
+            'First I notice what is actually changing here. The bench is bolted to the ground, so it cannot go anywhere. The only thing being rubbed out is the marks underneath it. They are twice as close together as before.',
         },
         {
-          teacherSay: 'Every old stretch has been cut into two, so each mark I had is now twice as many stretches along the count. What does that make the 3/4 mark?',
+          teacherSay: 'Every old stretch has been cut into two. So each old mark is now twice as many stretches along. What does that make the 3/4 mark?',
           expected: '6/8',
         },
       ], '6/8'),
@@ -857,7 +857,7 @@ export const buildC16 = makeWeekBuilder({
     {
       ...ge(16, 2, 'completion', 'Two strips of card are exactly the same length. One is cut into 3 matching pieces, the other into 8. Which is the bigger piece: 1/3 of a strip or 1/8 of a strip?', [
         { teacherSay: 'Which of the two strips had to give up more pieces?', expected: 'the one cut into 8' },
-        { childDo: 'Say what happens to the size of one piece when the same whole is cut into more of them.', expected: 'every piece gets smaller' },
+        { childDo: 'The same whole is cut into more pieces. Say what happens to the size of one piece.', expected: 'every piece gets smaller' },
       ], '1/3'),
       visual: 'One strip cut into three, above the same strip cut into eight, both to the same scale.',
       figure: barModel(
@@ -869,8 +869,8 @@ export const buildC16 = makeWeekBuilder({
       ),
     },
     {
-      ...ge(16, 3, 'prompted', 'Which mark is further along the trail: 5/8 of the way, or 1/2 of the way? Use the half-way flag, not a calculation.', [
-        { childDo: 'Find the half-way flag on the eighths ruler first, then say which side of it the other mark falls on.', expected: '5/8' },
+      ...ge(16, 3, 'prompted', 'Which mark is further along the trail: 5/8, or 1/2 of the way? Use the half-way flag, not a calculation.', [
+        { childDo: 'Find the half-way flag on the eighths ruler first. Then say which side of it the other mark falls on.', expected: '5/8' },
       ], '5/8'),
       visual: 'A trail in eight equal stretches with the half-way flag standing at its middle mark.',
       figure: numberLine(
@@ -935,13 +935,13 @@ export const buildC16 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Four walkers stop on the same trail, and each one measures it their own way: one stops 1/4 of the way along, one 3/8 of the way, one 4/8 of the way and one 5/6 of the way. Put each walker under "not yet half way", "exactly half way" or "past half way", and write one short reason for each. You may use the half-way mark, and you may not work out any sums.',
+            'Four walkers stop on the same trail. Each one measures it their own way. One stops 1/4 of the way along. One stops 3/8 of the way. One stops 4/8 of the way. One stops 5/6 of the way. Sort them: not yet half way, exactly half way, or past half way. Write one short reason for each. You may use the half-way mark, and you may not work out any sums.',
           value: 'not yet half way: 1/4 and 3/8; exactly half way: 4/8; past half way: 5/6',
           acceptableForms: ['1/4', '3/8', '4/8', '5/6', 'half way', 'half-way mark'],
           keywords: true,
           hints: [
-            'Which of these four walkers do you think turned back before the middle of the trail?',
-            'For each one, halve the number below the line and see whether the number on top has got that far.',
+            'Which of these walkers turned back before the middle of the trail?',
+            'For each one, halve the number below the line. Has the number on top got that far?',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -950,7 +950,7 @@ export const buildC16 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: a fraction with a bigger number below the line names a smaller amount. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? A fraction with a bigger number below the line names a smaller amount. In one sentence, explain how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -965,8 +965,8 @@ export const buildC16 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Does the number below the line tell you how BIG each piece is, or how MANY pieces the whole was broken into?',
-            'Try a pair with matching tops first, then try one mark that stops short of half way against one that runs past it.',
+            'Does the bottom number say how BIG each piece is, or how MANY?',
+            'Try a pair with matching tops first. Then set a mark short of half way against one past it.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -995,7 +995,7 @@ export const buildC16 = makeWeekBuilder({
       id: 'C16-PZ-01',
       title: 'Puzzle Grove: The Marks That Meet',
       puzzleType: 'logic' as const,
-      prompt: `[image: a line for the whole ${s.whole} marked into ${countNoun(d2, 'equal stretches')}, named in ${partitionWord(d2)}] This ${s.whole} is marked into ${countNoun(d2, 'equal stretches')}. Long ago it was marked into ${countNoun(d1, 'equal stretches')} instead, and every one of those old marks sits exactly on top of one of the marks you can see. Find every mark between the ${s.from} and the ${s.to} that carries BOTH an old name and a new name, write its two names, and say how you know you have not missed one.`,
+      prompt: `[image: a line for the whole ${s.whole} marked into ${countNoun(d2, 'equal stretches')}, named in ${partitionWord(d2)}] This ${s.whole} is marked into ${countNoun(d2, 'equal stretches')}. Long ago it was marked into ${countNoun(d1, 'equal stretches')} instead. Each of those old marks sits on top of a mark you can see. Look between the ${s.from} and the ${s.to}. Find every mark that carries BOTH an old name and a new name. Write its two names. Then say how you know you have not missed one.`,
       figure: numberLine(
         { min: 0, max: 1, step: 1, partition: d2, labels: 'all', labelAs: 'fraction' },
         { alt: `a line for the whole ${s.whole} marked into ${countNoun(d2, 'equal stretches')}, with every mark named in ${partitionWord(d2)} and nothing flagged on it` },
@@ -1006,8 +1006,8 @@ export const buildC16 = makeWeekBuilder({
         validation: 'short-text-keyword' as const,
       },
       hintLadder: [
-        'Could an old mark land part-way along one of the new stretches, or must it land on a mark?',
-        'Walk from the start in equal jumps of the new stretches, and write both names down every time you land on an old mark.',
+        'Could an old mark land part-way along a new stretch?',
+        'Walk from the start in equal jumps of the new stretches. Write both names down every time you land on an old mark.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'] as const,
     };

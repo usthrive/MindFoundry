@@ -209,14 +209,14 @@ const sfShare = withFigure(
       const s = sceneOf(r, 'orchard');
       const name = one(r);
       return {
-        prompt: `[image: ${countNoun(whole, s.noun)} in a loose pile] ${name} tips ${countNoun(whole, s.noun)} out and shares them equally between ${countNoun(d, s.group)}, so one ${s.group} holds ${fmtFrac(1, d)} of them. How many ${unitFor(2, s.noun)} are in one ${s.group}?`,
+        prompt: `[image: ${countNoun(whole, s.noun)} in a loose pile] ${name} tips ${countNoun(whole, s.noun)} out. ${name} shares them equally between ${countNoun(d, s.group)}. So one ${s.group} holds ${fmtFrac(1, d)} of them. How many ${unitFor(2, s.noun)} are in one ${s.group}?`,
         answerValue: String(whole / d),
         templateId: 'd_frac_times_whole_v1',
         params: { k: whole, n: 1, d, noun: s.noun, group: s.group },
         units: s.noun,
         hints: [
           'How many equal shares does the bottom number of the fraction ask for?',
-          'Deal the whole pile out one at a time, a turn for each share, and count what a single share ends up with.',
+          'Deal the whole pile out one at a time, a turn for each share. Then count what a single share holds.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -253,8 +253,8 @@ const sfPartWhole = withFigure(
         params: { k: whole, n, d, noun: a.noun },
         units: a.noun,
         hints: [
-          'Which number in the fraction tells you how many equal groups to make, and which tells you how many to keep?',
-          'Cut the whole collection into that many equal groups first, then count up only the groups the story keeps.',
+          'Which number in the fraction tells you how many equal groups to make?',
+          'Cut the whole collection into that many equal groups first. Then count only the groups the story keeps.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -288,8 +288,8 @@ const sfCompare = situation({
       params: { k: whole, n: 1, d, noun: s.noun },
       units: s.noun,
       hints: [
-        'Does "a fraction as many" make the second collection larger or smaller than the first?',
-        'Share the first collection into the number of equal groups the bottom number names, and read off one of them.',
+        'Does "a fraction as many" make the second collection larger or smaller?',
+        'Share the first collection into the equal groups the bottom number names. Then read off one group.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -311,14 +311,14 @@ const sfMissingWhole = withFigure(
       const s = sceneOf(r, 'packing');
       const name = one(r);
       return {
-        prompt: `[image: one ${s.group} holding ${countNoun(size, s.noun)}] One ${s.group} holds ${countNoun(size, s.noun)}, and that ${s.group} is ${fmtFrac(1, d)} of all of ${name}'s ${s.noun}. How many ${unitFor(2, s.noun)} does ${name} have altogether?`,
+        prompt: `[image: one ${s.group} holding ${countNoun(size, s.noun)}] One ${s.group} holds ${countNoun(size, s.noun)}. That ${s.group} is ${fmtFrac(1, d)} of ${name}'s ${s.noun}. How many ${unitFor(2, s.noun)} does ${name} have altogether?`,
         answerValue: String(size * d),
         templateId: 'd_mul_v1',
         params: { a: size, b: d, noun: s.noun, group: s.group },
         units: s.noun,
         hints: [
           'Is the number you are given one share, or the whole collection?',
-          'Copy that single share once for every share the bottom number names, then count the lot.',
+          'Copy that single share once for every share the bottom number names. Then count the lot.',
         ],
         errorTags: ['task-comprehension', 'representation-misread'],
       };
@@ -348,7 +348,7 @@ const sfMoney = situation({
       acceptableForms: [wholeMoney(whole / d)],
       hints: [
         'Is the money being split into equal parts, or spent all at once?',
-        'Break the saved amount into the number of equal parts the bottom number names, and hand over one part.',
+        'Break the saved amount into the equal parts the bottom number names. Then hand over one part.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -378,7 +378,7 @@ const msShareThenAdd = multiStep({
     const s = sceneOf(r, 'bead-craft');
     const name = one(r);
     return {
-      prompt: `${name} has ${countNoun(whole, s.noun)} in a bowl, threads ${fmtFrac(1, d)} of them onto a bracelet, then adds ${extra} more ${unitFor(extra, s.noun)} to the bracelet. How many ${unitFor(2, s.noun)} are on the bracelet?`,
+      prompt: `${name} has ${countNoun(whole, s.noun)} in a bowl. ${name} threads ${fmtFrac(1, d)} of them onto a bracelet. Then ${name} adds ${extra} more ${unitFor(extra, s.noun)}. How many ${unitFor(2, s.noun)} are on the bracelet?`,
       initN: whole,
       steps: [
         { op: 'mul', n: 1, d },
@@ -386,8 +386,8 @@ const msShareThenAdd = multiStep({
       ],
       units: s.noun,
       hints: [
-        'Does the question ask about the share taken, or about the bracelet at the very end?',
-        'Take the share first and count it, then bring in the few that were added afterwards.',
+        'Does the question ask about the share taken, or about the finished bracelet?',
+        'Take the share first and count it. Then bring in the few added afterwards.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -407,7 +407,7 @@ const msShareThenRemove = multiStep({
     const s = sceneOf(r, 'baking');
     const name = one(r);
     return {
-      prompt: `A ${s.group} holds ${countNoun(whole, s.noun)}. ${name} lifts ${fmtFrac(n, d)} of them into a tin, then takes ${back} of those ${unitFor(2, s.noun)} back out. How many ${unitFor(2, s.noun)} are in the tin now?`,
+      prompt: `A ${s.group} holds ${countNoun(whole, s.noun)}. ${name} lifts ${fmtFrac(n, d)} of them into a tin. Then ${name} takes ${back} of those ${unitFor(2, s.noun)} back out. How many ${unitFor(2, s.noun)} are in the tin now?`,
       initN: whole,
       steps: [
         { op: 'mul', n, d },
@@ -415,7 +415,7 @@ const msShareThenRemove = multiStep({
       ],
       units: s.noun,
       hints: [
-        'Is the last sentence describing a new set, or a change to the set already in the tin?',
+        'Does the last sentence make a new set, or change the tin\'s set?',
         'Move the whole share across first, then take away the few that come back.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
@@ -439,7 +439,7 @@ const msSeedsWithSpare = multiStep({
     const cans = r.int(2, 4);
     const name = one(r);
     return {
-      prompt: `${name} has ${countNoun(whole, 'seeds')} in a packet, plants ${fmtFrac(1, d)} of them in the front bed, then plants ${more} more seeds in the same bed. A shed by the gate holds ${countNoun(cans, 'watering cans')}. How many seeds are planted in the front bed?`,
+      prompt: `${name} has ${countNoun(whole, 'seeds')} in a packet. ${name} plants ${fmtFrac(1, d)} of them in the front bed. Then ${name} plants ${more} more seeds there. A shed by the gate holds ${countNoun(cans, 'watering cans')}. How many seeds are planted in the front bed?`,
       initN: whole,
       steps: [
         { op: 'mul', n: 1, d },
@@ -447,8 +447,8 @@ const msSeedsWithSpare = multiStep({
       ],
       units: 'seeds',
       hints: [
-        'Which numbers in this story are counting seeds, and which one is counting something else?',
-        'Plant the share first, then the few added after it — and leave the number that counts other things alone.',
+        'Which numbers in this story count seeds, and which one counts something else?',
+        'Plant the share first, then the few added after it. Leave the number that counts other things alone.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -494,7 +494,7 @@ const discrimShareVsCount = discrimination({
       ],
       hints: [
         'Does the bottom number count objects, or count the equal shares?',
-        'Break the collection into that many equal shares, then read how much a single share holds.',
+        'Break the collection into that many equal shares. Then read what a single share holds.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -532,7 +532,7 @@ const discrimWhichPhrase = discrimination({
         },
       ],
       hints: [
-        'What is the bottom number of a fraction counting in this story — objects, or shares?',
+        'What is the bottom number counting in this story — objects, or shares?',
         'One share of a collection is always smaller than the collection it came from.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
@@ -553,7 +553,12 @@ const eaAnsweredWithTheBottomNumber = errorAnalysis({
   cognitiveOp: 'error-analysis',
   drawParams: (r) => {
     const d = r.pick([3, 4, 5, 6] as const);
-    const size = r.int(3, 6);
+    let size = r.int(3, 6);
+    // size === d collapses the diagnosis: the denominator and the share tipped
+    // out are the same numeral, so "what was the student's number counting?"
+    // has two true answers. Same deterministic nudge as the discrimination
+    // above — never a redraw (kit §E2.4).
+    if (size === d) size = d === 6 ? 3 : d + 1;
     return { a: d * size, b: size, op: '-', wrongOp: '/' };
   },
   build: (v, p, r) => {
@@ -561,11 +566,11 @@ const eaAnsweredWithTheBottomNumber = errorAnalysis({
     const share = Number(p.b);
     const name = one(r);
     return {
-      prompt: `A jar holds ${countNoun(whole, 'pebbles')}. ${name} tips ${fmtFrac(1, whole / share)} of them into a bowl. A student was asked how many pebbles are still in the jar, and wrote ${v.wrong}.`,
-      extension: `Share the ${whole} pebbles into equal groups, write how many pebbles are really still in the jar, and explain what the student's ${v.wrong} was counting.`,
+      prompt: `A jar holds ${countNoun(whole, 'pebbles')}. ${name} tips ${fmtFrac(1, whole / share)} of them into a bowl. A student was asked how many pebbles are still in the jar. The student wrote ${v.wrong}.`,
+      extension: `Share the ${whole} pebbles into equal groups. Write how many pebbles are really still in the jar. Then explain what the student's ${v.wrong} was counting.`,
       hints: [
         'What does the bottom number of the fraction count in this story?',
-        'Draw the groups, ring the one that leaves the jar, and count what is still sitting in the jar.',
+        'Draw the groups and ring the one that leaves the jar. Then count what is still in the jar.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
       answerKeywords: ['equal groups', 'shares', 'the number of groups'],
@@ -591,12 +596,12 @@ export const buildC17 = makeWeekBuilder({
     'C15 and C16 cut ONE whole into equal parts and named or compared those parts. C17 keeps the same bottom-number meaning but applies it to a COLLECTION of separate objects: the thing being cut is a count, the parts are groups of objects, and the answer is a number of things rather than a name for a piece. That is also why the whole must be a multiple of the bottom number here — you cannot hand a child half a counter.',
   explanation: {
     hook:
-      '"One third of twelve" and "three of the twelve" both use a 3, and they are not the same instruction. One shares the whole pile out; the other just grabs a few. This week we learn to hear which one a story is asking for.',
+      '"One third of twelve" and "three of the twelve" both use a 3. But they are not the same instruction. One shares the whole pile out; the other just grabs a few. This week we learn to hear which one a story asks for.',
     whyBeforeHow:
-      'A fraction of a set is an instruction to share the set into equal groups, because the bottom number tells you how many equal groups to make and the top number tells you how many of those groups to keep. That is why one third of twelve is not three: the three is counting groups, not counters. Share twelve counters into three equal groups and each group holds four, so one third of twelve is four counters. The bottom number never counts objects — it counts shares. And the shares have to come out even, which is why the sets in this week always break up cleanly: nobody can hand over half a counter.',
+      'A fraction of a set is an instruction to share the set into equal groups. That is because the bottom number says how many equal groups to make. The top number says how many of those groups you keep. So one third of twelve is not three. The three is counting groups, not counters. Share twelve counters into three equal groups. Each group holds four, so one third of twelve is four counters. The bottom number never counts objects — it counts shares. The shares also have to come out even. That is why every set this week breaks up cleanly. Nobody can hand over half a counter.',
     script: [
       {
-        say: 'Watch me take one third of twelve shells. I do not touch the twelve yet — first I read the bottom number, and it tells me to make three equal groups. Four here, four here, four here. Now one third is one of those groups.',
+        say: 'Watch me take one third of twelve shells. I do not touch the twelve yet. First I read the bottom number. It tells me to make three equal groups. Four here, four here, four here. Now one third is one of those groups.',
         visual: 'Twelve shells dealt into three baskets, four in each.',
         figure: counterGroups(
           [
@@ -608,7 +613,7 @@ export const buildC17 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Here is the trap, side by side. The short bar is three shells picked off the top — that is "three of the twelve". The long bar is one whole share — that is "one third of the twelve". Same numbers in the story, and the bars are not even close.',
+        say: 'Here is the trap, side by side. The short bar is three shells picked off the top. That is "three of the twelve". The long bar is one whole share. That is "one third of the twelve". Same numbers in the story, and the bars look nothing alike.',
         visual: 'A short bar of three beside a longer bar of four, both against the twelve.',
         figure: barModel(
           [
@@ -620,7 +625,7 @@ export const buildC17 = makeWeekBuilder({
         ),
       },
       {
-        say: 'When the top number is bigger than one, I keep more than one share. Twenty counters, five equal rows of four, and three fifths means I keep three of those rows: twelve counters.',
+        say: 'When the top number is bigger than one, I keep more than one share. Here are twenty counters in five equal rows of four. Three fifths means I keep three of those rows. That is twelve counters.',
         visual: 'A twenty-counter array in five rows of four, with three rows shaded.',
         figure: areaGrid(
           { rows: 5, cols: 4, shadedRows: 3, rowLabels: ['4', '4', '4', '4', '4'] },
@@ -628,12 +633,12 @@ export const buildC17 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Before I share anything I check roughly where the answer should land: one share out of several has to be a good deal smaller than the whole pile, and keeping most of the shares has to land close to the whole pile. If my answer breaks that, I grabbed the bottom number by mistake and I go back to the groups.',
+        say: 'Before I share anything, I guess roughly where the answer should land. One share out of several must be much smaller than the whole pile. Keeping most of the shares must land close to the whole pile. If my answer breaks that, I grabbed the bottom number. Then I go back to the groups.',
         visual: 'The whole pile beside a single share, so the size difference is obvious.',
       },
     ],
     summary:
-      'The bottom number of a fraction tells you how many equal groups to share the set into; the top number tells you how many groups to keep. Share first, then count. If a set will not share evenly, that fraction of it is not a whole number of objects.',
+      'The bottom number tells you how many equal groups to share the set into. The top number tells you how many groups to keep. Share first, then count. Some sets will not share evenly. Then that fraction of the set is not a whole number of objects.',
     vocabulary: [
       { term: 'set', kidGloss: 'a collection of separate things you can count' },
       { term: 'equal share', kidGloss: 'one of the groups you get when a set is split so every group holds the same' },
@@ -646,10 +651,10 @@ export const buildC17 = makeWeekBuilder({
       ...ge(17, 1, 'modeled', 'Find 1/3 of 12 shells.', [
         {
           teacherSay:
-            'First I read the bottom number, because that is the number that tells me what to DO: make three equal shares. I notice it is not telling me to count out three shells — three is how many groups I need, not how many shells I take.',
+            'First I read the bottom number, because it tells me what to DO. It says: make three equal shares. It is not telling me to count out three shells. Three is how many groups I need, not how many shells.',
         },
         {
-          teacherSay: 'Now I deal the twelve shells out, one at a time, three shares going round. How many shells does one share end up holding?',
+          teacherSay: 'Now I deal the twelve shells out, one at a time, into three shares. How many shells does one share end up holding?',
           expected: '4',
         },
       ], '4'),
@@ -666,7 +671,7 @@ export const buildC17 = makeWeekBuilder({
     {
       ...ge(17, 2, 'completion', 'A tray holds 20 buttons. 2/5 of the buttons are wooden. How many buttons are wooden?', [
         { teacherSay: 'What does the bottom number ask you to do to the twenty buttons?', expected: 'make 5 equal groups' },
-        { childDo: 'Make the equal groups, then keep as many of them as the top number names.', expected: '8' },
+        { childDo: 'Make the equal groups, then keep as many as the top number names.', expected: '8' },
       ], '8'),
       visual: 'Twenty buttons in five rows of four, with two rows shaded.',
       figure: areaGrid(
@@ -675,13 +680,15 @@ export const buildC17 = makeWeekBuilder({
       ),
     },
     ge(17, 3, 'prompted', 'A box holds 18 crayons. How many crayons is 1/6 of the crayons in the box?', [
-      { childDo: 'Name how many equal shares the bottom number asks for, then share the crayons out and read one share.', expected: '3' },
+      { childDo: 'Name how many equal shares the bottom number asks for. Then share the crayons out and read one share.', expected: '3' },
     ], '3'),
     {
       // Independent stage: ONE share only. Deciding "take the share first, then
       // deal with what was added" IS the task here, so drawing the finished
       // bracelet would hand the child the plan the item exists to ask for.
-      ...ge(17, 4, 'independent', 'Ava has 16 beads in a bowl. She threads 1/4 of them onto a bracelet, then threads 3 more beads onto it. How many beads are on the bracelet? Solve cold.', [
+      // 'Lena' deliberately: not in this file's NAMES pool (kit §A.3 — a GE name
+      // must never collide with a drawn one).
+      ...ge(17, 4, 'independent', 'Lena has 16 beads in a bowl. She threads 1/4 of them onto a bracelet. Then she threads 3 more beads on. How many beads are on the bracelet? Solve cold.', [
         { childDo: 'Take the share out of the bowl first, then bring in the extra beads.', expected: '7' },
       ], '7'),
       visual: 'The bowl of sixteen beads. The bracelet is yours to work out.',
@@ -738,13 +745,13 @@ export const buildC17 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Write two different stories that both end with the question "what is 1/4 of 8?". One story must share a set of objects between people; the other must be about a different set of 8 things. Work out the answer to each story, then write one sentence saying why both stories land on the same number.',
+            'Write two different stories. Both must end with the question "what is 1/4 of 8?". One story must share a set of objects between people. The other must be about a different set of 8 things. Work out the answer to each story. Then write one sentence saying why both stories land on the same number.',
           value: 'both stories break one set of eight into four equal shares, so one share is the same size in either story',
           acceptableForms: ['equal shares', 'equal groups', 'same size', 'one share', 'share'],
           keywords: true,
           hints: [
-            'What has to be the same in both of your stories for the answer to be the same?',
-            'Check that each story really splits its set into equal shares, not into any old pieces.',
+            'What must be the same in both stories for the answer to match?',
+            'Check that each story splits its set into equal shares, not any old pieces.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -753,7 +760,7 @@ export const buildC17 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: 1/2 of a set of counters is a whole number of counters. In one sentence, explain how you know.',
+            'Always, sometimes, or never true? 1/2 of a set of counters is a whole number of counters. In one sentence, explain how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -768,8 +775,8 @@ export const buildC17 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Try it on a small even set, then try the same thing on an odd one — what changes?',
-            'Deal the counters out two shares at a time and watch whether anything is left over at the end.',
+            'Try a small even set, then an odd one — what changes?',
+            'Deal the counters into two shares. Watch whether anything is left over at the end.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -795,7 +802,7 @@ export const buildC17 = makeWeekBuilder({
       id: 'C17-PZ-01',
       title: 'Puzzle Grove: Every Fair Share',
       puzzleType: 'construction',
-      prompt: `[image: ${countNoun(total, 'counters')} in a loose pile] ${name} wants to share ${countNoun(total, 'counters')} into equal shares, with at least 2 shares and at least 2 counters in every share. Find EVERY unit fraction that names one of those shares, and say how you know none is missing.`,
+      prompt: `[image: ${countNoun(total, 'counters')} in a loose pile] ${name} wants to share ${countNoun(total, 'counters')} into equal shares. There must be at least 2 shares. Every share must hold at least 2 counters. Find EVERY unit fraction that names one of those shares. Then say how you know none is missing.`,
       figure: counters(total, 'counters', {
         arrangement: 'scattered',
         alt: `${countNoun(total, 'counters')} in a loose pile, not yet shared`,
@@ -803,7 +810,7 @@ export const buildC17 = makeWeekBuilder({
       answer: { value: ways.join('; '), acceptableForms: ways, validation: 'short-text-keyword' },
       hintLadder: [
         'How could you be sure you had found them ALL, and not just some?',
-        'Walk up in order — two shares, then three, then four — and stop when a share would hold fewer than two counters.',
+        'Walk up in order: two shares, then three, then four. Stop when a share would hold fewer than two counters.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -826,7 +833,7 @@ export const buildC17 = makeWeekBuilder({
     { gen: msSeedsWithSpare, diff: 4 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step fractions of a set — the equal-share form, the several-shares form and the "a fraction as many" comparison, each keeping its own figure affordance. 02/04/06: two-step share-then-add, share-then-remove, and a share story carrying a quantity that must be left unused. Every set is drawn as a whole number of equal shares, so no form can ask for part of an object. No operand surface reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01/03/05: single-step fractions of a set — the equal-share form, the several-shares form and the "a fraction as many" comparison, each keeping its own figure affordance. 02/04/06: two-step share-then-add, share-then-remove, and a share story carrying a quantity that must be left unused. Every set is drawn as a whole number of equal shares, so no form can ask for part of an object. Operand surfaces are drawn fresh per slot but uniqueness is NOT enforced across forms or days; where a fact space is small, a mastery item can coincide with the operands of a daily item.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',

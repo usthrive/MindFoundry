@@ -1133,7 +1133,7 @@ export const buildB23 = makeWeekBuilder({
     hook:
       'A bar is not a picture of how big something is. It is a stack of counts, one square for one thing. So a bar can be read.',
     whyBeforeHow:
-      'A graph is a way of writing down counts so they can be compared at a glance, and that is exactly why bars are stacked counts: one square stands for one thing, so the height of a bar is not an opinion. It can be counted. Because every bar on the page is built from the same squares, two bars can be held against each other and the gap between them means something exact. Then comes the part that catches everybody. Your eye goes to the tallest bar, every time, because that is what eyes do. But the bar that answers a question is the bar the question NAMES, and the tallest bar is only that bar sometimes. So the order of work is fixed here: find the label first, track across to its own bar, and only then count. A line plot is the same idea with the numbers moved. The number on the line is what was counted, and each dot above it is one more time that count happened.',
+      'A graph writes down counts so they can be compared at a glance. That is why bars are stacked counts. One square stands for one thing. So the height of a bar is not an opinion. It can be counted. Every bar on the page is built from the same squares. Because of that, two bars can be held against each other. The gap between them means something exact. Then comes the part that catches everybody. Your eye goes to the tallest bar, every time, because that is what eyes do. But the bar that answers a question is the bar the question NAMES. The tallest bar is only that bar sometimes. So the order of work is fixed here. Find the label first, then track across to its own bar. Only then do you count. A line plot is the same idea with the numbers moved. The number on the line is what was counted. Each dot above it is one more time that count happened.',
     script: [
       {
         say: 'Watch me build a bar. I found 6 beetles, so I stack 6 squares. One square for one beetle, every time.',
@@ -1186,7 +1186,7 @@ export const buildB23 = makeWeekBuilder({
       },
     ],
     summary:
-      'One square stands for one thing, so a bar is counted and never judged. Find the label the question names, then read its own bar. The tallest bar is only the answer sometimes. On a line plot the numbers are what was counted, and the dots are how many times.',
+      'One square stands for one thing, so a bar is counted and never judged. Find the label the question names, then read its own bar. The tallest bar is only the answer sometimes. On a line plot the numbers are what was counted. The dots are how many times.',
     vocabulary: [
       { term: 'bar graph', kidGloss: 'counts written as bars, so they can be compared at a glance' },
       { term: 'a bar', kidGloss: 'a stack of squares, one square for one thing' },

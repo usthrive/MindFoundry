@@ -231,14 +231,14 @@ const sitNoRegroup = situation({
   draw: (r) => {
     const { a, b, total } = columns(r, 'none');
     return {
-      prompt: `A village library shelves ${countNoun(a, 'picture books')} in the front room and ${countNoun(b, 'picture books')} in the back room. How many picture books does the library shelve in all?`,
+      prompt: `A village library shelves ${countNoun(a, 'picture books')} in the front room. The back room holds ${countNoun(b, 'picture books')}. How many picture books does the library shelve in all?`,
       answerValue: String(total),
       templateId: 'd_add_v1',
       params: { a, b },
       units: 'picture books',
       hints: [
-        'Does any column in this sum fill right up to ten, or does every one of them settle where it is?',
-        'Work the columns from the right and read each one on its own — nothing here has to be handed on.',
+        'Does any column in this sum fill right up to ten? Or does every column settle where it is?',
+        'Work the columns from the right. Read each one on its own. Nothing here has to be handed on.',
       ],
       errorTags: ['procedure-slip', 'representation-misread'],
     };
@@ -260,7 +260,7 @@ const sitOnesRegroup = situation({
       units: 'beads',
       hints: [
         'How many can one column hold before it has made something bigger?',
-        'Count the ones first; the moment they reach ten, that ten is no longer a ones amount and belongs next door.',
+        'Count the ones first. The moment they reach ten, that ten is no longer a ones amount. It belongs next door.',
       ],
       errorTags: ['procedure-slip', 'concept-misconception'],
     };
@@ -290,8 +290,8 @@ const sitTensRegroup = withFigure(
         params: { a, b },
         units: 'm',
         hints: [
-          'Which of the three columns here is the one that fills right up, and what sits to the left of it?',
-          'Ten tens are worth one hundred, so a full tens column sends a single hundred one place to the left.',
+          'Which of the three columns here fills right up? What sits to the left of it?',
+          'Ten tens are worth one hundred. So a full tens column sends one hundred one place left.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
@@ -330,8 +330,8 @@ const sitTwoRegroups = withFigure(
         params: { a, b },
         units: 'house points',
         hints: [
-          'Is the second house\'s total being told to you, or being described against the first house\'s?',
-          'Lay the extra amount on the end of the score you were given, then work the columns from the right and hand on each full one.',
+          'Is the second house\'s total told to you outright? Or is it described against the first house\'s?',
+          'Lay the extra amount on the end of the score you were given. Then work the columns from the right. Hand on each full one.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -376,14 +376,14 @@ const sitThroughZero = withFigure(
     draw: (r) => {
       const { a, b, total } = columns(r, 'through-zero');
       return {
-        prompt: `[image: a hundreds-tens-ones chart holding the ${countNoun(b, 'visitors')} of the second morning] A museum turnstile counted ${countNoun(a, 'visitors')} on Saturday morning and ${countNoun(b, 'visitors')} on Sunday morning. How many visitors went through the turnstile across the two mornings?`,
+        prompt: `[image: a hundreds-tens-ones chart holding the ${countNoun(b, 'visitors')} of the second morning] A museum turnstile counted ${countNoun(a, 'visitors')} on Saturday morning. On Sunday morning it counted ${countNoun(b, 'visitors')}. How many visitors went through the turnstile across the two mornings?`,
         answerValue: String(total),
         templateId: 'd_add_v1',
         params: { a, b },
         units: 'visitors',
         hints: [
           'What does an empty column mean when something is handed into it from the right?',
-          'A column with nothing of its own can still fill up once the ten arrives, and then it hands one on in its turn.',
+          'A column with nothing of its own can still fill up. It fills once the ten arrives. Then it hands one on in its turn.',
         ],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
@@ -416,14 +416,14 @@ const sitPredictRegroup = situation({
     const { a, b, total } = columns(r, shape);
     const name = one(r);
     return {
-      prompt: `${name}'s club packed ${countNoun(a, 'seed packets')} in the morning and ${countNoun(b, 'seed packets')} in the afternoon. How many seed packets did the club pack that day?`,
+      prompt: `${name}'s club packed ${countNoun(a, 'seed packets')} in the morning. In the afternoon the club packed ${countNoun(b, 'seed packets')}. How many seed packets did the club pack that day?`,
       answerValue: String(total),
       templateId: 'd_add_v1',
       params: { a, b },
       units: 'seed packets',
       hints: [
-        'Before any working: which pair of digits in this sum is the pair most likely to fill a column?',
-        'Read each column as a pair and ask whether it reaches ten; only then work the sum and see whether your call held.',
+        'Do not work anything out yet. Which pair of digits is most likely to fill a column?',
+        'Read each column as a pair and ask whether it reaches ten. Then work the sum and see whether your call held.',
       ],
       errorTags: ['procedure-slip', 'task-comprehension'],
     };
@@ -431,7 +431,7 @@ const sitPredictRegroup = situation({
 });
 const sitPredictEstimate = withEstimateFirst(
   sitPredictRegroup,
-  'will any column in this sum fill right up and hand a unit on, or will every column settle where it is?',
+  'will any column fill right up and hand a unit on?',
 );
 
 // ---------------------------------------------------------------------------
@@ -456,7 +456,7 @@ const msThreeDays = withFigure(
       const d2 = r.int(134, 296);
       const d3 = r.int(118, 274);
       return {
-        prompt: `[image: three bars, one for each day, drawn against the longest of the three] A pop-up bookshop sold ${countNoun(d1, 'books')} on Friday, ${countNoun(d2, 'books')} on Saturday and ${countNoun(d3, 'books')} on Sunday. How many books did the shop sell over the three days?`,
+        prompt: `[image: three bars, one for each day, drawn against the longest of the three] A pop-up bookshop sold ${countNoun(d1, 'books')} on Friday. It sold ${countNoun(d2, 'books')} on Saturday. On Sunday it sold ${countNoun(d3, 'books')}. How many books did the shop sell over the three days?`,
         initN: d1,
         steps: [
           { op: 'add', n: d2, d: 1 },
@@ -464,8 +464,8 @@ const msThreeDays = withFigure(
         ],
         units: 'books',
         hints: [
-          'How many joins does this story ask for, and what has to be written down between them?',
-          'Put the first two together and keep that total in front of you, then bring the third day to it.',
+          'How many joins does this story ask for? What has to be written down between them?',
+          'Put the first two together and keep that total in front of you. Then bring the third day to it.',
         ],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
@@ -515,8 +515,8 @@ const msShortOfTarget = multiStep({
       ],
       units: 'tins',
       hints: [
-        'Which number in this story is the amount already in, and which is the amount wanted in the end?',
-        'Put the two classes together first so there is one amount to hold against the target, then find the gap.',
+        'Which number is the amount already in? Which is the amount wanted in the end?',
+        'Put the two classes together first. Then you have one amount to hold against the target. Now find the gap.',
       ],
       errorTags: ['task-comprehension', 'concept-misconception'],
     };
@@ -565,8 +565,8 @@ const discrimWhichColumns = discrimination({
         },
       ],
       hints: [
-        'Which column is worked first, and what does it pass on to the one beside it?',
-        'Size the ones column, hand on whatever it fills, and only then decide whether the tens column reaches ten.',
+        'Which column is worked first? What does it pass on to the one beside it?',
+        'Size the ones column and hand on whatever it fills. Only then decide whether the tens column reaches ten.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -589,7 +589,7 @@ const discrimWhichTotal = discrimination({
   draw: (r) => {
     const { a, b, total } = columns(r, 'both');
     return {
-      prompt: `Round each number to the nearest hundred and use that to size the total of ${a} + ${b}. Only one of these totals sits where your estimate says it must. Which one is it?`,
+      prompt: `Round each number to the nearest hundred. Use that to size the total of ${a} + ${b}. Only one of these totals sits where your estimate says it must. Which one is it?`,
       correct: String(total),
       distractors: [
         {
@@ -605,7 +605,7 @@ const discrimWhichTotal = discrimination({
       ],
       hints: [
         'About how big should this total be, before a single column is added?',
-        'Round each number to its nearest hundred, add those two, and see which of the offered totals could sit that close to it.',
+        'Round each number to its nearest hundred and add those two. Which of the offered totals could sit that close?',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -660,11 +660,11 @@ const eaCarryWrongWay = errorAnalysis({
     const studentTotal = Number(v.wrong) + (tensLine - 100) + onesLine;
     const name = one(r);
     return {
-      prompt: `${name}'s class counted the school's pencil stock — ${countNoun(first, 'pencils')} in one box and ${countNoun(second, 'pencils')} in another — and added the two boxes by parts. A student wrote three lines — hundreds ${hundredsLine}, tens ${tensLine}, ones ${onesLine} — and then said that the tens line was holding a whole hundred that had to move. The student's finished hundreds line read ${v.wrong}, and the total given was ${countNoun(studentTotal, 'pencils')}.`,
-      extension: 'Write the hundreds line as it has to stand, finish the total, and say in one sentence which direction the hundred inside the tens line travels.',
+      prompt: `${name}'s class counted the school's pencil stock. One box held ${countNoun(first, 'pencils')} and another held ${countNoun(second, 'pencils')}. The class added the two boxes by parts. A student wrote three lines: hundreds ${hundredsLine}, tens ${tensLine}, ones ${onesLine}. The student said the tens line held a whole hundred that had to move. The student's finished hundreds line read ${v.wrong}, and the total given was ${countNoun(studentTotal, 'pencils')}.`,
+      extension: 'Write the hundreds line as it has to stand. Then finish the total. In one sentence, say which way the hundred inside the tens line travels.',
       hints: [
-        'Which of the three lines is too big for the column it is written in, and where does the amount it cannot hold belong?',
-        'Set the hundreds line down twice — once with the travelling hundred joined to it and once with it taken away — and decide which of the two the columns will allow.',
+        'Which of the three lines is too big for its own column? Where does the amount it cannot hold belong?',
+        'Set the hundreds line down twice. Once with the travelling hundred joined to it. Once with it taken away. Then decide which of the two the columns will allow.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
       answerKeywords: ['to the left', 'joined', 'added to the hundreds'],
@@ -690,12 +690,12 @@ export const buildC03 = makeWeekBuilder({
     'A15 added inside ten, where a sum never outgrows the space it is written in, and B13 opened the trade in two columns with base-ten blocks on the table. C3 adds a third column, and with it the thing that only appears at three digits: a trade can happen in more than one place, in more than one order, and a trade can arrive in a column that holds a zero and fill it. So the question stops being "can you carry?" and becomes "where does this sum need a carry, and how do you know before you write?"',
   explanation: {
     hook:
-      'Ten ones will not fit in the ones column. Something has to move — and the whole of this week is knowing which column it leaves, which column it lands in, and how you could have said so before you started.',
+      'Ten ones will not fit in the ones column. Something has to move. This whole week is about knowing which column it leaves. It is about knowing which column it lands in. And it is about saying so before you start.',
     whyBeforeHow:
-      'A column can only hold nine, because the moment it reaches ten it has built one whole unit of the column to its LEFT, and that unit does not belong where it was made. That is why every page this week is about one thing: the column and its regroup. Each column counts a different size — hundreds, tens, ones — and adding only ever puts like with like, so ten ones become one ten and ten tens become one hundred, and the unit that is built always travels leftward, never back. Knowing WHERE a sum will need a trade also tells you roughly how big the answer has to be before a single digit is written, which is why a total that lands a whole hundred away from what you expected is not a mystery: it is telling you which trade went missing.',
+      'A column can only hold nine. The moment it reaches ten, it has built one whole unit. That unit belongs in the column to its LEFT. It does not belong where it was made. That is why every page this week is about one thing. It is about the column and its regroup. Each column counts a different size: hundreds, tens, ones. Adding only ever puts like with like. So ten ones become one ten, and ten tens become one hundred. The unit that is built always travels leftward, never back. Knowing WHERE a sum will need a trade tells you something else too. It tells you roughly how big the answer has to be. You know that before a single digit is written. So a total that lands a whole hundred away is not a mystery. It is telling you which trade went missing.',
     script: [
       {
-        say: 'Watch how I set this out before I add anything. 348 and 275. I write them one under the other so that hundreds sit over hundreds, tens over tens, ones over ones. I do that first because a column is only allowed to add things of the same size, and if the columns are crooked the sum is wrong before it starts.',
+        say: 'Watch how I set this out before I add anything. 348 and 275. I write them one under the other. Hundreds sit over hundreds, tens over tens, ones over ones. I do that first for a reason. A column is only allowed to add things of the same size. If the columns are crooked, the sum is wrong before it starts.',
         visual: 'A hundreds-tens-ones chart holding 348, with the three column names written across the top.',
         figure: placeValueChart(348, {
           showValues: true,
@@ -703,7 +703,7 @@ export const buildC03 = makeWeekBuilder({
         }),
       },
       {
-        say: 'Ones first: 8 and 5. That is thirteen ones, and thirteen will not fit in a column that stops at nine. Ten of those ones have just built one whole ten, so the ten goes and stands in the tens column and three ones stay behind. Notice what I did NOT do — I did not write thirteen in the ones place.',
+        say: 'Ones first: 8 and 5. That is thirteen ones. Thirteen will not fit in a column that stops at nine. Ten of those ones have just built one whole ten. That ten goes and stands in the tens column. Three ones stay behind. Notice what I did NOT do. I did not write thirteen in the ones place.',
         visual: 'Thirteen ones with ten of them ringed and lifted into the tens column, three left standing.',
         figure: barModel(
           [
@@ -714,7 +714,7 @@ export const buildC03 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now the tens, and this is the column that matters most. 4 tens and 7 tens, and the ten that just arrived, make twelve tens. Ten of those twelve are one hundred, so a hundred crosses into the hundreds column and two tens stay. A carry never disappears — it changes its name and moves one place to the left.',
+        say: 'Now the tens, and this is the column that matters most. 4 tens and 7 tens, and the ten that just arrived, make twelve tens. Ten of those twelve are one hundred. So a hundred crosses into the hundreds column. Two tens stay. A carry never disappears. It changes its name and moves one place to the left.',
         visual: 'The tens column holding twelve tens, with ten of them lifted across into the hundreds and two left standing.',
         figure: barModel(
           [
@@ -739,7 +739,7 @@ export const buildC03 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before any of that, though. I round each number to the nearest hundred to check roughly how big the answer ought to be: about three hundred and about three hundred is about six hundred. So a sensible total starts with a six, and if mine had come out in the five hundreds I would go looking for a trade that never arrived rather than checking my digits.',
+        say: 'One habit before any of that, though. I round each number to the nearest hundred. That tells me roughly how big the answer ought to be. About three hundred and about three hundred is about six hundred. So a sensible total starts with a six. Say mine had come out in the five hundreds. I would not check my digits. I would go looking for a trade that never arrived.',
         visual: 'Two rounded bars of about three hundred each, held beside the finished total.',
         figure: barModel(
           [
@@ -751,7 +751,7 @@ export const buildC03 = makeWeekBuilder({
       },
     ],
     summary:
-      'Line the columns up by size, then work from the right. Any column that reaches ten has built one unit of the column to its left, so that unit moves there and the rest stays. Before you start, round each number to the nearest hundred so you know roughly where the total must land — a total a whole hundred adrift is a trade that never made the journey.',
+      'Line the columns up by size, then work from the right. Any column that reaches ten has built one unit of the next column. That unit moves to the left and the rest stays. Before you start, round each number to the nearest hundred. Then you know roughly where the total must land. A total a whole hundred adrift is a trade that never made the journey.',
     vocabulary: [
       { term: 'column', kidGloss: 'the place a digit stands in — hundreds, tens or ones — which decides what it is worth' },
       { term: 'regroup (carry)', kidGloss: 'when a column reaches ten, it has made one of the next thing along, so that one moves left' },
@@ -764,10 +764,10 @@ export const buildC03 = makeWeekBuilder({
       ...ge(3, 1, 'modeled', 'Work out 348 + 275 in columns.', [
         {
           teacherSay:
-            'Watch me before I add anything at all. I round both numbers to the nearest hundred first — about three hundred and about three hundred — so I already know the answer wants to be somewhere near six hundred. Now the columns cannot surprise me.',
+            'Watch me before I add anything at all. I round both numbers to the nearest hundred first. About three hundred and about three hundred. So I already know the answer wants to be near six hundred. Now the columns cannot surprise me.',
         },
         {
-          teacherSay: 'Ones first: 8 and 5 make thirteen ones, so one ten walks left and three stay. Tens next — 4 tens, 7 tens and the ten that arrived. How many tens is that?',
+          teacherSay: 'Ones first: 8 and 5 make thirteen ones. One ten walks left and three stay. Tens next — 4 tens, 7 tens and the ten that arrived. How many tens is that?',
           expected: '12',
         },
       ], '623'),
@@ -792,7 +792,7 @@ export const buildC03 = makeWeekBuilder({
       }),
     },
     ge(3, 3, 'prompted', 'Work out 431 + 256 in columns.', [
-      { childDo: 'Before you add: say out loud whether any column here will need a trade, then work it and see whether you were right.', expected: '687' },
+      { childDo: 'Before you add, say out loud whether any column will need a trade. Then work it and see whether you were right.', expected: '687' },
     ], '687'),
     {
       ...ge(3, 4, 'independent', 'Work out 465 + 279 in columns, then check the size of your answer by rounding. Solve cold.', [
@@ -853,13 +853,13 @@ export const buildC03 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Here is one sum: 268 + 157. Work it out twice. First in columns, working right to left. Then by parts: add the hundreds, then the tens, then the ones, and put those three lines together. Write both totals, then write one sentence saying where the SAME trade shows up in each method.',
+            'Here is one sum: 268 + 157. Work it out twice. First in columns, working right to left. Then by parts: add the hundreds, then the tens, then the ones. Put those three lines together. Write both totals. Then write one sentence saying where the SAME trade shows up.',
           value: 'both methods reach the same total, and the ten built in the ones and the hundred built in the tens have to move left in both — the columns hand them on straight away, the parts method carries them inside the lines',
           acceptableForms: ['same total', 'both', 'carry', 'trade', 'moves left', 'hundred'],
           keywords: true,
           hints: [
             'Do the two methods work the columns in the same order, or in opposite orders?',
-            'Find the ten that is built in the ones in each method, and point to where each one puts it.',
+            'Find the ten that is built in the ones in each method. Point to where each method puts it.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -868,7 +868,7 @@ export const buildC03 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: if one trade is left out of a column sum, the total written down is SMALLER than the real total. In one sentence, say how you know.',
+            'Always, sometimes, or never true? One trade is left out of a column sum. The total written down is SMALLER than the real total. In one sentence, say how you know.',
           correct: 'always',
           distractors: [
             {
@@ -883,8 +883,8 @@ export const buildC03 = makeWeekBuilder({
             },
           ],
           hints: [
-            'When a column hands a unit on, is the total being given something or losing something?',
-            'Work one sum twice — once with the trade made and once with it left out — and hold the two totals side by side.',
+            'When a column hands a unit on, what happens to the total? Is it given something, or does it lose something?',
+            'Work one sum twice. Once with the trade made, once with it left out. Then hold the two totals side by side.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -917,7 +917,7 @@ export const buildC03 = makeWeekBuilder({
       id: 'C3-PZ-01',
       title: 'Puzzle Grove: The Column That Tips',
       puzzleType: 'logic',
-      prompt: `One digit of this sum has been covered by a leaf: ${h1}▢${o1} + ${b}. Find EVERY digit that could be hiding under the leaf and still leave the TENS column needing a regroup. Then say how you know that no digit is missing from your list.`,
+      prompt: `One digit of this sum has been covered by a leaf: ${h1}▢${o1} + ${b}. Find EVERY digit that could be hiding under the leaf. It must still leave the TENS column needing a regroup. Then say how you know that no digit is missing from your list.`,
       answer: {
         value: answers.join(', '),
         acceptableForms: answers,
@@ -925,7 +925,7 @@ export const buildC03 = makeWeekBuilder({
       },
       hintLadder: [
         'Which column has to be settled before the tens column can be sized at all?',
-        'Work the ones column first and see what it hands across; then ask how small the hidden digit is allowed to be before the tens column stops filling, and walk upward from there.',
+        'Work the ones column first and see what it hands across. Then ask how small the hidden digit can be. Below that, the tens column stops filling. Walk upward from there.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };

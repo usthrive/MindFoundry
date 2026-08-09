@@ -513,8 +513,8 @@ export function graphRead(
       const key = mode === 'pictograph' ? r.pick([2, 5, 10]) : 1;
       const display =
         mode === 'pictograph'
-          ? `A pictograph of ${subject.thing} shows ${labels[0]} with ${countNoun(counts[0], subject.symbol)}, ${labels[1]} with ${countNoun(counts[1], subject.symbol)} and ${labels[2]} with ${countNoun(counts[2], subject.symbol)}. The key says each ${unitFor(1, subject.symbol)} stands for ${countNoun(key, subject.thing)}.`
-          : `A bar graph of ${subject.thing} shows ${labels[0]} at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}.`;
+          ? `A pictograph shows ${subject.thing}. ${labels[0]} has ${countNoun(counts[0], subject.symbol)}. ${labels[1]} has ${countNoun(counts[1], subject.symbol)}. ${labels[2]} has ${countNoun(counts[2], subject.symbol)}. The key says each ${unitFor(1, subject.symbol)} stands for ${countNoun(key, subject.thing)}.`
+          : `A bar graph shows ${subject.thing}. ${labels[0]} is at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}.`;
       // Order the two indices so a "how many more" question is never negative.
       const order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
       const [hi, lo] = [order[0], order[1]];
@@ -526,7 +526,7 @@ export function graphRead(
           params: { counts, labels, key, i: hi, j: lo },
           units: subject.thing,
           hints: [
-            'Is the question asking for one of the amounts, or for the gap between two of them?',
+            'Does the question want one amount, or the gap between two?',
             'Read each of the two amounts in full first, then compare them.',
           ],
           errorTags: ['task-comprehension', 'representation-misread'],
@@ -651,7 +651,7 @@ export function symbolCountVsValue(): ItemGen {
         ],
         hints: [
           'What job is the key doing on a pictograph?',
-          'Say out loud what one symbol is worth, then account for every symbol in the row.',
+          'Say out loud what one symbol is worth. Then account for every symbol in the row.',
         ],
         errorTags: ['representation-misread', 'concept-misconception'],
       };
@@ -672,7 +672,7 @@ export function tallestVsAskedBar(): ItemGen {
       const tallest = order[0];
       const asked = order[order.length - 1];
       return {
-        prompt: `A bar graph of ${subject.thing} shows ${labels[0]} at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}. Which number answers "how many for ${labels[asked]}"?`,
+        prompt: `A bar graph shows ${subject.thing}. ${labels[0]} is at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}. Which number answers "how many for ${labels[asked]}"?`,
         correct: String(counts[asked]),
         distractors: [
           {

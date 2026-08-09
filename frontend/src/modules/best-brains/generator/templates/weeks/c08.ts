@@ -132,14 +132,14 @@ const wDoubles = asWarmup(
       const each = r.int(3, 12);
       const name = one(r);
       return {
-        prompt: `${name} finds ${countNoun(each, 'pebbles')} in one coat pocket and exactly the same number in the other. How many pebbles is that altogether?`,
+        prompt: `${name} finds ${countNoun(each, 'pebbles')} in one coat pocket. The other pocket holds exactly the same number. How many pebbles is that altogether?`,
         answerValue: String(each * 2),
         templateId: 'd_mul_v1',
         params: { a: each, b: 2 },
         units: 'pebbles',
         hints: [
           'Are the two pockets holding the same amount as each other?',
-          'Say the first count out loud, then carry on counting the very same amount a second time.',
+          'Say the first count out loud. Then count on the very same amount a second time.',
         ],
         errorTags: ['fact-recall', 'procedure-slip'],
       };
@@ -158,13 +158,13 @@ const wPegLine = asWarmup(
       const cards = r.int(3, 8);
       const name = one(r);
       return {
-        prompt: `${name} pegs ${countNoun(cards, 'number cards')} in a row along a washing line, counting on in ${step}s, and the first card shows ${step}. The last card blows away in the wind. What number was on it?`,
+        prompt: `${name} pegs ${countNoun(cards, 'number cards')} in a row along a washing line. The count goes on in ${step}s, and the first card shows ${step}. The last card blows away in the wind. What number was on it?`,
         answerValue: String(step * cards),
         templateId: 'd_multiple_v1',
         params: { base: step, k: cards },
         hints: [
           'Are the numbers along this line growing by the same jump every time?',
-          'Begin at the first card and take that same jump once for each card that follows it.',
+          'Begin at the first card. Take that same jump once for each card that follows it.',
         ],
         errorTags: ['fact-recall', 'concept-misconception'],
       };
@@ -199,7 +199,7 @@ const sitWheelShed = withFigure(
         units: 'wheels',
         hints: [
           'Do all the vehicles in this shed run on the same number of wheels?',
-          'Find what a single one of them needs, then keep a running count as you work along the row.',
+          'Find what a single one of them needs. Then keep a running count as you work along the row.',
         ],
         errorTags: ['fact-recall', 'representation-misread'],
       };
@@ -238,7 +238,7 @@ const sitGalleryWall = withFigure(
         units: 'frames',
         hints: [
           'Which part of this wall is finished, and which part is still to come?',
-          'The block that is already hanging is half the wall — the rest of it is that same block over again.',
+          'The block that is already hanging is half the wall. The rest of it is that same block over again.',
         ],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
@@ -278,7 +278,7 @@ const sitDominoLine = situation({
       units: 'cm',
       hints: [
         'How many times over does one tile\'s length appear in this line?',
-        'Work out how far a single tile stretches, then count that stretch off once for every tile lying in the line.',
+        'Work out how far a single tile stretches. Then count that stretch off once for every tile in the line.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -312,8 +312,8 @@ const sitSwimCard = situation({
       // bare-dollar prompt).
       acceptableForms: [wholeMoney(price * swims)],
       hints: [
-        'Does the card charge the same for every swim, or does the price change along the way?',
-        'Settle one swim first, then let that amount stand in for each of the others until the card is used up.',
+        'Does the card charge the same for every swim? Or does the price change along the way?',
+        'Settle one swim first. Then let that amount stand in for each of the others. Stop when the card is used up.',
       ],
       errorTags: ['fact-recall', 'task-comprehension'],
     };
@@ -321,7 +321,7 @@ const sitSwimCard = situation({
 });
 const sitSwimCardEstimate = withEstimateFirst(
   sitSwimCard,
-  'is this a total you can reach by doubling twice, or does it need one more group added to a double?',
+  'can you reach this total by doubling twice, or is one more group needed?',
 );
 
 // ---------------------------------------------------------------------------
@@ -343,7 +343,7 @@ const msPuzzleClub = withFigure(
       const first = r.int(7, 20);
       const name = one(r);
       return {
-        prompt: `[image: one bar for the ${first} children who came in the first week] ${name} runs a puzzle club. In its first week ${countNoun(first, 'children')} came. In the second week twice that many came, and in the third week the number doubled once more. How many children came in the third week?`,
+        prompt: `[image: one bar for the ${first} children who came in the first week] ${name} runs a puzzle club. In its first week ${countNoun(first, 'children')} came. In the second week twice that many came. In the third week the number doubled once more. How many children came in the third week?`,
         initN: first,
         steps: [
           { op: 'mul', n: 2, d: 1 },
@@ -351,8 +351,8 @@ const msPuzzleClub = withFigure(
         ],
         units: 'children',
         hints: [
-          'Does this club grow by the same AMOUNT each week, or by the same MOVE each week?',
-          'Reach the second week from the first, then do the identical thing to the number you land on.',
+          'Does this club grow by the same AMOUNT each week? Or by the same MOVE each week?',
+          'Reach the second week from the first. Then do the identical thing to the number you land on.',
         ],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
@@ -381,7 +381,7 @@ const msBridgeSpans = multiStep({
     let ramp = r.int(5, 20);
     if (ramp === span) ramp += 1;
     return {
-      prompt: `A model bridge is built from equal spans, each ${countNoun(span, 'cm')} long. The bridge has ${countNoun(spans, 'spans')} in a line, and a ramp ${countNoun(ramp, 'cm')} long is fixed at one end. How long is the model from end to end?`,
+      prompt: `A model bridge is built from equal spans, each ${countNoun(span, 'cm')} long. The bridge has ${countNoun(spans, 'spans')} in a line. A ramp ${countNoun(ramp, 'cm')} long is fixed at one end. How long is the model from end to end?`,
       initN: span,
       steps: [
         { op: 'mul', n: spans, d: 1 },
@@ -390,7 +390,7 @@ const msBridgeSpans = multiStep({
       units: 'cm',
       hints: [
         'Which part of this model repeats, and which part appears only once?',
-        'Build the repeated part up to its full length first, then join on the piece that turns up only at the end.',
+        'Build the repeated part up to its full length first. Then join on the piece that turns up only at the end.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -417,7 +417,7 @@ const msNewChairLegs = multiStep({
     // `cut` inside its own range.
     if (cut === chairs) cut -= 1;
     return {
-      prompt: `How many more legs does the workshop still need to cut? Every chair takes ${countNoun(4, 'legs')}, ${countNoun(chairs, 'chairs')} are waiting to be finished, and ${countNoun(cut, 'legs')} are already cut and stacked by the bench.`,
+      prompt: `How many more legs does the workshop still need to cut? Every chair takes ${countNoun(4, 'legs')}. ${countNoun(chairs, 'chairs')} are waiting to be finished. ${countNoun(cut, 'legs')} are already cut and stacked by the bench.`,
       initN: 4,
       steps: [
         { op: 'mul', n: chairs, d: 1 },
@@ -426,7 +426,7 @@ const msNewChairLegs = multiStep({
       units: 'legs',
       hints: [
         'Which of these numbers tells you what ONE chair needs?',
-        'Build up what the whole batch of chairs needs, and only then take off what is already stacked by the bench.',
+        'Build up what the whole batch of chairs needs. Only then take off what is already stacked by the bench.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -460,7 +460,7 @@ const msCampField = multiStep({
       units: 'campers',
       hints: [
         'Does every number in this story count people?',
-        'Work through the tents first and then the caravan, setting aside the number that measures something other than campers.',
+        'Work through the tents first, then the caravan. Set aside the number that measures something other than campers.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -504,7 +504,7 @@ const discrimDoubleAgain = discrimination({
       ],
       hints: [
         'What has to happen to the two-crate count before it becomes the four-crate count?',
-        'Four crates are the two crates over again — set an identical stack beside the one already counted.',
+        'Four crates are the two crates over again. Set an identical stack beside the one already counted.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -528,7 +528,7 @@ const discrimRowLifted = discrimination({
     const all = perRow * 4;
     const name = one(r);
     return {
-      prompt: `A path is laid in ${countNoun(4, 'rows')} with ${countNoun(perRow, 'slabs')} in every row, which is ${countNoun(all, 'slabs')} altogether. ${name} lifts one whole row to reach a pipe underneath. Which calculation tells how many slabs are still down?`,
+      prompt: `A path is laid in ${countNoun(4, 'rows')} with ${countNoun(perRow, 'slabs')} in every row. That is ${countNoun(all, 'slabs')} altogether. ${name} lifts one whole row to reach a pipe underneath. Which calculation tells how many slabs are still down?`,
       correct: `${all} − ${perRow}`,
       distractors: [
         {
@@ -544,7 +544,7 @@ const discrimRowLifted = discrimination({
       ],
       hints: [
         'Does this calculation have to take away one row, or one slab?',
-        'Picture the row that came up: it holds as many slabs as any other row, and all of them have gone.',
+        'Picture the row that came up. It holds as many slabs as any other row. All of them have gone.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -571,11 +571,11 @@ const eaSecondDouble = errorAnalysis({
   },
   build: (v, p) => {
     return {
-      prompt: `A market stall stands its plant pots in equal rows, and two of those rows hold ${countNoun(Number(p.a), 'pots')}. Working out how many pots stand in four rows, a student wrote ${p.a} + 2 = ${v.wrong}.`,
-      extension: 'Work out how many pots really stand in four rows, then write one sentence saying what the student did to the two-row count.',
+      prompt: `A market stall stands its plant pots in equal rows. Two of those rows hold ${countNoun(Number(p.a), 'pots')}. A student worked out how many pots stand in four rows. The student wrote ${p.a} + 2 = ${v.wrong}.`,
+      extension: 'Work out how many pots really stand in four rows. Then write one sentence saying what the student did to the two-row count.',
       hints: [
         'What has to happen to a count to make it twice as big?',
-        'Stand a second pair of rows beside the first pair, and count what the whole stall holds then.',
+        'Stand a second pair of rows beside the first pair. Then count what the whole stall holds.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -600,12 +600,12 @@ export const buildC08 = makeWeekBuilder({
     'C6 gave "groups of" its meaning and C7 made the easiest facts quick by leaning on a count the child already had — skip counting. C8 stops counting altogether. A fact is now BUILT out of a fact already owned: ×4 arrives as a doubling done to its own answer, and ×3 as that same doubling with one group brought in at the end. What is being practised is the chain rather than the recall, which is why several items here run past the times table a child of this age has had time to memorise.',
   explanation: {
     hook:
-      'Nobody has to learn the four-times table. Four of anything is a double, doubled — and doubling is a move you have owned since before you could write.',
+      'Nobody has to learn the four-times table. Four of anything is a double, doubled. And doubling is a move you have owned since before you could write.',
     whyBeforeHow:
-      'Four of something is two of it counted twice over, and because that is true of every number there is, you can reach any ×4 fact by taking a doubling you already own and running it again: double, then double again. That is why this week is about one move rather than two tables. Threes work the same way with a tail: three of something is a double with one more group standing beside it, so once you can double you are one small step from the threes as well. A fact you can rebuild does not run out where your memory does, and it does not desert you on a morning when you cannot remember.',
+      'Four of something is two of it counted twice over. That is true of every number there is. So you can reach any ×4 fact from a doubling you already own. Double, then double again. That is why this week is about one move rather than two tables. Threes work the same way, with a tail. Three of something is a double with one more group standing beside it. Once you can double, you are one small step from the threes as well. A fact you can rebuild does not run out where your memory does. It does not desert you on a morning when you cannot remember.',
     script: [
       {
-        say: 'Watch me build a four-times fact without ever having learned one. Here is a shelf with six jars on it. I stand an identical shelf beside it — that is a double, and doubling is the one move I have owned for years.',
+        say: 'Watch me build a four-times fact without ever having learned one. Here is a shelf with six jars on it. I stand an identical shelf beside it. That is a double. Doubling is the one move I have owned for years.',
         visual: 'One shelf of six jars, and the same shelf again beside it.',
         figure: barModel(
           [
@@ -627,7 +627,7 @@ export const buildC08 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Three is the awkward one, and here is why: three is not a doubling. Three shelves are a double with one more shelf standing beside it, so for a three-times fact I double first and then bring in one extra group.',
+        say: 'Three is the awkward one, and here is why: three is not a doubling. Three shelves are a double with one more shelf standing beside it. So for a three-times fact I double first. Then I bring in one extra group.',
         visual: 'Three rows of six, with the first two rows shaded as the double inside the three.',
         figure: areaGrid(
           { rows: 3, cols: 6, shadedRows: 2, rowLabels: ['6', '6', '6'] },
@@ -635,7 +635,7 @@ export const buildC08 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before I double anything: I ask roughly where the answer ought to land. Four of something has to sit a long way past two of it — near enough the same distance again — so if my answer is only one group bigger than my double, I have brought in a group where I meant to double. Then I check at the end by counting the groups back up.',
+        say: 'One habit before I double anything. I ask roughly where the answer ought to land. Four of something has to sit a long way past two of it. It is near enough the same distance again. Say my answer is only one group bigger than my double. Then I brought in a group where I meant to double. Then I check at the end by counting the groups back up.',
         visual: 'A bar of three shelves beside a bar of four shelves, so the gap between them is visible.',
         figure: barModel(
           [
@@ -647,7 +647,7 @@ export const buildC08 = makeWeekBuilder({
       },
     ],
     summary:
-      'Doubling is the one move this week runs on. Double, then double again, and four of anything is yours without a table. Double once and bring in one more group, and the threes are yours too. Before you write an answer down, check its size: four of something should land a long way past the double, not a single group past it.',
+      'Doubling is the one move this week runs on. Double, then double again, and four of anything is yours without a table. Double once and bring in one more group, and the threes are yours too. Before you write an answer down, check its size. Four of something should land a long way past the double. It should not land a single group past it.',
     vocabulary: [
       { term: 'double', kidGloss: 'the same amount again, put beside the first' },
       { term: 'double, then double again', kidGloss: 'the two moves that reach four of an amount' },
@@ -660,7 +660,7 @@ export const buildC08 = makeWeekBuilder({
       ...ge(8, 1, 'modeled', 'A gallery wall holds 4 equal rows of 6 frames. How many frames does the finished wall hold?', [
         {
           teacherSay:
-            'Watch me refuse to look this fact up. I know six and six without thinking, so I take one row and its twin — that is two rows on the wall, and I have not multiplied anything yet.',
+            'Watch me refuse to look this fact up. I know six and six without thinking. So I take one row and its twin. That is two rows on the wall. I have not multiplied anything yet.',
         },
         {
           teacherSay: 'Two rows hold twelve. Four rows are those two rows over again — where does that land?',
@@ -684,7 +684,7 @@ export const buildC08 = makeWeekBuilder({
     {
       ...ge(8, 2, 'completion', 'A sheet of stamps has 4 rows with 7 stamps in every row. How many stamps are on the sheet?', [
         { teacherSay: 'Which would you rather reach for here — a four-times fact, or two doublings?', expected: 'two doublings' },
-        { childDo: 'Double the number in a row, then double what you get, and say how many stamps the sheet holds.', expected: '28' },
+        { childDo: 'Double the number in a row, then double what you get. Say how many stamps the sheet holds.', expected: '28' },
       ], '28'),
       visual: 'Four rows of seven stamps, with the bottom two rows shaded as the first doubling.',
       figure: areaGrid(
@@ -702,7 +702,7 @@ export const buildC08 = makeWeekBuilder({
       // Independent stage: ONE chair's legs. Working out what the whole batch
       // needs before anything comes off the stack IS the task here, so drawing
       // the other chairs would hand over the plan the item exists to ask for.
-      ...ge(8, 4, 'independent', 'How many more legs does the workshop still need to cut? Every chair takes 4 legs, 6 chairs are waiting to be finished, and 9 legs are already cut. Solve cold.', [
+      ...ge(8, 4, 'independent', 'How many more legs does the workshop still need to cut? Every chair takes 4 legs. 6 chairs are waiting to be finished. 9 legs are already cut. Solve cold.', [
         { childDo: 'Work out what all the chairs need first, then take off what is already cut.', expected: '15' },
       ], '15'),
       visual: 'One chair\'s four legs. The rest of the batch is yours to work out.',
@@ -760,13 +760,13 @@ export const buildC08 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Someone in another class says that anybody who can double never has to learn the four-times table. Choose three different numbers, write out both doublings for each one, and then write one sentence saying what a doubler still has to do when a question asks for THREE of something instead of four.',
+            'Someone in another class makes a claim. Anybody who can double never has to learn the four-times table. Choose three different numbers. Write out both doublings for each one. Then write one sentence about what a doubler still has to do. What if a question asks for THREE of something instead of four?',
           value: 'double the number and then double that answer to reach four of it; for three of it you double once and bring in one more group',
           acceptableForms: ['double', 'double again', 'twice', 'one more group', 'add one more group'],
           keywords: true,
           hints: [
             'Which of this week\'s two facts can doubling reach all on its own?',
-            'Take one number all the way through both doublings, then look at what is missing when only three groups are wanted.',
+            'Take one number all the way through both doublings. Then look at what is missing when only three groups are wanted.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -775,7 +775,7 @@ export const buildC08 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: doubling a number lands on the same answer as adding two to it. In one sentence, say how you know.',
+            'Always, sometimes, or never true? Doubling a number lands on the same answer as adding two to it. In one sentence, say how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -790,8 +790,8 @@ export const buildC08 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Could there be one special number where doubling it and adding two land in the same place?',
-            'Try the smallest numbers one at a time, and watch what happens to the gap between the two answers as the numbers grow.',
+            'Could one special number make both moves land in the same place?',
+            'Try the smallest numbers one at a time. Watch what happens to the gap between the two answers. See what the gap does as the numbers grow.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -819,7 +819,7 @@ export const buildC08 = makeWeekBuilder({
       id: 'C8-PZ-01',
       title: 'Puzzle Grove: Where the Hops Meet',
       puzzleType: 'pattern',
-      prompt: `${name} sets two counters at zero on a number track. One counter hops along in threes; the other hops along in fours. Find EVERY number up to ${track} that BOTH counters land on, and say how you can be sure that none is missing.`,
+      prompt: `${name} sets two counters at zero on a number track. One counter hops along in threes; the other hops along in fours. Find EVERY number up to ${track} that BOTH counters land on. Then say how you can be sure that none is missing.`,
       answer: {
         value: shared.join(', '),
         acceptableForms: [shared.join(' '), shared.join(', ')],
@@ -827,7 +827,7 @@ export const buildC08 = makeWeekBuilder({
       },
       hintLadder: [
         'Which numbers does the threes counter visit, and which numbers does the fours counter visit?',
-        'Write both lists out to the end of the track, then run a finger down them together and mark every number that appears in both.',
+        'Write both lists out to the end of the track. Then run a finger down them together. Mark every number that appears in both.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };

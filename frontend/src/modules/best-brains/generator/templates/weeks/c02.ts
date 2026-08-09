@@ -248,7 +248,7 @@ const sitVoteBoard = situation({
       units: 'votes',
       hints: [
         'Which two tens does this count sit between?',
-        'Count the steps from the count up to one of them and down to the other; the shorter walk names the number that goes up on the board.',
+        'Count the steps up to one ten and down to the other. The shorter walk names the number that goes on the board.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -273,7 +273,7 @@ const sitGateFigure = situation({
       units: 'fans',
       hints: [
         'Is this count standing in the first half of its hundred, or the second half?',
-        'Find the two hundreds it lies between and the midpoint between them; which side of that midpoint the count falls on is the whole decision.',
+        'Find the two hundreds it lies between. Find the midpoint between them. Which side of that midpoint the count falls on decides it.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
     };
@@ -298,14 +298,14 @@ const sitHalfway = withFigure(
       const n = tie(r);
       const name = one(r);
       return {
-        prompt: `[image: a number line running from the ten below this count to the ten above it, with the count flagged between them] ${name}'s class keeps a walking-challenge chart, and each day's step count is written on it to the nearest ten. On Wednesday the class counter read ${countNoun(n, 'steps')}. What number goes on the chart for Wednesday?`,
+        prompt: `[image: a number line running from the ten below this count to the ten above it, with the count flagged between them] ${name}'s class keeps a walking-challenge chart. Each day's step count is written on it to the nearest ten. On Wednesday the class counter read ${countNoun(n, 'steps')}. What number goes on the chart for Wednesday?`,
         answerValue: String(roundInt(n, 1)),
         templateId: 'd_round_v1',
         params: { n, place: 1 },
         units: 'steps',
         hints: [
-          'How far is this count from the ten below it, and how far from the ten above it?',
-          'Count both walks. When they come out exactly equal, measuring has nothing left to say and the agreed rule for a tie is what decides.',
+          'How far is this count from the ten below it? How far from the ten above?',
+          'Count both walks. What if they come out exactly equal? Then measuring has nothing left to say. The agreed rule for a tie decides.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
@@ -342,7 +342,7 @@ const sitOrderPlain = situation({
     const nums = hs.map((h) => 100 * h + r.int(0, 99));
     const sorted = nums.slice().sort((x, y) => x - y);
     return {
-      prompt: `Three groups on a school bug hunt counted the ladybirds they could find: ${nums.map((n) => fmtInt(n)).join(', ')}. Write the three counts in order, smallest first.`,
+      prompt: `Three groups hunted for ladybirds at school. They counted ${nums.map((n) => fmtInt(n)).join(', ')}. Write the three counts in order, smallest first.`,
       answerValue: sorted.join(', '),
       templateId: 'order_three_v1',
       params: { a: nums[0], b: nums[1], c: nums[2] },
@@ -350,7 +350,7 @@ const sitOrderPlain = situation({
       acceptableForms: [sorted.join(' ')],
       hints: [
         'Which place do you look at first when two counts are stood side by side?',
-        'Sort on the hundreds; only when two counts share a hundred does the next place along get a say.',
+        'Sort on the hundreds first. Only when two counts share a hundred does the next place matter.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -371,7 +371,7 @@ const sitOrderTricky = situation({
     const nums = r.shuffle([100 * x + 10 * y + z, 100 * y + 10 * z + x, 100 * z + 10 * x + y]);
     const sorted = nums.slice().sort((a, b) => a - b);
     return {
-      prompt: `Three shops on one street have door numbers built from the very same three digits: ${nums.map((n) => fmtInt(n)).join(', ')}. Write the three door numbers in order, smallest first.`,
+      prompt: `Three shops on one street have door numbers. All three are built from the very same digits: ${nums.map((n) => fmtInt(n)).join(', ')}. Write the three door numbers in order, smallest first.`,
       answerValue: sorted.join(', '),
       templateId: 'order_three_v1',
       params: { a: nums[0], b: nums[1], c: nums[2] },
@@ -379,7 +379,7 @@ const sitOrderTricky = situation({
       acceptableForms: [sorted.join(' ')],
       hints: [
         'Do the same three digits always make the same number, wherever they are standing?',
-        'Read each number by what its digits are worth in the places they occupy, not by which digit looks biggest, and then set the three out in order.',
+        'Read each number by what its digits are worth. Do not go by which digit looks biggest. Then set the three out in order.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -422,13 +422,13 @@ const msRoundedGap = withFigure(
         // difference is not the real difference in rainfall, and a prompt asking
         // "how much more rain fell?" would have a code-computed answer to a
         // question it was not asking (kit §E2.7).
-        prompt: `[image: a number line carrying the two rainfall totals the log holds] The rain gauge at a school weather station measured ${countNoun(wetter, 'mm')} of rain last year and ${countNoun(drier, 'mm')} the year before. Every figure written in the weather log is rounded to the nearest ten. How many more millimetres does the log show for last year than for the year before?`,
+        prompt: `[image: a number line carrying the two rainfall totals the log holds] A school weather station has a rain gauge. Last year it measured ${countNoun(wetter, 'mm')} of rain. The year before it measured ${countNoun(drier, 'mm')}. Every figure written in the weather log is rounded to the nearest ten. Look at the two figures in the log. How many more millimetres does last year show than the year before?`,
         initN: wetter,
         steps: [hop(wetter, tidyWetter), { op: 'sub', n: drier, d: 1 }, unhop(drier, tidyDrier)],
         units: 'mm',
         hints: [
-          'Which figures does the log hold — the measurements exactly as the gauge gave them, or rounded ones?',
-          'Take each measurement to its nearer ten first, and only then find the distance between the two rounded figures.',
+          'Which figures does the log hold? The exact gauge measurements, or rounded ones?',
+          'Take each measurement to its nearer ten first. Then find the distance between the two rounded figures.',
         ],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
@@ -483,13 +483,13 @@ const msRoundedTotal = multiStep({
       // As with `msRoundedGap`, the question names the REPORTED total and not the
       // real one — 'how many star jumps were done?' would be a different
       // question from the one this item computes (kit §E2.7).
-      prompt: `A sponsored star-jump weekend counted ${countNoun(sat, 'star jumps')} on Saturday and ${countNoun(sun, 'star jumps')} on Sunday. The sponsors are given each day's figure to the nearest hundred. What do the two figures the sponsors are given come to altogether?`,
+      prompt: `A sponsored star-jump weekend counted ${countNoun(sat, 'star jumps')} on Saturday. On Sunday it counted ${countNoun(sun, 'star jumps')}. The sponsors are given each day's figure to the nearest hundred. What do the two figures the sponsors are given come to altogether?`,
       initN: sat,
       steps: [hop(sat, roundInt(sat, 2)), { op: 'add', n: sun, d: 1 }, hop(sun, roundInt(sun, 2))],
       units: 'star jumps',
       hints: [
         'How many separate jobs does this report need before one number can be written down?',
-        'Take each day to its nearer hundred on its own, and only then put the two tidied figures together.',
+        'Take each day to its nearer hundred on its own. Then put the two tidied figures together.',
       ],
       errorTags: ['task-comprehension', 'procedure-slip'],
     };
@@ -497,7 +497,7 @@ const msRoundedTotal = multiStep({
 });
 const msRoundedTotalEstimate = withEstimateFirst(
   msRoundedTotal,
-  'will the total of the two tidied figures land above or below the total of the exact counts?',
+  'will the tidied total land above or below the exact total?',
 );
 
 // ---------------------------------------------------------------------------
@@ -552,7 +552,7 @@ const discrimNearerTen = discrimination({
       ],
       hints: [
         'Does the size of a digit tell you how far away a ten is?',
-        'Put the count on a line between its two tens and count the steps each way; the shorter journey is the answer, whatever the digits look like.',
+        'Put the count on a line between its two tens. Count the steps each way. The shorter journey is the answer, whatever the digits look like.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -595,7 +595,7 @@ const discrimWhichLandmark = discrimination({
       ],
       hints: [
         'How wide is the stretch this question is asking about — a ten, or a hundred?',
-        'Name the two hundreds the count lies between, then decide which half of that stretch it is standing in.',
+        'Name the two hundreds the count lies between. Then decide which half of that stretch it stands in.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };
@@ -628,11 +628,11 @@ const eaTieRoundedDown = errorAnalysis({
     const tens = Number(p.tens);
     const name = one(r);
     return {
-      prompt: `${name}'s class ran a sponsored spell for the school library, and the certificate prints the number of words spelled correctly to the nearest ten. The class spelled ${countNoun(n, 'words')} correctly. A student filling in the certificate put ${v.wrong} on it, and gave this reason: "the ${tens} in the middle is only a small digit, so it goes down."`,
-      extension: 'Write the number the certificate has to show, and explain in one sentence what the two walks — to the ten below and to the ten above — have to do with the decision.',
+      prompt: `${name}'s class ran a sponsored spell for the school library. The certificate prints the word count to the nearest ten. The class spelled ${countNoun(n, 'words')} correctly. A student put ${v.wrong} on the certificate. The student's reason was this: "the ${tens} in the middle is a small digit. So it goes down."`,
+      extension: 'Write the number the certificate has to show. Then explain the two walks in one sentence. One walk goes to the ten below, one to the ten above. What do they have to do with the decision?',
       hints: [
-        'Which two tens is this count standing between, and is it closer to either one of them?',
-        'Walk to each neighbour in turn and count the steps both ways; if neither walk is shorter, ask what the class agreed to do about a draw.',
+        'Which two tens is this count standing between? Is it closer to either one of them?',
+        'Walk to each neighbour in turn and count the steps. What if neither walk is shorter? Ask what the class agreed to do about a draw.',
       ],
       errorTags: ['concept-misconception', 'procedure-slip'],
       answerKeywords: ['the same distance', 'halfway', 'exactly in the middle', 'the ones digit', 'the agreed rule'],
@@ -658,12 +658,12 @@ export const buildC02 = makeWeekBuilder({
     'C1 settled what a three-digit number IS: three places, each worth ten of the one to its right, so 407 is four hundreds and seven ones and never "forty-seven". C2 puts those numbers on a line and asks two new questions about them — which of two numbers is further along it, and which landmark a number is standing nearest to. That second question is the new idea: it makes a number\'s SIZE, rather than its digits, the thing being reasoned about, and it introduces the first piece of mathematics this child meets that is settled by agreement rather than by proof — what to do when a count sits exactly halfway between two neighbours.',
   explanation: {
     hook:
-      'A sign at the gate says "about 400". The turnstile clicked a different number all day long. So which counts is that sign allowed to be standing in for — and which ones could never be hiding behind it?',
+      'A sign at the gate says "about 400". The turnstile clicked a different number all day long. So which counts is that sign allowed to stand in for? And which ones could never be hiding behind it?',
     whyBeforeHow:
-      'Rounding is not a rule about digits. It is a question about distance: every count sits somewhere between the two neighbours on the number line that could stand in for it — the ten below it and the ten above, or the hundred below and the hundred above — and because one of those two is nearly always fewer steps away than the other, that closer neighbour is the tidy number we can swap in without saying anything very untrue. Comparing works the same way and for the same reason: the further along the line a number sits, the bigger it is, which is why the first place where two numbers differ settles the whole contest and no later digit can overturn it. Once you can see a number sitting between its two neighbours, the digit rules stop being things to remember and start being things you can read off the picture. Only one case cannot be read off it: when a count lands exactly in the middle, both walks are the same length and the number itself has no opinion. That one is settled by an agreement — mathematicians decided a tie goes UP — and knowing it is an agreement rather than a fact is part of knowing it.',
+      'Rounding is not a rule about digits. It is a question about distance. Every count sits between the two neighbours on the number line. They could stand in for it. Those are the ten below and the ten above. Or the hundred below and the hundred above. One of the two is nearly always fewer steps away. That is why the closer neighbour is the tidy number we swap in. Comparing works the same way, and for the same reason. The further along the line a number sits, the bigger it is. So the first place where two numbers differ settles the whole contest. No later digit can overturn it. Picture a number sitting between its two neighbours. Then the digit rules stop being things to remember. They become things you can read off the picture. Only one case cannot be read off it. When a count lands exactly in the middle, both walks are the same length. The number itself has no opinion. That one is settled by an agreement. Mathematicians decided a tie goes UP. Knowing it is an agreement rather than a fact is part of knowing it.',
     script: [
       {
-        say: 'Here is 372, and here are its two neighbours, the tens it is sitting between: 370 on one side and 380 on the other. I am not going to look at any digit yet. I am going to ask how far it is to each neighbour, because that is the actual question rounding asks.',
+        say: 'Here is 372. Here are its two neighbours, the tens it is sitting between. 370 on one side and 380 on the other. I am not going to look at any digit yet. I am going to ask how far it is to each neighbour. That is the actual question rounding asks.',
         visual: 'A number line from 370 to 380 with 372 flagged near the left-hand end.',
         figure: numberLine(
           {
@@ -677,7 +677,7 @@ export const buildC02 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Two steps back to 370. Eight steps on to 380. Two is a shorter walk than eight, so 372 rounds to 370 — and notice that I never needed the rule. Now watch what the rule actually is: the ones digit told me how far I had walked from the ten below. Small ones digit, short walk back, stay where you are.',
+        say: 'Two steps back to 370. Eight steps on to 380. Two is a shorter walk than eight. So 372 rounds to 370. Notice that I never needed the rule. Now watch what the rule actually is. The ones digit told me how far I had walked from the ten below. Small ones digit, short walk back, stay where you are.',
         visual: 'The same line with both hops drawn and counted — two steps back, eight steps on.',
         figure: numberLine(
           {
@@ -695,7 +695,7 @@ export const buildC02 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now a hard one: 845. The two tens either side are 840 and 850, and the walk to each is five steps. Five and five. Nothing about this number can break the tie — so mathematicians agreed on one: a count sitting exactly in the middle goes UP. That is an agreement, not a discovery, and 845 goes to 850 because we all said so.',
+        say: 'Now a hard one: 845. The two tens either side are 840 and 850. The walk to each one is five steps. Five and five. Nothing about this number can break the tie. So mathematicians agreed on one. A count sitting exactly in the middle goes UP. That is an agreement, not a discovery. 845 goes to 850 because we all said so.',
         visual: 'A number line from 840 to 850 with 845 flagged exactly at the midpoint and both five-step hops drawn.',
         figure: numberLine(
           {
@@ -713,7 +713,7 @@ export const buildC02 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One last habit, and it is the reason any of this is useful. Before I add two counts I round them and check roughly where the answer belongs: about 200 and about 500 is about 700, so a total near seven hundred is sensible and a total of ninety is not. Rounding is how you know an answer is the right SIZE before you know whether it is exactly right.',
+        say: 'One last habit, and it is the reason any of this is useful. Before I add two counts I round them both. Then I check roughly where the answer belongs. About 200 and about 500 is about 700. So a total near seven hundred is sensible. A total of ninety is not. Rounding tells you an answer is the right SIZE. It does that before you know whether it is exactly right.',
         visual: 'Two counts on a line, each with an arrow to its nearer hundred, held beside the sensible total.',
         figure: numberLine(
           {
@@ -735,7 +735,7 @@ export const buildC02 = makeWeekBuilder({
       },
     ],
     summary:
-      'Put the number between its two neighbours before you decide anything. Count the walk each way; the shorter walk names the tidy number, and the digit rule is just that measurement written down. When both walks are the same length there is nothing left to measure, so the agreement takes over and the tie goes up. To compare, run along the line from the biggest place: the first place where two numbers differ has already settled it.',
+      'Put the number between its two neighbours before you decide anything. Count the walk each way. The shorter walk names the tidy number. The digit rule is just that measurement written down. When both walks are the same length, there is nothing left to measure. Then the agreement takes over and the tie goes up. To compare, run along the line from the biggest place. The first place where two numbers differ has already settled it.',
     vocabulary: [
       { term: 'round', kidGloss: 'swap a count for the tidy neighbour it is standing nearest to' },
       { term: 'neighbours', kidGloss: 'the two tidy numbers a count is sitting between — the one below it and the one above' },
@@ -748,7 +748,7 @@ export const buildC02 = makeWeekBuilder({
       ...ge(2, 1, 'modeled', 'Round 372 to the nearest ten.', [
         {
           teacherSay:
-            'Watch what I do before I decide anything at all. I put 372 on a line between the two tens it is sitting inside — one below it, one above it. Now I am not remembering a rule, I am measuring: how far is it to each of those two?',
+            'Watch what I do before I decide anything at all. I put 372 on a line between its two tens. One ten is below it, one is above it. Now I am not remembering a rule. I am measuring. How far is it to each of those two?',
         },
         {
           teacherSay: 'Back to the ten below is two steps. On to the ten above is eight steps. Which of those two walks is the shorter one?',
@@ -777,7 +777,7 @@ export const buildC02 = makeWeekBuilder({
     {
       ...ge(2, 2, 'completion', 'Round 845 to the nearest ten. Look hard at this one before you write.', [
         { teacherSay: 'This count is sitting exactly in the middle of its two tens. Can measuring the two walks settle it?', expected: 'no' },
-        { childDo: 'Use the agreement the class made about a tie, and write the number that goes on the label.', expected: '850' },
+        { childDo: 'Use the agreement the class made about a tie. Write the number that goes on the label.', expected: '850' },
       ], '850'),
       // COMPLETION fade: the child produces 850, so the picture shows only the
       // neighbourhood it was GIVEN — the two ends and the count sitting midway.
@@ -795,11 +795,11 @@ export const buildC02 = makeWeekBuilder({
       ),
     },
     ge(2, 3, 'prompted', 'Round 268 to the nearest hundred.', [
-      { childDo: 'Say which two hundreds it is sitting between, then which half of that stretch it is standing in.', expected: '300' },
+      { childDo: 'Say which two hundreds it is sitting between. Then say which half of that stretch it is in.', expected: '300' },
     ], '300'),
     {
       ...ge(2, 4, 'independent', 'A survey book takes every count to the nearest ten. Two counts came in today: 434 and 388. Tidy both, then say how many more the first is than the second. Solve cold.', [
-        { childDo: 'Tidy each count on its own first, and only then measure between the two tidied numbers.', expected: '40' },
+        { childDo: 'Tidy each count on its own first. Then measure between the two tidied numbers.', expected: '40' },
       ], '40'),
       visual: 'Both counts flagged on one line, with no tidying done for you.',
       figure: numberLine(
@@ -866,13 +866,13 @@ export const buildC02 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'A sign at a gate shows a count rounded to the nearest hundred, and it reads 400. The real count was a whole number. Write the SMALLEST whole number the sign could be standing in for, and the LARGEST, then write one sentence saying how you know that nothing outside those two could be hiding behind it.',
+            'A sign at a gate shows a count rounded to the nearest hundred. It reads 400. The real count was a whole number. Write the SMALLEST whole number the sign could be standing in for. Then write the LARGEST. In one sentence, say how you know nothing outside those two could hide there.',
           value: 'the smallest is 350 and the largest is 449',
           acceptableForms: ['350', '449', '350 and 449', 'from 350 to 449'],
           keywords: true,
           hints: [
             'Which counts are close enough to that sign for it to be telling the truth?',
-            'Start at the sign\'s own number and walk outward in both directions, stopping at the last count that still has it as the nearer neighbour.',
+            'Start at the sign\'s own number. Walk outward in both directions. Stop at the last count that still has it as the nearer neighbour.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -881,7 +881,7 @@ export const buildC02 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: when a count is rounded to the nearest ten, the number written down has a 0 in its ones place. Write one sentence explaining how you know.',
+            'Always, sometimes, or never true? A count is rounded to the nearest ten. The number written down has a 0 in its ones place. Write one sentence explaining how you know.',
           correct: 'always',
           distractors: [
             {
@@ -896,8 +896,8 @@ export const buildC02 = makeWeekBuilder({
             },
           ],
           hints: [
-            'What do all the numbers you can possibly land on after rounding to a ten have in common?',
-            'Write out a handful of your own rounded answers, including one for a count that was already sitting on a ten, and look at the last digit of every one of them.',
+            'Think of every number you can land on after rounding to a ten. What do they all have in common?',
+            'Write out a handful of your own rounded answers. Include one for a count that was already sitting on a ten. Then look at the last digit of every one.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -930,7 +930,7 @@ export const buildC02 = makeWeekBuilder({
       id: 'C2-PZ-01',
       title: 'Puzzle Grove: Two Signs, One Number',
       puzzleType: 'logic',
-      prompt: `A whole number is hiding behind two signs at once. Rounded to the nearest ten it is ${fmtInt(ten)}. Rounded to the nearest hundred it is ${fmtInt(hundred)}. Write down EVERY whole number it could be, then say how you know that none is missing from your list.`,
+      prompt: `A whole number is hiding behind two signs at once. Rounded to the nearest ten it is ${fmtInt(ten)}. Rounded to the nearest hundred it is ${fmtInt(hundred)}. Write down EVERY whole number it could be. Then say how you know none is missing.`,
       answer: {
         value: answers.join(', '),
         acceptableForms: answers,
@@ -938,7 +938,7 @@ export const buildC02 = makeWeekBuilder({
       },
       hintLadder: [
         'Which of the two signs pins the hiding number down to fewer places?',
-        'Write out every number the ten-sign allows — walk from the middle of the run outward in both directions — then test each one against the hundred-sign and keep only the survivors.',
+        'Write out every number the ten-sign allows. Walk from the middle of the run outward in both directions. Then test each one against the hundred-sign. Keep only the survivors.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };

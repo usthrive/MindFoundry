@@ -18,7 +18,7 @@
  *    of the week's defining misconception — the student's COUNT is correct (the
  *    row really does hold that many symbols), which is exactly why the item
  *    cannot be answered by re-counting;
- *  - six two-step items, including two posed inverse-start: the display states
+ *  - six two-step items, including one posed inverse-start: the display states
  *    an AMOUNT and the child has to work back to how many symbols the row needs.
  *    That is the "build a scaled graph" direction, and it is the half of the
  *    concept a read-only week never touches;
@@ -234,7 +234,7 @@ const buildRowFromTotal = situation({
     const total = key * symbols;
     const day = r.pick(DAYS);
     return {
-      prompt: `A pictograph of ${s.thing} is being drawn, and each ${unitFor(1, s.symbol)} on it stands for ${countNoun(key, s.thing)}. On ${day} the class counted ${countNoun(total, s.thing)} altogether. How many ${unitFor(2, s.symbol)} should ${day}'s row show?`,
+      prompt: `A pictograph of ${s.thing} is being drawn. Each ${unitFor(1, s.symbol)} on it stands for ${countNoun(key, s.thing)}. On ${day} the class counted ${countNoun(total, s.thing)} altogether. How many ${unitFor(2, s.symbol)} should ${day}'s row show?`,
       answerValue: String(symbols),
       templateId: 'd_div_v1',
       params: { a: total, b: key },
@@ -267,14 +267,14 @@ const readWholeDisplay = situation({
     const counts = distinctSet(r, 3, 2, 8);
     const key = r.pick(KEYS);
     return {
-      prompt: `A pictograph of ${s.thing} shows ${labels[0]} with ${countNoun(counts[0], s.symbol)}, ${labels[1]} with ${countNoun(counts[1], s.symbol)} and ${labels[2]} with ${countNoun(counts[2], s.symbol)}, and each ${unitFor(1, s.symbol)} stands for ${countNoun(key, s.thing)}. How many ${s.thing} does the whole display stand for?`,
+      prompt: `A pictograph of ${s.thing} shows ${labels[0]} with ${countNoun(counts[0], s.symbol)}. ${labels[1]} has ${countNoun(counts[1], s.symbol)}, and ${labels[2]} has ${countNoun(counts[2], s.symbol)}. Each ${unitFor(1, s.symbol)} stands for ${countNoun(key, s.thing)}. How many ${s.thing} does the whole display stand for?`,
       answerValue: String((counts[0] + counts[1] + counts[2]) * key),
       templateId: 'stat_graph_total_v1',
       params: { counts, key },
       units: s.thing,
       hints: [
         'How many rows does this question reach across — one of them, or every one?',
-        'Gather the symbols from every row, then let the key turn the whole gathering into an amount.',
+        'Gather the symbols from every row. Then let the key turn that gathering into an amount.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -282,7 +282,7 @@ const readWholeDisplay = situation({
 });
 const readWholeDisplayEstimate = withEstimateFirst(
   readWholeDisplay,
-  'will the whole display stand for more things than there are symbols drawn on it, or fewer?',
+  'will the whole display stand for more things than symbols, or fewer?',
 );
 
 // ---------------------------------------------------------------------------
@@ -305,7 +305,7 @@ const msRowThenChange = multiStep({
     // ends the story rather than continuing it.
     const gone = r.int(2, symbols * key - 3);
     return {
-      prompt: `On a pictograph of ${f.thing}, ${day}'s row shows ${countNoun(symbols, f.symbol)}, and each ${unitFor(1, f.symbol)} stands for ${countNoun(key, f.thing)}. After the display was drawn, ${countNoun(gone, f.thing)} ${f.gone}. How many of ${day}'s ${f.thing} are left?`,
+      prompt: `On a pictograph of ${f.thing}, each ${unitFor(1, f.symbol)} stands for ${countNoun(key, f.thing)}. ${day}'s row shows ${countNoun(symbols, f.symbol)}. After the display was drawn, ${countNoun(gone, f.thing)} ${f.gone}. How many of ${day}'s ${f.thing} are left?`,
       initN: symbols,
       steps: [
         { op: 'mul', n: key, d: 1 },
@@ -349,7 +349,7 @@ const msSymbolsForNewTotal = multiStep({
       units: f.symbol,
       hints: [
         'Are the numbers in this story counting symbols, or counting things?',
-        'Settle the new amount first, then ask how many of the key-sized groups it takes to hold it.',
+        'Settle the new amount first. Then ask how many key-sized groups it takes.',
       ],
       errorTags: ['concept-misconception', 'representation-misread'],
     };
@@ -374,7 +374,7 @@ const msRowPlusSpare = multiStep({
     const spare = r.int(2, 5);
     const day = r.pick(DAYS);
     return {
-      prompt: `On a pictograph of ${f.thing}, ${day}'s row shows ${countNoun(symbols, f.symbol)}, and each ${unitFor(1, f.symbol)} stands for ${countNoun(key, f.thing)}. After the display was drawn, another ${countNoun(more, f.thing)} ${f.arrived}. The same wall also carries ${countNoun(spare, f.spare)}. How many ${f.thing} is that in all?`,
+      prompt: `On a pictograph of ${f.thing}, each ${unitFor(1, f.symbol)} stands for ${countNoun(key, f.thing)}. ${day}'s row shows ${countNoun(symbols, f.symbol)}. After the display was drawn, another ${countNoun(more, f.thing)} ${f.arrived}. The same wall also carries ${countNoun(spare, f.spare)}. How many ${f.thing} is that in all?`,
       initN: symbols,
       steps: [
         { op: 'mul', n: key, d: 1 },
@@ -382,8 +382,8 @@ const msRowPlusSpare = multiStep({
       ],
       units: f.thing,
       hints: [
-        'Which numbers on this wall are counting the thing the question asks about, and which one is not?',
-        'Read the row through the key first, then bring in only what was added to that same count.',
+        'Which numbers on this wall count the thing the question asks about?',
+        'Read the row through the key first. Then bring in only what was added.',
       ],
       errorTags: ['task-comprehension', 'representation-misread'],
     };
@@ -472,12 +472,12 @@ const discrimKeysDiffer = discrimination({
       },
     ];
     return {
-      prompt: `Two pictographs of ${s.thing} are pinned side by side. On the first, each ${unitFor(1, s.symbol)} stands for ${countNoun(k1, s.thing)}, and ${day}'s row shows ${countNoun(c1, s.symbol)}. On the second, each ${unitFor(1, s.symbol)} stands for ${countNoun(k2, s.thing)}, and ${day}'s row shows ${countNoun(c2, s.symbol)}. Which display's ${day} row stands for more ${s.thing}?`,
+      prompt: `Two pictographs of ${s.thing} are pinned side by side. On the first, each ${unitFor(1, s.symbol)} stands for ${countNoun(k1, s.thing)}. ${day}'s row shows ${countNoun(c1, s.symbol)}. On the second, each ${unitFor(1, s.symbol)} stands for ${countNoun(k2, s.thing)}. ${day}'s row shows ${countNoun(c2, s.symbol)}. Which display's ${day} row stands for more ${s.thing}?`,
       correct: keyed,
       distractors: OPTIONS.filter((o) => o.text !== keyed).map((o) => ({ ...o })),
       hints: [
         'Do these two displays agree about what one symbol is worth?',
-        'Work each row into an amount using its own key, and only then hold the two amounts side by side.',
+        'Work each row into an amount using its own key. Then hold the two amounts side by side.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -514,10 +514,10 @@ const eaScaleIgnored = errorAnalysis({
     return {
       prompt: `${name}'s class pinned up a pictograph of ${s.thing}. The key at the bottom of it reads: each ${unitFor(1, s.symbol)} stands for ${countNoun(Number(p.key), s.thing)}. ${day}'s row holds ${countNoun(Number(p.count), s.symbol)}, and a student wrote that ${day} counted ${countNoun(Number(v.wrong), s.thing)}.`,
       extension:
-        'Write what that row really stands for. Then write the key this display would have needed for the student\'s number to have been the right one.',
+        'Write what that row really stands for. Then write the key that would have made the student\'s number right.',
       hints: [
-        'Which of the two sentences on that page did the student use, and which one was left sitting there?',
-        'Say aloud what a single symbol is worth here, then count on by that once for every symbol in the row.',
+        'Which of the two sentences on that page did the student use?',
+        'Say aloud what a single symbol is worth here. Then count on by that, once for every symbol.',
       ],
       errorTags: ['representation-misread', 'concept-misconception'],
     };
@@ -542,19 +542,19 @@ export const buildC23 = makeWeekBuilder({
     'B23 read displays where every bar height and every mark was worth exactly one, so counting the picture and reading the data were the same act. C23 breaks them apart: a symbol now stands for a group whose size the page decides, so the child must read a key before counting anything, must multiply to get out of the picture, and — new here — must divide to get back INTO it when a row has to be built from an amount.',
   explanation: {
     hook:
-      'Three stars in a row. Are they three books, six books, or thirty? Nobody in the world can tell you until they have read one short sentence printed at the bottom of the page.',
+      'Three stars in a row. Are they three books, six books, or thirty? Nobody can tell you until they read one short sentence. It is printed at the bottom of the page.',
     whyBeforeHow:
-      'A scaled display draws one symbol for a whole group of things, and because a symbol can stand for a group of any size at all, the picture on its own says nothing until you read the sentence beside it: the key tells the worth. Three stars is not three books. Three stars is three of whatever one star has been declared to be worth, and only the key can settle which. That is why the key is read FIRST and the symbols are counted second — the other order gives you a number that looks like an answer and is really just how much ink the row used. It also means two honest displays of the very same data can look completely different, because each one is free to choose its own key.',
+      'A scaled display draws one symbol for a whole group of things. A symbol can stand for a group of any size. So the picture on its own says nothing. You have to read the sentence beside it, because the key tells the worth. Three stars is not three books. Three stars is three of whatever one star is worth. Only the key can settle which. That is why the key is read FIRST and the symbols are counted second. The other order gives a number that looks like an answer. It is really just how much ink the row used. It also means two honest displays of the same data can look completely different. Each one is free to choose its own key.',
     script: [
       {
-        say: 'Watch me try to read a row before I know the key. Three stars. Three what? I genuinely cannot say — a star is not a book until something on this page tells me what one star is worth. So my first move on any display like this is to go looking for that sentence.',
+        say: 'Watch me try to read a row before I know the key. Three stars. Three what? I genuinely cannot say. A star is not a book until this page tells me its worth. So my first move on any display is to hunt for that sentence.',
         visual: 'Three stars in a row, with nothing yet to say what one star is worth.',
         figure: counters(3, 'stars', {
           alt: 'three stars in a row, with nothing yet to say what one star is worth',
         }),
       },
       {
-        say: 'Here it is: each star stands for 5 books. Now the row can be read. I lay down one worth-five strip for every star — five, ten, fifteen. Those three stars stand for 15 books, and the key is the only reason I am allowed to say so.',
+        say: 'Here it is: each star stands for 5 books. Now the row can be read. I lay down one worth-five strip for every star — five, ten, fifteen. Those three stars stand for 15 books. The key is the only reason I can say so.',
         visual: 'Three strips of five joined into one bar of fifteen.',
         figure: barModel(
           [
@@ -568,7 +568,7 @@ export const buildC23 = makeWeekBuilder({
         ),
       },
       {
-        say: 'Now watch what happens when I change nothing at all except the key. Same three stars. If each star stands for 2 books, the row is worth 6 books. If each star stands for 5 books, the same row is worth 15. The picture never moved and the amount changed — that is the whole reason the key is not decoration.',
+        say: 'Now watch what happens when I change nothing at all except the key. Same three stars. If each star stands for 2 books, the row is worth 6 books. If each star stands for 5 books, the same row is worth 15. The picture never moved, and the amount changed. That is why the key is not decoration.',
         visual: 'The same three stars drawn twice, once against a key of two and once against a key of five.',
         figure: barModel(
           [
@@ -579,7 +579,7 @@ export const buildC23 = makeWeekBuilder({
         ),
       },
       {
-        say: 'One habit before I write any answer down: I check the size I should expect. One symbol is worth more than one thing, so a row has to stand for MORE things than there are symbols in it — never fewer. If my answer comes out smaller than the number of symbols I can see, I have read the key backwards, and I go back to the key rather than back to my counting.',
+        say: 'One habit before I write any answer down: I check the size I should expect. One symbol is worth more than one thing. So a row stands for MORE things than it shows symbols. Never fewer. If my answer is smaller than the symbol count, I read the key backwards. Then I go back to the key, not to my counting.',
         visual: 'A number line counted in the key\'s steps, with the very first step marked.',
         figure: numberLine(
           {
@@ -595,7 +595,7 @@ export const buildC23 = makeWeekBuilder({
       },
     ],
     summary:
-      'On a scaled display, one symbol stands in for a group. Read the key first, count the symbols second, then count on by what the key says each symbol is worth. To build a row instead of reading one, run it the other way: ask how many key-sized groups the amount holds. And expect the amount to come out bigger than the symbol count, every time.',
+      'On a scaled display, one symbol stands in for a group. Read the key first. Count the symbols second. Then count on by what one symbol is worth. To build a row instead of reading one, run it the other way. Ask how many key-sized groups the amount holds. And expect the amount to come out bigger than the symbol count, every time.',
     vocabulary: [
       { term: 'key', kidGloss: 'the sentence on a display that tells you what one symbol is worth' },
       { term: 'symbol', kidGloss: 'a picture that stands in for a whole group of things, not for one thing' },
@@ -608,10 +608,10 @@ export const buildC23 = makeWeekBuilder({
       ...ge(23, 1, 'modeled', 'A pictograph of books read shows Monday with 3 stars. Each star stands for 5 books. How many books does Monday show?', [
         {
           teacherSay:
-            'Before I count a single thing I hunt for the key, because the key is the one sentence that tells me what a star is worth here. It reads: each star stands for 5 books. So this row is not three of anything yet — it is three fives, and now I can say that out loud.',
+            'Before I count a single thing I hunt for the key. The key is the one sentence that tells me what a star is worth. It reads: each star stands for 5 books. So this row is not three of anything yet. It is three fives, and now I can say that out loud.',
         },
         {
-          teacherSay: 'Now I count on by fives, once for every star — five, ten… where does the third star land me?',
+          teacherSay: 'Now I count on by fives, once for every star. Five, ten… where does the third star land me?',
           expected: '15',
         },
       ], '15'),
@@ -630,10 +630,10 @@ export const buildC23 = makeWeekBuilder({
     {
       ...ge(23, 2, 'completion', 'A pictograph of laps shows Tuesday with 4 circles and Thursday with 3 circles. Each circle stands for 10 laps. How many laps do the two days show altogether?', [
         {
-          teacherSay: 'Two of the numbers here are counting symbols and one of them is doing a different job. Which one is the key?',
+          teacherSay: 'Two numbers here are counting symbols. One is doing a different job. Which one is the key?',
           expected: 'the 10',
         },
-        { childDo: 'Gather the circles from both rows first, then let the key turn the whole gathering into laps.', expected: '70' },
+        { childDo: 'Gather the circles from both rows first. Then let the key turn them into laps.', expected: '70' },
       ], '70'),
       visual: 'Tuesday\'s row and Thursday\'s row, each drawn as strips of ten.',
       figure: barModel(
@@ -645,14 +645,14 @@ export const buildC23 = makeWeekBuilder({
       ),
     },
     ge(23, 3, 'prompted', 'A pictograph of tickets shows Friday with 6 squares and Monday with 2 squares. Each square stands for 5 tickets. How many more tickets does Friday show than Monday?', [
-      { childDo: 'Read each named row all the way into tickets first, and only then compare the two amounts.', expected: '20' },
+      { childDo: 'Read each named row all the way into tickets first. Then compare the two amounts.', expected: '20' },
     ], '20'),
     {
       // Independent stage: the KEY only. Working out how many of those key-sized
       // groups the total holds IS the task here, so drawing the row would hand
       // the child the answer the item exists to ask for.
-      ...ge(23, 4, 'independent', 'A pictograph of litres is being drawn, and each drop on it stands for 10 litres. On Wednesday the class collected 60 litres. How many drops should Wednesday\'s row show? Solve cold.', [
-        { childDo: 'Say what one drop is worth, then work out how many of those fit inside the total.', expected: '6' },
+      ...ge(23, 4, 'independent', 'A pictograph of litres is being drawn. Each drop on it stands for 10 litres. On Wednesday the class collected 60 litres. How many drops should Wednesday\'s row show? Solve cold.', [
+        { childDo: 'Say what one drop is worth. Then work out how many of those fit inside the total.', expected: '6' },
       ], '6'),
       visual: 'One strip standing for what a single drop is worth. The row itself is yours to work out.',
       figure: barModel(
@@ -711,13 +711,13 @@ export const buildC23 = makeWeekBuilder({
       {
         gen: reasoning({
           prompt:
-            'Design a scaled display of your own. Write a key saying what one symbol is worth, draw two rows with a different number of symbols in each, then write ONE question about your display that a reader could only answer by using your key. Underneath, write the answer to your own question and show how the key got you there.',
+            'Design a scaled display of your own. Write a key saying what one symbol is worth. Draw two rows, with a different number of symbols in each. Then write ONE question about your display. It must be a question a reader can only answer by using your key. Underneath, write the answer to your own question. Show how the key got you there.',
           value: 'a key naming what one symbol is worth, two rows of symbols, and a question whose answer needs the symbol count counted on by the key',
           acceptableForms: ['key', 'stands for', 'each symbol', 'worth', 'rows', 'how many'],
           keywords: true,
           hints: [
-            'What would a reader have to be told before your rows could mean anything at all?',
-            'Write the key first, work out what one of your rows is worth, and turn that into the question.',
+            'What must a reader be told before your rows mean anything?',
+            'Write the key first. Work out what one of your rows is worth. Then turn that into the question.',
           ],
           errorTags: ['concept-misconception', 'task-comprehension'],
         }),
@@ -726,7 +726,7 @@ export const buildC23 = makeWeekBuilder({
       {
         gen: classify({
           prompt:
-            'Always, sometimes, or never true: a row with more symbols in it stands for more things. In one sentence, say how you know.',
+            'Always, sometimes, or never true? A row with more symbols stands for more things. In one sentence, say how you know.',
           correct: 'sometimes',
           distractors: [
             {
@@ -741,8 +741,8 @@ export const buildC23 = makeWeekBuilder({
             },
           ],
           hints: [
-            'Is there only ever one key in the world, or may two displays choose different ones?',
-            'Try it twice: once with two rows on a single display, then with two rows whose keys are not the same.',
+            'Is there only one key in the world, or may displays differ?',
+            'Try it twice. First with two rows on one display. Then with two rows whose keys differ.',
           ],
           errorTags: ['concept-misconception', 'representation-misread'],
         }),
@@ -770,7 +770,7 @@ export const buildC23 = makeWeekBuilder({
       id: 'C23-PZ-01',
       title: 'Puzzle Grove: Choosing the Key',
       puzzleType: 'logic',
-      prompt: `A pictograph of ${s.thing} has to show four totals: ${totals.join(', ')}. Every row must be drawn in whole ${unitFor(2, s.symbol)} — no half ${unitFor(1, s.symbol)} anywhere on the page. What is the LARGEST number of ${s.thing} one ${unitFor(1, s.symbol)} could stand for, and how can you be sure that no larger number would work?`,
+      prompt: `A pictograph of ${s.thing} has to show four totals: ${totals.join(', ')}. Every row must be drawn in whole ${unitFor(2, s.symbol)}. No half ${unitFor(1, s.symbol)} anywhere on the page. What is the LARGEST number of ${s.thing} one ${unitFor(1, s.symbol)} could stand for? How can you be sure no larger number works?`,
       answer: {
         value: String(key),
         acceptableForms: [countNoun(key, s.thing)],
@@ -778,7 +778,7 @@ export const buildC23 = makeWeekBuilder({
       },
       hintLadder: [
         'Which of the four totals is the fussiest about what one symbol could be worth?',
-        'Test a worth against every total in turn, and keep only the ones that leave no row with a part-symbol in it.',
+        'Test a worth against every total in turn. Keep only the worths that leave no part-symbol anywhere.',
       ],
       errorTags: ['concept-misconception', 'task-comprehension'],
     };

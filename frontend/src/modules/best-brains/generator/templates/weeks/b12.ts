@@ -713,9 +713,9 @@ export const buildB12 = makeWeekBuilder({
     'Reading a clock is a new representation, not a new operation, so the week has no two-step of its own to give. It borrows one: the hour chain counts on from the hour the clock hands over (B4 count on and count back), and the minute total adds whole tens of minutes end to end (B10 adding tens). Both are marked usesPriorSkill — the new load is the reading, never the arithmetic.',
   explanation: {
     hook:
-      'Two hands, one face, and they do not do the same job. One sweeps right round while the other barely moves — and the slow one is the one that tells you the hour.',
+      'Two hands, one face, and they do not do the same job. One sweeps right round while the other barely moves. The slow one is the one that tells you the hour.',
     whyBeforeHow:
-      'A clock has two hands because it has two things to tell you, and the short hand tells the hour story because it is the one that walks the whole day. It leaves the 3, creeps along, and only reaches the 4 when the hour is over. So when the short hand sits between two numbers, the hour is the one it has already passed. The long hand tells the rest of the story: straight up means no minutes have gone by, and straight down means half an hour has. Swap the two hands and you get a real time on a real clock — just not this one.',
+      'A clock has two hands because it has two things to tell you. The short hand tells the hour story, because it walks the whole day. It leaves the 3 and creeps along. It only reaches the 4 when the hour is over. So the short hand will often sit between two numbers. The hour is the one it has already passed. The long hand tells the rest of the story. Straight up means no minutes have gone by. Straight down means half an hour has. Swap the two hands and you get a real time on a real clock. It is just not this one.',
     script: [
       {
         say: 'Watch me read this clock. I find the short hand first, every time. It points straight at the 3, so my hour is three. Now the long hand: straight up at the 12, so no minutes yet. Three o\'clock.',
@@ -752,7 +752,7 @@ export const buildB12 = makeWeekBuilder({
       ...ge(12, 1, 'modeled', "A clock's short hand points straight at the 9. Its long hand points straight up at the 12. What time is it?", [
         {
           teacherSay:
-            'Watch me. I hunt for the short hand first, because that is the hand with the hour story. It points straight at the 9, so I am in the ninth hour. I have not looked at the long hand yet, and I am not going to guess it.',
+            'Watch me. I hunt for the short hand first. That is the hand with the hour story. It points straight at the 9, so I am in the ninth hour. I have not looked at the long hand yet. I am not going to guess it.',
         },
         {
           teacherSay: 'Now the long hand. It points straight up, so no minutes have gone by. What time do I write?',
