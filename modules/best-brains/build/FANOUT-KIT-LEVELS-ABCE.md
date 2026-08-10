@@ -106,6 +106,35 @@ unregistered id silently skips the QG-5 audit, so `bb-verify-packs` asserts ever
   scattered-vs-row, 6/9 flips, 13-vs-31, teen-vs-ty, bigger ≠ heavier.
 - **Every working day shows a picture** — that is the gate that replaces multi-step.
 
+#### A-band lessons from the A1 exemplar (2026-08-09) — these cost real time, read them
+
+1. **Budget LADDERS before items.** A ladder may appear ≤2× across the non-retrieval core, so a
+   19-item week needs ≥10 DISTINCT ladders — in a band whose core form is one generator used many
+   ways. This decides the week's shape and nothing else in the kit says it. Wrap family generators
+   in a local `withHints` closure (no rng draw, prompt untouched): it buys the ladder budget and
+   stops all 24 A weeks shipping identical hints.
+2. **The ≤10-word law is per SENTENCE, not per prompt.** `earlynumber`'s `ask()` caps prompts;
+   `bb-readability` measures every sentence on every child-facing surface. Two different laws — write
+   to the gate's.
+3. **Ship the teacher's-note strip on DAY 5 ONLY**, whatever §1 of FILL-ARCHITECTURE says. The
+   validator enforces Day-5-only (`validator.ts` S-SCHEMA) and `PuzzleGrove.tsx` renders
+   `getPackDay(pack, 5).teacherNoteStrip` — hardcoded. Five strips would put four of them nowhere
+   (the L27 class). The every-day strip needs a renderer first; it is an open decision.
+4. **`[image: …]` and the figure `alt` are the same sentence at band A** (`speakablePrompt` prefers
+   the alt), so any narrative the picture cannot show — "these were in a row a moment ago" — must
+   live in the QUESTION, not the scene.
+5. **With a 1–5 range, `drawUniqueItem`'s one-token signature will pin your mastery slots.** A1
+   measured a Form-A slot keyed "2" on 77% of draws with a permanently-dead option, because a
+   one-token prompt signs as `type|1tok|n` and a 1–5 week has 4 counts for 7 items. Sign on
+   `{count, noun}` via `drawFresh` (4 → 36 surfaces) and **measure what is SERVED**, not what you
+   meant to draw (L39, kit §E2.9a).
+6. **Rotate the PAIRING, not the numbers.** Draw which pair of honest miscounts is offered — both
+   below, one either side, both above — so the truth lands low, middle and high in turn. Drawing the
+   pairing from `n` spreads the rank but ties it to the number, so recognising the count still tells
+   you the rank. A1 measures ≤38% at the top rank in every slot after this.
+7. **Read your generated week.** A row of one duck, "colour the apple box" with no box drawn, and a
+   `reteachPointer` lifted verbatim from a sibling week all passed every gate and died on reading.
+
 ### Level B
 - Gentle two-step only; the bridge (8+5 via 8+2+3) IS the two-step in B5.
 - Metacognition in its intro form: "will it pass 10?" predictions.
