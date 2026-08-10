@@ -87,7 +87,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam, counterGroups, tenFrame } from '../lib/figures';
+import { assertsAnswer, assertsParam, counterGroups, hundredChart, tenFrame } from '../lib/figures';
 import type { BBFigure, FigureAssertion, PlaceName } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -247,6 +247,37 @@ function withDrawnFrame(
   };
 }
 
+/** The ten squares of the row holding `v`, on a chart that starts at 1. */
+function chartRowOf(v: number): number[] {
+  const first = Math.floor((v - 1) / 10) * 10 + 1;
+  return Array.from({ length: 10 }, (_, i) => first + i);
+}
+
+/**
+ * The hundred chart for a slide that starts at `a` and puts `b` on, with the
+ * landing's ROW left unprinted rather than the landing's square. The checks are
+ * the picture's honesty stated as code: the slide has to be whole tens for a row
+ * to be the landing row at all, the start has to survive the blanking (it always
+ * does — a whole-ten slide never lands in its own row), and the landing has to
+ * be on the chart.
+ */
+function slideChart(a: number, b: number): BBFigure {
+  const landing = a + b;
+  if (b <= 0 || b % 10 !== 0) {
+    throw new Error(`b13 slideChart: ${b} is not a whole-ten slide, so no row is the landing row`);
+  }
+  if (chartRowOf(landing).includes(a)) {
+    throw new Error(`b13 slideChart: blanking ${landing}'s row would rub out the printed start ${a}`);
+  }
+  if (landing > 100) {
+    throw new Error(`b13 slideChart: ${landing} runs off the hundred chart`);
+  }
+  return hundredChart({
+    blank: chartRowOf(landing),
+    alt: 'a hundred chart in rows of ten, with one row of squares left empty',
+  });
+}
+
 /**
  * The ones column drawn as a frame of ten: the single ones a stated number holds,
  * with its bare boxes left to be counted. It shows how much room is left before
@@ -364,28 +395,46 @@ const wTensCount = asWarmup(
   B2,
 );
 
-/** B10 — adding whole tens, the arithmetic the tens column runs on. */
-const wAddTens = asWarmup(
-  situation({
-    situationType: 'rate-of-change',
-    cognitiveOp: 'add-tens',
-    draw: (r) => {
-      const start = 10 * r.int(2, 5) + r.int(1, 9);
-      const rows = r.int(2, 4);
-      return {
-        prompt: `A counter sits on ${start} on the hundred chart. It moves down ${countNoun(rows, 'rows')}. Which number is it on now?`,
-        answerValue: String(start + 10 * rows),
-        templateId: 'retr_add_within_100_v1',
-        params: { a: start, b: 10 * rows },
-        hints: [
-          'Does a step down the chart make a number grow or shrink?',
-          'Each row down brings one more ten. Count the tens on and leave the ones digit.',
-        ],
-        errorTags: ['procedure-slip', 'concept-misconception'],
-      };
-    },
-  }),
-  B10,
+/**
+ * B10 — adding whole tens, the arithmetic the tens column runs on.
+ *
+ * THE CHART IT NAMES IS NOW DRAWN, WITH THE LANDING ROW LEFT UNPRINTED. This
+ * warm-up said "on the hundred chart" and showed none, which is how a real
+ * six-year-old met it: a page naming an object that was not on the screen. The
+ * chart is printed whole except for the ten squares of the row the counter stops
+ * in, so the start can be found, the columns line up, and the rows the counter
+ * passes through show the same column ten larger each time — while the landing
+ * itself is written nowhere and has to be climbed to.
+ *
+ * Blanking the landing SQUARE alone would not have been enough: its row-mates
+ * would sit a square either side of the hole, and the child would read the
+ * answer out of the gap without ever asking what a row is worth. No `asserts` —
+ * the landing is not drawn, so the picture makes no claim about the answer.
+ */
+const wAddTens = withFigure(
+  asWarmup(
+    situation({
+      situationType: 'rate-of-change',
+      cognitiveOp: 'add-tens',
+      draw: (r) => {
+        const start = 10 * r.int(2, 5) + r.int(1, 9);
+        const rows = r.int(2, 4);
+        return {
+          prompt: `A counter sits on ${start} on the hundred chart. It moves down ${countNoun(rows, 'rows')}. Which number is it on now?`,
+          answerValue: String(start + 10 * rows),
+          templateId: 'retr_add_within_100_v1',
+          params: { a: start, b: 10 * rows },
+          hints: [
+            'Does a step down the chart make a number grow or shrink?',
+            'Each row down brings one more ten. Count the tens on and leave the ones digit.',
+          ],
+          errorTags: ['procedure-slip', 'concept-misconception'],
+        };
+      },
+    }),
+    B10,
+  ),
+  (p) => slideChart(numOf(p, 'a'), numOf(p, 'b')),
 );
 
 /** B11 — two-digit + one-digit across a ten: the same trade, in one column only. */

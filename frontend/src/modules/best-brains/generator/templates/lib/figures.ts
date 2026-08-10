@@ -206,15 +206,42 @@ export function areaGrid(
  * index happens here, once.
  */
 export function hundredChart(
-  opts: { start?: number; highlight?: number[]; alt: string; asserts?: FigureAssertion },
+  opts: {
+    start?: number;
+    rows?: number;
+    highlight?: number[];
+    /**
+     * NUMBERS TO LEAVE UNPRINTED — and this is the parameter that decides whether
+     * the chart teaches or cheats.
+     *
+     * A fully-labelled chart ANSWERS most of the questions that name it. "On the
+     * hundred chart, what number sits directly BELOW 87?" is a test of
+     * down-a-row-is-ten-more; print every square and the child reads 97 off the
+     * picture without knowing any such thing. That is L33 exactly — the dangerous
+     * figure is the helpful one — and it is why the number-line items ship
+     * `labels: 'none'` with the target as an unlabelled mark.
+     *
+     * So blank the square the item asks for. The chart still shows the structure
+     * that makes the reasoning possible (ten to a row, the column standing
+     * under its neighbour) while the answer stays the child's to work out.
+     */
+    blank?: number[];
+    alt: string;
+    asserts?: FigureAssertion;
+  },
 ): BBFigure {
   const start = opts.start ?? 1;
-  const cells = Array.from({ length: 100 }, (_, i) => String(start + i));
+  const rows = opts.rows ?? 10;
+  const count = rows * 10;
+  const blank = new Set(opts.blank ?? []);
+  const cells = Array.from({ length: count }, (_, i) =>
+    blank.has(start + i) ? '' : String(start + i),
+  );
   const highlight = (opts.highlight ?? [])
     .map((n) => n - start)
-    .filter((i) => i >= 0 && i < 100);
+    .filter((i) => i >= 0 && i < count);
   return areaGrid(
-    { rows: 10, cols: 10, cellLabels: cells, ...(highlight.length ? { shadedCells: highlight } : {}) },
+    { rows, cols: 10, cellLabels: cells, ...(highlight.length ? { shadedCells: highlight } : {}) },
     opts,
   );
 }

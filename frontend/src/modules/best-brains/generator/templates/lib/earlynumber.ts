@@ -1976,7 +1976,16 @@ export const EARLYNUMBER_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
       const unit = PATTERN_UNITS[kind];
       if (!unit) throw new Error(`a_pattern_next_v1: bad kind '${kind}'`);
       const nouns = [str(p, 'nounA'), str(p, 'nounB')];
-      return { correct: nouns[unit[num(p, 'len') % unit.length]] };
+      // SINGULAR, because exactly one thing comes next and that is what the item
+      // keys ("the duck"). The transform used to return the bare PLURAL, which
+      // survived only because `bb-family-test` accepts a keyed option that
+      // CONTAINS the truth — "the ducks" contains "ducks". When the option was
+      // corrected to the singular, that containment broke and the family test
+      // failed 180 times. `bb-family-test` is not in the seven-gate list this
+      // work runs by, which is exactly how a regression hid behind a green
+      // board: the truth a transform returns should be the answer as the child
+      // meets it, not a form that happens to be a substring of it.
+      return { correct: unitFor(1, nouns[unit[num(p, 'len') % unit.length]]) };
     },
   },
   // --- join / take away ----------------------------------------------------

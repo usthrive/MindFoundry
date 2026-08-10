@@ -21,6 +21,7 @@ import {
   numberWords,
   TupleGuard,
 } from '../shared';
+import { hundredChart } from '../lib/figures';
 
 const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Noor'] as const;
 
@@ -261,6 +262,48 @@ function retrCountTens(rng: Rng, guard: TupleGuard, difficulty: number): ItemDra
   };
 }
 
+// --- The chart these pages name --------------------------------------------
+//
+// Four items on this week say "on the hundred chart" and, until now, showed
+// none. A child opened one of them and there was nothing on the screen to look
+// at. The chart below is that missing object. B1 is "Numbers to 120", so it runs
+// TWELVE rows: the pack's own scaffold note promises a chart that extends past a
+// hundred, and a ten-row chart would stop short of the numbers Days 2-5 print.
+//
+// WHAT IS LEFT UNPRINTED, AND WHY IT IS A WHOLE ROW.
+// A fully-labelled chart ANSWERS every one of these items: "what sits directly
+// below 87" is a test of down-a-row-is-ten-more, and a child who reads 97 off
+// the picture has been taught nothing (L33 — the dangerous figure is the
+// helpful one). Blanking only the answer square does not close that, and this is
+// the finding worth recording: leave 96 and 98 printed either side of an empty
+// 97 and the gap is read rather than reasoned, because a hundred chart with one
+// hole is an interpolation puzzle. So the whole ROW the answer sits in goes
+// unprinted. What survives is exactly the structure the reasoning needs — nine
+// other rows of ten, each column standing under its neighbour — and the two
+// routes left open to the child are the two the hint ladder names: ten more for
+// a row down, or ten numbers to a row.
+//
+// EVERY NUMBER THE PROMPT PRINTS STAYS ON THE CHART. The answer is always at
+// least a whole row below its given, so a given can never fall inside the
+// blanked row; the puzzle blanks a run that stops two short of each clue. That
+// invariant is worth stating because it is what makes the picture usable at all.
+//
+// NO `asserts` ANYWHERE HERE. The square an item asks about is not drawn, so the
+// picture makes no claim about the answer for QG-13 to weigh, and the four
+// shaded squares on the column item are a GIVEN rather than a claim. An
+// assertion would have to invent something the drawing does not say.
+
+/** B1 counts to 120, so its chart is twelve rows rather than ten. */
+const CHART_ROWS = 12;
+
+/** The ten squares of the row holding `v`, on a chart that starts at 1. */
+function chartRowOf(v: number): number[] {
+  const first = Math.floor((v - 1) / 10) * 10 + 1;
+  return Array.from({ length: 10 }, (_, i) => first + i);
+}
+
+const CHART_ALT = 'a chart of the numbers to 120 in rows of ten, with one row of squares left empty';
+
 // --- Day-4 stories and Day-5 hundred-chart reasoning -----------------------
 
 function pageStory(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
@@ -348,6 +391,9 @@ function chartBelow(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft 
     type: 'reasoning',
     prompt: `On the hundred chart, what number sits directly BELOW ${n}?`,
     answer: { value: String(n + 10), acceptableForms: [], validation: 'exact-numeric' },
+    // The row BELOW n's is the one left empty, so n is printed and the square
+    // under it is not. Built from the same `n` the answer is computed from.
+    figure: hundredChart({ rows: CHART_ROWS, blank: chartRowOf(n + 10), alt: CHART_ALT }),
     difficulty,
     strand: 'noncomputational',
     isRetrieval: false,
@@ -374,6 +420,16 @@ function chartColumn(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft
       `${name} shades ${a}, ${a + 10}, ${a + 20}, and ${a + 30} on the hundred chart. ` +
       'The shaded squares make a straight line going down. What number does the line hit next?',
     answer: { value: String(a + 40), acceptableForms: [], validation: 'exact-numeric' },
+    // The four squares the prompt says were shaded ARE shaded — that is the
+    // given, and the hint sends the child to look at them. The square the line
+    // hits next is not: its row is empty, so the line has to be continued rather
+    // than read. `highlight` takes the numbers, so no square can be off by one.
+    figure: hundredChart({
+      rows: CHART_ROWS,
+      highlight: [a, a + 10, a + 20, a + 30],
+      blank: chartRowOf(a + 40),
+      alt: 'a chart of the numbers to 120 in rows of ten, with four squares shaded and one row of squares left empty',
+    }),
     difficulty,
     strand: 'noncomputational',
     isRetrieval: false,
@@ -397,6 +453,10 @@ function chartWalk(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
     type: 'reasoning',
     prompt: `Start at ${n} on the hundred chart. Move DOWN one row, then RIGHT one square. What number are you on?`,
     answer: { value: String(n + 11), acceptableForms: [], validation: 'exact-numeric' },
+    // Down one row and right one square land in the SAME row (n never ends in 9),
+    // so one blanked row hides both the halfway square and the finish, and the
+    // walk has to be taken rather than traced.
+    figure: hundredChart({ rows: CHART_ROWS, blank: chartRowOf(n + 11), alt: CHART_ALT }),
     difficulty,
     strand: 'noncomputational',
     isRetrieval: false,
@@ -596,6 +656,23 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
         `I am hiding on the hundred chart. I am bigger than ${riddle.x - 3} and smaller ` +
         `than ${riddle.x + 3}. My ones digit is ${riddle.d}. Who am I?`,
       answer: { value: String(riddle.x), acceptableForms: [], validation: 'exact-numeric' },
+      // THE ONE ITEM WHERE BLANKING A ROW WOULD BE WRONG IN BOTH DIRECTIONS.
+      // Blank a single square and the puzzle collapses: "I am hiding" becomes
+      // "find the hole". Blank the answer's whole row and the range clue is done
+      // for the child, since the row rules out candidates the clue was there to
+      // rule out. Print everything and hint 1 — "list every number between the
+      // two clues" — is read off the picture instead of worked.
+      //
+      // So the five numbers the two clues admit are the ones left unprinted, and
+      // both clues keep their work. The chart shows WHERE to look and how far
+      // apart the clues sit; the child still has to say which numbers those five
+      // squares hold, and only then can the ones-digit clue pick one out. The
+      // clue numbers themselves stay printed, one square outside the run.
+      figure: hundredChart({
+        rows: CHART_ROWS,
+        blank: [riddle.x - 2, riddle.x - 1, riddle.x, riddle.x + 1, riddle.x + 2],
+        alt: 'a chart of the numbers to 120 in rows of ten, with a short run of squares left empty',
+      }),
       hintLadder: [
         'List every number between the two clues.',
         'Now check each one\'s ones digit against the last clue.',
