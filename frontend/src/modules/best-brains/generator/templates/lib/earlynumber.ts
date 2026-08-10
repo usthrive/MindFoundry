@@ -711,7 +711,16 @@ export function neighbourNumber(opts: NeighbourOpts): ItemGen {
           : kind === 'after'
             ? `What number comes after ${String(n)}?`
             : `What number goes between ${String(n)} and ${String(n + 2)}?`;
-      const scene = 'a number path with one number missing';
+      // "ONE number missing" SPEAKS THE ANSWER whenever the answer is 1. This
+      // string is the figure's alt as well as the bracket, band A autoplays it,
+      // and the spoken gate's G3 rule normalises the number WORD "one" to 1 —
+      // correctly, because a pre-reader hears no difference. Measured 453 leaks
+      // in 4,000 draws of `{kind:'before', min:2}`, against 0 for `before` at
+      // min 3, `after` and `between`, so the probe discriminates rather than
+      // firing everywhere. Latent rather than live (no shipped week drew the
+      // leaking configuration), and now unreachable by construction: the scene
+      // counts nothing. A number word is a number, wherever it appears (L48).
+      const scene = 'a number path with a gap in it';
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, question),
