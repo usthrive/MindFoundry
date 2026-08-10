@@ -26,7 +26,17 @@ fixtures exactly as today.
 | Metacog (BB-W12) | **N/A** | intro form: "will it pass 10?" predictions | estimate-first standard | full (check-back native in E13–E15) |
 | Error-analysis | "help the puppet" — a *puppet/character* made the slip; oral/point response; truth still `verifyFor`-derived where numeric | written-lite (one sentence) | written | full ruled-lines + extension |
 | Discrimination | perceptual contrast (see §3) | structural + first cross-op traps | cross-op standard | full |
-| Parent strip | **Teacher's-Note strip every day** (W7 A-form) | weekly note | weekly | weekly |
+| Parent strip | Teacher's-Note strip, **Day 5 only** (W7 A-form) — amended 2026-08-09, see note below | weekly note | weekly | weekly |
+
+**Parent strip — AMENDED 2026-08-09 (owner ruling).** Rev 1 of this table mandated a Teacher's-Note
+strip *every day* at band A. Nothing downstream can carry that: `validator.ts` (S-SCHEMA) rejects a
+strip on Days 1–4, and `PuzzleGrove.tsx` renders `getPackDay(pack, 5).teacherNoteStrip` — hardcoded
+to Day 5. A five-strip week therefore fails `bb-verify-packs` at every seed, and if it did not, four
+of the five strips would render nowhere (the L27 class: content authored against a surface that does
+not exist). A1 and A2 both shipped Day-5-only and each carried a disclosure saying so. Rather than
+have all 24 Level-A weeks repeat that disclosure, the spec is amended to match the code: **the
+band-A parent strip is weekly, on Day 5, exactly as at bands B–E.** Re-opening this means building
+the renderer and relaxing the validator FIRST; it is not an authoring-time choice.
 
 **Gate parameterization (required spec change, Phase B1):** `lib/pedagogy.ts` gates become
 **band-keyed** — a single table `GATE_PROFILE[band]` mapping each §6 gate to

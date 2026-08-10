@@ -458,7 +458,17 @@ export function validatePack(
     // Arithmetic re-check via the template registry.
     if (item.generator) {
       const tpl = getTemplate(item.generator.templateId);
-      if (tpl?.answerFor && ['exact-numeric', 'equivalent-numeric', 'equivalent-fraction', 'ordered-list'].includes(item.answer.validation)) {
+      // `'set'` joined this list on 2026-08-10. It had been absent since the gate
+      // was written, so any item keying a SET answer had its `answerFor`
+      // registered, green — and never called. Measured: deleting a pair from a
+      // generated `a_all_ways_v1` answer left `validatePack` reporting zero
+      // violations, while the same corruption on an `exact-numeric` answer fired
+      // two. Fifteen items corpus-wide validate as `'set'`, four of them behind a
+      // registered template (A12's all-ways-to-make-5 and three LIVE B16 money
+      // combinations). All four were hand-audited across three seeds before the
+      // fix and agreed, so this closes a latent hole rather than repairing a
+      // live defect. (L50 — the fourth reads-an-empty-set instance of the week.)
+      if (tpl?.answerFor && ['exact-numeric', 'equivalent-numeric', 'equivalent-fraction', 'ordered-list', 'set'].includes(item.answer.validation)) {
         let expected: string | null = null;
         try {
           expected = tpl.answerFor(item.generator.params);
@@ -469,6 +479,19 @@ export function validatePack(
           let ok: boolean;
           if (item.answer.validation === 'ordered-list') {
             const norm = (s: string) => s.split(/[\s,;]+/).filter(Boolean).join(',');
+            ok = norm(expected) === norm(item.answer.value);
+          } else if (item.answer.validation === 'set') {
+            // A SET is unordered by definition — "0+5; 1+4" and "1+4; 0+5" are the
+            // same answer — so the members are split, trimmed, sorted and compared.
+            // Internal spacing is normalised too, because a set's members are
+            // authored prose ("4 + 4" vs "4+4") where an ordered-list's are tokens.
+            const norm = (s: string) =>
+              s
+                .split(';')
+                .map((m) => m.trim().replace(/\s+/g, ''))
+                .filter(Boolean)
+                .sort()
+                .join(';');
             ok = norm(expected) === norm(item.answer.value);
           } else {
             const ev = numericValue(expected);

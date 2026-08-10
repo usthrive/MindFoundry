@@ -97,6 +97,75 @@ function scenePrompt(scene: string, question: string): string {
   return `[image: ${scene}] ${ask(question)}`;
 }
 
+// ---------------------------------------------------------------------------
+// The SPOKEN scene, which is not the same string as the bracket
+// ---------------------------------------------------------------------------
+
+/**
+ * THE ALT MUST NOT ANSWER THE QUESTION — and at this band that is an AUDIO rule
+ * before it is an accessibility one.
+ *
+ * `speakablePrompt(prompt, figure.alt)` prepends the scene to the question and
+ * prefers `figure.alt` over the `[image: …]` bracket, and `CheckRunner`,
+ * `PracticePage`, `WarmUp`, `PuzzleGrove` and `TreasureChest` all autoplay it at
+ * band A. A child of four or five cannot read, so the scene is not decoration —
+ * it is the first thing he HEARS. An alt reading "5 ducks in a row" on an item
+ * asking "Count the ducks. How many?" therefore reads the answer out before the
+ * question, and the whole counting curriculum stops measuring anything (L33: the
+ * most dangerous figure is not a wrong one, it is a HELPFUL one — ask what it
+ * lets the child SKIP). `clockAlt` and `frameShows` (a02) already followed this
+ * rule; the counting family did not.
+ *
+ * THE RULE. An alt describes what the picture LOOKS LIKE — layout, arrangement,
+ * container, kind of object — and never the quantity the item asks the child to
+ * find. A number in an alt is not automatically wrong: it stays whenever it is a
+ * GIVEN the question already states (a build task's "Draw 3 counters", a
+ * partner sentence's "3 and ▢ make 5", a story that names its own count) or a
+ * fixed structural fact of the manipulative ("of ten blocks", "a full frame of
+ * ten"). Each such site below carries the reason it kept its number.
+ *
+ * WHY A SECOND STRING RATHER THAN A CHANGED `scene`. The bracket stays in the
+ * stored prompt: it is what QG-1/QG-4 sign for operand freshness and it is part
+ * of pack identity (`figures/prompt.ts`, L29). Rewriting `scene` would move
+ * every Level-A prompt string and re-key the freshness guard. So `scene` is left
+ * byte-identical and a separate `alt` is built for the figure, which is the only
+ * surface the audio and the screen reader actually consume.
+ */
+
+/**
+ * "some ducks in a row" — the arrangement, without the count it arranges.
+ *
+ * `in two rows` is respoken as "in a row above another row", and that is not
+ * fussiness: `bb-spoken-answer-test` found "some balls in two rows. Count the
+ * balls. How many?" on every draw where the answer really was two. A NUMBER WORD
+ * IN AN ALT IS A NUMBER — an arrangement that counts its own rows collides with
+ * every small answer, and the child hears the right number before the question.
+ */
+const ARRANGEMENT_ALT: Record<string, string> = {
+  'in two rows': 'in a row above another row',
+};
+
+function looksLike(noun: string, arrangement: string): string {
+  return `some ${noun} ${ARRANGEMENT_ALT[arrangement] ?? arrangement}`;
+}
+
+/**
+ * The frame named as the manipulative rather than as a number: "a ten-frame",
+ * "two ten-frames". The capacity is a fixed structural property a child SEES
+ * (and the taught vocabulary word), so naming it discloses nothing; what must
+ * never be named is how many counters are sitting in it.
+ */
+function frameName(size: number, frames = 1): string {
+  const one = size === 5 ? 'five-frame' : 'ten-frame';
+  return frames > 1 ? `${numberWords(frames)} ${one}s` : `a ${one}`;
+}
+
+/** "ducks, leaves and stars" — the groups by kind, never by count. */
+function andList(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
 /**
  * The nouns a band-A item may name AND have honestly drawn.
  *
@@ -178,7 +247,9 @@ export function countArrangement(opts: CountOpts): ItemGen {
         // The QUESTION always names the plural: `unitFor(n, …)` here would say
         // "Count the duck" and hand a drawn count of one straight to the child.
         prompt: scenePrompt(scene, `Count the ${noun}. How many?`),
-        figure: counters(n, noun, { arrangement, alt: scene, asserts: assertsAnswer }),
+        // ASKS: how many. So the alt names the arrangement and not the count —
+        // "5 ducks in a row" spoken before "Count the ducks" is the answer.
+        figure: counters(n, noun, { arrangement, alt: looksLike(noun, arrangement), asserts: assertsAnswer }),
         answer: { value: String(n), acceptableForms: numForms(n), validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -206,7 +277,11 @@ export function countByTens(opts: { minTens: number; maxTens: number }): ItemGen
         prompt: scenePrompt(scene, 'Count by tens. How many blocks?'),
         figure: counterGroups(
           Array.from({ length: k }, () => ({ count: 10, noun: 'blocks' })),
-          { arrangement: 'towers', alt: scene, asserts: assertsAnswer },
+          // ASKS: how many blocks in all. The number of TOWERS is the thing the
+          // child skip-counts, so it goes; "of ten blocks" stays, because every
+          // tower being a ten is the structure the question itself names
+          // ("Count by tens") and is what the picture is built out of.
+          { arrangement: 'towers', alt: 'some towers of ten blocks', asserts: assertsAnswer },
         ),
         answer: { value: String(10 * k), acceptableForms: numForms(10 * k), validation: 'exact-numeric' },
         difficulty,
@@ -237,22 +312,57 @@ export function howManyChoice(opts: CountOpts): ItemGen {
       const n = r.int(opts.min, opts.max);
       const noun = r.pick(COUNTABLE_NOUNS);
       const scene = `${countNoun(n, noun)} ${arrangement}`;
-      const { choices, correctKey } = makeChoices(r, String(n), [
-        {
-          text: String(n + 1),
-          errorTag: 'representation-misread',
-          rationale: 'One too many - what double-counting one object gives.',
-        },
-        {
-          text: String(Math.max(0, n - 1)),
-          errorTag: 'procedure-slip',
-          rationale: 'One too few - what skipping an object gives.',
-        },
-      ]);
+      // ROTATE THE PAIRING, NOT THE NUMBERS (LEARNINGS L43).
+      //
+      // This used to offer {n-1, n, n+1} on every draw, which makes the answer
+      // the MIDDLE number 100% of the time — "tap the middle one" scores full
+      // marks without counting, for the youngest children in the product. The
+      // mirror of the same defect (every distractor undershooting, so "tap the
+      // biggest" wins) is what L43 was written about; stating the rule as the
+      // INVARIANT — the answer must not sit at a fixed RANK — is what stops an
+      // author satisfying it in one form while reproducing it in another.
+      //
+      // So the SHAPE of the pair is drawn independently of n: both miscounts
+      // below (answer highest), one either side (answer middle), or both above
+      // (answer lowest). All four values are honest band-A miscounts — losing
+      // your place by one or two, in either direction. `lo` is nudged
+      // DETERMINISTICALLY when the range runs out at the bottom (never a redraw
+      // loop, which would consume a variable number of draws and break seed
+      // stability — kit §E2.4).
+      const tooMany = (k: number) => ({
+        text: String(n + k),
+        errorTag: 'representation-misread' as ErrorTag,
+        rationale: `${k === 1 ? 'One' : 'Two'} too many - what double-counting gives.`,
+      });
+      const tooFew = (k: number) => ({
+        text: String(n - k),
+        errorTag: 'procedure-slip' as ErrorTag,
+        rationale: `${k === 1 ? 'One' : 'Two'} too few - what skipping an object gives.`,
+      });
+      let shape = r.int(0, 2);
+      // Both-below needs n-2 >= 1; straddle needs n-1 >= 1. Step up, don't redraw.
+      //
+      // The bound is 1, not 0. At n = 2 the old `n - 2 < 0` let the both-below
+      // pairing through and `tooFew(2)` offered "0" beside a picture plainly
+      // holding two things — measured on 10% of draws at {min:2,max:5}. Zero is
+      // not a miscount of a non-empty set; it is an option no child who looked
+      // at the picture could pick, which is the dead-option shape (L38/§E2.11)
+      // rather than an honest error. Every shipped caller draws n >= 3, so no
+      // existing pack moves — verified by pack-hash.
+      if (shape === 0 && n - 2 < 1) shape = 2;
+      if (shape === 1 && n - 1 < 1) shape = 2;
+      const pair =
+        shape === 0
+          ? [tooFew(1), tooFew(2)] // answer is the BIGGEST on offer
+          : shape === 1
+            ? [tooFew(1), tooMany(1)] // answer is the MIDDLE
+            : [tooMany(1), tooMany(2)]; // answer is the SMALLEST
+      const { choices, correctKey } = makeChoices(r, String(n), pair);
       const draft: ItemDraft = {
         type: 'representation',
         prompt: scenePrompt(scene, 'Tap the number that shows how many.'),
-        figure: counters(n, noun, { arrangement, alt: scene, asserts: assertsParam('n') }),
+        // ASKS: which numeral shows how many. Same leak as `countArrangement`.
+        figure: counters(n, noun, { arrangement, alt: looksLike(noun, arrangement), asserts: assertsParam('n') }),
         choices,
         answer: { value: correctKey, acceptableForms: [String(n)], validation: 'choice-key' },
         difficulty,
@@ -297,10 +407,14 @@ export function setForNumeral(opts: CountOpts & { groups?: number }): ItemGen {
         prompt: scenePrompt(scene, `Tap the group that shows ${String(n)}.`),
         figure: counterGroups(
           picked.map((c, i) => ({ count: c, noun: nouns[i], label: nouns[i] })),
-          { alt: scene, asserts: assertsParam('n', `group:${targetIdx}`) },
+          // ASKS: which group shows n. The old alt read "5 apples, 3 flowers,
+          // 7 balls", which pairs the asked-for number with its group and hands
+          // over the choice; the kinds are what the picture LOOKS like, and the
+          // counting is the child's.
+          { alt: `groups to count: ${andList(nouns)}`, asserts: assertsParam('n', `group:${targetIdx}`) },
         ),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${nouns[targetIdx]}`], validation: 'choice-key' },
+        answer: { value: correctKey, acceptableForms: [`the ${nouns[targetIdx]}`, nouns[targetIdx]], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -311,7 +425,7 @@ export function setForNumeral(opts: CountOpts & { groups?: number }): ItemGen {
           params: { n, counts: picked, nouns },
           seed: r.uint(),
         },
-        hintLadder: ['Count one group at a time, all the way.', 'Stop when a group lands on the number you were given.'],
+        hintLadder: ['Count one group at a time, all the way.', 'Stop when a group lands on your number.'],
         errorTags: ['representation-misread', 'task-comprehension'],
         authorMeta: metaOf('match-set'),
       };
@@ -343,7 +457,15 @@ export function tenFrameRead(opts: FrameOpts): ItemGen {
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, 'How many counters are in the frame?'),
-        figure: tenFrame(n, { size, frames, alt: scene, asserts: assertsAnswer }),
+        // ASKS: how many counters. The frame is named as the manipulative (a
+        // structural fact, and the week's own vocabulary word); what it HOLDS is
+        // the answer and is left for the child to read off the picture.
+        figure: tenFrame(n, {
+          size,
+          frames,
+          alt: `${frameName(size, frames)} with some counters in ${frames > 1 ? 'them' : 'it'}`,
+          asserts: assertsAnswer,
+        }),
         answer: { value: String(n), acceptableForms: numForms(n), validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -371,6 +493,9 @@ export function tenFrameBuild(opts: FrameOpts): ItemGen {
       const scene = 'an empty frame';
       const draft: ItemDraft = {
         type: 'drawing',
+        // GIVEN, not a leak: this is a BUILD task. The question itself says
+        // "Draw 3 counters", so `n` is the instruction, not the answer — and the
+        // picture is an empty frame, which is what the alt says.
         prompt: scenePrompt(scene, `Draw ${String(n)} counters in the frame.`),
         figure: tenFrame(0, { size, frames, alt: scene }),
         answer: {
@@ -382,7 +507,7 @@ export function tenFrameBuild(opts: FrameOpts): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'a_frame_build_v1', params: { n }, seed: r.uint() },
-        hintLadder: ['Say a number for every counter you put in.', 'Fill the top row first, then start the next.'],
+        hintLadder: ['Say a number for every counter you put in.', 'Fill each row before you start the next.'],
         errorTags: ['procedure-slip'],
         authorMeta: metaOf('build-frame'),
       };
@@ -403,7 +528,14 @@ export function tenFrameEmpty(opts: FrameOpts): ItemGen {
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, 'How many boxes are empty?'),
-        figure: tenFrame(filled, { size, alt: scene, asserts: assertsAnswerOf('empty') }),
+        // ASKS: how many EMPTY cells. Both halves of the old alt gave it away —
+        // "a frame of 10 with 6 counters" is the subtraction, done aloud, and
+        // the question states neither number.
+        figure: tenFrame(filled, {
+          size,
+          alt: `${frameName(size)} with some counters in it and some boxes empty`,
+          asserts: assertsAnswerOf('empty'),
+        }),
         answer: {
           value: String(size - filled),
           acceptableForms: numForms(size - filled),
@@ -445,11 +577,15 @@ export function partnersHiding(opts: PartnerOpts): ItemGen {
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, 'How many counters are hiding?'),
+        // ASKS: how many are hidden. The question names NEITHER the whole nor
+        // the shown part, so an alt giving both ("a frame of 10 with 6 showing")
+        // is the partner reasoning performed for the child. Contrast
+        // `partnerBox` below, whose question states both.
         figure: tenFrame(shown, {
           size: total,
           hidden,
           coverStyle: 'single',
-          alt: scene,
+          alt: `${frameName(total)} with some counters showing and the rest hidden`,
           asserts: assertsAnswerOf('hidden'),
         }),
         answer: { value: String(hidden), acceptableForms: numForms(hidden), validation: 'exact-numeric' },
@@ -480,6 +616,10 @@ export function partnerBox(opts: PartnerOpts): ItemGen {
       const scene = `a frame of ${String(total)} with ${countNoun(shown, 'counters')} and a covered box`;
       const draft: ItemDraft = {
         type: 'computation',
+        // GIVENS, kept: the question is the algebra sentence itself ("3 and ▢
+        // make 5"), so both the shown part and the whole are stated to the child
+        // before the picture is described. The alt repeats what the question
+        // already says and discloses nothing the item is asking for.
         prompt: scenePrompt(scene, `Fill the box: ${String(shown)} and ▢ make ${String(total)}.`),
         figure: tenFrame(shown, {
           size: total,
@@ -493,7 +633,7 @@ export function partnerBox(opts: PartnerOpts): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'a_partner_box_v1', params: { total, shown }, seed: r.uint() },
-        hintLadder: ['The box hides the missing part.', 'Build the whole frame and see what the box must be.'],
+        hintLadder: ['The box hides the missing part.', 'Build the whole frame. Then read what the box hides.'],
         errorTags: ['concept-misconception', 'task-comprehension'],
         authorMeta: metaOf('partner-box'),
       };
@@ -515,6 +655,9 @@ export function allWaysToMake(opts: PartnerOpts): ItemGen {
       const scene = `an empty frame of ${String(total)}`;
       const draft: ItemDraft = {
         type: 'reasoning',
+        // GIVEN, kept: the question names the whole ("Show all the ways to make
+        // 5") and the picture really is an empty frame of that size. The answer
+        // is the SET of partner pairs, which the alt does not touch.
         prompt: scenePrompt(scene, `Show all the ways to make ${String(total)}.`),
         figure: tenFrame(0, { size: total, alt: scene }),
         answer: { value: pairs.join('; '), acceptableForms: [], validation: 'set' },
@@ -522,7 +665,7 @@ export function allWaysToMake(opts: PartnerOpts): ItemGen {
         strand: 'noncomputational',
         isRetrieval: false,
         generator: { templateId: 'a_all_ways_v1', params: { total }, seed: r.uint() },
-        hintLadder: ['Start with none on this side, then move one over each time.', 'Keep going until that side is full.'],
+        hintLadder: ['Start with none on this side. Move one over each time.', 'Keep going until that side is full.'],
         errorTags: ['task-comprehension', 'concept-misconception'],
         authorMeta: metaOf('make-all-ways'),
       };
@@ -568,7 +711,16 @@ export function neighbourNumber(opts: NeighbourOpts): ItemGen {
           : kind === 'after'
             ? `What number comes after ${String(n)}?`
             : `What number goes between ${String(n)} and ${String(n + 2)}?`;
-      const scene = 'a number path with one number missing';
+      // "ONE number missing" SPEAKS THE ANSWER whenever the answer is 1. This
+      // string is the figure's alt as well as the bracket, band A autoplays it,
+      // and the spoken gate's G3 rule normalises the number WORD "one" to 1 —
+      // correctly, because a pre-reader hears no difference. Measured 453 leaks
+      // in 4,000 draws of `{kind:'before', min:2}`, against 0 for `before` at
+      // min 3, `after` and `between`, so the probe discriminates rather than
+      // firing everywhere. Latent rather than live (no shipped week drew the
+      // leaking configuration), and now unreachable by construction: the scene
+      // counts nothing. A number word is a number, wherever it appears (L48).
+      const scene = 'a number path with a gap in it';
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, question),
@@ -620,10 +772,13 @@ export function pickExtreme(opts: { which: 'smallest' | 'biggest'; min: number; 
         prompt: scenePrompt(scene, `Tap the group with the ${which === 'smallest' ? 'fewest' : 'most'}.`),
         figure: counterGroups(
           picked.map((c, i) => ({ count: c, noun: nouns[i], label: nouns[i] })),
-          { relation: 'compare', alt: scene, asserts: assertsParam('a', 'group:0') },
+          // ASKS: which group has fewest/most. Listing the three counts ranks
+          // the groups aloud, and the ranking IS the item; the kinds are what
+          // the picture looks like.
+          { relation: 'compare', alt: `groups to compare: ${andList(nouns)}`, asserts: assertsParam('a', 'group:0') },
         ),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${nouns[targetIdx]}`], validation: 'choice-key' },
+        answer: { value: correctKey, acceptableForms: [`the ${nouns[targetIdx]}`, nouns[targetIdx]], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -677,13 +832,46 @@ export function patternNext(opts: { kind: 'AB' | 'ABB' | 'AAB'; length?: number 
       const [nounA, nounB] = twoNouns(r);
       const nouns = [nounA, nounB];
       const run = Array.from({ length: len }, (_, i) => patternAt(kind, i));
+      /**
+       * BOTH kinds must appear in the printed run, and this guard is load-bearing
+       * on the SPOKEN gate rather than on tidiness.
+       *
+       * The keyed option is now the singular ("the duck") and the strip prints
+       * singulars, so the answer's own token IS in the scene on every draw —
+       * measured 3,000/3,000. What stops that being a band-A audio leak is rule
+       * G4: a scene that names EVERY option has singled out none. That holds only
+       * while the run contains both nouns. `AAB` at length 2 prints "duck, duck",
+       * the distractor drops out of the scene, G4 stops firing and the keyed
+       * answer is read aloud before the question (L48).
+       *
+       * A numeric floor would express this indirectly; this asserts the property
+       * the gate actually depends on, and throws at draw time like `ask()` does,
+       * so it cannot be violated silently by a future week. Every shipped caller
+       * draws length >= 4.
+       */
+      if (new Set(run).size < 2) {
+        throw new Error(
+          `earlynumber patternNext: a ${kind} run of ${String(len)} prints only one kind, ` +
+            `so the scene names only the keyed option and G4 cannot suppress the R1 leak`,
+        );
+      }
       const nextIdx = patternAt(kind, len);
       const nextNoun = nouns[nextIdx];
       const otherNoun = nouns[1 - nextIdx];
       const scene = run.map((slot) => unitFor(1, nouns[slot])).join(', ');
-      const { choices, correctKey } = makeChoices(r, `the ${nextNoun}`, [
+      // SINGULAR, because exactly ONE thing comes next. The strip is printed with
+      // `unitFor(1, …)` ("duck, leaf, leaf, …"), so keying the bare plural made
+      // the options read "the ducks" / "the leaves" — and at band A those are
+      // SPOKEN: "What comes next in the pattern? The ducks." A pre-reader is
+      // being asked for one element and hears a plural for it. Found by the A11
+      // author reading their own generated week; no gate could see it, because
+      // `acceptableForms` below still carries the plural that
+      // `a_pattern_next_v1` recomputes, so QG-11 was green either way.
+      const nextOne = unitFor(1, nextNoun);
+      const otherOne = unitFor(1, otherNoun);
+      const { choices, correctKey } = makeChoices(r, `the ${nextOne}`, [
         {
-          text: `the ${otherNoun}`,
+          text: `the ${otherOne}`,
           errorTag: 'concept-misconception',
           rationale: 'Swaps every time - reads any pattern as a simple back-and-forth.',
         },
@@ -691,12 +879,25 @@ export function patternNext(opts: { kind: 'AB' | 'ABB' | 'AAB'; length?: number 
       const draft: ItemDraft = {
         type: 'classification',
         prompt: scenePrompt(scene, 'What comes next in the pattern?'),
+        // GIVEN, kept: the alt IS the run the child is shown ("duck, leaf,
+        // leaf, duck, leaf, leaf"), and the run stops BEFORE the answer. It
+        // names both nouns on offer and so cannot say which comes next — the
+        // pattern is the data, and reading it is the whole task. Carries no
+        // count anywhere.
         figure: counterGroups(
           run.map((slot) => ({ count: 1, noun: nouns[slot] })),
           { alt: scene },
         ),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${nextNoun}`], validation: 'choice-key' },
+        // The singular pair is what the child sees and taps; the plural pair is
+        // what `a_pattern_next_v1` returns, and QG-11 needs one of these to match
+        // it (validator.ts: `wholeMatch(correct.text) || acceptableForms.some(…)`).
+        // Both renderings of the same answer, exactly as the QG-11 article fix did.
+        answer: {
+          value: correctKey,
+          acceptableForms: [`the ${nextOne}`, nextOne, `the ${nextNoun}`, nextNoun],
+          validation: 'choice-key',
+        },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -731,9 +932,12 @@ export function pictureJoin(opts: { min: number; max: number; maxTotal?: number 
       const draft: ItemDraft = {
         type: 'word-problem',
         prompt: scenePrompt(scene, `How many ${noun} in all?`),
+        // ASKS: how many in all. The question states no number at all, so
+        // "5 ducks and 3 ducks together" hands over both addends and leaves
+        // only the sum — and at this band the counting IS the item.
         figure: counterGroups(
           [{ count: a, noun }, { count: b, noun }],
-          { relation: 'join', alt: scene, asserts: assertsAnswer },
+          { relation: 'join', alt: `two groups of ${noun} put together`, asserts: assertsAnswer },
         ),
         answer: {
           value: String(a + b),
@@ -764,9 +968,18 @@ export function pictureTakeAway(opts: { min: number; max: number }): ItemGen {
       const draft: ItemDraft = {
         type: 'word-problem',
         prompt: scenePrompt(scene, `How many ${noun} are left?`),
+        // ASKS: how many are LEFT. The crossed-out count stays — it is the
+        // removal, it is drawn as crosses on the page, and it is not the answer
+        // — but the starting total goes, because "5 ducks with 3 crossed out"
+        // spoken aloud leaves nothing to count.
         figure: counterGroups(
           [{ count: a, noun }],
-          { relation: 'remove', crossedOut: b, alt: scene, asserts: assertsAnswerOf('remaining') },
+          {
+            relation: 'remove',
+            crossedOut: b,
+            alt: `some ${noun} with ${String(b)} crossed out`,
+            asserts: assertsAnswerOf('remaining'),
+          },
         ),
         answer: {
           value: String(a - b),
@@ -811,9 +1024,22 @@ export function joinOrTakeAway(opts: { min: number; max: number }): ItemGen {
       const draft: ItemDraft = {
         type: 'classification',
         prompt: scenePrompt(scene, 'Does this picture add or take away?'),
+        // ASKS: add or take away — a structural read of the picture, so the
+        // words "joined" / "crossed out" are the picture's APPEARANCE and stay
+        // (a screen-reader child gets exactly what a sighted one sees, and
+        // naming the move is still the child's). The counts are dropped anyway:
+        // they are no part of this question, and the same drawing is reused by
+        // `pictureJoin`/`pictureTakeAway`, where they would be a leak.
         figure: isJoin
-          ? counterGroups([{ count: a, noun }, { count: b, noun }], { relation: 'join', alt: scene })
-          : counterGroups([{ count: a, noun }], { relation: 'remove', crossedOut: b, alt: scene }),
+          ? counterGroups([{ count: a, noun }, { count: b, noun }], {
+              relation: 'join',
+              alt: `two groups of ${noun} joined`,
+            })
+          : counterGroups([{ count: a, noun }], {
+              relation: 'remove',
+              crossedOut: b,
+              alt: `some ${noun} with ${String(b)} crossed out`,
+            }),
         choices,
         answer: {
           value: correctKey,
@@ -846,6 +1072,9 @@ export function teenTenAnd(opts: { min?: number; max?: number } = {}): ItemGen {
       const scene = `a full frame of ten and ${countNoun(o, 'counters')} more`;
       const draft: ItemDraft = {
         type: 'computation',
+        // GIVENS, kept: the question is "Ten and 3 more. What number?", so both
+        // the full ten and the extras are stated before the picture is. The
+        // answer (the teen numeral) appears nowhere in the alt.
         prompt: scenePrompt(scene, `Ten and ${String(o)} more. What number?`),
         figure: tenFrame(10 + o, { frames: 2, alt: scene, asserts: assertsAnswer }),
         answer: { value: String(10 + o), acceptableForms: numForms(10 + o), validation: 'exact-numeric' },
@@ -872,7 +1101,14 @@ export function teenExtra(opts: { min?: number; max?: number } = {}): ItemGen {
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, `${String(n)} is ten and how many more?`),
-        figure: tenFrame(n, { frames: 2, alt: scene, asserts: assertsParam('n', 'filled') }),
+        // ASKS: how many MORE than ten — which is exactly `n - 10`, the number
+        // the old alt said out loud. The full ten stays (the question names it,
+        // and one filled frame is what the picture looks like).
+        figure: tenFrame(n, {
+          frames: 2,
+          alt: 'a full frame of ten and some more counters',
+          asserts: assertsParam('n', 'filled'),
+        }),
         answer: { value: String(n - 10), acceptableForms: numForms(n - 10), validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -939,17 +1175,27 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
           : trap === 'teen-ty'
             ? `two frames holding ${countNoun(n, 'counters')}`
             : `${countNoun(Math.floor(n / 10), 'towers')} of ten and ${countNoun(n % 10, 'loose blocks')}`;
+      // ASKS: which numeral the picture shows. Every branch's scene named that
+      // numeral outright — and the digit-swap branch named it TWICE over, since
+      // "2 towers of ten and 4 loose blocks" reads out twenty-four in the exact
+      // order that decides the 24/42 trap the item exists to pose.
+      const altOf =
+        trap === 'six-nine'
+          ? 'some buttons in a row'
+          : trap === 'teen-ty'
+            ? 'two ten-frames with some counters in them'
+            : 'some towers of ten and some loose blocks';
       const figure =
         trap === 'six-nine'
-          ? counters(n, 'buttons', { arrangement: 'in a row', alt: scene, asserts: assertsParam('n') })
+          ? counters(n, 'buttons', { arrangement: 'in a row', alt: altOf, asserts: assertsParam('n') })
           : trap === 'teen-ty'
-            ? tenFrame(n, { frames: 2, size: 10, alt: scene, asserts: assertsParam('n') })
+            ? tenFrame(n, { frames: 2, size: 10, alt: altOf, asserts: assertsParam('n') })
             : counterGroups(
                 [
                   ...Array.from({ length: Math.floor(n / 10) }, () => ({ count: 10, noun: 'blocks' })),
                   ...(n % 10 > 0 ? [{ count: n % 10, noun: 'blocks' }] : []),
                 ],
-                { arrangement: 'towers', alt: scene, asserts: assertsParam('n') },
+                { arrangement: 'towers', alt: altOf, asserts: assertsParam('n') },
               );
       const draft: ItemDraft = {
         type: 'representation',
@@ -987,32 +1233,72 @@ export function compareSets(opts: { which: 'more' | 'fewer'; min: number; max: n
     drawUniqueItem(rng, guard, (r) => {
       const a = r.int(opts.min, opts.max);
       let b = r.int(opts.min, opts.max);
-      if (b === a) b = a === opts.max ? a - 1 : a + 1;
+      // ONE DRAW IN FIVE MAKES THE TWO ROWS EQUAL, so "they are the same" can
+      // actually be the answer.
+      //
+      // This used to nudge `b !== a` on every draw, which offered that option on
+      // every exposure and keyed it on none — a DEAD OPTION (LEARNINGS L38). A
+      // child who meets the page twice learns to strike it out, and a three-way
+      // question collapses to a coin flip. It is also the wrong pedagogy here:
+      // "same" is a third of this band's own concept (FILL-ARCHITECTURE §3 row
+      // A5 is "More, fewer, same", whose Day 5 sorts pairs into all three), so an
+      // equal draw is content, not an edge case. Same fix, same reasoning as
+      // `compareWhole` in lib/items.ts.
+      const equalDraw = r.int(1, 5) === 1;
+      if (equalDraw) b = a;
+      else if (b === a) b = a === opts.max ? a - 1 : a + 1;
       const [nounA, nounB] = twoNouns(r);
-      const winner = which === 'more' ? (a > b ? nounA : nounB) : a < b ? nounA : nounB;
-      const loser = winner === nounA ? nounB : nounA;
       const scene = `a row of ${countNoun(a, nounA)} above a row of ${countNoun(b, nounB)}`;
-      const { choices, correctKey } = makeChoices(r, `the ${winner}`, [
-        {
-          text: `the ${loser}`,
-          errorTag: 'concept-misconception',
-          rationale: 'Judged by how the row LOOKS instead of matching one to one.',
-        },
-        {
-          text: 'they are the same',
-          errorTag: 'representation-misread',
-          rationale: 'Treats two rows of the same length as the same number.',
-        },
-      ]);
+      const SAME = 'they are the same';
+      const winner = a === b ? SAME : which === 'more' ? (a > b ? nounA : nounB) : a < b ? nounA : nounB;
+      const correctText = a === b ? SAME : `the ${winner}`;
+      const { choices, correctKey } =
+        a === b
+          ? makeChoices(r, SAME, [
+            {
+              text: `the ${nounA}`,
+              errorTag: 'concept-misconception' as ErrorTag,
+              rationale: 'Picks a row by how it LOOKS when the two match one for one.',
+            },
+            {
+              text: `the ${nounB}`,
+              errorTag: 'concept-misconception' as ErrorTag,
+              rationale: 'Picks the other row by look; matching one for one leaves none over.',
+            },
+          ])
+          : makeChoices(r, `the ${winner}`, [
+            {
+              text: `the ${winner === nounA ? nounB : nounA}`,
+              errorTag: 'concept-misconception' as ErrorTag,
+              rationale: 'Judged by how the row LOOKS instead of matching one to one.',
+            },
+            {
+              text: SAME,
+              errorTag: 'representation-misread' as ErrorTag,
+              rationale: 'Treats two rows of the same length as the same number.',
+            },
+          ]);
       const draft: ItemDraft = {
         type: 'classification',
         prompt: scenePrompt(scene, `Which row has ${which}?`),
+        // ASKS: which row has more/fewer. Two counts spoken side by side settle
+        // it without a glance at the picture, and the one-to-one matching this
+        // item exists to build never happens. The two rows and their kinds are
+        // what the picture looks like; how long each one is, is the answer.
         figure: counterGroups(
           [{ count: a, noun: nounA, label: nounA }, { count: b, noun: nounB, label: nounB }],
-          { relation: 'compare', alt: scene, asserts: assertsParam('a', 'group:0') },
+          {
+            relation: 'compare',
+            alt: `a row of ${nounA} above a row of ${nounB}`,
+            asserts: assertsParam('a', 'group:0'),
+          },
         ),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${winner}`], validation: 'choice-key' },
+        // Deduped: on the one-in-five EQUAL draw `correctText` and `winner` are
+        // both "they are the same", so the accepted list shipped the same string
+        // twice. Harmless to matching, but it makes a duplicate look intentional
+        // to anyone reading a generated pack.
+        answer: { value: correctKey, acceptableForms: [...new Set([correctText, winner])], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -1046,7 +1332,16 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
   const { attr } = opts;
   const SCENES: Record<MeasureAttr, { things: ReadonlyArray<readonly [string, string]>; unit: string; question: string }> = {
     length: {
-      things: [['red ribbon', 'blue ribbon'], ['green string', 'yellow string'], ['long stick', 'short stick']],
+      // NEVER name a thing after the attribute the item asks about. The pool used
+      // to carry ['long stick', 'short stick'] against the question "Which one is
+      // longer?", which fails both ways round: on the 74% of draws where the long
+      // stick was keyed, "tap the one called long" scored full marks without any
+      // measuring; and on the rest the page contradicted itself — "the short stick
+      // measures 8 steps, the long stick 3. Which one is longer?" keys the SHORT
+      // stick, which is not a discrimination, it is an absurdity a five-year-old
+      // would be right to object to. Distinguish the pair by colour, which is
+      // orthogonal to length.
+      things: [['red ribbon', 'blue ribbon'], ['green string', 'yellow string'], ['brown stick', 'grey stick']],
       unit: 'steps',
       question: 'Which one is longer?',
     },
@@ -1065,9 +1360,29 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
     drawUniqueItem(rng, guard, (r) => {
       const scene0 = SCENES[attr];
       const [thingA, thingB] = r.pick(scene0.things);
-      const a = r.int(4, 9);
+      let a = r.int(4, 9);
       let b = r.int(2, 8);
       if (b === a) b = a > 4 ? a - 2 : a + 2;
+      /**
+       * WHICH THING GETS THE LARGER COUNT IS DRAWN. Without this the answer was
+       * the FIRST THING NAMED on 73.5% of draws (measured, 6,000 draws per
+       * attribute): `a` is drawn 4-9 against `b` at 2-8, and the tie nudge sends
+       * four of its five cases to `a` as well. At band A, where the scene is read
+       * aloud, that is a page a child scores by tapping whatever the audio names
+       * first.
+       *
+       * For the WEIGHT pool it was worse than a guessable page. The pairs are
+       * bag/ball, book/leaf and rock/feather, and the first-named is the
+       * heavier-LOOKING thing in each — so the generator confirmed "the thing
+       * that looks heavier is heavier" 73% of the time, which is precisely the
+       * misconception A20 exists to unseat (FILL-ARCHITECTURE §3: "bigger !=
+       * heavier"). A generator that teaches against its own week is worse than
+       * one that is merely guessable.
+       *
+       * Swapping the COUNTS rather than the things keeps the scene sentence's
+       * word order fixed, so nothing about the prose or the figure changes shape.
+       */
+      if (r.chance(0.5)) { const t = a; a = b; b = t; }
       const winner = a > b ? thingA : thingB;
       const loser = a > b ? thingB : thingA;
       const verb = attr === 'length' ? 'measures' : attr === 'weight' ? 'balances' : 'fills';
@@ -1082,6 +1397,9 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
       const draft: ItemDraft = {
         type: 'classification',
         prompt: scenePrompt(scene, scene0.question),
+        // ASKS: which is longer / heavier / holds more. Both measurements read
+        // aloud IS the comparison; what the picture looks like is two things
+        // laid against one shared unit, which is what the alt now says.
         figure:
           attr === 'length'
             ? barModel(
@@ -1089,17 +1407,25 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
                   { label: thingA, segments: [{ value: a, fill: 'solid' }] },
                   { label: thingB, segments: [{ value: b, fill: 'soft' }] },
                 ],
-                { scaleMax: Math.max(a, b), alt: scene, asserts: assertsParam('a', 'bar:0') },
+                {
+                  scaleMax: Math.max(a, b),
+                  alt: `the ${thingA} beside the ${thingB}, both measured in ${scene0.unit}`,
+                  asserts: assertsParam('a', 'bar:0'),
+                },
               )
             : counterGroups(
                 [
                   { count: a, noun: scene0.unit, label: thingA },
                   { count: b, noun: scene0.unit, label: thingB },
                 ],
-                { relation: 'compare', alt: scene, asserts: assertsParam('a', 'group:0') },
+                {
+                  relation: 'compare',
+                  alt: `the ${thingA} beside the ${thingB}, both measured in ${scene0.unit}`,
+                  asserts: assertsParam('a', 'group:0'),
+                },
               ),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${winner}`], validation: 'choice-key' },
+        answer: { value: correctKey, acceptableForms: [`the ${winner}`, winner], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -1183,7 +1509,15 @@ export function shapeName(opts: { tilt?: boolean } = {}): ItemGen {
       const draft: ItemDraft = {
         type: 'classification',
         prompt: scenePrompt(scene, 'Tap the name of this shape.'),
-        figure: shapeFigure(shape.build(rotation), { alt: scene }),
+        // ASKS: the shape's NAME, so an alt reading "a triangle" is the answer
+        // verbatim. Naming the property instead ("three straight sides") is the
+        // same disclosure one step back, because the name is exactly what the
+        // property is being taught to yield. So the alt says what is left: a
+        // flat straight-sided shape, and whether it has been turned — which is
+        // the A7 point and is not what the question asks.
+        figure: shapeFigure(shape.build(rotation), {
+          alt: opts.tilt ? 'a flat shape turned on its corner' : 'a flat shape with straight sides',
+        }),
         choices,
         answer: { value: correctKey, acceptableForms: [shape.name], validation: 'choice-key' },
         difficulty,
@@ -1212,7 +1546,12 @@ export function shapeCorners(opts: { tilt?: boolean } = {}): ItemGen {
       const draft: ItemDraft = {
         type: 'computation',
         prompt: scenePrompt(scene, 'How many corners does it have?'),
-        figure: shapeFigure(shape.build(rotation), { alt: scene }),
+        // ASKS: how many corners. "A triangle" never says "3", but a child who
+        // knows the name knows the count — which is the item's whole point — so
+        // the name is a leak here just as the count would be.
+        figure: shapeFigure(shape.build(rotation), {
+          alt: opts.tilt ? 'a flat shape turned round' : 'a flat shape with straight sides',
+        }),
         answer: {
           value: String(shape.corners),
           acceptableForms: numForms(shape.corners),
@@ -1268,7 +1607,7 @@ export function solidChoice(opts: { test: 'rolls' | 'stacks' }): ItemGen {
         type: 'classification',
         prompt: ask(test === 'rolls' ? 'Which one rolls?' : 'Which one can we stack?'),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${correct.name}`], validation: 'choice-key' },
+        answer: { value: correctKey, acceptableForms: [`the ${correct.name}`, correct.name], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -1314,19 +1653,52 @@ export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number 
         const correct = a - b;
         const wrong = correct + 1;
         const scene = `${countNoun(a, noun)} with ${String(b)} crossed out`;
+        // A THIRD OPTION, AND ITS RANK ROTATES.
+        //
+        // With only {correct, puppet's number} on the page, the prompt names the
+        // puppet's number — so "tap the one the puppet did not say" scores full
+        // marks with no counting at all, and the truth sits at a constant rank
+        // besides (LEARNINGS L38/L43). The third value is an honest slip in the
+        // OTHER direction (one step too many back), and which of the two flanks
+        // the answer is drawn independently, so the truth lands middle or top in
+        // turn rather than always the same place.
+        const overshoot = correct - 1;
+        const flankBelow = overshoot >= 0 && r.int(0, 1) === 1;
         const { choices, correctKey } = makeChoices(r, String(correct), [
           {
             text: String(wrong),
-            errorTag: 'procedure-slip',
+            errorTag: 'procedure-slip' as ErrorTag,
             rationale: 'Counted back starting ON the first number, so one step was never taken.',
           },
+          flankBelow
+            ? {
+              text: String(overshoot),
+              errorTag: 'procedure-slip' as ErrorTag,
+              rationale: 'Took one step back too many — the count carried on past the last cross.',
+            }
+            : {
+              text: String(wrong + 1),
+              errorTag: 'procedure-slip' as ErrorTag,
+              rationale: 'Started on the first number AND stopped a step early.',
+            },
         ]);
         const draft: ItemDraft = {
           type: 'error-analysis',
           prompt: scenePrompt(scene, `${puppet} says ${String(wrong)}. Tap the right number.`),
+          // ASKS: the true count-back result. The puppet's wrong number is in
+          // the question and stays there — that is the form. What goes is the
+          // starting total, which with the crossed-out count spoken beside it
+          // performs the subtraction the child is meant to make. The crosses
+          // stay: they are drawn on the page and they are the removal, not the
+          // answer.
           figure: counterGroups(
             [{ count: a, noun }],
-            { relation: 'remove', crossedOut: b, alt: scene, asserts: assertsParam('a', 'group:0') },
+            {
+              relation: 'remove',
+              crossedOut: b,
+              alt: `some ${noun} with ${String(b)} crossed out`,
+              asserts: assertsParam('a', 'group:0'),
+            },
           ),
           choices,
           answer: { value: correctKey, acceptableForms: [String(correct)], validation: 'choice-key' },
@@ -1352,17 +1724,35 @@ export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number 
         const n = r.pick(teens);
         const wrong = Number(String(n).split('').reverse().join(''));
         const scene = `a full frame of ten and ${countNoun(n - 10, 'counters')} more`;
+        // Third option for the same reason as the count-back branch: with only
+        // the truth and the puppet's number on a page that NAMES the puppet's
+        // number, no counting is required. "One counter miscounted" is the
+        // honest band-A slip beside a digit reversal, and which side it falls on
+        // is drawn independently so the truth does not sit at a fixed rank.
+        const near = r.int(0, 1) === 1 ? n + 1 : n - 1;
         const { choices, correctKey } = makeChoices(r, String(n), [
           {
             text: String(wrong),
-            errorTag: 'representation-misread',
+            errorTag: 'representation-misread' as ErrorTag,
             rationale: 'Writes the digits in the order the teen name says them.',
+          },
+          {
+            text: String(near),
+            errorTag: 'procedure-slip' as ErrorTag,
+            rationale: 'Miscounted the loose counters by one past the full ten.',
           },
         ]);
         const draft: ItemDraft = {
           type: 'error-analysis',
           prompt: scenePrompt(scene, `${puppet} wrote ${String(wrong)}. Tap the right number.`),
-          figure: tenFrame(n, { frames: 2, alt: scene, asserts: assertsParam('n') }),
+          // ASKS: the true teen number. "A full frame of ten and 3 more" IS
+          // thirteen, said aloud, which decides the 13/31 reversal the item
+          // poses. The full ten stays — it is the picture's fixed structure.
+          figure: tenFrame(n, {
+            frames: 2,
+            alt: 'a full frame of ten and some more counters',
+            asserts: assertsParam('n'),
+          }),
           choices,
           answer: { value: correctKey, acceptableForms: [String(n)], validation: 'choice-key' },
           difficulty,
@@ -1388,11 +1778,38 @@ export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number 
               ? 'One object was touched twice, so the count ran one too far.'
               : 'One object was never touched, so the count stopped one too soon.',
         },
+        // Third option, rank rotating — see the count-back branch. Without it the
+        // page is answered by "tap the number the puppet did not say", and the
+        // truth sits at a constant rank (min for double-count, max for skip).
+        // Both flanks are honest: the same slip made twice, or the opposite slip.
+        (() => {
+          const twice = slip === 'double-count' ? n + 2 : n - 2;
+          const opposite = slip === 'double-count' ? n - 1 : n + 1;
+          const useTwice = twice >= 0 && r.int(0, 1) === 1;
+          return {
+            text: String(useTwice ? twice : opposite),
+            errorTag: 'procedure-slip' as ErrorTag,
+            rationale: useTwice
+              ? slip === 'double-count'
+                ? 'Two objects were touched twice, so the count ran two too far.'
+                : 'Two objects were never touched, so the count stopped two too soon.'
+              : slip === 'double-count'
+                ? 'Over-corrected: one object was skipped instead of double-counted.'
+                : 'Over-corrected: one object was counted twice instead of skipped.',
+          };
+        })(),
       ]);
       const draft: ItemDraft = {
         type: 'error-analysis',
         prompt: scenePrompt(scene, `${puppet} says ${String(wrong)}. Tap the right number.`),
-        figure: counters(n, noun, { arrangement: 'scattered', alt: scene, asserts: assertsParam('n') }),
+        // ASKS: the TRUE count, which is precisely what "5 flowers scattered"
+        // said out loud before the question was even reached. The puppet's
+        // number is fine where it is — the question states it deliberately.
+        figure: counters(n, noun, {
+          arrangement: 'scattered',
+          alt: looksLike(noun, 'scattered'),
+          asserts: assertsParam('n'),
+        }),
         choices,
         answer: { value: correctKey, acceptableForms: [String(n)], validation: 'choice-key' },
         difficulty,
@@ -1431,9 +1848,11 @@ export function sortAndTell(opts: { min: number; max: number }): ItemGen {
       const draft: ItemDraft = {
         type: 'reasoning',
         prompt: scenePrompt(scene, 'Sort them, fewest first. Tell how you know.'),
+        // ASKS: the groups in order, fewest first. Three counts read aloud ARE
+        // that order; the kinds are what the picture looks like.
         figure: counterGroups(
           picked.map((c, i) => ({ count: c, noun: nouns[i], label: nouns[i] })),
-          { relation: 'compare', alt: scene, asserts: assertsParam('a', 'group:0') },
+          { relation: 'compare', alt: `groups to count: ${andList(nouns)}`, asserts: assertsParam('a', 'group:0') },
         ),
         answer: { value: order.join(', '), acceptableForms: [], validation: 'manual-review' },
         difficulty,
@@ -1557,7 +1976,16 @@ export const EARLYNUMBER_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
       const unit = PATTERN_UNITS[kind];
       if (!unit) throw new Error(`a_pattern_next_v1: bad kind '${kind}'`);
       const nouns = [str(p, 'nounA'), str(p, 'nounB')];
-      return { correct: nouns[unit[num(p, 'len') % unit.length]] };
+      // SINGULAR, because exactly one thing comes next and that is what the item
+      // keys ("the duck"). The transform used to return the bare PLURAL, which
+      // survived only because `bb-family-test` accepts a keyed option that
+      // CONTAINS the truth — "the ducks" contains "ducks". When the option was
+      // corrected to the singular, that containment broke and the family test
+      // failed 180 times. `bb-family-test` is not in the seven-gate list this
+      // work runs by, which is exactly how a regression hid behind a green
+      // board: the truth a transform returns should be the answer as the child
+      // meets it, not a form that happens to be a substring of it.
+      return { correct: unitFor(1, nouns[unit[num(p, 'len') % unit.length]]) };
     },
   },
   // --- join / take away ----------------------------------------------------
@@ -1579,6 +2007,10 @@ export const EARLYNUMBER_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
       const b = num(p, 'b');
       const first = str(p, 'nounA');
       const second = str(p, 'nounB');
+      // Equal rows are a real draw here (one in five), because "same" is a third
+      // of this band's concept — so neither row has more, and the truth is the
+      // equality itself rather than a noun.
+      if (a === b) return { correct: 'they are the same' };
       const more = a > b ? first : second;
       const fewer = a > b ? second : first;
       return { correct: str(p, 'which') === 'more' ? more : fewer };

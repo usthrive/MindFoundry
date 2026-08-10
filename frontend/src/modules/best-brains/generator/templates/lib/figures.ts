@@ -78,7 +78,7 @@ export function counters(
  * MODELLING only and no assessed item can acquire them by accident.
  */
 export function counterGroups(
-  groups: Array<{ count: number; noun: string; label?: string }>,
+  groups: Array<{ count: number; noun: string; label?: string; spread?: number }>,
   opts: {
     arrangement?: string;
     relation?: 'none' | 'join' | 'remove' | 'compare';
@@ -91,7 +91,15 @@ export function counterGroups(
     type: 'counters',
     alt: opts.alt,
     params: {
-      groups: groups.map((g) => ({ count: g.count, icon: iconFor(g.noun), ...(g.label ? { label: g.label } : {}) })),
+      groups: groups.map((g) => ({
+        count: g.count,
+        icon: iconFor(g.noun),
+        ...(g.label ? { label: g.label } : {}),
+        // Emitted only when supplied, so every existing call produces a
+        // byte-identical figure. See CountersParams.spread — it widens a row's
+        // SPACING (not its counters) and exists for A5's conservation trap.
+        ...(g.spread !== undefined ? { spread: g.spread } : {}),
+      })),
       arrangement: arrangementFor(opts.arrangement ?? 'row'),
       ...(opts.relation ? { relation: opts.relation } : {}),
       ...(opts.crossedOut !== undefined ? { crossedOut: opts.crossedOut } : {}),
@@ -171,11 +179,71 @@ export function barModel(
 export function areaGrid(
   params: {
     rows: number; cols: number; shaded?: number; shadedRows?: number; shadedCols?: number;
+    shadedCells?: number[];
     rowLabels?: string[]; colLabels?: string[]; cellLabels?: string[]; showCounts?: boolean;
   },
   opts: { alt: string; asserts?: FigureAssertion },
 ): BBFigure {
   return { type: 'area-grid', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
+/**
+ * A hundred chart — ten rows of ten, numbered `start`..`start + 99`, with any
+ * squares in `highlight` shaded.
+ *
+ * WHY THIS EXISTS. B1, B10 and B13 ship items that say "On the hundred chart,
+ * what number sits directly BELOW 21?", "Ben shades 44, 54, 64 and 74 on the
+ * hundred chart" and "start at 38, move down one row, then right one square" —
+ * with NO figure at all. Twenty-six such items across live Level B. A child was
+ * being told to read a chart that was never on the screen, and the hint said
+ * "Look at the shaded squares on the chart" beside nothing. Reported by the
+ * owner's six-year-old, who opened the app and could not see it; no gate could,
+ * because the figure census counts `[image: …]` brackets and these items carry
+ * none.
+ *
+ * `highlight` takes the NUMBERS a week names, not indices, so a template can
+ * never shade the wrong square by an off-by-one — the mapping to a row-major
+ * index happens here, once.
+ */
+export function hundredChart(
+  opts: {
+    start?: number;
+    rows?: number;
+    highlight?: number[];
+    /**
+     * NUMBERS TO LEAVE UNPRINTED — and this is the parameter that decides whether
+     * the chart teaches or cheats.
+     *
+     * A fully-labelled chart ANSWERS most of the questions that name it. "On the
+     * hundred chart, what number sits directly BELOW 87?" is a test of
+     * down-a-row-is-ten-more; print every square and the child reads 97 off the
+     * picture without knowing any such thing. That is L33 exactly — the dangerous
+     * figure is the helpful one — and it is why the number-line items ship
+     * `labels: 'none'` with the target as an unlabelled mark.
+     *
+     * So blank the square the item asks for. The chart still shows the structure
+     * that makes the reasoning possible (ten to a row, the column standing
+     * under its neighbour) while the answer stays the child's to work out.
+     */
+    blank?: number[];
+    alt: string;
+    asserts?: FigureAssertion;
+  },
+): BBFigure {
+  const start = opts.start ?? 1;
+  const rows = opts.rows ?? 10;
+  const count = rows * 10;
+  const blank = new Set(opts.blank ?? []);
+  const cells = Array.from({ length: count }, (_, i) =>
+    blank.has(start + i) ? '' : String(start + i),
+  );
+  const highlight = (opts.highlight ?? [])
+    .map((n) => n - start)
+    .filter((i) => i >= 0 && i < count);
+  return areaGrid(
+    { rows, cols: 10, cellLabels: cells, ...(highlight.length ? { shadedCells: highlight } : {}) },
+    opts,
+  );
 }
 
 /**

@@ -329,13 +329,21 @@
  *       and B18's count — the exact substitution §3 exists to prevent. Refused
  *       everywhere, including the script, because drawing it once teaches the
  *       child to expect it.
- *   (v) A HUNDRED CHART CANNOT BE DRAWN HONESTLY ON `sitRowsDown` EITHER. The
- *       chart with its numerals printed is a lookup table for the answer: the
- *       child slides a finger and reads, which is what the page is asking them
- *       to work out. A chart with the numerals hidden is not a hundred chart.
- *  (vi) THE ASSESSED PAGES THEREFORE CARRY NO PICTURE AT ALL. Level B's gate
- *       profile asks for none (`pictorialPerDay: 0`), so this costs the pack
- *       nothing it was required to have. It is a conclusion, not a shortcut.
+ *   (v) A HUNDRED CHART CANNOT BE DRAWN HONESTLY ON `sitRowsDown` — WITH ONE
+ *       ROW MISSING. The chart with its numerals printed is a lookup table for
+ *       the answer: the child slides a finger and reads, which is what the page
+ *       is asking them to work out. A chart with the numerals hidden is not a
+ *       hundred chart. The option this note missed is the one now shipped: print
+ *       every numeral EXCEPT the ten in the row the finger lands in. The start
+ *       is there to be found, the columns line up, the rows the finger passes
+ *       through are printed — and the landing is written nowhere, so it is
+ *       climbed rather than read. See `slideChart`, below, for why blanking the
+ *       landing SQUARE alone would not have closed the same lookup.
+ *  (vi) THE ASSESSED PAGES CARRY NO PICTURE EXCEPT THAT CHART, AND ONLY WHERE
+ *       THE PROMPT NAMES ONE. Nothing in (i)-(iv) was reopened: no tens are ever
+ *       drawn on a working page, and Level B's gate profile asks for no pictures
+ *       at all (`pictorialPerDay: 0`), so the chart is here because a page that
+ *       says "on the hundred chart" must show one, not to satisfy a quota.
  *
  * THE THREE SURFACES THAT DO CARRY A PICTURE ARE THE THREE WHERE THE ANSWER IS
  * ALREADY IN VIEW: two script segments and the modeled guided example. `tenBlocks` shows the
@@ -352,8 +360,11 @@
  * ALSO REFUSED: any mark, ring or strike-through (`counterGroups` exposes
  * `crossedOut` and nothing here removes anything, so it is never passed); a
  * picture on the discrimination, where three numbers are on offer and a drawing
- * would rank them; and a picture on the puzzle, where the landing IS the
- * deduction.
+ * would rank them; and any shading on the chart, since a shaded start would mark
+ * the column the child is meant to find and a shaded finish would BE the answer.
+ * The puzzle DOES take the chart, because the row it blanks is the very row the
+ * prompt names — the landing is the deduction, and an unprinted row is what
+ * makes the deduction necessary rather than optional.
  *
  * ── 7. WHAT COULD BE SCORED HERE WITHOUT DOING THE TENS (kit §E2.11) ───────
  *
@@ -502,7 +513,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { counterGroups } from '../lib/figures';
+import { counterGroups, hundredChart } from '../lib/figures';
 import type { BBFigure, PlaceName } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -903,27 +914,106 @@ const wTensAndOnes = asWarmup(
   B2,
 );
 
+// ---------------------------------------------------------------------------
+// THE CHART, DRAWN — the finding that reopened §6 (v)
+//
+// §6 (v) concluded that a hundred chart cannot be drawn honestly on these pages,
+// and the reasoning was sound on the two options it had: printed in full the
+// chart is a lookup table for the answer, and with its numerals hidden it is not
+// a hundred chart. What it did not have was the third option, and the cost of
+// having neither was paid by a six-year-old who opened a page reading "on the
+// hundred chart" and found nothing on the screen to put a finger on. A page that
+// names an object and shows none is not withholding a scaffold; it is asking a
+// question about a thing that is not there.
+//
+// The third option is to print the chart and leave ONE ROW unprinted: the row
+// the finger lands in. Every numeral outside that row is drawn, so it is a
+// hundred chart in the only sense a child cares about — the starting number is
+// there to be found, the columns line up, ten to a row. But the landing cannot
+// be read, because it is not written anywhere.
+//
+// BLANKING ONLY THE LANDING SQUARE WOULD NOT HAVE DONE. Leave its row-mates
+// printed and the empty square sits between two numerals a square apart; the
+// child reads the neighbours and never asks what a row is worth. That is the
+// same lookup §6 (v) refused, one step longer. A blanked row closes it: the
+// child either climbs the tens, or counts across from the row's own start, and
+// both are this week's claim rather than a way around it.
+//
+// WHAT THE PAGE STILL WILL NOT SHOW. No square is ever shaded here, because a
+// shaded start would mark the column and a shaded finish would BE the answer.
+// The chart carries no `asserts` either: the landing is not drawn, so the
+// picture makes no claim about the answer that QG-13 could weigh — and saying
+// so is more honest than asserting something the drawing does not say.
+// ---------------------------------------------------------------------------
+
+/** The ten squares of the row holding `v`, on a chart that starts at 1. */
+function chartRowOf(v: number): number[] {
+  const first = Math.floor((v - 1) / 10) * 10 + 1;
+  return Array.from({ length: 10 }, (_, i) => first + i);
+}
+
+const CHART_ALT = 'a hundred chart in rows of ten, with one row of squares left empty';
+
+/**
+ * The chart for a slide that starts at `a` and puts `b` on. The landing's row is
+ * the unprinted one; `a` is always at least a whole row above it, so the number
+ * the PROMPT prints is never one of the squares left empty.
+ */
+function slideChart(a: number, b: number): BBFigure {
+  const landing = a + b;
+  if (b <= 0 || b % 10 !== 0) {
+    throw new Error(`b10 slideChart: ${b} is not a whole-ten slide, so no row is the landing row`);
+  }
+  if (chartRowOf(landing).includes(a)) {
+    throw new Error(`b10 slideChart: blanking ${landing}'s row would rub out the printed start ${a}`);
+  }
+  if (landing > 100) {
+    throw new Error(`b10 slideChart: ${landing} runs off the hundred chart`);
+  }
+  return hundredChart({ blank: chartRowOf(landing), alt: CHART_ALT });
+}
+
+/**
+ * Attach a figure built from the item's OWN `generator.params` — the numbers its
+ * answer was computed from, so the picture cannot disagree with it. A local
+ * wrapper because `situations.ts` carries no `figure` slot and lib/ is not this
+ * week's to edit; it takes no rng draw, so the surface the guard registered is
+ * unchanged.
+ */
+function withFigure(base: ItemGen, build: (params: Params) => BBFigure): ItemGen {
+  return (rng, guard, difficulty) => {
+    const d = base(rng, guard, difficulty);
+    return d.generator ? { ...d, figure: build(d.generator.params) } : d;
+  };
+}
+
+const num = (p: Params, k: string): number => Number(p[k]);
+
 /** B1 — one row down the hundred chart, which is B1's step and stays B1's. */
-const wStepDown = asWarmup(
-  situation({
-    situationType: 'rate-of-change',
-    cognitiveOp: 'chart-one-row-down',
-    draw: (r) => {
-      const n = r.int(12, 88);
-      return {
-        prompt: `On the hundred chart, which number sits one row below ${fmtInt(n)}?`,
-        answerValue: String(n + 10),
-        templateId: 'retr_chart_below_v1',
-        params: { n },
-        hints: [
-          'What does one row down the chart add to a number?',
-          'A row down is one whole ten, so the tens digit climbs by one.',
-        ],
-        errorTags: ['procedure-slip', 'representation-misread'],
-      };
-    },
-  }),
-  B1,
+const wStepDown = withFigure(
+  asWarmup(
+    situation({
+      situationType: 'rate-of-change',
+      cognitiveOp: 'chart-one-row-down',
+      draw: (r) => {
+        const n = r.int(12, 88);
+        return {
+          prompt: `On the hundred chart, which number sits one row below ${fmtInt(n)}?`,
+          answerValue: String(n + 10),
+          templateId: 'retr_chart_below_v1',
+          params: { n },
+          hints: [
+            'What does one row down the chart add to a number?',
+            'A row down is one whole ten, so the tens digit climbs by one.',
+          ],
+          errorTags: ['procedure-slip', 'representation-misread'],
+        };
+      },
+    }),
+    B1,
+  ),
+  // One row down, so the landing is `n + 10` and its row is the empty one.
+  (p) => slideChart(num(p, 'n'), 10),
 );
 
 /**
@@ -1026,25 +1116,31 @@ const sitTensArrive = situation({
 // on the page" fails here — which is half of why the page is in the pack (§7).
 // ---------------------------------------------------------------------------
 
-const sitRowsDown = situation({
-  situationType: 'rate-of-change',
-  cognitiveOp: 'slide-down-the-chart',
-  draw: (r) => {
-    const [start, rows] = r.pick(CHART_ROWS);
-    const name = one(r);
-    return {
-      prompt: `${name} puts a finger on ${fmtInt(start)} on the hundred chart. The finger slides down ${countNoun(rows, 'rows')}. Which number is under it now?`,
-      answerValue: String(start + 10 * rows),
-      templateId: 'add_within_100_v1',
-      params: { a: start, b: 10 * rows },
-      hints: [
-        'Is one row down worth a single one, or a whole ten?',
-        'Work out what the rows are worth in all, then put that on.',
-      ],
-      errorTags: ['representation-misread', 'procedure-slip'],
-    };
-  },
-});
+const sitRowsDown = withFigure(
+  situation({
+    situationType: 'rate-of-change',
+    cognitiveOp: 'slide-down-the-chart',
+    draw: (r) => {
+      const [start, rows] = r.pick(CHART_ROWS);
+      const name = one(r);
+      return {
+        prompt: `${name} puts a finger on ${fmtInt(start)} on the hundred chart. The finger slides down ${countNoun(rows, 'rows')}. Which number is under it now?`,
+        answerValue: String(start + 10 * rows),
+        templateId: 'add_within_100_v1',
+        params: { a: start, b: 10 * rows },
+        hints: [
+          'Is one row down worth a single one, or a whole ten?',
+          'Work out what the rows are worth in all, then put that on.',
+        ],
+        errorTags: ['representation-misread', 'procedure-slip'],
+      };
+    },
+  }),
+  // The rows the finger passes THROUGH stay printed, which is the part of the
+  // picture that earns its keep: the child sees the same column ten larger each
+  // row, and then the row it stops in is blank and has to be named.
+  (p) => slideChart(num(p, 'a'), num(p, 'b')),
+);
 
 // ---------------------------------------------------------------------------
 // THE PAGE WHOSE ANSWER IS A COUNT OF TENS
@@ -1554,7 +1650,13 @@ export const buildB10 = makeWeekBuilder({
     // one number in that decade ending as the start ended. It is a uniqueness
     // argument rather than a sum, and nothing on Day 1 travels that way.
     //
-    // No picture: a printed chart is a lookup table for the answer (§6).
+    // THE CHART IS DRAWN HERE TOO, AND THE BLANKED ROW IS THE ONE THE PROMPT
+    // NAMES. "Stops on a number holding seven tens" is a row, and that row is
+    // the one left unprinted — so a child who goes looking for the landing finds
+    // ten empty squares and has to run the uniqueness argument the hints
+    // describe: the start is printed, its column is visible, and only one square
+    // in that row ends the way the start ends. Printed in full the chart would
+    // hand over the landing and the deduction with it (§6).
     const [start, rows] = r.pick(CHART_ROWS);
     const landing = start + 10 * rows;
     const landingTens = Math.floor(landing / 10);
@@ -1581,6 +1683,7 @@ export const buildB10 = makeWeekBuilder({
         acceptableForms: [],
         validation: 'exact-numeric',
       },
+      figure: slideChart(start, landing - start),
       hintLadder: [
         'Which digit of the starting number can a row down never reach?',
         'Only one number in that row ends the way the starting number ends.',

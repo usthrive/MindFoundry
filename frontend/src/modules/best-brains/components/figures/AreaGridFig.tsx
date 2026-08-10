@@ -149,6 +149,17 @@ export default function AreaGridFig({ params, size }: FigurePartProps<'area-grid
       {fullRows > 0 && <rect {...box(0, fullRows, 0, cols)} fill={FIG.primarySoft} />}
       {partCells > 0 && <rect {...box(fullRows, fullRows + 1, 0, partCells)} fill={FIG.primarySoft} />}
 
+      {/* Specific cells by row-major index — the hundred chart's scattered
+          squares, which `shaded` cannot express because it fills a prefix.
+          Drawn before the grid lines so the rules stay visible on top. */}
+      {(params.shadedCells ?? [])
+        .filter((i) => Number.isInteger(i) && i >= 0 && i < rows * cols)
+        .map((i) => {
+          const r = Math.floor(i / cols);
+          const c = i % cols;
+          return <rect key={`sc${i}`} {...box(r, r + 1, c, c + 1)} fill={FIG.accentSoft} />;
+        })}
+
       {/* The hatches are the load-bearing layer: the overlap picks up BOTH and so
           reads as cross-hatched — twice the ink of either band — with no hue. */}
       {sr > 0 && <rect {...box(0, sr, 0, cols)} fill={`url(#${hatchA})`} />}

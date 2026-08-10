@@ -527,7 +527,11 @@ export default function PracticePage() {
       )}
 
       <div className="mt-auto">
-        <BBScratchPad itemKey={`practice-${item.id}`} band={band} />
+        {/* `item` enables full-screen mode: the pad pins the question AND the
+            figure above the canvas. Without it the pad is a 220px strip at the
+            bottom of a scrolling page, and opening it pushes the question off
+            the top — reported from real use by a six-year-old. */}
+        <BBScratchPad itemKey={`practice-${item.id}`} band={band} item={item} />
       </div>
 
       <AnchorPanel pack={pack} mode="full" band={band} open={anchorOpen} onClose={() => setAnchorOpen(false)} />

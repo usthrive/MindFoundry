@@ -56,6 +56,9 @@
  */
 
 import { GENERATED_WEEKS, generatePack, CONTENT_VERSION } from '../src/modules/best-brains/generator/packGenerator';
+// The band-A tap options are built in the DISPLAY layer, not in content, so the
+// gate has to import the same function the screen calls or it cannot see them.
+import { tapOptionsFor } from '../src/modules/best-brains/answers';
 
 const argv = process.argv.slice(2);
 const arg = (k: string) => {
@@ -250,12 +253,49 @@ for (const { level, week } of weeks) {
       // child receives it (fixture resolution, contract wiring and all).
       const p = generatePack(level, week, i * 7 + 1, CONTENT_VERSION) as unknown as Record<string, any>;
       built++;
+      /**
+       * AT BAND A, MEASURE WHAT THE CHILD IS SHOWN — NOT WHAT WAS AUTHORED.
+       *
+       * A numeric band-A item with no authored `choices` is not a free-entry
+       * page: `AnswerEntry` calls `tapOptionsFor(item)` and renders four number
+       * buttons. Those options exist only at render time, so this gate — which
+       * reads `it.choices` — skipped every one of them. It was measuring roughly
+       * half of Level A and reporting a clean pass over the rest.
+       *
+       * That blind spot hid a 100% tell: the old `tapOptionsFor` always produced
+       * {answer-1, answer, answer+1, answer+2}, so the answer was the
+       * second-smallest button on 7,440 of 7,440 items. Both weeks that had just
+       * moved mastery slots to free-entry numerics — the right fix for a dead
+       * option in content — landed straight in it.
+       *
+       * So band-A items are projected into the same `choices` shape the rest of
+       * the gate already understands, and every downstream check (CONSTANT_*,
+       * NEVER_CORRECT, rank tells) then applies to them unchanged.
+       */
+      const project = (it: Item): Item => {
+        if (level !== 'A' || (it.choices && it.choices.length >= 2)) return it;
+        // MIRROR `AnswerEntry`'S ORDER EXACTLY. It returns the ungraded
+        // "I did it!" acknowledge button for `manual-review` BEFORE it ever
+        // reaches `tapOptionsFor`, so projecting those items would judge four
+        // buttons no child is ever shown — a gate manufacturing its own
+        // findings. Caught by the A12 author reading this projection against
+        // the component. When a gate mirrors a UI, the ORDER of the branches is
+        // part of what it has to mirror.
+        if ((it as unknown as { answer?: { validation?: string } }).answer?.validation === 'manual-review') return it;
+        const opts = tapOptionsFor(it as never);
+        if (!opts) return it;
+        const answer = String((it as unknown as { answer?: { value?: unknown } }).answer?.value ?? '');
+        return {
+          ...it,
+          choices: opts.map((o) => ({ text: String(o), isCorrect: String(o) === answer })),
+        };
+      };
       (p.days ?? []).forEach((d: Record<string, any>, di: number) => {
-        (d.items ?? []).forEach((it: Item, ii: number) => record(id, `day${di + 1}`, ii, it));
+        (d.items ?? []).forEach((it: Item, ii: number) => record(id, `day${di + 1}`, ii, project(it)));
       });
       const mc = p.masteryCheck ?? {};
-      (mc.formA ?? []).forEach((it: Item, ii: number) => record(id, 'formA', ii, it));
-      (mc.formB ?? []).forEach((it: Item, ii: number) => record(id, 'formB', ii, it));
+      (mc.formA ?? []).forEach((it: Item, ii: number) => record(id, 'formA', ii, project(it)));
+      (mc.formB ?? []).forEach((it: Item, ii: number) => record(id, 'formB', ii, project(it)));
     } catch (e) {
       const msg = `${id} seed ${i * 7 + 1}: ${(e as Error).message}`;
       if (!buildFailures.includes(msg)) buildFailures.push(msg);
