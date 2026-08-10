@@ -36,8 +36,11 @@ export const buildE13 = makeWeekBuilder({
   full row. If the concept genuinely cannot carry a within-concept two-step, declare `'place-value'`
   and compose with a strictly-prior-week skill (`usesPriorSkill: true`), documenting it in
   `deepeningDelta`.
-- Band A carries a parent strip **every day**: pass `teacherNoteStrips` (5 entries) rather than the
-  single Day-5 strip Level D uses.
+- Band A carries its parent strip on **Day 5 only**, like every other band: pass `teacherNoteStrips`
+  with four `undefined` entries and the strip fifth. (Rev 1 of this file said "every day"; the
+  validator's S-SCHEMA rejects a strip on Days 1–4 and `PuzzleGrove.tsx` renders Day 5's, hardcoded,
+  so a five-strip week fails `bb-verify-packs` at every seed and would put four strips nowhere.
+  Ruled Day-5-only 2026-08-09 and amended in FILL-ARCHITECTURE §1 to match — see §E item 3.)
 
 ## B. Your level's gate profile (`lib/pedagogy.ts` → `GATE_PROFILE`)
 
