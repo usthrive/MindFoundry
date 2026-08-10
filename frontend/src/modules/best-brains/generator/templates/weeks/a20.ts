@@ -14,12 +14,17 @@
  * WHAT THE WEEK CLAIMS, and how the content forces it:
  *  - **How big a thing looks tells you nothing about how heavy it is.** That
  *    single belief is what a four-year-old brings, and removing it is the whole
- *    week. So it is attacked from four sides: the pair pool carries as many
- *    big-and-heavy things as big-and-light ones, so no habit survives; the
- *    three-way form makes the heaviest the biggest, the middling and the
- *    smallest thing in turn; the puppet reasons from size out loud and is
- *    caught; and the capacity strand runs the same trap on HEIGHT, which is
- *    where a child of this age reads "more" off a tall thin shape.
+ *    week. So it is attacked from four sides, and each of the four is a PER-PACK
+ *    guarantee rather than a pool average: the three pair pages are dealt one
+ *    big-and-heavy, one big-and-light and one either way; the three three-way
+ *    pages take the biggest, the middling and the smallest object as their
+ *    answer, one each; the puppet reasons from size out loud and is caught; and
+ *    the capacity strand runs the same trap on HEIGHT — where a child of this
+ *    age reads "more" off a tall thin shape — with its four pages dealt so the
+ *    taller container really holds more on one or two of them and never more.
+ *    A pool balanced across thousands of packs still hands SOME child a week
+ *    that points one way throughout, which is exactly what an independent
+ *    reader drew, twice; only a per-pack deal removes that.
  *  - **A weight is a COUNT, and that is what makes it arguable.** Everything
  *    here is settled by counting a common unit — the blocks a thing balances,
  *    the cups a container fills — so a disagreement is never a matter of who
@@ -32,15 +37,14 @@
  *    who does not look at the rows has nothing to go on. Days 1–4 carry a figure
  *    on every non-retrieval item, each drawn from that item's own numbers.
  *  - **No timers.** `sprint: null` — a timed element at band A is a hard fail.
- *  - **Five of the nineteen daily items look backwards** (26.3%), one to a day,
- *    no two the same shape and no two from the same earlier week. Each is a
- *    piece of the ground a measurement has to stand on: counting a laid-out
- *    group (A2), matching two rows one for one, which is where "more" stopped
- *    meaning "longer" (A5), ranking three groups by how many (A6), reading a
- *    missing part off a stated whole (A13), and splitting a number into ten and
- *    some more (A10).
+ *  - **A warm-up a day, five in all — 26.3% of the daily items.** No two share a
+ *    shape and no two come from the same earlier week, and each is something a
+ *    measurement stops working without: counting a laid-out group (A2), matching
+ *    two rows one for one, which is where "more" stopped meaning "longer" (A5),
+ *    ranking three groups by how many (A6), reading a missing part off a stated
+ *    whole (A13), and splitting a number into ten and some more (A10).
  *
- * ── NINE DISCLOSURES (FANOUT kit §E2.3: document the choice in the header) ──
+ * ── TEN DISCLOSURES (FANOUT kit §E2.3: document the choice in the header) ──
  *
  * 1. **NOTHING HERE DRAWS A BALANCE, and the recipe's anchor is therefore
  *    ENACTED rather than pictured.** Row A20's anchor is "a balance tilts down =
@@ -163,13 +167,18 @@
  *      and a mastery slot is where a child is promoted.
  *    - **Measured across 2,000 packs and all 15 choice slots**: not one option
  *      is offered on half the draws while never being keyed (the worst is a
- *      thing-name at 27.9%, and it is a name rather than a strategy); the key
- *      never sits at a fixed position (31.1-36.5% at each of three, 49.3-50.8%
+ *      thing-name at 26.4%, and it is a name rather than a strategy); the key
+ *      never sits at a fixed position (30.9-35.1% at each of three, 49.1-50.9%
  *      at each of two); the keyed option is the Nth thing named in the prompt
- *      31.5-40.5% of the time on the three-way pages and 48.4-51.6% on the
- *      two-way ones; and no blind habit
- *      beats its own page's chance floor by more than seven points. The
- *      free-entry slots serve every value 2-9 on 10.8-14.0% of draws.
+ *      31.1-35.5% of the time on the three-way pages and 48.8-51.3% on the
+ *      two-way ones; and no blind habit beats its own page's chance floor by
+ *      more than eight points. The weighing free-entry slots serve every value
+ *      2-9 on 10.6-14.5% of draws and the pouring ones on 7.2-16.6% - less flat,
+ *      and the price of disclosure 10: a container's capacity is the pack's
+ *      property now rather than a fresh draw per page, so its distribution
+ *      follows the pouring schedule instead of being uniform. No value is ever
+ *      dead and no slot has a modal answer above 16.6%, so the trade is worth
+ *      it.
  *
  * 7. **`a_compare_sets_v1` CARRIES THE "LIGHTER" AND "HOLDS LESS" QUESTIONS, and
  *    the reuse is recorded rather than buried.** `a_compare_measure_v1` returns
@@ -220,12 +229,50 @@
  *    pair instead is that the answer is recounted from the same drawn array the
  *    picture is built from. The missing selector (a "groups above a threshold"
  *    counters quantity) is recorded.
+ *
+ * 10. **EVERY BALANCE CLAIM IN THIS FILE IS A PER-PACK DEAL, because a marginal
+ *    is not what a child meets — and this one was learned the expensive way.**
+ *    The first build of A20 balanced its pools and MEASURED the balance across
+ *    thousands of packs, which is what the kit asks for and what the earlier
+ *    report showed. An independent reader then read two packs end to end and
+ *    found all three of the things a marginal cannot see: the taller container
+ *    genuinely held more on six of the eight scored pouring pages it could see;
+ *    the biggest object was never the heaviest on any of the twelve three-way
+ *    pages; and the same sock balanced 4 blocks, then 2, then 3 on consecutive
+ *    days. Every one of those was consistent with a healthy average, and the
+ *    header claimed the averages as if they were guarantees.
+ *
+ *    So the balances are now DEALT before the pages are built, out of the pack's
+ *    own `TupleGuard`, and each is measured as a per-pack property over 500
+ *    packs rather than as a rate over draws:
+ *      · one count per named thing, for the whole pack — 0 of 500 packs carry a
+ *        thing with two different counts (was 29 of 200 before the registry);
+ *      · the three three-way pages take the biggest, middling and smallest
+ *        object as their answer, one each — 500 of 500;
+ *      · the four pouring pages take the four container pairs, one each, dealt
+ *        so the taller really holds more on one or two of them and never on
+ *        three or four, with exactly one genuine tie — 500 of 500, 500 of 500
+ *        and 500 of 500;
+ *      · the three pair pages are dealt one big-and-heavy, one big-and-light and
+ *        one either way.
+ *
+ *    TWO THINGS THAT ONLY SHOWED UP ONCE THE DEALS EXISTED, both recorded
+ *    because they are the reason a schedule is harder than it looks. A schedule
+ *    must be consumed ONCE PER ITEM, not once per attempt: `drawUniqueItem`
+ *    rebuilds an item whose surface collides, and `makeWeekBuilder` rebuilds one
+ *    that echoes a guided example or duplicates a Form-A core — so a naive
+ *    schedule spends the next page's slot on a rebuild. Every schedule here is
+ *    therefore taken outside the retry loop, the guided-example surfaces are
+ *    reserved so that rebuild never fires, and the puppet's params carry what he
+ *    picked so his page can never be mistaken for the plain three-way page. Each
+ *    of those was found by measuring the schedule itself — 17 packs in 400 were
+ *    asking for a fourth size before the last of them was fixed.
  */
 
 import type { ErrorTag } from '../../../types';
 import type { Rng } from '../../rng';
 import { drawFresh, makeChoices, numberWords } from '../shared';
-import type { ItemDraft } from '../shared';
+import type { ItemDraft, TupleGuard } from '../shared';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
 import {
   compareSets,
@@ -336,19 +383,136 @@ function warmUp(base: ItemGen, week: number): ItemGen {
 }
 
 // ===========================================================================
-// The things this week weighs and fills
+// The things this week weighs and fills, and the PACK REGISTRY that fixes
+// what each of them weighs
 // ===========================================================================
+
+/**
+ * ONE COUNT PER NAMED THING, FOR THE WHOLE PACK — and it is enforced, not hoped
+ * for.
+ *
+ * The first build of this week drew every page's counts independently. Every
+ * page was internally honest and every ordering it asserted was physically
+ * right, so nothing caught what an independent reader caught immediately: the
+ * SAME sock balanced 4 blocks on one page, 2 on the next and 3 on the one after,
+ * and the same kite weighed 3 blocks in Form B slot 02 and 5 in slot 06 of the
+ * same sitting. Measured afterwards over 200 packs, 14.5% of packs carried at
+ * least one object with two different counts. In the week whose whole claim is
+ * that COUNTING SETTLES IT, a count that changes page to page is the most
+ * corrosive thing on offer, and the header note that said it could not happen
+ * was aspirational rather than true.
+ *
+ * The fix is a registry keyed on the pack's own `TupleGuard` — the one object
+ * every generator in a pack shares. The first time a thing is drawn its count is
+ * chosen and written down; every later appearance reads it back. Lookups consume
+ * no rng, so nothing about draw order changes what a later page shows.
+ *
+ * WHY THAT IS SAFE FOR THE ORDERINGS. A registry alone would deadlock: two
+ * objects already written down with the wrong relative counts could not then be
+ * compared. So each named object also carries a WEIGHT BAND, and the bands are
+ * disjoint count ranges. The constraint poset this week declares — six pairs and
+ * six trios — has height three (no chain of four), so three bands are enough,
+ * and every declared structure spans three distinct bands in the right order.
+ * A count drawn inside a band therefore cannot contradict any comparison the
+ * week can pose, whatever order the pages happen to be built in.
+ */
+type Band = 'H' | 'M' | 'L';
+
+/** Disjoint by construction: any H beats any M, and any M beats any L. */
+const BAND_RANGE: Record<Band, readonly [number, number]> = { L: [2, 4], M: [5, 6], H: [7, 9] };
+
+/**
+ * Every object this week compares, with the band its weight sits in.
+ *
+ * Assigned by hand from the declared pairs and trios below and checked against
+ * all twelve: `stone > sponge > balloon` reads H > M > L, `brick > pillow` reads
+ * H > M, and so on. Two objects sharing a band never appear in the same
+ * structure, which is why they may share a count without asserting anything.
+ */
+const WEIGHT_BAND: Record<string, Band> = {
+  stone: 'H', brick: 'H', book: 'H', shoe: 'H', log: 'H', suitcase: 'H',
+  sponge: 'M', cushion: 'M', key: 'M', scarf: 'M', melon: 'M', jar: 'M', pillow: 'M',
+  balloon: 'L', kite: 'L', 'paper bag': 'L', sock: 'L', acorn: 'L', button: 'L', grape: 'L', leaf: 'L',
+};
+
+/**
+ * Read a number out of the pack registry, or compute it once and store it.
+ *
+ * The guard is a set of strings, so a stored number is probed for rather than
+ * fetched. Deliberate: it means the registry needs no new shared machinery and
+ * no `lib/` file changes, and a probe is free of rng.
+ */
+function packNumber(guard: TupleGuard, key: string, make: () => number): number {
+  for (let v = 2; v <= 9; v++) if (guard.taken(`${key}=${String(v)}`)) return v;
+  const v = make();
+  guard.add(`${key}=${String(v)}`);
+  return v;
+}
+
+/**
+ * The two guided examples that print a pair of numbers, reserved before either
+ * strand deals its pages.
+ *
+ * `makeWeekBuilder` REDRAWS any day item whose numeric tokens match a guided
+ * example's, so a page that happens to print the modeled example's numbers is
+ * silently rebuilt — and a rebuild re-enters the generator, which would spend
+ * the next page's slot in a pre-dealt schedule. Reserving the two surfaces here
+ * means the deal simply never produces them, so the redraw never fires and the
+ * schedules stay exact. (It is also what stopped the first build's guided
+ * examples from biasing a blind habit by four points; the same mechanism, met
+ * from the other side.)
+ */
+function reserveGuidedExampleSurfaces(guard: TupleGuard): void {
+  guard.add('classification|2,4'); // GE-01: the balloon and the stone
+  guard.add('classification|5,9'); // GE-02: the tall vase and the wide tin
+  // GE-04's three numbers. Reserved as a SORTED signature, which is what
+  // `drawUniqueItem` matches on, so any trio whose counts are that multiset is
+  // refused inside the freshness loop — where a redraw costs nothing — instead
+  // of reaching the assembler's echo check, where a rebuild would re-enter the
+  // generator and spend the next page's scheduled size.
+  guard.add('classification|2,4,8');
+}
+
+/** True once per pack for a given key — the "has this already been set up?" test. */
+function firstTime(guard: TupleGuard, key: string): boolean {
+  if (guard.taken(key)) return false;
+  guard.add(key);
+  return true;
+}
+
+/**
+ * How many blocks this named object balances, fixed for the whole pack.
+ *
+ * A band value that no other object in the same band has taken yet is preferred,
+ * which costs nothing (a band's objects never share a page, so they may share a
+ * count) and buys a great deal: two different trios are then far less likely to
+ * print the same three numbers, which is what the pack-wide freshness guard has
+ * to redraw around. Bands hold two or three values against six or eight objects,
+ * so this runs out and falls back to a plain draw — deliberately, because
+ * exhausting it must not change what the object weighs.
+ */
+function claimBandValue(guard: TupleGuard, band: Band, r: Rng): number {
+  const [lo, hi] = BAND_RANGE[band];
+  const free: number[] = [];
+  for (let v = lo; v <= hi; v++) if (!guard.taken(`a20:band:${band}:${String(v)}`)) free.push(v);
+  const v = free.length > 0 ? r.pick(free) : r.int(lo, hi);
+  guard.add(`a20:band:${band}:${String(v)}`);
+  return v;
+}
+
+function blocksOf(r: Rng, guard: TupleGuard, name: string): number {
+  const band = WEIGHT_BAND[name];
+  return packNumber(guard, `a20:w:${name}`, () => claimBandValue(guard, band, r));
+}
 
 /**
  * SIZE AND WEIGHT ARE DECLARED SEPARATELY, and the pool is balanced on purpose.
  *
  * `big` is the thing a four-year-old would point at as the bigger one; `heavier`
  * says which of the two actually is. Three entries make the big one heavier and
- * three make it lighter, which is what holds "just pick the bigger one" to a
- * coin (disclosure 5 measures it week-wide). Every weight here is a fact a child
- * of four already owns — nobody has to be told that a pillow is lighter than a
- * brick — which is what makes the surprise land rather than merely being
- * asserted by the numbers.
+ * three make it lighter. Every weight here is a fact a child of four already
+ * owns — nobody has to be told that a pillow is lighter than a brick — which is
+ * what makes the surprise land rather than merely being asserted by the numbers.
  */
 interface Pair {
   big: string;
@@ -366,21 +530,71 @@ const WEIGHT_PAIRS: readonly Pair[] = [
 ];
 
 /**
+ * WHICH WAY EACH PAIR PAGE FALLS IS SCHEDULED PER PACK, not left to the marginal.
+ *
+ * Three pair pages are served to a child, and a pool that is balanced ACROSS
+ * packs still hands one child in eight three pages that all point the same way.
+ * The schedule fixes one page to a big-and-heavy pair, one to a big-and-light
+ * pair, and draws the third — so "just pick the bigger one" is right on one or
+ * two of the three in EVERY pack, never on none and never on all.
+ */
+function weighPairSetup(r: Rng, guard: TupleGuard): void {
+  if (!firstTime(guard, 'a20:pairsched')) return;
+  reserveGuidedExampleSurfaces(guard);
+  const sides = r.shuffle(['big', 'small', r.chance(0.5) ? 'big' : 'small']);
+  const usedPairs = new Set<string>();
+  sides.forEach((side, slot) => {
+    const open = WEIGHT_PAIRS.filter((p) => p.heavier === side && !usedPairs.has(p.big));
+    const pair = r.pick(open.length > 0 ? open : WEIGHT_PAIRS.filter((p) => p.heavier === side));
+    usedPairs.add(pair.big);
+    const heavy = pair.heavier === 'big' ? pair.big : pair.small;
+    const light = pair.heavier === 'big' ? pair.small : pair.big;
+    const [hLo, hHi] = BAND_RANGE[WEIGHT_BAND[heavy]];
+    const [lLo, lHi] = BAND_RANGE[WEIGHT_BAND[light]];
+    // Counts inside each object's band, stepped deterministically until this
+    // page's pair of numbers is one no other page in the pack has taken. The
+    // step never leaves the band, so the ordering the objects declare survives
+    // it; a bounded walk, never a redraw loop (kit §E2.4).
+    let hv = claimBandValue(guard, WEIGHT_BAND[heavy], r);
+    let lv = claimBandValue(guard, WEIGHT_BAND[light], r);
+    const span = (hHi - hLo + 1) * (lHi - lLo + 1);
+    for (let k = 0; k < span; k++) {
+      if (!guard.taken(`classification|${[String(hv), String(lv)].sort().join(',')}`)) break;
+      lv = lv === lHi ? lLo : lv + 1;
+      if (k % (lHi - lLo + 1) === lHi - lLo) hv = hv === hHi ? hLo : hv + 1;
+    }
+    guard.add(`a20:w:${heavy}=${String(hv)}`);
+    guard.add(`a20:w:${light}=${String(lv)}`);
+    guard.add(`classification|${[String(hv), String(lv)].sort().join(',')}`);
+    guard.add(`a20:pairslot:${String(slot)}=${pair.big}`);
+  });
+}
+
+/** The pair this page shows — one slot of the schedule, by turn, wrapping. */
+function nextWeighPair(guard: TupleGuard): Pair {
+  for (let turn = 0; ; turn++) {
+    if (guard.taken(`a20:pairturn:${String(turn)}`)) continue;
+    guard.add(`a20:pairturn:${String(turn)}`);
+    const slot = turn % 3;
+    const named = WEIGHT_PAIRS.find((p) => guard.taken(`a20:pairslot:${String(slot)}=${p.big}`));
+    if (named) return named;
+    return WEIGHT_PAIRS[slot];
+  }
+}
+
+/**
  * Three things whose sizes a child can rank at a glance, LISTED HEAVIEST FIRST.
  *
- * THE WHOLE ORDER IS DECLARED, not just the winner, and reading a generated week
- * is what forced that. The first version declared only which of the three was
- * heaviest and let the other two counts fall where the draw put them — so a page
- * could print "the acorn balances 6 blocks, the melon balances 3", which is not
- * a surprise, it is a falsehood, and a child who knows what an acorn is learns
- * that the blocks cannot be trusted. Nothing could catch it: the arithmetic was
- * right, the picture agreed with the answer, and the keyed option was the
- * longest row. Counts are now drawn as three distinct values and dealt out in
- * THIS order, so every ordering a page asserts is one a grown-up would agree
- * with.
+ * THE WHOLE ORDER IS DECLARED, not just the winner. An earlier build declared
+ * only which of the three was heaviest and let the other two counts fall where
+ * the draw put them — so a page could print "the acorn balances 6 blocks, the
+ * melon balances 3", which is not a surprise, it is a falsehood. The bands above
+ * now carry the ordering, so every ordering a page asserts is one a grown-up
+ * would agree with, and the independent reader confirmed the physics.
  *
  * The heaviest is the biggest thing in two entries, the middling one in two and
- * the smallest in two, so no size is ever the safe answer.
+ * the smallest in two — and `heaviestSize` below turns that pool property into a
+ * per-pack guarantee.
  */
 interface Weighable {
   name: string;
@@ -397,14 +611,42 @@ const WEIGHT_TRIOS: ReadonlyArray<readonly [Weighable, Weighable, Weighable]> = 
 ];
 
 /**
+ * THE THIRDS ARE ENFORCED PER PACK, because a marginal third is not what a child
+ * meets.
+ *
+ * A pool in which the biggest thing is heaviest on a third of draws still gives
+ * 29.6% of children three three-way pages in a row where it never is — and an
+ * independent reader drew exactly that, twice, and was right to call it. The
+ * three non-puppet three-way pages now take one size each: one keyed on the
+ * biggest object, one on the middling one, one on the smallest. So the isomorph
+ * note's claim of thirds is true of every pack rather than of the average.
+ *
+ * THE PUPPET'S PAGES ARE EXEMPT AND STAY EXEMPT. He reasons from size and error
+ * analysis requires him to be mistaken, so the biggest thing can never be the
+ * answer there — that is the form, not a defect, and it is declared here rather
+ * than left for a reader to rediscover.
+ */
+function heaviestSize(r: Rng, guard: TupleGuard): 'big' | 'mid' | 'small' {
+  const sizes = ['big', 'mid', 'small'] as const;
+  if (firstTime(guard, 'a20:h3sched')) {
+    r.shuffle([...sizes]).forEach((sz, i) => guard.add(`a20:h3order:${String(i)}=${sz}`));
+  }
+  for (let turn = 0; ; turn++) {
+    if (guard.taken(`a20:h3turn:${String(turn)}`)) continue;
+    guard.add(`a20:h3turn:${String(turn)}`);
+    const slot = turn % sizes.length;
+    return sizes.find((sz) => guard.taken(`a20:h3order:${String(slot)}=${sz}`)) ?? sizes[slot];
+  }
+}
+
+/**
  * CAPACITY RUNS THE SAME TRAP ON HEIGHT, which is where it actually bites at
  * this age: a tall narrow shape reads as "more" long before a wide one does.
- * Unlike weight, which of the two holds more is a genuinely free draw — a tall
- * bottle may hold more or less than a wide dish, and neither is a fact anyone
- * has to know — so this is the strand where a TIE is honest, and one draw in
- * five makes them equal. That matters twice over: "same" is a third of this
- * band's own comparison vocabulary (A5 is "More, fewer, same"), and it is what
- * lets the page carry three live options instead of two.
+ *
+ * Unlike weight, which of the two holds more is genuinely free — a tall bottle
+ * may hold more or less than a wide dish, and neither is a fact anyone has to
+ * know — so this is the strand where a TIE is honest. Each pair is disjoint from
+ * the others, which is what lets the whole strand be scheduled in one go.
  *
  * None of these containers is in `compareMeasure`'s own capacity pool
  * (jug/mug, pot/cup, bucket/bowl), so a week that later serves the family
@@ -414,46 +656,116 @@ const CAPACITY_PAIRS: ReadonlyArray<{ tall: string; wide: string }> = [
   { tall: 'tall bottle', wide: 'wide dish' },
   { tall: 'tall vase', wide: 'wide tin' },
   { tall: 'tall glass', wide: 'wide pan' },
-  // A FOURTH PAIR, AND THE HONEST NUMBER FOR IT. Four pouring items are drawn per
-  // pack, so with three pairs a repeat was certain; with four it is 90.4%
-  // (measured over 500 packs, and 4!/4^4 predicts 90.6%, so the draw is behaving).
-  // Four pairs is not what fixes that and nothing reasonable would - the fix is
-  // that a repeat is not a defect here. The same two containers asked the other
-  // way round, with the counts redrawn and a tie possible, is the trap taught
-  // twice rather than the same page twice; no two items in a pack ever print the
-  // same prompt (measured, 0 of 500). What the fourth pair really buys is room in
-  // the thing-freshness namespace below, which needs more containers than a pack
-  // has pouring items.
   { tall: 'tall carton', wide: 'wide tub' },
 ];
+
+/**
+ * THE WHOLE POURING STRAND IS DEALT IN ONE GO, once per pack.
+ *
+ * Drawing each page's outcome independently left the taller container genuinely
+ * holding more on six of eight scored pages across two sampled packs — a page
+ * that rewards the exact belief the strand exists to remove, and the same class
+ * of defect this file refused to inherit from `compareMeasure`. The mistakeBank
+ * claimed the opposite in writing.
+ *
+ * So the four pairs are dealt a schedule: one tie, one the tall one wins, one
+ * the wide one wins, and one drawn. "The taller holds more" is therefore true on
+ * one or two of the four pairs in EVERY pack — never three, never four — and a
+ * tie is reachable on exactly one pair in every pack, so the third option is
+ * live for every child rather than for some of them.
+ *
+ * Setting the counts here as well is what makes a container hold the same amount
+ * everywhere in the pack, including on the measuring pages that never compare it
+ * to anything.
+ */
+function capacitySetup(r: Rng, guard: TupleGuard): void {
+  if (!firstTime(guard, 'a20:capsched')) return;
+  reserveGuidedExampleSurfaces(guard);
+  const outcomes = r.shuffle(['tall', 'wide', 'tie', r.chance(0.5) ? 'tall' : 'wide']);
+  // The order the four pairs reach the child, drawn so the pouring pages are not
+  // always the same containers on the same days.
+  r.shuffle(CAPACITY_PAIRS.map((p) => p.tall)).forEach((t, i) => guard.add(`a20:caporder:${String(i)}=${t}`));
+  // Three DISTINCT winning counts and three distinct losing ones, so the four
+  // pages cannot land on the same pair of numbers as each other; the tie page
+  // prints one number twice, which no decided page can.
+  const his = r.shuffle([6, 7, 8, 9]).slice(0, 3);
+  const los = r.shuffle([2, 3, 4, 5]).slice(0, 3);
+  const tie = r.int(3, 8);
+  let decided = 0;
+  CAPACITY_PAIRS.forEach((pair, i) => {
+    const outcome = outcomes[i];
+    let hi = his[decided];
+    let lo = los[decided];
+    // The one decided pair a guided example could echo, stepped off it.
+    if (hi === 9 && lo === 5) lo = 4;
+    if (outcome !== 'tie') decided++;
+    const tall = outcome === 'tie' ? tie : outcome === 'tall' ? hi : lo;
+    const wide = outcome === 'tie' ? tie : outcome === 'tall' ? lo : hi;
+    guard.add(`a20:c:${pair.tall}=${String(tall)}`);
+    guard.add(`a20:c:${pair.wide}=${String(wide)}`);
+    // RESERVE THE SURFACE, so no weighing page can later draw the same pair of
+    // numbers. `drawUniqueItem` signs a two-number classification prompt on its
+    // sorted tokens, and both strands are classification items — so without this
+    // a pouring page and a weighing page could collide, and the pouring page
+    // (whose counts are fixed by the pack) would have no way to move. Setting up
+    // the whole strand before the first weighing comparison is drawn is what
+    // makes both strands' surfaces disjoint by construction rather than by luck.
+    guard.add(`classification|${[String(tall), String(wide)].sort().join(',')}`);
+  });
+}
+
+/** How many cups this container fills, fixed for the whole pack. */
+function cupsOf(r: Rng, guard: TupleGuard, name: string): number {
+  capacitySetup(r, guard);
+  for (let v = 2; v <= 9; v++) if (guard.taken(`a20:c:${name}=${String(v)}`)) return v;
+  throw new Error(`A20: no capacity registered for "${name}"`);
+}
+
+/**
+ * The four pouring pages take the four pairs, one each, in the pack's own order.
+ *
+ * A TURN COUNTER RATHER THAN A FREE LIST, because a schedule that hands out
+ * "whatever is left" degrades badly if it is ever called a fifth time: the first
+ * build did exactly that and served one pack the tie pair twice, once in each
+ * mastery form, which QG-4 caught. Counting turns and wrapping means call five
+ * gets the FIRST pair back rather than a repeat of call four, so two adjacent
+ * pages can never coincide however the assembler decides to rebuild one.
+ */
+function nextCapacityPair(guard: TupleGuard): { tall: string; wide: string } {
+  for (let turn = 0; ; turn++) {
+    if (guard.taken(`a20:capturn:${String(turn)}`)) continue;
+    guard.add(`a20:capturn:${String(turn)}`);
+    const slot = turn % CAPACITY_PAIRS.length;
+    const tall = CAPACITY_PAIRS.map((p) => p.tall).find((t) => guard.taken(`a20:caporder:${String(slot)}=${t}`));
+    return CAPACITY_PAIRS.find((p) => p.tall === tall) ?? CAPACITY_PAIRS[slot];
+  }
+}
 
 /**
  * Single things to weigh, when nothing is being compared to anything — and they
  * are all CONTAINERS on purpose.
  *
- * A measuring page draws its count freely across 2–9 so the free-entry mastery
- * slots have a wide answer space, which means "the acorn balances 9 blocks"
- * would be a legal draw if the pool held acorns. Nobody knows what is inside a
- * bag, so any count is honest, and the child's own knowledge of the object never
- * contradicts the page. The named objects a child DOES have an opinion about
- * live in the comparison items, which declare their order.
+ * A measuring page wants a wide answer space, which means "the acorn balances 9
+ * blocks" would be a legal draw if the pool held acorns. Nobody knows what is
+ * inside a sack, so any count is honest and the child's own knowledge never
+ * contradicts the page; the objects a child DOES have an opinion about live in
+ * the comparison items, where the bands govern them. These eight are dealt a
+ * PERMUTATION of 2–9 once per pack, so each holds a different count, each count
+ * appears once, and the puzzle can rank four of them without any two tying.
  */
-const WEIGH_ALONE = ['bag', 'jar', 'basket', 'boot', 'purse', 'sack', 'lunchbox', 'toy box'] as const;
+const WEIGH_ALONE = ['bag', 'backpack', 'basket', 'boot', 'purse', 'sack', 'lunchbox', 'toy box'] as const;
 
-/**
- * The puzzle's four-object ladders, HEAVIEST FIRST, for the same reason the
- * trios carry one: a page that ranks four things by their rows of blocks is
- * asserting the whole ranking.
- */
-const PUZZLE_LADDERS: ReadonlyArray<readonly [string, string, string, string]> = [
-  ['brick', 'book', 'sock', 'balloon'],
-  ['log', 'melon', 'kite', 'acorn'],
-  ['suitcase', 'jar', 'key', 'paper bag'],
-  ['melon', 'book', 'scarf', 'sock'],
-];
+function containerBlocks(r: Rng, guard: TupleGuard, name: string): number {
+  if (firstTime(guard, 'a20:contsched')) {
+    const perm = r.shuffle([2, 3, 4, 5, 6, 7, 8, 9]);
+    WEIGH_ALONE.forEach((n, i) => guard.add(`a20:w:${n}=${String(perm[i])}`));
+  }
+  for (let v = 2; v <= 9; v++) if (guard.taken(`a20:w:${name}=${String(v)}`)) return v;
+  throw new Error(`A20: no weight registered for "${name}"`);
+}
 
-/** Single containers to fill. */
-const FILL_ALONE = ['tall bottle', 'wide dish', 'tall vase', 'wide tin', 'tall glass', 'wide pan', 'tall carton', 'wide tub'] as const;
+/** Single containers to fill; the same eight the pouring pages compare. */
+const FILL_ALONE = CAPACITY_PAIRS.flatMap((p) => [p.tall, p.wide]);
 
 // ---------------------------------------------------------------------------
 // The spoken scenes
@@ -464,36 +776,39 @@ const FILL_ALONE = ['tall bottle', 'wide dish', 'tall vase', 'wide tin', 'tall g
 // beats the bracket, so it is the first thing a four-year-old receives.
 //
 // The pressure in THIS week is not the answer, it is the data. Both counts read
-// aloud ARE the comparison: "the balloon balances 2 blocks, the stone 8" settles
-// "which is heavier" before the question arrives, which is exactly why
-// `compareMeasure`'s shipped alt names the two things and the unit and stops
-// there. So do these. What they add is the ORDER: the alt lists the rows in the
-// order the picture draws them, because a pre-reader cannot read the labels and
-// the spoken list is the only way to know which row belongs to which thing.
+// aloud ARE the comparison, which is why `compareMeasure`'s shipped alt names
+// the two things and the unit and stops there. So do these. What they add is the
+// ORDER: the alt lists the rows in the order the picture draws them, because a
+// pre-reader cannot read the labels and the spoken list is the only way to know
+// which row belongs to which thing.
+//
+// THEY ARE ALSO SHORT, and that is a band law rather than a preference. These
+// were the longest alts in Level A at 13–17 words, and an alt is the first thing
+// a four-year-old HEARS, before the question — so it is held to the same ten
+// words the question is, with the worst case measured rather than assumed (10
+// words, four rows of two-word container names). The generous alt-length
+// allowance in `bb-readability-test` exists for rich pictures a screen-reader
+// child cannot otherwise get at; a row of counters is not one of those.
 //
 // The `[image: …]` bracket keeps its numbers. It is never displayed and never
 // spoken, and it is what QG-1 and QG-4 sign to keep operand surfaces fresh.
 // ---------------------------------------------------------------------------
 
-/** "a row of blocks for the balloon and a row for the stone" — order, never counts. */
-function twoRowAlt(unit: 'blocks' | 'cups', first: string, second: string): string {
-  return `a row of ${unit} for the ${first} and a row for the ${second}`;
-}
-
 /**
- * The same, for three rows — and it says "another", never "one".
+ * "blocks: the balloon row, then the stone row" — the unit, the order, and no
+ * count anywhere.
  *
  * A NUMBER WORD IN AN ALT IS A NUMBER (`bb-spoken-answer-test` G3, and the reason
- * `ARRANGEMENT_ALT` exists in `lib/earlynumber.ts`). The first draft read "one
+ * `ARRANGEMENT_ALT` exists in `lib/earlynumber.ts`). An earlier draft read "one
  * for the key and one for the paper bag", and the puzzle's read "then one each";
- * running the gate's own rules over this week before wiring found the puzzle
- * speaking its own answer of 1 on 23 distinct pages. The three-row items escaped
- * only because their questions happen to contain the word "one" themselves, so
- * the gate scored it a GIVEN — an accident, not a defence. Every alt in this file
- * now carries no number word at all.
+ * running the gate's own rules over this week found the puzzle speaking its own
+ * answer of 1 on 23 distinct pages. No alt in this file now contains a number
+ * word of any kind.
  */
-function threeRowAlt(names: readonly string[]): string {
-  return `a row of blocks for the ${names[0]}, another for the ${names[1]} and another for the ${names[2]}`;
+function rowAlt(unit: 'blocks' | 'cups', names: readonly string[]): string {
+  if (names.length === 2) return `${unit}: the ${names[0]} row, then the ${names[1]} row`;
+  const last = names[names.length - 1];
+  return `${unit}: the ${names.slice(0, -1).join(', ')} and ${last} rows`;
 }
 
 // ===========================================================================
@@ -536,13 +851,16 @@ function unitCount(opts: { attr: 'weight' | 'capacity'; framing: 'plain' | 'pred
   const unit = attr === 'weight' ? 'blocks' : 'cups';
   const pool: readonly string[] = attr === 'weight' ? WEIGH_ALONE : FILL_ALONE;
   return (rng, guard, difficulty) => {
+    // The THING is drawn; its count is read out of the pack registry, so the
+    // same sack weighs the same on every page it appears on.
     const draw = drawFresh(
       rng,
       guard,
-      (r) => ({ n: r.int(2, 9), thing: r.pick(pool), seed: r.uint() }),
+      (r) => ({ thing: r.pick(pool), seed: r.uint() }),
       (v) => `thing:${attr}:${v.thing}`,
     );
-    const { n, thing } = draw;
+    const { thing } = draw;
+    const n = attr === 'weight' ? containerBlocks(rng, guard, thing) : cupsOf(rng, guard, thing);
     const scene =
       attr === 'weight'
         ? `${countNoun(n, unit)} balance the ${thing}`
@@ -615,19 +933,26 @@ function unitCount(opts: { attr: 'weight' | 'capacity'; framing: 'plain' | 'pred
  */
 function weighPair(opts: { ask: 'heavier' | 'lighter' }): ItemGen {
   const { ask } = opts;
-  return (rng, guard, difficulty) =>
-    drawUniqueItem(rng, guard, (r) => {
-      const pair = r.pick(WEIGHT_PAIRS);
+  return (rng, guard, difficulty) => {
+    // WHICH WAY THIS PAGE FALLS COMES FROM THE PACK SCHEDULE, so a child never
+    // meets three pair pages that all reward the same habit — one is drawn from
+    // the big-and-heavy pairs, one from the big-and-light ones and one either
+    // way, and the three pairs and their two numbers were settled together
+    // before any of the pages was built. There is no freshness retry here for
+    // the same reason the pouring pages have none: the counts are the pack's,
+    // so a retry could not move the surface, and the setup made all three
+    // surfaces distinct and reserved them instead.
+    weighPairSetup(rng, guard);
+    const pair = nextWeighPair(guard);
+    return ((r: Rng) => {
       const heavyThing = pair.heavier === 'big' ? pair.big : pair.small;
       const lightThing = pair.heavier === 'big' ? pair.small : pair.big;
-      const heavyN = r.int(5, 9);
-      const lightN = r.int(2, 4);
       // Naming order, drawn and independent of everything above.
       const bigFirst = r.chance(0.5);
       const thingA = bigFirst ? pair.big : pair.small;
       const thingB = bigFirst ? pair.small : pair.big;
-      const a = thingA === heavyThing ? heavyN : lightN;
-      const b = thingB === heavyThing ? heavyN : lightN;
+      const a = blocksOf(r, guard, thingA);
+      const b = blocksOf(r, guard, thingB);
       const winner = ask === 'heavier' ? heavyThing : lightThing;
       const loser = ask === 'heavier' ? lightThing : heavyThing;
       const loserIsBig = loser === pair.big;
@@ -661,7 +986,7 @@ function weighPair(opts: { ask: 'heavier' | 'lighter' }): ItemGen {
           ],
           {
             relation: 'compare',
-            alt: twoRowAlt('blocks', thingA, thingB),
+            alt: rowAlt('blocks', [thingA, thingB]),
             asserts: assertsParam('a', 'group:0'),
           },
         ),
@@ -691,7 +1016,8 @@ function weighPair(opts: { ask: 'heavier' | 'lighter' }): ItemGen {
         authorMeta: { stepCount: 1, cognitiveOp: `compare-weight-${ask}`, isDiscrimination: true },
       };
       return draft;
-    });
+    })(rng);
+  };
 }
 
 // ===========================================================================
@@ -705,27 +1031,35 @@ function weighPair(opts: { ask: 'heavier' | 'lighter' }): ItemGen {
  * other one is, so the two shapes are named in the scene and which of them
  * actually holds more is drawn — one row of cups each, counted. One draw in five
  * makes them equal, which is why "they hold the same" is a live answer rather
- * than a permanent decoy: measured over 2,000 packs it is keyed on 21.5-24.8% of
- * draws across its four slots and offered on all of them, well clear of the rate
- * at which `bb-answer-entropy-test` calls an option dead. It is also the third
- * of this band's comparison vocabulary that a two-option page has nowhere to put.
+ * than a permanent decoy: EXACTLY ONE of a pack's four pouring pages is a tie,
+ * dealt rather than drawn, so every child meets one - measured, it is keyed on
+ * 23.9-26.6% of draws across the four slots and offered on all of them, well
+ * clear of the rate at which `bb-answer-entropy-test` calls an option dead. It is
+ * also the third of this band's comparison vocabulary that a two-option page has
+ * nowhere to put.
  *
- * With the polarity drawn as well, "always tap the tall one" is worth 36.6-39.6%
+ * With the polarity drawn as well, "always tap the tall one" is worth 36.7-40.7%
  * on a page whose chance floor is 33.3%, "always tap whatever is named first"
- * 37.4-38.2%, and "always say they are the same" 21.5-24.8%.
+ * 36.3-38.1%, and "always say they are the same" 23.9-26.6%.
  */
 function holdsMore(): ItemGen {
-  return (rng, guard, difficulty) =>
-    drawUniqueItem(rng, guard, (r) => {
-      const pair = r.pick(CAPACITY_PAIRS);
-      // 0,1 → the tall one holds more · 2,3 → the wide one does · 4 → a tie.
-      // One draw, deterministic, never a redraw loop (kit §E2.4).
-      const outcome = r.int(0, 4);
-      const hi = r.int(5, 9);
-      const lo = r.int(2, 4);
-      const even = r.int(3, 8);
-      const tallN = outcome <= 1 ? hi : outcome <= 3 ? lo : even;
-      const wideN = outcome <= 1 ? lo : outcome <= 3 ? hi : even;
+  return (rng, guard, difficulty) => {
+    // The four pouring pages take the four pairs, one each, and each pair's
+    // outcome was dealt by `capacitySetup` before any of them was built - so
+    // "the taller holds more" is true on one or two of the four in EVERY pack
+    // and a tie lands on exactly one of them.
+    //
+    // NO FRESHNESS RETRY HERE, and that is the point rather than an omission.
+    // A pair's two counts are fixed by the pack, so a retry could not change the
+    // surface even if it wanted to; what keeps the four pages distinct is that
+    // they take four different pairs whose count pairs were dealt distinct, and
+    // `capacitySetup` reserved all four surfaces in the shared guard before any
+    // weighing page drew. Both halves of QG-1 and QG-4 are therefore satisfied
+    // by construction instead of by redrawing.
+    const pair = nextCapacityPair(guard);
+    return ((r: Rng) => {
+      const tallN = cupsOf(r, guard, pair.tall);
+      const wideN = cupsOf(r, guard, pair.wide);
       const tallFirst = r.chance(0.5);
       const thingA = tallFirst ? pair.tall : pair.wide;
       const thingB = tallFirst ? pair.wide : pair.tall;
@@ -766,7 +1100,7 @@ function holdsMore(): ItemGen {
           ],
           {
             relation: 'compare',
-            alt: twoRowAlt('cups', thingA, thingB),
+            alt: rowAlt('cups', [thingA, thingB]),
             asserts: assertsParam('a', 'group:0'),
           },
         ),
@@ -792,7 +1126,8 @@ function holdsMore(): ItemGen {
         authorMeta: { stepCount: 1, cognitiveOp: 'compare-capacity', isDiscrimination: true },
       };
       return draft;
-    });
+    })(rng);
+  };
 }
 
 // ===========================================================================
@@ -800,20 +1135,21 @@ function holdsMore(): ItemGen {
 // ===========================================================================
 
 /**
- * One trio, its counts dealt out in the trio's own declared weight order, and
- * the display order drawn afterwards.
+ * One trio, each member's count read out of the pack registry, and the display
+ * order drawn afterwards.
  *
- * Three distinct counts, sorted heaviest-to-lightest before they are handed out,
- * so the picture asserts the real ordering and never merely a winner. The
- * DISPLAY order is then shuffled independently, which is what keeps the answer
+ * The counts are not drawn here at all any more: the trio is listed heaviest
+ * first and its three members sit in three different weight bands, so whatever
+ * the registry already holds for them - or draws for them now - is guaranteed to
+ * come out in the trio's declared order. That is what makes a page's ordering
+ * true of the objects AND consistent with every other page in the pack at the
+ * same time.
+ *
+ * The DISPLAY order is shuffled independently, which is what keeps the answer
  * off a fixed place in the spoken list.
  */
-function layOutTrio(r: Rng, trio: readonly [Weighable, Weighable, Weighable]) {
-  const picked = r
-    .shuffle([2, 3, 4, 5, 6, 7, 8, 9])
-    .slice(0, 3)
-    .sort((x, y) => y - x);
-  const entries = trio.map((t, i) => ({ name: t.name, rank: t.size, count: picked[i] }));
+function layOutTrio(r: Rng, guard: TupleGuard, trio: readonly [Weighable, Weighable, Weighable]) {
+  const entries = trio.map((t) => ({ name: t.name, rank: t.size, count: blocksOf(r, guard, t.name) }));
   const shown = r.shuffle(entries);
   return { entries, shown, heaviest: entries[0], biggest: entries.find((e) => e.rank === 'big')! };
 }
@@ -847,7 +1183,7 @@ function trioFigure(shown: ReadonlyArray<{ name: string; count: number }>) {
     shown.map((e) => ({ count: e.count, noun: 'blocks', label: e.name })),
     {
       relation: 'compare',
-      alt: threeRowAlt(shown.map((e) => e.name)),
+      alt: rowAlt('blocks', shown.map((e) => e.name)),
       asserts: assertsParam('a', 'group:0'),
     },
   );
@@ -861,9 +1197,9 @@ function trioFigure(shown: ReadonlyArray<{ name: string; count: number }>) {
  * is three-way rather than two-way, every option is keyed on about a third of
  * draws, and there is no rank to sit at because the options are names rather
  * than numbers. Measured over 2,000 packs across its three slots against a 33.3%
- * chance floor: "the biggest thing" wins 33.0-34.3%, "the middling one"
- * 31.4-32.9%, "the smallest one" 34.0-34.3% and "whatever is named first"
- * 32.1-33.0% - which is what it looks like when no habit is worth anything. What it asks is also strictly more than the pair form asks: a
+ * chance floor: "the biggest thing" wins 32.8-34.3%, "the middling one"
+ * 31.9-35.1%, "the smallest one" 32.1-34.0% and "whatever is named first"
+ * 31.8-35.3% - which is what it looks like when no habit is worth anything. What it asks is also strictly more than the pair form asks: a
  * pair can be settled by seeing which row runs further, while three rows have to
  * be counted and held.
  *
@@ -872,10 +1208,17 @@ function trioFigure(shown: ReadonlyArray<{ name: string; count: number }>) {
  * option that is not the heaviest fails QG-11 rather than shipping.
  */
 function heaviestOfThree(): ItemGen {
-  return (rng, guard, difficulty) =>
-    drawUniqueItem(rng, guard, (r) => {
-      const trio = r.pick(WEIGHT_TRIOS);
-      const { shown, heaviest } = layOutTrio(r, trio);
+  return (rng, guard, difficulty) => {
+    // ONE SIZE EACH, PER PACK. The three non-puppet three-way pages take the
+    // big, the middling and the small heaviest between them, in a drawn order,
+    // so the isomorph note's claim of thirds is true of the pack a child
+    // actually receives rather than of the average over thousands. Taken once
+    // per item so a freshness redraw swaps to the OTHER trio of the same size
+    // rather than spending the next page's size.
+    const want = heaviestSize(rng, guard);
+    return drawUniqueItem(rng, guard, (r) => {
+      const trio = r.pick(WEIGHT_TRIOS.filter((t) => t[0].size === want));
+      const { shown, heaviest } = layOutTrio(r, guard, trio);
       const { choices, correctKey } = makeChoices(
         r,
         `the ${heaviest.name}`,
@@ -912,6 +1255,7 @@ function heaviestOfThree(): ItemGen {
       };
       return draft;
     });
+  };
 }
 
 /**
@@ -938,7 +1282,7 @@ function puppetPicksBiggest(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       const trio = r.pick(MISLEADING);
-      const { shown, heaviest, biggest } = layOutTrio(r, trio);
+      const { shown, heaviest, biggest } = layOutTrio(r, guard, trio);
       const puppet = r.pick(PUPPETS);
       const { choices, correctKey } = makeChoices(
         r,
@@ -978,6 +1322,15 @@ function puppetPicksBiggest(): ItemGen {
             counts: shown.map((e) => e.count),
             nouns: shown.map((e) => e.name),
             which: 'biggest',
+            // WHAT THE PUPPET SAID, recorded in the params rather than only in
+            // the prompt. It is the misconception this page exists to show, so
+            // the page is not reproducible from its params without it — and it
+            // also keeps this item's identity distinct from the plain three-way
+            // item, which shares the template. Without that, `makeWeekBuilder`'s
+            // Form-B core-collision check could see the two as the same item and
+            // rebuild one, which cost the size schedule a slot on 4% of packs
+            // (measured) before it was found.
+            puppetPicked: biggest.name,
           },
           seed: r.uint(),
         },
@@ -1009,10 +1362,11 @@ function weighStory(): ItemGen {
     const draw = drawFresh(
       rng,
       guard,
-      (r) => ({ n: r.int(3, 9), thing: r.pick(WEIGH_ALONE), name: one(r), seed: r.uint() }),
+      (r) => ({ thing: r.pick(WEIGH_ALONE), name: one(r), seed: r.uint() }),
       (v) => `thing:weight:${v.thing}`,
     );
-    const { n, thing, name } = draw;
+    const { thing, name } = draw;
+    const n = containerBlocks(rng, guard, thing);
     const draft: ItemDraft = {
       type: 'word-problem',
       prompt: scenePrompt(
@@ -1047,10 +1401,11 @@ function fillStory(): ItemGen {
     const draw = drawFresh(
       rng,
       guard,
-      (r) => ({ n: r.int(3, 9), thing: r.pick(FILL_ALONE), name: one(r), seed: r.uint() }),
+      (r) => ({ thing: r.pick(FILL_ALONE), name: one(r), seed: r.uint() }),
       (v) => `thing:capacity:${v.thing}`,
     );
-    const { n, thing, name } = draw;
+    const { thing, name } = draw;
+    const n = cupsOf(rng, guard, thing);
     const draft: ItemDraft = {
       type: 'word-problem',
       prompt: scenePrompt(
@@ -1103,7 +1458,7 @@ function sortByWeight(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       const trio = r.pick(WEIGHT_TRIOS);
-      const { shown } = layOutTrio(r, trio);
+      const { shown } = layOutTrio(r, guard, trio);
       const order = shown.slice().sort((x, y) => x.count - y.count).map((e) => e.name);
       const draft: ItemDraft = {
         type: 'reasoning',
@@ -1249,7 +1604,7 @@ export const buildA20 = makeWeekBuilder({
             { count: 3, noun: 'cups', label: 'tall bottle' },
             { count: 6, noun: 'cups', label: 'wide dish' },
           ],
-          { relation: 'compare', alt: twoRowAlt('cups', 'tall bottle', 'wide dish') },
+          { relation: 'compare', alt: rowAlt('cups', ['tall bottle', 'wide dish']) },
         ),
       },
     ],
@@ -1278,7 +1633,7 @@ export const buildA20 = makeWeekBuilder({
           { count: 2, noun: 'blocks', label: 'balloon' },
           { count: 4, noun: 'blocks', label: 'stone' },
         ],
-        { relation: 'compare', alt: twoRowAlt('blocks', 'balloon', 'stone') },
+        { relation: 'compare', alt: rowAlt('blocks', ['balloon', 'stone']) },
       ),
     },
     {
@@ -1293,7 +1648,7 @@ export const buildA20 = makeWeekBuilder({
           { count: 5, noun: 'cups', label: 'tall vase' },
           { count: 9, noun: 'cups', label: 'wide tin' },
         ],
-        { relation: 'compare', alt: twoRowAlt('cups', 'tall vase', 'wide tin') },
+        { relation: 'compare', alt: rowAlt('cups', ['tall vase', 'wide tin']) },
       ),
     },
     {
@@ -1319,7 +1674,7 @@ export const buildA20 = makeWeekBuilder({
           { count: 8, noun: 'blocks', label: 'book' },
           { count: 4, noun: 'blocks', label: 'key' },
         ],
-        { relation: 'compare', alt: threeRowAlt(['kite', 'book', 'key']) },
+        { relation: 'compare', alt: rowAlt('blocks', ['kite', 'book', 'key']) },
       ),
     },
   ],
@@ -1382,15 +1737,17 @@ export const buildA20 = makeWeekBuilder({
    * the same drawn array the picture is built from, so the two cannot disagree
    * (disclosure 9 explains why no `asserts` clause points at it).
    */
-  puzzle: (r) => {
-    const ladder = r.pick(PUZZLE_LADDERS);
-    // Four distinct counts, dealt out heaviest-first so the picture asserts the
-    // ladder's own ordering and never contradicts what the objects are.
-    const counts = r
-      .shuffle([2, 3, 4, 5, 6, 7, 8, 9])
+  puzzle: (r, guard) => {
+    // FOUR OF THE CLOSED CONTAINERS, and their counts come from the pack
+    // registry, so the sack the puzzle ranks is the same weight as the sack a
+    // day page weighed. Their contents are unknown, so any ranking among them is
+    // honest - which is why the puzzle does not use the named objects, whose
+    // ordering a child already has an opinion about.
+    const all = r
+      .shuffle([...WEIGH_ALONE])
       .slice(0, 4)
-      .sort((x, y) => y - x);
-    const all = ladder.map((name, i) => ({ name, count: counts[i] }));
+      .map((name) => ({ name, count: containerBlocks(r, guard, name) }))
+      .sort((x, y) => y.count - x.count);
     // The benchmark is never the heaviest, so at least one row always beats it
     // and the page is never "color nothing".
     const mark = all[r.int(1, 3)];
@@ -1419,7 +1776,7 @@ export const buildA20 = makeWeekBuilder({
         rows.map((row) => ({ count: row.count, noun: 'blocks', label: row.name })),
         {
           relation: 'compare',
-          alt: `a row of blocks for the ${rows[0].name}, and another for the ${rows[1].name}, the ${rows[2].name} and the ${rows[3].name}`,
+          alt: rowAlt('blocks', rows.map((row) => row.name)),
         },
       ),
       answer: {
@@ -1442,7 +1799,7 @@ export const buildA20 = makeWeekBuilder({
     { gen: puppetMixUp, diff: 3 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh things and counts off a separate stream. 01: how many blocks balance one thing, typed as a number. 02: three things measured in blocks, heaviest tapped - the biggest thing is the answer on a third of draws, the middling one on a third and the smallest on a third, so no size is a shortcut. 03: how many cups fill one container, typed as a number. 04: two containers, one tall and one wide, asked either way round, with a genuine tie on one draw in five. 05: a weighing story whose blocks arrive in a heap rather than a line, so keeping a place is the work. 06: the puppet who answers from the sizes, with the two honest alternatives beside his. Three of the six take a typed number rather than a tap, because a heavier-or-lighter question has exactly two answers and a two-option page certifies a coin flip; the plain two-way form teaches on Days 1-3 and certifies nothing. No thing is weighed twice or filled twice anywhere in the pack, so no slot repeats another slot object.',
+    'Pairs by index; same generator and difficulty per slot, fresh things and counts off a separate stream. 01: how many blocks balance one thing, typed as a number. 02: three things measured in blocks, heaviest tapped. The three pages of this shape in a pack take one size each - one keyed on the biggest object, one on the middling one, one on the smallest - so the thirds are a property of the pack a child receives, not an average over thousands of them (measured: 500 of 500 packs). 03: how many cups fill one container, typed as a number. 04: two containers, one tall and one wide, asked either way round. The four pouring pages in a pack take the four container pairs one each, dealt so the taller one really holds more on one or two of them and never on three or four, and so exactly one of the four is a genuine tie (measured: 500 of 500 packs). 05: a weighing story whose blocks arrive in a heap rather than a line, so keeping a place is the work. 06: the puppet who answers from the sizes, with the two honest alternatives beside his. Three of the six take a typed number rather than a tap, because a heavier-or-lighter question has exactly two answers and a two-option page certifies a coin flip; the plain two-way form teaches on Days 1-3 and certifies nothing. Every named thing has ONE count for the whole pack: the sack that balances 6 blocks on Monday balances 6 on Friday and 6 in both mastery forms, and a container fills the same number of cups wherever it appears (measured over 500 packs: 0 with any thing carrying two different counts).',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',
@@ -1451,7 +1808,7 @@ export const buildA20 = makeWeekBuilder({
         'Answers with the bigger thing whenever weight is asked about. It is not laziness: size is the only evidence a picture offers until something is measured, and almost everything a small child lifts happens to follow the rule.',
       exampleWrongAnswer: 'a balloon balancing 2 blocks called heavier than a stone balancing 8',
       distractorRationale:
-        'Offer the other thing on every comparison, and build the pool so the bigger one really is heavier half the time - so the habit is punished without teaching the mirror rule that big things are always light.',
+        'Offer the other thing on every comparison, and SCHEDULE each pack so the bigger one really is heavier on one or two of its three pair pages and on exactly one of its three three-way pages - so the habit is punished without teaching the mirror rule that big things are always light.',
       reteachPointer: 'explanation/script[2] (the huge balloon that only two blocks balance)',
     },
     {
@@ -1461,7 +1818,7 @@ export const buildA20 = makeWeekBuilder({
         'Reads a tall narrow container as holding more than a wide one, and a short row of counters as a small number. Height and length stand in for quantity long before counting is trusted.',
       exampleWrongAnswer: 'a tall bottle taking 3 cups called fuller than a wide dish taking 6',
       distractorRationale:
-        'Offer the tall container on every pouring comparison, and draw which one actually holds more so the shape never settles it.',
+        'Offer the tall container on every pouring comparison, and deal the four pouring pages of a pack so the taller one really holds more on one or two of them - never on three or four - with one of the four a genuine tie. The shape then settles nothing in any pack, not merely on average.',
       reteachPointer: 'guidedExamples/A20-GE-02 (the tall vase that holds less than the wide tin)',
     },
     {
