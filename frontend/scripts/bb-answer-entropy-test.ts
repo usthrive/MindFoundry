@@ -274,6 +274,14 @@ for (const { level, week } of weeks) {
        */
       const project = (it: Item): Item => {
         if (level !== 'A' || (it.choices && it.choices.length >= 2)) return it;
+        // MIRROR `AnswerEntry`'S ORDER EXACTLY. It returns the ungraded
+        // "I did it!" acknowledge button for `manual-review` BEFORE it ever
+        // reaches `tapOptionsFor`, so projecting those items would judge four
+        // buttons no child is ever shown — a gate manufacturing its own
+        // findings. Caught by the A12 author reading this projection against
+        // the component. When a gate mirrors a UI, the ORDER of the branches is
+        // part of what it has to mirror.
+        if ((it as unknown as { answer?: { validation?: string } }).answer?.validation === 'manual-review') return it;
         const opts = tapOptionsFor(it as never);
         if (!opts) return it;
         const answer = String((it as unknown as { answer?: { value?: unknown } }).answer?.value ?? '');
