@@ -27,11 +27,14 @@
  * say what the parts are.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import ScratchPad from '@/components/ui/ScratchPad';
 import type { Stroke } from '@/components/ui/ScratchPad';
 import type { InteractionBand } from '../copy';
+import type { BBFigure } from '../figures/types';
+import BBFigureView from './figures/BBFigureView';
+import { promptText } from '../figures/prompt';
 
 /** Session-scoped per-item stroke store (P3 persistPerItem). */
 const strokeStore = new Map<string, Stroke[]>();
@@ -54,6 +57,20 @@ export interface BBScratchPadProps {
   defaultOpen?: boolean;
   /** Replaces the standing encouragement. Must name no operation and no count. */
   invitation?: string;
+  /**
+   * The item the pad is being used FOR. Supplying it enables full-screen mode.
+   *
+   * Reported from real use: "when my son opens the scratch pad he cannot see the
+   * question". The pad was a fixed 220px strip (280 at band A) at the bottom of a
+   * scrolling page, so opening it pushed the question off the top and left a
+   * child drawing two-digit working inside a letterbox. Full-screen gives the
+   * canvas the room, and PINS the question above it — including the FIGURE,
+   * because half these problems are about a picture and a pad that hides the
+   * picture is exactly as useless as one that hides the words.
+   */
+  item?: { prompt: string; figure?: BBFigure };
+  /** Speaks the pinned prompt; band A cannot read it. */
+  onReplayPrompt?: () => void;
 }
 
 /** Content-free stage names. Never an operation, never a quantity. */
@@ -66,8 +83,11 @@ export default function BBScratchPad({
   title,
   defaultOpen = false,
   invitation,
+  item,
+  onReplayPrompt,
 }: BBScratchPadProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [full, setFull] = useState(false);
   const [spaces, setSpaces] = useState(() => layoutStore.get(itemKey) ?? 1);
 
   // PracticePage keeps one instance mounted and swaps `itemKey` between items, so
@@ -80,6 +100,7 @@ export default function BBScratchPad({
     setSyncedKey(itemKey);
     setSpaces(layoutStore.get(itemKey) ?? 1);
     setOpen(defaultOpen);
+    setFull(false);
   }
 
   const chooseSpaces = (n: number) => {
@@ -88,9 +109,132 @@ export default function BBScratchPad({
   };
 
   const height = band === 'A' ? 280 : 220;
+
+  /**
+   * The base ScratchPad takes a fixed pixel height — it has no fill-height mode —
+   * so full screen derives one from the viewport and follows a rotation. Half the
+   * screen with a 280px floor: enough for two-digit working on a phone, and the
+   * pinned question keeps the rest.
+   */
+  const [fullHeight, setFullHeight] = useState(() =>
+    typeof window === 'undefined' ? 420 : Math.max(280, Math.round(window.innerHeight * 0.5)),
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => { setFullHeight(Math.max(280, Math.round(window.innerHeight * 0.5))); };
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); };
+  }, []);
   // Band A gets no divider chooser: at that band the pad is a drawing space for
   // counting objects, and staged working is not yet the method being taught.
   const offerStages = band !== 'A';
+
+  const canFullScreen = Boolean(item);
+
+  const pad = (isFull: boolean) => (
+    <div className="relative">
+      <ScratchPad
+        fillWidth
+        height={isFull ? fullHeight : height}
+        initialStrokes={strokeStore.get(itemKey) ?? []}
+        onStrokesChange={(strokes) => strokeStore.set(itemKey, strokes)}
+        backgroundStyle="blank"
+      />
+      {spaces > 1 && (
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="flex h-full w-full">
+            {Array.from({ length: spaces }, (_, i) => (
+              <div
+                key={i}
+                className={cn('relative h-full flex-1', i > 0 && 'border-l border-dashed border-gray-300')}
+              >
+                <span className="absolute left-2 top-1 text-xs font-medium text-gray-400">
+                  {STAGE_LABELS[i]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const stageChooser = offerStages && (
+    <div className="flex flex-wrap items-center gap-2 px-1">
+      <span className="text-sm text-text-secondary">Working spaces</span>
+      <div className="flex gap-1" role="group" aria-label="How many working spaces">
+        {[1, 2, 3].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => chooseSpaces(n)}
+            aria-pressed={spaces === n}
+            className={cn(
+              'min-h-[36px] min-w-[36px] rounded-lg border px-3 text-sm font-medium transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation',
+              spaces === n
+                ? 'border-primary bg-primary-light text-primary-700'
+                : 'border-gray-200 bg-white text-text-secondary hover:bg-gray-50',
+            )}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  /**
+   * FULL SCREEN — the canvas takes the screen and the QUESTION IS PINNED ABOVE IT.
+   *
+   * The pinned header carries the prompt, the figure, and the replay-aloud
+   * control, because those are the three things a child loses when the pad opens.
+   * The figure is capped at 28vh so the canvas keeps the majority of the screen
+   * on a phone; the header scrolls internally if a long prompt and a tall figure
+   * both need room, and the canvas never shrinks below half the viewport.
+   *
+   * The pad still solves nothing: this is the same blank surface, at a usable
+   * size, beside the same question.
+   */
+  if (full && item) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label="Working space">
+        <div className="flex max-h-[45vh] shrink-0 flex-col gap-2 overflow-y-auto border-b border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <p className={cn('font-medium text-text-primary', band === 'A' ? 'text-xl' : 'text-lg')}>
+              {promptText(item.prompt)}
+            </p>
+            <div className="flex shrink-0 gap-2">
+              {onReplayPrompt && (
+                <button
+                  type="button"
+                  onClick={onReplayPrompt}
+                  aria-label="Read the question again"
+                  className="min-h-[44px] min-w-[44px] rounded-xl border border-gray-200 bg-white text-xl focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
+                >
+                  <span aria-hidden="true">🔊</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFull(false)}
+                className="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 font-medium text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+          {item.figure && (
+            <div className="max-h-[28vh] overflow-hidden">
+              <BBFigureView figure={item.figure} band={band} />
+            </div>
+          )}
+          {stageChooser}
+        </div>
+        <div className="min-h-0 flex-1 p-2">{pad(true)}</div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('w-full', className)}>
@@ -106,63 +250,28 @@ export default function BBScratchPad({
       >
         <span>{title ?? (band === 'A' ? 'Drawing space' : 'Scratch pad')}</span>
         <span aria-hidden="true" className={cn('transition-transform', open && 'rotate-180')}>
-          ⌄
+          &#8964;
         </span>
       </button>
       {open && (
         <div className="mt-2 rounded-2xl border border-gray-200 bg-white p-2">
-          {offerStages && (
-            <div className="mb-2 flex flex-wrap items-center gap-2 px-1">
-              <span className="text-sm text-text-secondary">Working spaces</span>
-              <div className="flex gap-1" role="group" aria-label="How many working spaces">
-                {[1, 2, 3].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => chooseSpaces(n)}
-                    aria-pressed={spaces === n}
-                    className={cn(
-                      'min-h-[36px] min-w-[36px] rounded-lg border px-3 text-sm font-medium transition-colors',
-                      'focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation',
-                      spaces === n
-                        ? 'border-primary bg-primary-light text-primary-700'
-                        : 'border-gray-200 bg-white text-text-secondary hover:bg-gray-50',
-                    )}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {/* The canvas is one surface; the dividers sit above it and never take
-              pointer events, so a stroke may still cross a boundary. A child who
-              needs more room should not be stopped by a line we drew. */}
-          <div className="relative">
-            <ScratchPad
-              fillWidth
-              height={height}
-              initialStrokes={strokeStore.get(itemKey) ?? []}
-              onStrokesChange={(strokes) => strokeStore.set(itemKey, strokes)}
-              backgroundStyle="blank"
-            />
-            {spaces > 1 && (
-              <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-                <div className="flex h-full w-full">
-                  {Array.from({ length: spaces }, (_, i) => (
-                    <div
-                      key={i}
-                      className={cn('relative h-full flex-1', i > 0 && 'border-l border-dashed border-gray-300')}
-                    >
-                      <span className="absolute left-2 top-1 text-xs font-medium text-gray-400">
-                        {STAGE_LABELS[i]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            {stageChooser}
+            {canFullScreen && (
+              <button
+                type="button"
+                onClick={() => setFull(true)}
+                className={cn(
+                  'ml-auto min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium',
+                  'text-text-secondary transition-colors hover:bg-gray-50',
+                  'focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation',
+                )}
+              >
+                Bigger space
+              </button>
             )}
           </div>
+          {pad(false)}
           {(invitation || offerStages) && (
             <p className="mt-2 px-1 text-sm text-text-secondary">
               {invitation ?? 'Working it out in parts can help. Use a space for each part.'}

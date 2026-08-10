@@ -238,7 +238,7 @@ export default function PuzzleGrove() {
       )}
 
       <div className="mt-auto">
-        <BBScratchPad itemKey={`grove-${current.id}`} band={band} />
+        <BBScratchPad itemKey={`grove-${current.id}`} band={band} item={current} />
       </div>
 
       <AnchorPanel pack={pack} mode="full" band={band} open={anchorOpen} onClose={() => setAnchorOpen(false)} />

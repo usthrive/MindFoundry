@@ -79,6 +79,20 @@ export interface AreaGridParams {
   shadedCols?: number;
   /** Or shade an arbitrary cell count, filled row-major. */
   shaded?: number;
+  /**
+   * Shade SPECIFIC cells by 0-based row-major index — which `shaded` cannot
+   * express, because it fills a prefix.
+   *
+   * This exists for the hundred chart. B1/B10/B13 ship items that say "Ben
+   * shades 44, 54, 64 and 74 on the hundred chart" and "start at 38, move down
+   * one row, then right one square", and the squares they name are scattered,
+   * never a prefix. Before this the chart could not be drawn at all, so those
+   * pages named a chart the child was never shown — found by a real
+   * six-year-old opening the app, not by any gate.
+   *
+   * Ignored when absent, so every existing area-grid is byte-identical.
+   */
+  shadedCells?: number[];
   /** Group labels down the side / across the top ("20", "6" for the rooms). */
   rowLabels?: string[];
   colLabels?: string[];

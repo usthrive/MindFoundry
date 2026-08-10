@@ -179,11 +179,44 @@ export function barModel(
 export function areaGrid(
   params: {
     rows: number; cols: number; shaded?: number; shadedRows?: number; shadedCols?: number;
+    shadedCells?: number[];
     rowLabels?: string[]; colLabels?: string[]; cellLabels?: string[]; showCounts?: boolean;
   },
   opts: { alt: string; asserts?: FigureAssertion },
 ): BBFigure {
   return { type: 'area-grid', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
+/**
+ * A hundred chart — ten rows of ten, numbered `start`..`start + 99`, with any
+ * squares in `highlight` shaded.
+ *
+ * WHY THIS EXISTS. B1, B10 and B13 ship items that say "On the hundred chart,
+ * what number sits directly BELOW 21?", "Ben shades 44, 54, 64 and 74 on the
+ * hundred chart" and "start at 38, move down one row, then right one square" —
+ * with NO figure at all. Twenty-six such items across live Level B. A child was
+ * being told to read a chart that was never on the screen, and the hint said
+ * "Look at the shaded squares on the chart" beside nothing. Reported by the
+ * owner's six-year-old, who opened the app and could not see it; no gate could,
+ * because the figure census counts `[image: …]` brackets and these items carry
+ * none.
+ *
+ * `highlight` takes the NUMBERS a week names, not indices, so a template can
+ * never shade the wrong square by an off-by-one — the mapping to a row-major
+ * index happens here, once.
+ */
+export function hundredChart(
+  opts: { start?: number; highlight?: number[]; alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  const start = opts.start ?? 1;
+  const cells = Array.from({ length: 100 }, (_, i) => String(start + i));
+  const highlight = (opts.highlight ?? [])
+    .map((n) => n - start)
+    .filter((i) => i >= 0 && i < 100);
+  return areaGrid(
+    { rows: 10, cols: 10, cellLabels: cells, ...(highlight.length ? { shadedCells: highlight } : {}) },
+    opts,
+  );
 }
 
 /**
