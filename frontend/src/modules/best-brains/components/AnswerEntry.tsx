@@ -75,6 +75,45 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
 
   // --- A band: tap options for numeric answers -----------------------------
   if (band === 'A') {
+    /**
+     * UNGRADED BAND-A TASKS ARE ACKNOWLEDGED, NEVER TYPED.
+     *
+     * `manual-review` is the make/show/tell form: "Draw 3 counters in the
+     * frame", "Sort them, fewest first. Tell how you know." `checkAnswer`
+     * already returns `{correct: true, ungraded: true}` for it — the item cannot
+     * affect a score — and yet the entry fell through to a TEXT BOX, so a
+     * three-to-five-year-old who cannot read was shown a keyboard for a task
+     * that was not being marked. 22 such items across the authored Level-A
+     * weeks.
+     *
+     * The maths here is the doing and the telling, both of which happen away
+     * from the screen. So the screen's only job is to let him say he has
+     * finished, in one oversized tap, with no adult in the loop — the prompt is
+     * already read aloud to him, and nothing he does here can be wrong.
+     */
+    if (item.answer.validation === 'manual-review') {
+      return (
+        <div className={cn('flex justify-center', className)}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onSubmit('done')}
+            className={cn(
+              'flex min-h-[96px] items-center justify-center gap-3 rounded-3xl bg-white px-10',
+              'text-3xl font-bold text-text-primary shadow-lg',
+              'transition-all hover:scale-105 hover:bg-gray-50 active:scale-95',
+              'focus:outline-none focus:ring-4 focus:ring-primary/40 touch-manipulation select-none',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
+            aria-label="I did it"
+          >
+            <span aria-hidden="true">✓</span>
+            <span>I did it!</span>
+          </button>
+        </div>
+      );
+    }
+
     const options = tapOptionsFor(item);
     if (options) {
       return (
