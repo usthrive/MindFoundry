@@ -117,7 +117,25 @@ export interface TenFrameParams {
  * pictures (A14/A16), the scattered-vs-row conservation trap (A1/A5).
  */
 export interface CountersParams {
-  groups: Array<{ count: number; icon?: CounterIcon; label?: string }>;
+  /**
+   * `spread` multiplies the SPACING of one row without changing counter size,
+   * and it exists for exactly one lesson: the A5 conservation trap, "a long row
+   * of 5 beside a tight row of 6 — which is MORE?".
+   *
+   * Before it, `compare` derived a single pitch from the longest row and started
+   * every row at the same left edge, so inside one figure more counters ALWAYS
+   * occupied more width — which made the trap structurally undrawable even
+   * though this file and `CountersFig` both advertised it. A1/A2 worked around
+   * it across two script figures; A5, whose whole recipe IS the trap, could not.
+   *
+   * The counters stay the SAME SIZE in every row (`r` is derived from the
+   * unscaled pitch). Only the gaps change. That distinction is the pedagogy: the
+   * misconception under test is "it takes up more room, so it's more", and
+   * growing the counters themselves would pose a different — and dishonest —
+   * illusion. Default 1 in every row, which reproduces the previous layout
+   * exactly, so no existing figure moves.
+   */
+  groups: Array<{ count: number; icon?: CounterIcon; label?: string; spread?: number }>;
   /** Default 'row'. 'scatter' is deterministic, not random. */
   arrangement?: 'row' | 'rows' | 'scatter' | 'ring' | 'stack';
   /** How the groups relate: a join plus, a remove slash, or a comparison rule. */

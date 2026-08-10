@@ -8,7 +8,12 @@
  * be arguing with the item it illustrates.
  *
  * `compare` is A5's entire lesson and is therefore a layout, not a decoration:
- * the two rows are drawn on a shared pitch with each counter above its partner.
+ * the two rows are drawn on a shared pitch with each counter above its partner —
+ * unless a row asks for a `spread`, which multiplies ITS spacing only. That is
+ * how "a long row of 5 beside a tight row of 6" becomes drawable: without it,
+ * one pitch was derived from the longest row and every row began at the same
+ * left edge, so more counters always meant more width and A5's conservation
+ * trap could not be posed at all. Counter size is unchanged by spread.
  * The pairing threads and the ring around the leftovers are OPT-IN
  * (`showPairs` / `markExtra`), because drawing them performs the matching the
  * child is being asked to perform — a scaffold placed under the exact step
@@ -267,13 +272,22 @@ export default function CountersFig({ params, size }: FigurePartProps<'counters'
   // ---- compare: rows stacked on a shared pitch, partner above partner -------
   if (relation === 'compare' && groups.length >= 2) {
     const gutter = hasLabel ? 62 : 12;
-    const maxN = Math.max(1, ...groups.map((g) => Math.max(0, g.count)));
-    const pitch = Math.min(26, (W - gutter - 14) / maxN);
+    // Per-row spacing multiplier (default 1). A row's WIDTH is count x pitch x
+    // spread, so the frame has to be sized against the widest SCALED row, not
+    // the longest one — with spread the two can be different rows, which is the
+    // entire point of A5's trap.
+    const spreadOf = (j: number) => Math.max(0.2, groups[j].spread ?? 1);
+    const maxSpan = Math.max(1, ...groups.map((g, j) => Math.max(0, g.count) * spreadOf(j)));
+    const pitch = Math.min(26, (W - gutter - 14) / maxSpan);
+    // Counter SIZE stays tied to the unscaled pitch, so a spread row has the same
+    // counters further apart rather than bigger ones. See CountersParams.spread.
     const r = pitch * 0.36;
     const rowGap = Math.max(14, pitch * 0.6);
     const top = 12;
     const rowY = (j: number) => top + pitch / 2 + j * (pitch + rowGap);
-    const cx = (i: number) => gutter + (i + 0.5) * pitch;
+    /** Cell width for row j — pitch when unspread, so existing figures are unmoved. */
+    const cell = (j: number) => pitch * spreadOf(j);
+    const cx = (j: number, i: number) => gutter + (i + 0.5) * cell(j);
     const H = r2(top + groups.length * pitch + (groups.length - 1) * rowGap + 12);
 
     const starts: number[] = [];
@@ -288,8 +302,10 @@ export default function CountersFig({ params, size }: FigurePartProps<'counters'
           return Array.from({ length: Math.max(0, pair) }, (_, i) => (
             <line
               key={`p${j}-${i}`}
-              x1={r2(cx(i))} y1={r2(rowY(j) + r + 2)}
-              x2={r2(cx(i))} y2={r2(rowY(j + 1) - r - 2)}
+              // Slants when the two rows are spread differently — which is what a
+              // one-to-one match across unequal spacings actually looks like.
+              x1={r2(cx(j, i))} y1={r2(rowY(j) + r + 2)}
+              x2={r2(cx(j + 1, i))} y2={r2(rowY(j + 1) - r - 2)}
               stroke={FIG.inkFaint} strokeWidth={r2(STROKE.hair * ls)} strokeDasharray="3 3"
             />
           ));
@@ -307,8 +323,10 @@ export default function CountersFig({ params, size }: FigurePartProps<'counters'
           return (
             <rect
               key={`x${j}`}
-              x={r2(cx(from) - pitch / 2 + 1)} y={r2(rowY(longer) - pitch / 2 - 1)}
-              width={r2((to - from) * pitch - 2)} height={r2(pitch + 2)} rx={r2(4)}
+              // The leftovers live in the row with the larger COUNT, so the ring
+              // is measured in that row's own cell width.
+              x={r2(cx(longer, from) - cell(longer) / 2 + 1)} y={r2(rowY(longer) - pitch / 2 - 1)}
+              width={r2((to - from) * cell(longer) - 2)} height={r2(pitch + 2)} rx={r2(4)}
               fill="none" stroke={FIG.attention} strokeWidth={r2(STROKE.thin * ls)} strokeDasharray="5 3"
             />
           );
@@ -328,11 +346,11 @@ export default function CountersFig({ params, size }: FigurePartProps<'counters'
                 </text>
               )}
               {Array.from({ length: n }, (_, i) => (
-                <g key={`c${i}`}>{glyph(icon, cx(i), rowY(j), r, ls)}</g>
+                <g key={`c${i}`}>{glyph(icon, cx(j, i), rowY(j), r, ls)}</g>
               ))}
               {Array.from({ length: n }, (_, i) => starts[j] + i)
                 .filter((gi) => crossed > 0 && gi >= firstCrossed)
-                .map((gi) => strike(cx(gi - starts[j]), rowY(j), r, ls, gi))}
+                .map((gi) => strike(cx(j, gi - starts[j]), rowY(j), r, ls, gi))}
             </g>
           );
         })}

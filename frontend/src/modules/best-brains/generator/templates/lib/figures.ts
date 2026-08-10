@@ -78,7 +78,7 @@ export function counters(
  * MODELLING only and no assessed item can acquire them by accident.
  */
 export function counterGroups(
-  groups: Array<{ count: number; noun: string; label?: string }>,
+  groups: Array<{ count: number; noun: string; label?: string; spread?: number }>,
   opts: {
     arrangement?: string;
     relation?: 'none' | 'join' | 'remove' | 'compare';
@@ -91,7 +91,15 @@ export function counterGroups(
     type: 'counters',
     alt: opts.alt,
     params: {
-      groups: groups.map((g) => ({ count: g.count, icon: iconFor(g.noun), ...(g.label ? { label: g.label } : {}) })),
+      groups: groups.map((g) => ({
+        count: g.count,
+        icon: iconFor(g.noun),
+        ...(g.label ? { label: g.label } : {}),
+        // Emitted only when supplied, so every existing call produces a
+        // byte-identical figure. See CountersParams.spread — it widens a row's
+        // SPACING (not its counters) and exists for A5's conservation trap.
+        ...(g.spread !== undefined ? { spread: g.spread } : {}),
+      })),
       arrangement: arrangementFor(opts.arrangement ?? 'row'),
       ...(opts.relation ? { relation: opts.relation } : {}),
       ...(opts.crossedOut !== undefined ? { crossedOut: opts.crossedOut } : {}),
