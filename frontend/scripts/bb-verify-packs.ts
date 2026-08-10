@@ -178,18 +178,21 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
         `lesson script ${r.scriptFigs}/${r.scriptSegs} drawn · guided examples ${r.geFigs}/${r.ges} drawn`,
     );
   }
-  // The named residue. B1.0 shipped ten primitives; these eight Level-A surfaces
-  // want an eleventh, twelfth or thirteenth, so they are DECLARED rather than
-  // quietly tolerated. The renderer already prevents the L27 harm everywhere —
+  // The named residue. B1.0 shipped ten primitives; these Level-A surfaces want
+  // an eleventh, twelfth or thirteenth, so they are DECLARED rather than quietly
+  // tolerated. The renderer already prevents the L27 harm everywhere —
   // `PromptFigure` shows the direction as a quiet caption, never raw bracket
   // characters — so what is left here is missing ARTWORK, not broken output.
   // The assertion is that this list does not GROW: any newly un-migrated
   // Level-A item fails the gate.
+  //
+  // 2026-08-09: four `A2-*` entries were removed. They described shape-pattern
+  // strips in an A2 that no longer exists (the week was rebuilt onto the frame),
+  // so they had become permits that could never match — the mirror of a detector
+  // that never fires, silently pre-authorising anything that reused those ids.
+  // The printed list now equals the measured count; if it ever does not, one of
+  // the two is lying. (L49)
   const FIGURE_DEBT: Record<string, string> = {
-    'A2-D5-01': 'shape-pattern strip (AB/ABB/AAB) — not one of the ten primitives',
-    'A2-D5-02': 'shape-pattern strip',
-    'A2-D5-03': 'shape-pattern strip',
-    'A2-PZ-01': 'shape-pattern train — same strip primitive',
     'A15-D2-01': 'hands/fingers manipulative; a five-frame would silently swap the authored manipulative',
     'A15-D4-03': 'deliberately NOT drawn: the item\'s own rationale says one group is drawn larger and spread out, and a one-to-one compare figure would hand over the answer the conservation trap exists to withhold',
     'A15-D5-04': 'a shape gallery (triangle/circle/square side by side) — angle-figure draws one polygon and no circle',
@@ -198,6 +201,15 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
   const undeclared = unmigratedA.filter((m) => !FIGURE_DEBT[m.split(':')[0]]);
   for (const miss of undeclared) console.error(`  FAIL  Level A prints an UNDECLARED placeholder — ${miss}`);
   assert(undeclared.length === 0, `Level A has no undeclared [image: …] prompts (${undeclared.length} found)`);
+
+  // …and the permit list must not outlive what it permits. A key matching no
+  // observed surface is a dead permit: it reports nothing, looks like diligence,
+  // and pre-authorises whatever later reuses that id. Four such keys survived an
+  // entire A2 rebuild before anyone noticed (L49).
+  const observedA = new Set(unmigratedA.map((m) => m.split(':')[0]));
+  const deadPermits = Object.keys(FIGURE_DEBT).filter((id) => !observedA.has(id));
+  for (const id of deadPermits) console.error(`  FAIL  FIGURE_DEBT declares '${id}', which no Level-A surface emits — stale permit`);
+  assert(deadPermits.length === 0, `FIGURE_DEBT has no dead permits (${deadPermits.length} found)`);
   console.log(`  Level-A figure debt: ${unmigratedA.length} declared surfaces awaiting a primitive B1.0 does not have`);
   for (const [id, why] of Object.entries(FIGURE_DEBT)) console.log(`    · ${id} — ${why}`);
 }

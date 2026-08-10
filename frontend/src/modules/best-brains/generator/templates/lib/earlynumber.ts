@@ -340,9 +340,17 @@ export function howManyChoice(opts: CountOpts): ItemGen {
         rationale: `${k === 1 ? 'One' : 'Two'} too few - what skipping an object gives.`,
       });
       let shape = r.int(0, 2);
-      // Both-below needs n-2 >= 0; straddle needs n-1 >= 0. Step up, don't redraw.
-      if (shape === 0 && n - 2 < 0) shape = 2;
-      if (shape === 1 && n - 1 < 0) shape = 2;
+      // Both-below needs n-2 >= 1; straddle needs n-1 >= 1. Step up, don't redraw.
+      //
+      // The bound is 1, not 0. At n = 2 the old `n - 2 < 0` let the both-below
+      // pairing through and `tooFew(2)` offered "0" beside a picture plainly
+      // holding two things — measured on 10% of draws at {min:2,max:5}. Zero is
+      // not a miscount of a non-empty set; it is an option no child who looked
+      // at the picture could pick, which is the dead-option shape (L38/§E2.11)
+      // rather than an honest error. Every shipped caller draws n >= 3, so no
+      // existing pack moves — verified by pack-hash.
+      if (shape === 0 && n - 2 < 1) shape = 2;
+      if (shape === 1 && n - 1 < 1) shape = 2;
       const pair =
         shape === 0
           ? [tooFew(1), tooFew(2)] // answer is the BIGGEST on offer
@@ -815,13 +823,46 @@ export function patternNext(opts: { kind: 'AB' | 'ABB' | 'AAB'; length?: number 
       const [nounA, nounB] = twoNouns(r);
       const nouns = [nounA, nounB];
       const run = Array.from({ length: len }, (_, i) => patternAt(kind, i));
+      /**
+       * BOTH kinds must appear in the printed run, and this guard is load-bearing
+       * on the SPOKEN gate rather than on tidiness.
+       *
+       * The keyed option is now the singular ("the duck") and the strip prints
+       * singulars, so the answer's own token IS in the scene on every draw —
+       * measured 3,000/3,000. What stops that being a band-A audio leak is rule
+       * G4: a scene that names EVERY option has singled out none. That holds only
+       * while the run contains both nouns. `AAB` at length 2 prints "duck, duck",
+       * the distractor drops out of the scene, G4 stops firing and the keyed
+       * answer is read aloud before the question (L48).
+       *
+       * A numeric floor would express this indirectly; this asserts the property
+       * the gate actually depends on, and throws at draw time like `ask()` does,
+       * so it cannot be violated silently by a future week. Every shipped caller
+       * draws length >= 4.
+       */
+      if (new Set(run).size < 2) {
+        throw new Error(
+          `earlynumber patternNext: a ${kind} run of ${String(len)} prints only one kind, ` +
+            `so the scene names only the keyed option and G4 cannot suppress the R1 leak`,
+        );
+      }
       const nextIdx = patternAt(kind, len);
       const nextNoun = nouns[nextIdx];
       const otherNoun = nouns[1 - nextIdx];
       const scene = run.map((slot) => unitFor(1, nouns[slot])).join(', ');
-      const { choices, correctKey } = makeChoices(r, `the ${nextNoun}`, [
+      // SINGULAR, because exactly ONE thing comes next. The strip is printed with
+      // `unitFor(1, …)` ("duck, leaf, leaf, …"), so keying the bare plural made
+      // the options read "the ducks" / "the leaves" — and at band A those are
+      // SPOKEN: "What comes next in the pattern? The ducks." A pre-reader is
+      // being asked for one element and hears a plural for it. Found by the A11
+      // author reading their own generated week; no gate could see it, because
+      // `acceptableForms` below still carries the plural that
+      // `a_pattern_next_v1` recomputes, so QG-11 was green either way.
+      const nextOne = unitFor(1, nextNoun);
+      const otherOne = unitFor(1, otherNoun);
+      const { choices, correctKey } = makeChoices(r, `the ${nextOne}`, [
         {
-          text: `the ${otherNoun}`,
+          text: `the ${otherOne}`,
           errorTag: 'concept-misconception',
           rationale: 'Swaps every time - reads any pattern as a simple back-and-forth.',
         },
@@ -839,7 +880,15 @@ export function patternNext(opts: { kind: 'AB' | 'ABB' | 'AAB'; length?: number 
           { alt: scene },
         ),
         choices,
-        answer: { value: correctKey, acceptableForms: [`the ${nextNoun}`, nextNoun], validation: 'choice-key' },
+        // The singular pair is what the child sees and taps; the plural pair is
+        // what `a_pattern_next_v1` returns, and QG-11 needs one of these to match
+        // it (validator.ts: `wholeMatch(correct.text) || acceptableForms.some(…)`).
+        // Both renderings of the same answer, exactly as the QG-11 article fix did.
+        answer: {
+          value: correctKey,
+          acceptableForms: [`the ${nextOne}`, nextOne, `the ${nextNoun}`, nextNoun],
+          validation: 'choice-key',
+        },
         difficulty,
         strand: 'computational',
         isRetrieval: false,

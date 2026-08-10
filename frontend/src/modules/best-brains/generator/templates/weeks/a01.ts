@@ -552,8 +552,15 @@ const countScatter = withHints(
   countArrangement({ min: 3, max: 5, arrangement: 'scattered' }),
   hints('Pick one to start on, so none are missed.', 'Slide each one aside once it is counted.'),
 );
+// The ring needs a floor of THREE, and the note above is why it was missed: the
+// row floor was raised to two and the ring inherited it, but two things cannot
+// make a ring — they make a pair. Measured 67 of 200 seeds serving "2 shells in
+// a ring", whose hints then say "go round once and stop where you began" over a
+// picture with no round to go. Same defect as the row of one, one arrangement
+// along; found by the A12 author reading a generated week that shares this
+// warm-up. A ring of three is the smallest honest one.
 const countRing = withHints(
-  countArrangement({ min: 2, max: 5, arrangement: 'in a ring' }),
+  countArrangement({ min: 3, max: 5, arrangement: 'in a ring' }),
   hints('Choose one to be first in the ring.', 'Go round once and stop where you began.'),
 );
 
