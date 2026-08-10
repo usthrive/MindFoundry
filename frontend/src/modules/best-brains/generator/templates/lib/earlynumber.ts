@@ -1285,7 +1285,11 @@ export function compareSets(opts: { which: 'more' | 'fewer'; min: number; max: n
           },
         ),
         choices,
-        answer: { value: correctKey, acceptableForms: [correctText, winner], validation: 'choice-key' },
+        // Deduped: on the one-in-five EQUAL draw `correctText` and `winner` are
+        // both "they are the same", so the accepted list shipped the same string
+        // twice. Harmless to matching, but it makes a duplicate look intentional
+        // to anyone reading a generated pack.
+        answer: { value: correctKey, acceptableForms: [...new Set([correctText, winner])], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
@@ -1319,7 +1323,16 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
   const { attr } = opts;
   const SCENES: Record<MeasureAttr, { things: ReadonlyArray<readonly [string, string]>; unit: string; question: string }> = {
     length: {
-      things: [['red ribbon', 'blue ribbon'], ['green string', 'yellow string'], ['long stick', 'short stick']],
+      // NEVER name a thing after the attribute the item asks about. The pool used
+      // to carry ['long stick', 'short stick'] against the question "Which one is
+      // longer?", which fails both ways round: on the 74% of draws where the long
+      // stick was keyed, "tap the one called long" scored full marks without any
+      // measuring; and on the rest the page contradicted itself — "the short stick
+      // measures 8 steps, the long stick 3. Which one is longer?" keys the SHORT
+      // stick, which is not a discrimination, it is an absurdity a five-year-old
+      // would be right to object to. Distinguish the pair by colour, which is
+      // orthogonal to length.
+      things: [['red ribbon', 'blue ribbon'], ['green string', 'yellow string'], ['brown stick', 'grey stick']],
       unit: 'steps',
       question: 'Which one is longer?',
     },
@@ -1338,9 +1351,29 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
     drawUniqueItem(rng, guard, (r) => {
       const scene0 = SCENES[attr];
       const [thingA, thingB] = r.pick(scene0.things);
-      const a = r.int(4, 9);
+      let a = r.int(4, 9);
       let b = r.int(2, 8);
       if (b === a) b = a > 4 ? a - 2 : a + 2;
+      /**
+       * WHICH THING GETS THE LARGER COUNT IS DRAWN. Without this the answer was
+       * the FIRST THING NAMED on 73.5% of draws (measured, 6,000 draws per
+       * attribute): `a` is drawn 4-9 against `b` at 2-8, and the tie nudge sends
+       * four of its five cases to `a` as well. At band A, where the scene is read
+       * aloud, that is a page a child scores by tapping whatever the audio names
+       * first.
+       *
+       * For the WEIGHT pool it was worse than a guessable page. The pairs are
+       * bag/ball, book/leaf and rock/feather, and the first-named is the
+       * heavier-LOOKING thing in each — so the generator confirmed "the thing
+       * that looks heavier is heavier" 73% of the time, which is precisely the
+       * misconception A20 exists to unseat (FILL-ARCHITECTURE §3: "bigger !=
+       * heavier"). A generator that teaches against its own week is worse than
+       * one that is merely guessable.
+       *
+       * Swapping the COUNTS rather than the things keeps the scene sentence's
+       * word order fixed, so nothing about the prose or the figure changes shape.
+       */
+      if (r.chance(0.5)) { const t = a; a = b; b = t; }
       const winner = a > b ? thingA : thingB;
       const loser = a > b ? thingB : thingA;
       const verb = attr === 'length' ? 'measures' : attr === 'weight' ? 'balances' : 'fills';
