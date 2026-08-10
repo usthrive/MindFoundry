@@ -36,10 +36,23 @@ export const DAYS_PER_WEEK = 5;
 // DD1 mastery gate — the un-overridable advancement law
 // ---------------------------------------------------------------------------
 
-/** Pass threshold as a fraction (DD1: 85%, band 80–90, tune in-band only). */
-export const MASTERY_THRESHOLD = 0.85;
+/**
+ * Pass threshold (DD1 band 80–90, tune in-band only).
+ *
+ * 85 -> 80 on 2026-08-10, by owner ruling, because 85% over a SIX-item mastery
+ * form demanded a perfect score: 5/6 is 83.3%, which failed. Every level ships
+ * 6-item forms, so the effective bar was 6/6 on all 120 cells — a four-year-old
+ * who slipped once in six was told he had not mastered the week. It also made
+ * `fastTrackPct: 95` unreachable as a distinct tier, since 6/6 already cleared
+ * it. At 80 the tiers separate as designed: 5/6 passes, 6/6 fast-tracks.
+ *
+ * The arithmetic of a threshold against a SHORT form is the thing to check when
+ * either number moves: a percentage bar only expresses what the form length can
+ * represent.
+ */
+export const MASTERY_THRESHOLD = 0.80;
 /** Pass threshold as a percent, matching pack.masteryCheck.passThresholdPct. */
-export const MASTERY_THRESHOLD_PCT = 85;
+export const MASTERY_THRESHOLD_PCT = 80;
 /** DD1 tuning band bounds — passThresholdPct may only move within [80, 90]. */
 export const MASTERY_BAND_MIN_PCT = 80;
 export const MASTERY_BAND_MAX_PCT = 90;
