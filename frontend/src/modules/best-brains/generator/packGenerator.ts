@@ -92,6 +92,7 @@ import { buildD13 } from './templates/weeks/d13';
 import { buildD14 } from './templates/weeks/d14';
 import { buildD15 } from './templates/weeks/d15';
 import { buildD16 } from './templates/weeks/d16';
+import { buildD17 } from './templates/weeks/d17';
 import { buildD18 } from './templates/weeks/d18';
 import { buildD19 } from './templates/weeks/d19';
 import { buildD20 } from './templates/weeks/d20';
@@ -195,6 +196,7 @@ const WEEK_BUILDERS: ReadonlyMap<string, WeekBuilder> = new Map<string, WeekBuil
   ['D14', buildD14],
   ['D15', buildD15],
   ['D16', buildD16],
+  ['D17', buildD17],
   ['D18', buildD18],
   ['D19', buildD19],
   ['D20', buildD20],
@@ -221,7 +223,7 @@ export const V2_WEEKS: ReadonlySet<string> = new Set<string>([
   'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16',
   'C17', 'C18', 'C19', 'C20', 'C21', 'C22', 'C23', 'C24', 'D1', 'D2', 'D3', 'D4',
   'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15', 'D16',
-  'D18', 'D19', 'D20', 'D21', 'D22', 'D23', 'D24', 'E1', 'E13',
+  'D17', 'D18', 'D19', 'D20', 'D21', 'D22', 'D23', 'D24', 'E1', 'E13',
 // <<< END V2 WEEKS >>>
 ]);
 
@@ -301,6 +303,7 @@ export const GENERATED_WEEKS: ReadonlyArray<{ level: BBLevel; week: number }> = 
   { level: 'D', week: 14 },
   { level: 'D', week: 15 },
   { level: 'D', week: 16 },
+  { level: 'D', week: 17 },
   { level: 'D', week: 18 },
   { level: 'D', week: 19 },
   { level: 'D', week: 20 },
@@ -318,6 +321,42 @@ export const AVAILABLE_WEEKS: ReadonlyArray<{ level: BBLevel; week: number; sour
   ...GENERATED_WEEKS.map((w) => ({ ...w, source: 'template' as const })),
   ...FIXTURE_WEEKS.map((w) => ({ ...w, source: 'fixture' as const })),
 ];
+
+/**
+ * Cells with an authored builder that a pinned fixture SHADOWS — the builder is
+ * registered and type-checked, but `generatePack` returns the fixture, so these
+ * weeks are served to nobody.
+ *
+ * Exported because they were invisible: every gate enumerates AVAILABLE_WEEKS
+ * (which reports the fixture) or GENERATED_WEEKS (which excludes them), so
+ * `weeks/b14.ts` sat unvalidated from the day it was written. `bb-verify-packs`
+ * now runs the full template battery over this list via `buildShadowedPack`.
+ */
+export const SHADOWED_WEEKS: ReadonlyArray<{ level: BBLevel; week: number }> = [...WEEK_BUILDERS.keys()]
+  .map((key) => {
+    const m = key.match(/^([A-E])(\d+)$/);
+    return m ? { level: m[1] as BBLevel, week: Number(m[2]) } : null;
+  })
+  .filter((w): w is { level: BBLevel; week: number } => w !== null)
+  .filter((w) => getFixture(w.level, w.week) !== undefined);
+
+/**
+ * Generate the pack a cell's BUILDER produces, bypassing the fixture loader.
+ * Only for gates auditing a shadowed builder — child-facing code must use
+ * `generatePack`, which honours the fixture.
+ */
+export function buildShadowedPack(
+  level: BBLevel,
+  week: number,
+  packSeed: number,
+  contentVersion: string = CONTENT_VERSION,
+): WeeklyConceptPack {
+  const builder = WEEK_BUILDERS.get(`${level}${week}`);
+  if (!builder) throw new Error(`No builder registered for ${level} week ${week}`);
+  const pack = builder(packSeed, contentVersion);
+  if (versionAtLeast(contentVersion, 1, 1)) applyRetrievalRamp(pack);
+  return pack;
+}
 
 export function hasPackContent(level: BBLevel, week: number): boolean {
   return WEEK_BUILDERS.has(`${level}${week}`) || getFixture(level, week) !== undefined;

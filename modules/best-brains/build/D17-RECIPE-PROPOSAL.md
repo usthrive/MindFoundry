@@ -1,6 +1,11 @@
 # d17 — recipe hunt result, an enablement finding, and a derived recipe
 
-**FLAGGED FOR OWNER REVIEW — nothing authored yet.** 2026-08-11, system-fix Phase 1 Task 2b.
+> **RULED 2026-08-11: option A. BUILT AND SHIPPED the same day.** `weeks/d17.ts` is authored to the
+> §4 recipe and now serves the (D,17) cell; MFM_D17 is untouched on disk and stays in the
+> calibration set. Delivered with the §3 guardrail. Outcome record at the foot of this file (§6);
+> everything above it is the pre-ruling analysis, left unedited.
+
+**Original status: FLAGGED FOR OWNER REVIEW — nothing authored yet.** 2026-08-11, system-fix Phase 1 Task 2b.
 The phase prompt (§5.2b) requires: locate the recipe; if none exists, derive one from d16/d18
 continuity + the audit's Grade-4/5 mapping and **flag it for owner review before authoring**. No
 recipe exists (§1), and the hunt surfaced something that changes what "author d17" should mean
@@ -101,3 +106,39 @@ templateId) — so this is a blueprint-only build, no new library work.
 The seam audit's M6 wk8 ("Estimate before you add", 5.NF.A.2 word problems) remains a **separate
 NEW week** under the M-ladder. D17 opens that standard; it does not close it. Nothing in this
 proposal presupposes R1/R2.
+
+---
+
+## 6. Outcome record (post-ruling, 2026-08-11)
+
+**What shipped**
+
+| Change | File |
+|---|---|
+| The week — v2 blueprint to the §4 recipe, anchor "naming wall" | `generator/templates/weeks/d17.ts` (new) |
+| Fixture roles split: `ALL_FIXTURES` (calibration, never shrinks) vs `SERVED_FIXTURES` (answers `getFixture`). D17 left the served set; **MFM_D17 is byte-unchanged and still exported**, plus a new `getPinnedFixture` for calibration reads | `generator/fixtures/index.ts` |
+| `SHADOWED_WEEKS` + `buildShadowedPack` — a cell with a builder that a fixture shadows is now enumerable and buildable, for gates only | `generator/packGenerator.ts` |
+| **The §3 guardrail**: the full template battery (validator, determinism, no-authorMeta, templateId resolution, Form-A/B disjointness, catalog agreement, seed sensitivity) now runs over shadowed builders | `scripts/bb-verify-packs.ts` |
+| `FIXTURE_BACKED` derived from the loader's served list instead of hand-listed, so unpinning a cell promotes it automatically | `scripts/bb-wire-weeks.ts` |
+| d17 wired (import · `WEEK_BUILDERS` · `V2_WEEKS` · `GENERATED_WEEKS`) | `generator/packGenerator.ts` (generated regions) |
+
+**Measured after**
+
+- `bb-verify-packs`: **22,059 assertions, 0 failures** (was 21,653 — the +406 are the shadowed-builder
+  battery now running on b14, plus D17 moving from fixture checks to template checks).
+  **Level D coverage now reads 24/24 servable — 24 template, 0 fixture.**
+- **b14's shadowed builder PASSES** the battery it had never been run through. It was never broken;
+  it was unverified. That distinction is the whole point of the guardrail.
+- Full nine gates green, plus QG-11 and QG-12 regression suites green.
+- 200-seed content sweep: 1,400 part-whole items, **0 out of range** — added after a read of the
+  served pack found the allotment item could total more than one whole plot (a generated-content
+  bug the gates do not catch, because "1 1/3 of a plot is planted" is arithmetically true and
+  pedagogically nonsense). The draw is now constrained by construction.
+
+**What is deliberately unchanged**
+
+- `MFM_D17` itself, its style-gate calibration role, and QG-11's v1 fixture set.
+- The A15 and B14 cells: still fixture-served. `weeks/b14.ts` remains shadowed — now visible and
+  validated, so unpinning B14 later is a one-line change to `SERVED_FIXTURES` plus a re-wire.
+- `SEAM-AUDIT-K8.md`'s classification of 5.NF.A.1 (still TAUGHT at this cell) and 5.NF.A.2 (still
+  TOUCHED-ONLY — the M6 wk8 NEW week closes it; d17 only opens the standard, per §5).

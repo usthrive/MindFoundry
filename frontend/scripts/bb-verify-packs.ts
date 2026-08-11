@@ -16,6 +16,8 @@
 
 import {
   AVAILABLE_WEEKS,
+  SHADOWED_WEEKS,
+  buildShadowedPack,
   generatePack,
   validatePack,
   surfaceSignature,
@@ -131,6 +133,78 @@ for (const cell of AVAILABLE_WEEKS) {
     }
   }
   console.log(`  ok (${cell.source})`);
+}
+
+// ---------------------------------------------------------------------------
+// Fixture-SHADOWED builders — the enablement gap this harness used to have.
+//
+// A cell whose builder is registered but whose pinned fixture is served is
+// reported by AVAILABLE_WEEKS as a fixture and is absent from GENERATED_WEEKS,
+// so every gate looked straight past it: `weeks/b14.ts` (1,177 lines) was
+// authored, wired, listed in V2_WEEKS — and validated by nothing from the day it
+// landed. Same battery as a template cell, driven off the builder directly.
+// ---------------------------------------------------------------------------
+if (SHADOWED_WEEKS.length) {
+  console.log(`\nFixture-shadowed builders (${SHADOWED_WEEKS.length}) — validated via the builder, not the served cell`);
+}
+for (const cell of SHADOWED_WEEKS) {
+  const label = `${cell.level}${cell.week} (shadowed)`;
+  console.log(`— Pack ${label}`);
+  const bySeed: string[] = [];
+
+  for (const seed of SEEDS) {
+    const pack = buildShadowedPack(cell.level, cell.week, seed);
+
+    const contract = V2_WEEKS.has(`${cell.level}${cell.week}`) ? 'v2' : 'v1';
+    const result = validatePack(pack, { contract });
+    if (!result.valid) {
+      for (const viol of result.violations) {
+        console.error(`  FAIL  [${label} seed ${seed}] ${viol.gate} @ ${viol.path}: ${viol.message}`);
+      }
+    }
+    assert(result.valid, `${label} [seed ${seed}] validator: ${result.violations.length} violation(s)`);
+
+    const again = buildShadowedPack(cell.level, cell.week, seed);
+    assert(packJson(pack) === packJson(again), `${label} [seed ${seed}] same seed regenerates deep-equal pack`);
+    assert(!packJson(pack).includes('"authorMeta"'), `${label} [seed ${seed}] emitted pack carries no authorMeta`);
+
+    for (const it of generatorItems(pack)) {
+      if (it.generator) {
+        assert(
+          getTemplate(it.generator.templateId) !== undefined,
+          `${label} [seed ${seed}] item ${it.id} templateId "${it.generator.templateId}" resolves in registry`,
+        );
+      }
+    }
+
+    const { formA, formB } = pack.masteryCheck;
+    assert(formA.length === formB.length, `${label} [seed ${seed}] formA/formB pair by index`);
+    formA.forEach((a, i) => {
+      const b = formB[i];
+      assert(a.prompt !== b.prompt, `${label} [seed ${seed}] formB[${i}] prompt differs from formA[${i}]`);
+      const sa = surfaceSignature(a);
+      const sb = surfaceSignature(b);
+      if (sa && sb) assert(sa !== sb, `${label} [seed ${seed}] formB[${i}] operand surface differs from formA[${i}]`);
+    });
+
+    const cat = getCatalogWeek(cell.level, cell.week);
+    assert(cat !== undefined, `${label} [seed ${seed}] catalog has cell ${cell.level}${cell.week}`);
+    if (cat) {
+      assert(
+        pack.identity.conceptId === cat.conceptId,
+        `${label} [seed ${seed}] conceptId "${pack.identity.conceptId}" matches catalog "${cat.conceptId}"`,
+      );
+    }
+
+    bySeed.push(packJson(pack));
+  }
+
+  for (let i = 0; i < SEEDS.length; i++) {
+    for (let j = i + 1; j < SEEDS.length; j++) {
+      assert(bySeed[i] !== bySeed[j], `${label} seeds ${SEEDS[i]} vs ${SEEDS[j]} produce different surfaces`);
+    }
+  }
+  console.log('  ok (shadowed builder)');
 }
 
 // ---------------------------------------------------------------------------

@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { FIXTURE_WEEKS } from '../src/modules/best-brains/generator/fixtures';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WEEKS_DIR = path.join(ROOT, 'src/modules/best-brains/generator/templates/weeks');
@@ -60,7 +61,7 @@ const v2Block = v2.length
     }, []).join('\n')
   : '';
 /**
- * A cell backed by a PINNED FIXTURE must not be advertised as a template.
+ * A cell SERVED by a pinned fixture must not be advertised as a template.
  *
  * `generatePack` resolves fixtures first, so where both exist the fixture wins
  * and the template is unreachable — yet listing it under GENERATED_WEEKS told
@@ -69,8 +70,14 @@ const v2Block = v2.length
  * mirror template landed. The builder stays imported and registered (so it is
  * type-checked, testable, and ready if the fixture is ever unpinned); it is only
  * the "servable template" claim that is withdrawn.
+ *
+ * DERIVED, not hand-listed (2026-08-11): this set is read from the fixture
+ * loader's own SERVED list, so unpinning a cell there (as D17 was, once
+ * `weeks/d17.ts` landed) automatically promotes it here. A hardcoded copy would
+ * be a second source of truth, and the two would drift the first time a fixture
+ * changed role.
  */
-const FIXTURE_BACKED = new Set(['A15', 'B14', 'D17']);
+const FIXTURE_BACKED = new Set(FIXTURE_WEEKS.map((w) => `${w.level}${w.week}`));
 const generated = weeks
   .filter((w) => !FIXTURE_BACKED.has(`${w.level}${w.week}`))
   .map((w) => `  { level: '${w.level}', week: ${w.week} },`)
