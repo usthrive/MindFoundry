@@ -27,7 +27,7 @@
  * say what the parts are.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import ScratchPad from '@/components/ui/ScratchPad';
 import type { Stroke } from '@/components/ui/ScratchPad';
@@ -71,7 +71,30 @@ export interface BBScratchPadProps {
   item?: { prompt: string; figure?: BBFigure };
   /** Speaks the pinned prompt; band A cannot read it. */
   onReplayPrompt?: () => void;
+  /**
+   * The answer control, rendered at the FOOT of the full-screen pad.
+   *
+   * Reported from real use: the pad is unusable at 220px on a phone or iPad, and
+   * the fix is not a bigger button to press first — opening the pad should simply
+   * take the screen. But a pad that takes the screen hides the answer control,
+   * which sits on the page beneath it, so the child has to close the pad to
+   * answer and the working disappears at the moment they need it.
+   *
+   * So the answer comes WITH the pad: question pinned above, working space in the
+   * middle, answer at the foot — the shape of a worked page. It is a render prop
+   * because the pad owns its own open/full state: call `close()` from the
+   * caller's own submit handler and the overlay steps aside as the answer lands.
+   *
+   *   answerSlot={(close) => (
+   *     <AnswerEntry item={item} band={band}
+   *       onSubmit={(a) => { close(); handleAnswer(a); }} />
+   *   )}
+   */
+  answerSlot?: (close: () => void) => ReactNode;
 }
+
+/** Vertical padding on the full-screen canvas box (`p-2`, top + bottom). */
+const PAD_BOX_PADDING = 16;
 
 /** Content-free stage names. Never an operation, never a quantity. */
 const STAGE_LABELS = ['First', 'Then', 'Next'] as const;
@@ -85,6 +108,7 @@ export default function BBScratchPad({
   invitation,
   item,
   onReplayPrompt,
+  answerSlot,
 }: BBScratchPadProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [full, setFull] = useState(false);
@@ -112,24 +136,82 @@ export default function BBScratchPad({
 
   /**
    * The base ScratchPad takes a fixed pixel height — it has no fill-height mode —
-   * so full screen derives one from the viewport and follows a rotation. Half the
-   * screen with a 280px floor: enough for two-digit working on a phone, and the
-   * pinned question keeps the rest.
+   * so full screen has to compute one. It used to be `max(280, 50vh)`, which was
+   * a guess made before anything else shared the overlay: with a long prompt, a
+   * tall figure AND an answer row, a fixed half-viewport canvas overflows the
+   * screen and pushes the answer out of reach — the exact problem the overlay
+   * exists to solve, one layer along.
+   *
+   * So the canvas is MEASURED instead: viewport minus whatever the pinned header
+   * and the answer row actually took, floored at 200px so it can never collapse
+   * to a sliver. Both are observed, because the figure's height varies per item
+   * and the answer row's varies per band.
    */
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const canvasBoxRef = useRef<HTMLDivElement | null>(null);
+  const padWrapRef = useRef<HTMLDivElement | null>(null);
   const [fullHeight, setFullHeight] = useState(() =>
-    typeof window === 'undefined' ? 420 : Math.max(280, Math.round(window.innerHeight * 0.5)),
+    typeof window === 'undefined' ? 420 : Math.max(200, Math.round(window.innerHeight * 0.5)),
   );
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const onResize = () => { setFullHeight(Math.max(280, Math.round(window.innerHeight * 0.5))); };
-    window.addEventListener('resize', onResize);
-    return () => { window.removeEventListener('resize', onResize); };
-  }, []);
+
+  /**
+   * `ScratchPad`'s `height` sizes THE CANVAS, not the component: it also draws a
+   * tool strip above and a caption below. Deriving the canvas height from the
+   * viewport therefore overshoots by that chrome, and the first build of this
+   * overlay pushed the answer row off the bottom of a phone — the child could
+   * see two of three options. Found by rendering it and looking, which no gate
+   * here can do for me.
+   *
+   * So measure the box the canvas actually gets, and subtract the pad's own
+   * chrome (its rendered height minus the canvas height we asked for). Both are
+   * observed, so a figure that reflows or an answer row that wraps corrects
+   * itself. It converges in one pass because the chrome is constant.
+   */
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined' || !full) return undefined;
+    const measure = () => {
+      const box = canvasBoxRef.current?.clientHeight ?? 0;
+      const rendered = padWrapRef.current?.offsetHeight ?? 0;
+      if (!box || !rendered) return;
+      const chrome = Math.max(0, rendered - fullHeight);
+      // `clientHeight` includes the box's own p-2, which the pad sits inside.
+      const next = Math.max(160, Math.round(box - chrome - PAD_BOX_PADDING));
+      // Epsilon guard: never re-enter for sub-pixel drift.
+      if (Math.abs(next - fullHeight) > 2) setFullHeight(next);
+    };
+    measure();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    if (ro) {
+      for (const el of [headerRef.current, footerRef.current, canvasBoxRef.current]) if (el) ro.observe(el);
+    }
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+    };
+  }, [full, fullHeight]);
   // Band A gets no divider chooser: at that band the pad is a drawing space for
   // counting objects, and staged working is not yet the method being taught.
   const offerStages = band !== 'A';
 
   const canFullScreen = Boolean(item);
+
+  /**
+   * Leaving full screen returns the page to rest — it does NOT drop the child
+   * back onto the 220px strip they opened to escape. `open` is cleared with
+   * `full` wherever full screen is available, so "Done" means done, and the next
+   * tap on the toggle opens the big pad again rather than the small one.
+   *
+   * The strokes survive either way: they live in the per-item store, keyed on
+   * itemKey, so closing and reopening returns the child to their own working.
+   */
+  const closeFull = useCallback(() => {
+    setFull(false);
+    if (canFullScreen) setOpen(false);
+  }, [canFullScreen]);
 
   const pad = (isFull: boolean) => (
     <div className="relative">
@@ -199,7 +281,10 @@ export default function BBScratchPad({
   if (full && item) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label="Working space">
-        <div className="flex max-h-[45vh] shrink-0 flex-col gap-2 overflow-y-auto border-b border-gray-200 bg-gray-50 px-4 py-3">
+        <div
+          ref={headerRef}
+          className="flex max-h-[45vh] shrink-0 flex-col gap-2 overflow-y-auto border-b border-gray-200 bg-gray-50 px-4 py-3"
+        >
           <div className="flex items-start justify-between gap-3">
             <p className={cn('font-medium text-text-primary', band === 'A' ? 'text-xl' : 'text-lg')}>
               {promptText(item.prompt)}
@@ -217,10 +302,10 @@ export default function BBScratchPad({
               )}
               <button
                 type="button"
-                onClick={() => setFull(false)}
+                onClick={closeFull}
                 className="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 font-medium text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
               >
-                Done
+                {answerSlot ? 'Close' : 'Done'}
               </button>
             </div>
           </div>
@@ -231,7 +316,21 @@ export default function BBScratchPad({
           )}
           {stageChooser}
         </div>
-        <div className="min-h-0 flex-1 p-2">{pad(true)}</div>
+        <div ref={canvasBoxRef} className="min-h-0 flex-1 overflow-hidden p-2">
+          <div ref={padWrapRef}>{pad(true)}</div>
+        </div>
+        {answerSlot && (
+          /**
+           * The answer at the foot of the working area, the way a worked page is
+           * laid out: question at the top, working in the middle, answer at the
+           * bottom. It is `shrink-0` so it can never be squeezed off a short
+           * screen — the canvas gives up the room instead, and is measured
+           * against this row's real height rather than a guess.
+           */
+          <div ref={footerRef} className="shrink-0 border-t border-gray-200 bg-gray-50 px-4 py-3">
+            {answerSlot(closeFull)}
+          </div>
+        )}
       </div>
     );
   }
@@ -240,7 +339,26 @@ export default function BBScratchPad({
     <div className={cn('w-full', className)}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        /**
+         * Opening IS going full screen, wherever full screen is available.
+         *
+         * The old flow made the child open a 220px strip and then find a second
+         * control inside it labelled "Bigger space". Reported from real use, the
+         * strip is unusable on a phone or an iPad — so the intermediate step was
+         * never a feature, it was a toll on the way to the only usable size.
+         *
+         * `defaultOpen` deliberately does NOT take this path: the lesson screen
+         * starts its pad open as an invitation to work along with the teacher,
+         * and a full-screen takeover on arrival would hide the lesson.
+         */
+        onClick={() => {
+          if (canFullScreen) {
+            setOpen(true);
+            setFull(true);
+          } else {
+            setOpen((o) => !o);
+          }
+        }}
         className={cn(
           'flex min-h-[48px] w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-2',
           'font-medium text-text-secondary transition-colors hover:bg-gray-50',

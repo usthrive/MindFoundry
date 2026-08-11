@@ -238,7 +238,25 @@ export default function PuzzleGrove() {
       )}
 
       <div className="mt-auto">
-        <BBScratchPad itemKey={`grove-${current.id}`} band={band} item={current} />
+        {/* The puzzle is the page most likely to need real working room, so the
+            answer rides at the foot of the pad here too. The same adapted item
+            the page's own AnswerEntry uses is passed in, so the two controls
+            cannot disagree about what is being answered. */}
+        <BBScratchPad
+          itemKey={`grove-${current.id}`}
+          band={band}
+          item={current}
+          answerSlot={(close) => (
+            <AnswerEntry
+              item={{ ...(stage.kind === 'item' ? stage.item : puzzleAsItem(stage.puzzle)) }}
+              band={band}
+              onSubmit={(answer) => {
+                close();
+                handleAnswer(answer);
+              }}
+            />
+          )}
+        />
       </div>
 
       <AnchorPanel pack={pack} mode="full" band={band} open={anchorOpen} onClose={() => setAnchorOpen(false)} />

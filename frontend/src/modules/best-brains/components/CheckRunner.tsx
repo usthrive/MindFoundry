@@ -147,7 +147,34 @@ export default function CheckRunner({
       )}
 
       <div className="mt-auto">
-        <BBScratchPad itemKey={`check-${item.id}`} band={band} />
+        {/* The check had no full-screen pad at all: `item` was never passed, so
+            the control that opens it never rendered. A weekly check is exactly
+            where a child most needs room to work, and the pinned question adds
+            no scaffolding — it is the same question already on the screen.
+
+            `answerSlot` is withheld once the item is acknowledged: at that point
+            the page shows the ack and a Next button instead of an answer control,
+            and an answer row inside the pad would offer a second chance to
+            answer an item already banked. */}
+        <BBScratchPad
+          itemKey={`check-${item.id}`}
+          band={band}
+          item={item}
+          answerSlot={
+            acked
+              ? undefined
+              : (close) => (
+                  <AnswerEntry
+                    item={item}
+                    band={band}
+                    onSubmit={(answer) => {
+                      close();
+                      handleAnswer(answer);
+                    }}
+                  />
+                )
+          }
+        />
       </div>
 
       {/* P7 exception: strategy card only — worked examples hidden, honestly framed. */}
