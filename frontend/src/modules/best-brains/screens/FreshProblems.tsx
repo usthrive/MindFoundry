@@ -101,7 +101,9 @@ export default function FreshProblems() {
       pack={pack}
       items={items}
       band={band}
-      storageKey={`bb-check-B${cycle}-${pack.packId}`}
+      /* Keyed on the child — see the note in WeeklyCheck: the resume store now
+         survives a restart, so it must not be shared across children. */
+      storageKey={`bb-check-B${cycle}-${childId}-${pack.packId}`}
       headerLabel="Brand-new problems"
       onItemAnswered={(item, answer, correct, errorTag) => {
         void recordItemAttempt({

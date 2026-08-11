@@ -125,7 +125,9 @@ export default function WeeklyCheck() {
       pack={pack}
       items={items}
       band={band}
-      storageKey={`bb-check-A-${pack.packId}`}
+      /* Keyed on the child: the resume store now outlives the browser session,
+         so a shared tablet would otherwise hand one child another's answers. */
+      storageKey={`bb-check-A-${childId}-${pack.packId}`}
       headerLabel="Last page of the week"
       onItemAnswered={(item, answer, correct, errorTag) => {
         void recordItemAttempt({
