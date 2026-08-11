@@ -32,7 +32,9 @@
  *    hand over a stretch of path with a number lifted out of it, and so does the
  *    puzzle. WHERE the hole falls is drawn, so on a four-long run it is at the
  *    front a quarter of the time, at the back a quarter, and in the middle half
- *    (measured 25.3% / 27.2% / 47.5%). "Say the next number" therefore fails
+ *    (measured 24.2% / 24.0% / 51.8% over 3,000 packs; the five-long run runs
+ *    19.0% / 19.3% / 61.6%, which is the same rotation over one more interior
+ *    spot). "Say the next number" therefore fails
  *    three times in four, "say the one before" three times in four, and reading
  *    the path is the only method that never fails.
  *  - **No timers.** `sprint: null` — a timed element at band A is a hard fail.
@@ -45,7 +47,7 @@
  *    back to the group that holds it (A4), and a ring counted without losing
  *    the place you began at (A1).
  *
- * ── NINE DISCLOSURES (FANOUT kit §E2.3: document the choice in the header) ──
+ * ── TEN DISCLOSURES (FANOUT kit §E2.3: document the choice in the header) ──
  *
  * 1. **WHAT THE SIX CERTIFYING SLOTS WOULD ASK WAS DECIDED BEFORE ANY DAY HAD
  *    CONTENT**, because the answer space here is the tightest in the band. "What
@@ -58,9 +60,12 @@
  *    - **Only one of the six mastery slots offers anything to choose between.**
  *      The other five are typed numbers. Nothing to rank, nothing to eliminate,
  *      and the answer of each one moves across the range rather than sitting in
- *      a pocket: measured over 2,000 packs, the two mend slots key all ten
- *      values (3-17% each), the two-gap slot keys all ten (6-14% each) and the
- *      two story slots key eight (6-18% each). Nor is it a dodge: SAYING the
+ *      a pocket: re-measured over 3,000 packs with the pair ledger of disclosure
+ *      10 in place, the four mend slots key all ten values (3-18% each), the two
+ *      two-gap slots key all ten (4-17% each), and the four story slots key
+ *      eight (5-19% each). Those are the same spreads the slots had before the
+ *      ledger existed, which is not luck — it is what `ROOM` was swept to buy,
+ *      and the sweep is beside `deal`. Nor is it a dodge: SAYING the
  *      number is the skill the week is for, and picking it out of three is a
  *      weaker thing.
  *    - **The slot that does offer options is the puppet page**, three-way, with
@@ -159,12 +164,16 @@
  *    the puppet's own step and `rankThree`'s most-or-fewest — and the mend items
  *    rotate the gap through the front, middle and back of the run, which is the
  *    same fix applied to a form that has no direction word at all. Measured over
- *    3,000 packs: across every page that names ONE number and a direction word,
- *    "always step forward" wins 50.0% and "always step back" 50.0% (n=18,000);
- *    over every `a_neighbour_v1` item in the week the two directions are drawn
- *    30.7% and 30.3% of the time with `between` taking the rest; the puppet
- *    steps forward on 52.2% of his pages and backward on 47.8%; and the ranking
- *    page asks for the smallest group 49.5% of the time. One rate is
+ *    3,000 packs, and re-measured after the pair ledger of disclosure 10 — which
+ *    is why the population is now spelled out rather than named: across the
+ *    twelve pages a pack serves that state ONE number and SAY a direction word
+ *    (the two family steps, the four two-gap pages, the three frog pages and the
+ *    three puppet pages) "always step forward" wins 50.6% and "always step back"
+ *    49.4% (n=36,000), and no one of those twelve slots sits outside 48-55%
+ *    forward. Over every `a_neighbour_v1` item in the week the two directions
+ *    are drawn 30.3% and 30.1% of the time with `between` taking the rest; the
+ *    puppet steps forward on 51.7% of his pages and backward on 48.3%; and the
+ *    ranking page asks for the smallest group 49.1% of the time. One rate is
  *    deliberately NOT held to 50%: `stepBetween` is answered by "one more than
  *    the smaller number shown" on every draw, and that is the mathematics of
  *    between rather than a shortcut — a child doing it is doing the week.
@@ -240,6 +249,57 @@
  *    Nothing was added to `FIGURE_DEBT`; the Level-A un-migrated count went
  *    7 → 4, which is the four A15 fixture surfaces and nothing of this week's.
  *
+ * 10. **THE MASTERY NOTES CLAIMED A FRESHNESS NOTHING ENFORCED, AND IT WAS FALSE
+ *     ON EVERY SEED MEASURED.** `isomorphNotes` used to end "no number, direction
+ *     or run is reused from Form A or from the daily pages". Nothing in the file
+ *     or the assembler checked it. Measured over 500 packs: a certifying page
+ *     repeated a daily page's (number, direction) pair on 99.4% of them, and two
+ *     slots INSIDE one form repeated each other on 74.6% — at seed 33, MA-02 and
+ *     MA-03 were both "the number before 4", which is a mastery check asking one
+ *     question twice. The surface guard did not catch it because it signs on the
+ *     numbers a prompt PRINTS, and a four-long run missing its first number and a
+ *     five-long run missing its first number print different lists while asking
+ *     for the same number in the same direction.
+ *
+ *     The claim is now half enforced and half rewritten, and WHICH half is which
+ *     was decided by counting rather than by preference.
+ *
+ *     THE WEEK'S WHOLE ANSWER SPACE IS 26 PAIRS: `after` 1-9, `before` 2-10,
+ *     `between` 1-8, the ranges being what a 1-10 path allows. A pack serves 23
+ *     pages that carry one — eleven on the days and twelve certifying — so the
+ *     old claim asked for 23 distinct pairs out of 26, at 88% saturation.
+ *     A maximum-matching probe says a seating always exists (0 failures in 20,000
+ *     packs), but only as a global assignment solved before any page is drawn.
+ *     A per-page dealer walking its own grid cannot find it: measured over 30,000
+ *     packs, plain greedy leaves some page with nothing free on 23.8% of them,
+ *     and 15.3% with the `between` axis reserved. Reordering the mastery slots
+ *     most-constrained-first — a real change to the arc a child works through —
+ *     only reaches 1.0%. Three of the eleven daily pages are `neighbourNumber`
+ *     instances that choose their own number inside `lib/`, which this file may
+ *     not edit, so the daily half of the space cannot be steered at all. The
+ *     mastery-versus-daily half of the old claim is therefore NOT enforceable
+ *     from here, and it has been rewritten rather than faked.
+ *
+ *     Restrict it to the twelve certifying pages and it becomes free: 12 pairs
+ *     out of 26, measured 0 failures in 30,000 packs and PROVEN by the counting
+ *     argument beside `deal`. That half is enforced, and it is the half the
+ *     seed-33 defect lived in. What the daily pages get instead is a preference
+ *     with a measured price, swept rather than assumed (the table beside `deal`):
+ *     certifying pages repeat a daily page's pair on 12.4% of pages against
+ *     34.9% with no preference at all (33.5% before this file had a ledger), and
+ *     the certifying slots keep the answer spread disclosure 1 selects them for.
+ *     Stated the other way round, because the flattering unit is the misleading
+ *     one: 88.7% of packs still contain at least one certifying page that
+ *     repeats a daily pair, down from 99.4%. Twelve pages at 12.4% each is
+ *     almost every pack. The per-PAGE rate is what fell by a factor of nearly
+ *     three, and that is all this preference is claimed to do.
+ *
+ *     Nothing outside the mastery forms moved. Verified item by item against the
+ *     pre-ledger builder over 2,000 packs: 0 of 38,000 daily items, 0 of 2,000
+ *     puzzles, and no guided example or explanation changed. Every certifying
+ *     slot did move, on 38.5% (MA-01) to 93.3% (MB-06) of packs — the gradient is
+ *     the ledger filling up — and that is the honest cost of the guarantee.
+ *
  * ── SHARED-LIBRARY DEFECT FOUND HERE, SINCE FIXED IN THE LIBRARY ───────────
  * `neighbourNumber`'s scene used to read "a number path with one number
  * missing", and it is the figure's alt as well as the bracket. The
@@ -257,7 +317,7 @@
 import type { ErrorTag } from '../../../types';
 import type { Rng } from '../../rng';
 import { drawFresh, makeChoices, numberWords } from '../shared';
-import type { ItemDraft } from '../shared';
+import type { ItemDraft, TupleGuard } from '../shared';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
 import {
   compareSets,
@@ -398,6 +458,196 @@ function printedSig(type: string, values: readonly number[]): string {
   return `${type}|${values.map((v) => String(v)).slice().sort().join(',')}`;
 }
 
+// ===========================================================================
+// The (number, direction) ledger — dealt before the page, never redrawn
+// ===========================================================================
+
+/**
+ * WHAT A PAGE OF THIS WEEK ACTUALLY ASKS is a number and a direction: "after 7",
+ * "before 4", "between 5 and 7". Two pages carrying the same pair are the same
+ * question in different clothes, however different the picture and the story
+ * are, because the child says the same word.
+ *
+ * The mastery notes used to end "no number, direction or run is reused from
+ * Form A or from the daily pages", and nothing enforced it. Measured over 500
+ * packs before this ledger existed: a certifying page repeated a daily page's
+ * pair on 99.4% of them, and two slots INSIDE one form repeated each other on
+ * 74.6% — at seed 33, MA-02 and MA-03 were both "the number before 4". The
+ * claim was false on every seed measured. It is now enforced where the draw
+ * space allows and restated where it does not; the arithmetic of why is in
+ * disclosure 10.
+ *
+ * The mechanism is a ledger kept in the pack's OWN surface guard, which every
+ * generator already receives and which is one object per pack, shared by the
+ * days, the puzzle and both mastery forms. Two namespaces, neither of which any
+ * other week or gate reads:
+ *  - `asked`   — written by EVERY path page in the week, daily ones included.
+ *  - `claimed` — written by the twelve certifying pages only.
+ * A certifying page must avoid every `claimed` pair (the hard rule) and prefers
+ * to avoid the `asked` ones too (the soft one). Daily pages only record; their
+ * numbers are untouched, which is why every day and the puzzle come out
+ * byte-identical to before this file gained a ledger.
+ */
+type Dir = 'after' | 'before' | 'between';
+
+/** What some page in this week has already asked. */
+const asked = (n: number, dir: Dir): string => `a6:asked:${dir}:${String(n)}`;
+/** What a certifying page has taken, and no other certifying page may have. */
+const claimed = (n: number, dir: Dir): string => `a6:claimed:${dir}:${String(n)}`;
+
+/**
+ * The pair a built draft asks about, read back off the SAME params QG-11
+ * recomputes the answer from — so the ledger cannot drift from the page. The
+ * puppet's direction lives in his slip rather than in a `kind`: he steps
+ * forward when he double-counts and backward when he skips (disclosure 3).
+ */
+function pairOf(draft: ItemDraft): readonly [number, Dir] | null {
+  const spec = draft.generator;
+  if (!spec) return null;
+  const p = spec.params as { n?: unknown; kind?: unknown; slip?: unknown };
+  if (typeof p.n !== 'number') return null;
+  if (spec.templateId === 'a_neighbour_v1' && typeof p.kind === 'string') return [p.n, p.kind as Dir];
+  if (spec.templateId === 'a_verify_count_slip_v1') return [p.n, p.slip === 'double-count' ? 'after' : 'before'];
+  return null;
+}
+
+/** A daily page: records what it asked and changes nothing. Takes no rng draw. */
+function records(base: ItemGen): ItemGen {
+  return (rng, guard, difficulty) => {
+    const draft = base(rng, guard, difficulty);
+    const p = pairOf(draft);
+    if (p) guard.add(asked(p[0], p[1]));
+    return draft;
+  };
+}
+
+/** A certifying page: records AND claims, so no later certifying page repeats it. */
+function certifies(base: ItemGen): ItemGen {
+  return (rng, guard, difficulty) => {
+    const draft = base(rng, guard, difficulty);
+    const p = pairOf(draft);
+    if (p) {
+      guard.add(asked(p[0], p[1]));
+      guard.add(claimed(p[0], p[1]));
+    }
+    return draft;
+  };
+}
+
+/**
+ * DEAL THE PAIR BEFORE THE PAGE IS BUILT, out of the page's own parameter grid.
+ *
+ * NOT A REDRAW LOOP (kit §E2.4 / L19). The grid is a deterministic rotation of
+ * the form's own parameters STARTING AT WHAT WAS DRAWN, walked with no call to
+ * the rng at all, so the stream is left exactly where the draw left it and no
+ * later item in the pack can be moved by this one. On the common path the first
+ * candidate IS the drawn one and nothing happens.
+ *
+ * Pass one honours the soft rule as well as the hard one; pass two drops the
+ * soft rule. Pass two cannot fail, and the reason is counting rather than luck:
+ * every certifying form's grid holds at least eight distinct pairs, only twelve
+ * certifying pages exist in a pack, so eleven pairs can be claimed before any
+ * given page draws. The two forms with a grid of exactly eight — both `between`
+ * only — compete for `between` against at most five other certifying pages (the
+ * other mailbox page and the four path-mending ones), which leaves three of
+ * their eight free in the worst case that can be constructed. The `grid[0]`
+ * return is therefore unreachable; it is a value, not a fallback policy, and a
+ * probe that forces it is in the report.
+ *
+ * A PREFERENCE WITH ONE WAY LEFT TO SATISFY IT IS NOT A PREFERENCE, and honouring
+ * it there is what wrecks a slot's answer spread. Form B's pages draw last, off a
+ * ledger holding twenty-two of the week's twenty-six pairs, so pass one was
+ * routinely down to a single survivor — and a single survivor is always the same
+ * corner of the same window. Measured over 3,000 packs: the last certifying page
+ * keyed 8 on 31% of them, against 14-20% for that slot before this ledger
+ * existed. Requiring `ROOM` still-open candidates means the page is choosing
+ * rather than being cornered, and the whole frontier was swept rather than
+ * guessed (3,000 packs each; worst per-slot answer mode against the share of
+ * certifying pages that repeat a daily page's pair):
+ *
+ *      room  1 → 2.8% repeat, worst mode 31%   ← a preference taken under duress
+ *      room  2 → 7.5% repeat, worst mode 22%
+ *      room  3 → 12.4% repeat, worst mode 20%  ← shipped
+ *      room  4 → 16.5% repeat, worst mode 20%
+ *      no soft rule → 34.9% repeat, worst mode 21%
+ *
+ * Three is where the answer spread comes all the way back — 20% is what these
+ * slots measured BEFORE the ledger, so the guarantee is bought at no cost to the
+ * property disclosure 1 selects the certifying slots for — while still cutting
+ * repetition of the week's own pages by a factor of nearly three. Past three the
+ * repetition climbs and nothing is bought with it.
+ */
+const ROOM = 3;
+
+function deal<T>(guard: TupleGuard, grid: readonly T[], pairFor: (v: T) => readonly [number, Dir]): T {
+  const unclaimed = grid.filter((v) => { const [n, dir] = pairFor(v); return !guard.taken(claimed(n, dir)); });
+  const fresh = unclaimed.filter((v) => { const [n, dir] = pairFor(v); return !guard.taken(asked(n, dir)); });
+  if (fresh.length >= ROOM) return fresh[0];
+  if (unclaimed.length > 0) return unclaimed[0];
+  return grid[0];
+}
+
+/**
+ * NEAREST FIRST, NOT ROUND THE HOUSES — the ordering every grid below is built
+ * with, and it is a measurement rather than a taste.
+ *
+ * The first version walked the window upward and wrapped, which is the obvious
+ * thing and quietly loads one end: a crowded ledger sent Form B's frog page to
+ * the answer 3 on 25% of packs and Form B's puppet page to 8 on 28%, against a
+ * flat 12-17% for the same slots' honest draw. Walking OUT from what was drawn
+ * — the drawn value, then one either side, then two — is symmetric, so a
+ * displaced page lands beside its own draw instead of at a fixed corner of the
+ * window. Re-measured: 8-19% and 12-19%. Both orderings are deterministic and
+ * neither touches the rng; only one of them keeps the answer spread the
+ * certifying slots are chosen for (disclosure 1).
+ */
+function outward(from: number, lo: number, hi: number): number[] {
+  const at = Math.min(Math.max(from, lo), hi);
+  const out: number[] = [at];
+  for (let d = 1; d <= hi - lo; d++) {
+    if (at + d <= hi) out.push(at + d);
+    if (at - d >= lo) out.push(at - d);
+  }
+  return out;
+}
+
+/**
+ * The stepping forms — `whichWay`, `padStory` and the puppet — share one grid
+ * shape: a number window and a direction. The DRAWN direction is tried right
+ * across the window before the other one is considered, because the direction
+ * coin is a measured 50/50 the week depends on (disclosure 6) and a dealer that
+ * flipped it first would quietly spend it.
+ */
+function dealStep(guard: TupleGuard, n0: number, f0: boolean, lo: number, hi: number): { n: number; forward: boolean } {
+  const grid: Array<{ n: number; forward: boolean }> = [];
+  for (const forward of [f0, !f0]) for (const n of outward(n0, lo, hi)) grid.push({ n, forward });
+  return deal(guard, grid, (v) => [v.n, v.forward ? 'after' : 'before'] as const);
+}
+
+/** `mailStory` has no direction to spend: `between` is the whole of its grid. */
+function dealBetween(guard: TupleGuard, lo0: number, lo: number, hi: number): number {
+  return deal(guard, outward(lo0, lo, hi), (v) => [v, 'between'] as const);
+}
+
+/**
+ * `mendThePath` carries its direction in WHERE the hole falls, so its grid is
+ * the whole (start, hole) rectangle. The drawn hole is walked across every
+ * start before another hole is tried, which is what keeps the front / middle /
+ * back rotation — the thing that makes "say the next one" fail three times in
+ * four — where the draw put it rather than where the ledger would prefer it.
+ */
+function dealRun(guard: TupleGuard, s0: number, h0: number, length: number): { start: number; hole: number } {
+  const grid: Array<{ start: number; hole: number }> = [];
+  for (const hole of outward(h0, 0, length - 1)) {
+    for (const start of outward(s0, 1, 11 - length)) grid.push({ start, hole });
+  }
+  return deal(guard, grid, (v) => {
+    const answer = v.start + v.hole;
+    const kind: Dir = v.hole === 0 ? 'before' : v.hole === length - 1 ? 'after' : 'between';
+    return [kind === 'before' ? answer + 1 : answer - 1, kind] as const;
+  });
+}
+
 /** One number shown, one empty spot beside it. Which side is in the words. */
 const GAP_BESIDE = 'a number path with a gap next to the number shown';
 /** Both spots open — the discrimination page, where the picture decides nothing. */
@@ -441,16 +691,28 @@ const CARD_PATH = 'an empty number path with a spot for every card';
  * three draws in four. This form draws four times a pack — Days 2 and 3, then
  * both mastery forms — so it registers `path:step:<direction>:<n>` instead,
  * which is sixteen surfaces rather than ten and leaves the number free to be
- * uniform (measured: every value 1–10 keyed on 3–14% of draws in each slot).
- * The family's own instances stay in the shared pool, which sees four draws a
- * pack in total.
+ * uniform (re-measured over 3,000 packs: every value 1–10 keyed on 4–17% of
+ * draws in each of the four slots). The family's own instances stay in the
+ * shared pool, which sees four draws a pack in total.
+ *
+ * The two certifying instances are additionally DEALT their (number, direction)
+ * out of the pack's ledger before the page is built, so neither can repeat the
+ * other or any of the four other certifying pages — disclosure 10 and `deal`.
  */
-function stepEitherWay(): ItemGen {
+function stepEitherWay(certifying: boolean): ItemGen {
   return (rng, guard, difficulty) => {
     const draw = drawFresh(
       rng,
       guard,
-      (r) => ({ n: r.int(2, 9), forward: r.chance(0.5), seed: r.uint() }),
+      (r) => {
+        // The two draws, then the deal, then the provenance seed — in that order
+        // on every instance, so the certifying build consumes the stream exactly
+        // as the daily one does and the deal costs nothing (see `deal`).
+        const n0 = r.int(2, 9);
+        const f0 = r.chance(0.5);
+        const dealt = certifying ? dealStep(guard, n0, f0, 2, 9) : { n: n0, forward: f0 };
+        return { n: dealt.n, forward: dealt.forward, seed: r.uint() };
+      },
       (v) => `path:step:${v.forward ? 'f' : 'b'}:${String(v.n)}`,
     );
     const { n, forward } = draw;
@@ -522,15 +784,19 @@ function stepEitherWay(): ItemGen {
  * that describe the picture truthfully (disclosure 2 on which end `between`
  * takes).
  */
-function mendThePath(opts: { length: number }): ItemGen {
-  const { length } = opts;
+function mendThePath(opts: { length: number; certifying: boolean }): ItemGen {
+  const { length, certifying } = opts;
   return (rng, guard, difficulty) => {
     const draw = drawFresh(
       rng,
       guard,
       (r) => {
-        const start = r.int(1, 11 - length);
-        return { start, hole: r.int(0, length - 1), seed: r.uint() };
+        const s0 = r.int(1, 11 - length);
+        const h0 = r.int(0, length - 1);
+        // Dealt BEFORE the signature is taken, so `drawFresh` signs the numbers
+        // this page will actually print rather than the ones it first drew.
+        const dealt = certifying ? dealRun(guard, s0, h0, length) : { start: s0, hole: h0 };
+        return { start: dealt.start, hole: dealt.hole, seed: r.uint() };
       },
       // The numbers this draw will PRINT — every run value except the hole.
       (v) =>
@@ -631,7 +897,7 @@ function rankThreeGroups(): ItemGen {
  * drawn between two honest slips on OPPOSITE sides of the truth — see
  * disclosure 4 for what that buys and what it cannot.
  */
-function puppetStepsPast(): ItemGen {
+function puppetStepsPast(certifying: boolean): ItemGen {
   return (rng, guard, difficulty) => {
     // Ranges chosen so every option a branch can offer stays on a 0-10 path:
     // forward reaches g+3, backward reaches g-3, and neither may fall below 1.
@@ -639,8 +905,18 @@ function puppetStepsPast(): ItemGen {
       rng,
       guard,
       (r) => {
-        const forward = r.chance(0.5);
-        return { forward, given: forward ? r.int(2, 7) : r.int(4, 9), seed: r.uint() };
+        const f0 = r.chance(0.5);
+        const g0 = f0 ? r.int(2, 7) : r.int(4, 9);
+        // The pair is the TRUTH and the puppet's direction, because that is what
+        // the page asks for and what `a_verify_count_slip_v1` is given. Both
+        // branches put the truth in 3-8, so one window serves the whole grid.
+        const t0 = f0 ? g0 + 1 : g0 - 1;
+        const dealt = certifying ? dealStep(guard, t0, f0, 3, 8) : { n: t0, forward: f0 };
+        return {
+          forward: dealt.forward,
+          given: dealt.forward ? dealt.n - 1 : dealt.n + 1,
+          seed: r.uint(),
+        };
       },
       // The prompt prints the puppet's number and the number he stepped from, and
       // a forward step from 5 prints the same pair as a backward step from 7.
@@ -736,12 +1012,14 @@ function puppetStepsPast(): ItemGen {
  * this one. The pond is always bigger than any pad in play, so the spare number
  * is true as well as spare.
  */
-function padStory(): ItemGen {
+function padStory(certifying: boolean): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       const pads = r.int(9, 10);
-      const n = r.int(2, 7);
-      const forward = r.chance(0.5);
+      const n0 = r.int(2, 7);
+      const f0 = r.chance(0.5);
+      const dealt = certifying ? dealStep(guard, n0, f0, 2, 7) : { n: n0, forward: f0 };
+      const { n, forward } = dealt;
       const answer = forward ? n + 1 : n - 1;
       const name = one(r);
       const marks = (forward
@@ -801,10 +1079,11 @@ function padStory(): ItemGen {
  * whichever order the sentence names them in, because that is what
  * `a_neighbour_v1` means by `between` (disclosure 2).
  */
-function mailStory(): ItemGen {
+function mailStory(certifying: boolean): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const lo = r.int(1, 8);
+      const lo0 = r.int(1, 8);
+      const lo = certifying ? dealBetween(guard, lo0, 1, 8) : lo0;
       const hi = lo + 2;
       const answer = lo + 1;
       const loFirst = r.chance(0.5);
@@ -915,56 +1194,50 @@ function fixAndTell(): ItemGen {
  * foot of the header), and the floor is kept for the pedagogical reason it also
  * always had: an answer of 1 leaves nothing to the left of it to step back from.
  */
-const stepAfter = withHints(
-  neighbourNumber({ kind: 'after', min: 1, max: 9 }),
-  hints('Put a finger on the number you were given.', 'Take one step the way the counting goes.'),
-);
-const stepBefore = withHints(
-  neighbourNumber({ kind: 'before', min: 3, max: 10 }),
-  hints('Find the number, then face the start of the path.', 'Step once that way and say what you land on.'),
-);
-const stepBetween = withHints(
-  neighbourNumber({ kind: 'between', min: 1, max: 8 }),
-  hints('Start on the smaller number that is shown.', 'One step along lands you in the gap.'),
-);
+// Each ladder is named once and served to both the daily instance and the
+// certifying one, because a mastery page that helps differently from the page
+// it certifies is testing the help rather than the child.
+const L_AFTER = hints('Put a finger on the number you were given.', 'Take one step the way the counting goes.');
+const L_BEFORE = hints('Find the number, then face the start of the path.', 'Step once that way and say what you land on.');
+const L_BETWEEN = hints('Start on the smaller number that is shown.', 'One step along lands you in the gap.');
+const L_WHICH_WAY = hints('Forward goes towards the big end of the path.', 'Back goes towards the start of the path.');
+const L_MEND = hints('Say the path from its first number onwards.', 'Stop where your voice and the path disagree.');
+const L_MEND_LONG = hints('Point at each number as you say it.', 'Say the missing word into the empty spot.');
+const L_RANK = hints('No group is ruled out until it has been counted.', 'The bigger number sits further along the path.');
+const L_PUPPET = hints('Say the counting words slowly beside the puppet.', 'A counting word was stepped over. Find it.');
+const L_FROG = hints('Find where the story starts on the path.', 'One hop moves you exactly one spot.');
+const L_LANE = hints('Both numbers are given. The gap sits between them.', 'Count on from the smaller number, just once.');
+const L_SORT = hints('Find the smallest card and set it down first.', 'Then ask which card comes next after that.');
 
-const whichWay = withHints(
-  stepEitherWay(),
-  hints('Forward goes towards the big end of the path.', 'Back goes towards the start of the path.'),
-);
+// --- the daily instances: they RECORD their pair and are otherwise untouched --
+// The three family instances cannot be dealt to - `neighbourNumber` chooses its
+// own number inside `lib/` - but they can be read, and `records` reads the same
+// params QG-11 does without spending a draw. That is the whole reason the soft
+// rule reaches them at all (disclosure 10).
+const stepAfter = records(withHints(neighbourNumber({ kind: 'after', min: 1, max: 9 }), L_AFTER));
+const stepBefore = records(withHints(neighbourNumber({ kind: 'before', min: 3, max: 10 }), L_BEFORE));
+const stepBetween = records(withHints(neighbourNumber({ kind: 'between', min: 1, max: 8 }), L_BETWEEN));
 
-const mendPath = withHints(
-  mendThePath({ length: 4 }),
-  hints('Say the path from its first number onwards.', 'Stop where your voice and the path disagree.'),
-);
-const mendPathLong = withHints(
-  mendThePath({ length: 5 }),
-  hints('Point at each number as you say it.', 'Say the missing word into the empty spot.'),
-);
+const whichWay = records(withHints(stepEitherWay(false), L_WHICH_WAY));
+const mendPath = records(withHints(mendThePath({ length: 4, certifying: false }), L_MEND));
+const mendPathLong = records(withHints(mendThePath({ length: 5, certifying: false }), L_MEND_LONG));
+const puppetMixUp = records(withHints(puppetStepsPast(false), L_PUPPET));
+const frogHop = records(withHints(padStory(false), L_FROG));
+const laneGap = records(withHints(mailStory(false), L_LANE));
 
-const rankThree = withHints(
-  rankThreeGroups(),
-  hints('No group is ruled out until it has been counted.', 'The bigger number sits further along the path.'),
-);
+// `rankThree` names no number and points in no direction - it ranks three drawn
+// groups - so there is no pair for it to record, and `sortTheCards` hands over a
+// whole run rather than asking about one spot. Neither takes a ledger wrapper.
+const rankThree = withHints(rankThreeGroups(), L_RANK);
+const sortTheCards = withHints(fixAndTell(), L_SORT);
 
-const puppetMixUp = withHints(
-  puppetStepsPast(),
-  hints('Say the counting words slowly beside the puppet.', 'A counting word was stepped over. Find it.'),
-);
-
-const frogHop = withHints(
-  padStory(),
-  hints('Find where the story starts on the path.', 'One hop moves you exactly one spot.'),
-);
-const laneGap = withHints(
-  mailStory(),
-  hints('Both numbers are given. The gap sits between them.', 'Count on from the smaller number, just once.'),
-);
-
-const sortTheCards = withHints(
-  fixAndTell(),
-  hints('Find the smallest card and set it down first.', 'Then ask which card comes next after that.'),
-);
+// --- the six certifying instances: dealt a pair, then they claim it -----------
+const whichWayCheck = certifies(withHints(stepEitherWay(true), L_WHICH_WAY));
+const mendPathCheck = certifies(withHints(mendThePath({ length: 4, certifying: true }), L_MEND));
+const mendPathLongCheck = certifies(withHints(mendThePath({ length: 5, certifying: true }), L_MEND_LONG));
+const frogHopCheck = certifies(withHints(padStory(true), L_FROG));
+const laneGapCheck = certifies(withHints(mailStory(true), L_LANE));
+const puppetMixUpCheck = certifies(withHints(puppetStepsPast(true), L_PUPPET));
 
 // --- the five warm-ups, one format and one source week each ----------------
 // Floors and ceilings, not defaults. `countArrangement` in a ring needs three
@@ -1279,15 +1552,15 @@ export const buildA06 = makeWeekBuilder({
   puzzleMeta: { stepCount: 1, cognitiveOp: 'build-the-run' },
   sprint: null,
   mastery: [
-    { gen: whichWay, diff: 2 },
-    { gen: mendPath, diff: 3 },
-    { gen: mendPathLong, diff: 3 },
-    { gen: frogHop, diff: 2 },
-    { gen: laneGap, diff: 3 },
-    { gen: puppetMixUp, diff: 3 },
+    { gen: whichWayCheck, diff: 2 },
+    { gen: mendPathCheck, diff: 3 },
+    { gen: mendPathLongCheck, diff: 3 },
+    { gen: frogHopCheck, diff: 2 },
+    { gen: laneGapCheck, diff: 3 },
+    { gen: puppetMixUpCheck, diff: 3 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh numbers off a separate stream. 01: one number shown with a spot open on EACH side, so only the direction word says which is wanted - typed as a number. 02: a four-long stretch of path with one number lifted out, the hole falling at the front, the middle or the back in turn. 03: the same, five long. 04: a frog hopping one pad either way, with the size of the pond stated and never used. 05: two mailbox numbers named in a drawn order, with the spot between them open. 06: the puppet who steps over a counting word, going forward or backward, with an honest slip on each side of the truth. Five of the six take a typed number rather than a tap, because a before-or-after question has one answer sitting next door to a number the question already said, and a two- or three-option page over that space manufactures a rank a child can sit on; the one page that does offer options is the error-analysis page, whose floor is argued in the file header. No number, direction or run is reused from Form A or from the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh numbers off a separate stream. 01: one number shown with a spot open on EACH side, so only the direction word says which is wanted - typed as a number. 02: a four-long stretch of path with one number lifted out, the hole falling at the front, the middle or the back in turn. 03: the same, five long. 04: a frog hopping one pad either way, with the size of the pond stated and never used. 05: two mailbox numbers named in a drawn order, with the spot between them open. 06: the puppet who steps over a counting word, going forward or backward, with an honest slip on each side of the truth. Five of the six take a typed number rather than a tap, because a before-or-after question has one answer sitting next door to a number the question already said, and a two- or three-option page over that space manufactures a rank a child can sit on; the one page that does offer options is the error-analysis page, whose floor is argued in the file header. FRESHNESS, STATED SO IT CAN BE CHECKED: every page here asks for one number in one direction - after it, before it, or between two - and those twelve pairs are twelve DIFFERENT ones. No two slots in a form repeat each other and no Form B slot repeats its Form A twin or any other Form A slot; the pair is dealt out of the pack\'s own ledger before the page is built, which is what stops MA-02 and MA-03 both coming out as "the number before 4". The daily pages are a preference rather than a promise: a certifying page takes a pair the week has not already served whenever three such pairs are still open to it, and repeats a daily page\'s pair on a measured 12.4% of certifying pages against 34.9% with no preference at all - though because there are twelve of them, most packs still contain one somewhere, so read that as "less of the week comes back" and not as "none of it does". It is not a promise because it cannot be one - the whole space is 26 pairs, the days spend eleven of them, and three of those eleven are drawn inside the shared library where this week cannot reach. No two path-mending pages print the same list of numbers, which the pack\'s surface guard does enforce.',
   mistakeBank: [
     {
       errorTag: 'task-comprehension',
