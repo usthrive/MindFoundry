@@ -25,6 +25,16 @@
 - **Risk if BB differs:** our names will not match BB's real modern names — cosmetic, since we never claim name equivalence. Structural risk only if BB's modern curriculum re-segmented level boundaries (e.g., finer than yearly); mitigated because the grade guides remain standards-shaped and the 26-week cadence is Confirmed for the historical system.
 - (resolves G1 residual; cites E93, E94, E95, E27, E28, E35.)
 
+> **CORRECTION 2026-08-11 (C1) — "Sep–Aug default calendar" is withdrawn.** That phrase inherited G1
+> Finding 1.2's claim that the answer-key weeks sit under month headings. They do not. Levels 0, 3 and
+> 4 contain **zero** month tokens; only Level 1 contains month names, mid-page and in scrambled order,
+> as **answers to a months-of-the-year exercise** around week 9–10. **No calendar anchoring is
+> evidenced anywhere.** The operative half of the default — *calendar-decoupled, any start week* —
+> is unaffected and stands. The **26 weekly units per level is re-confirmed** independently on six
+> levels this pass. Also newly confirmed: the a/b pairs are **halves of one level's 26 weeks**
+> (Level 5 = 15 + 11), not separate levels — so 16 booklet-levels ≈ **11 grade-years**.
+> See `meta/RESEARCH-FINDINGS-CURRICULUM-SCOPE.md`.
+
 ## DD3 — Weekly packet anatomy + day-labeling `[original design]`
 
 - **Unknown (G3 residual):** BB's day labels inside packets (none found in any indexed source), strand ordering within the week, exact interior page counts/density.
@@ -32,6 +42,28 @@
 - **Principle:** worked-example effect (study worked examples before problem solving); consistent authoring template so content generation is schema-driven.
 - **Risk if BB differs:** BB interiors may order strands differently or run denser pages than the marketing samples — affects "feel-alike" fidelity for BB-transfer families, not learning validity. Revisit only if a real packet interior ever surfaces.
 - (resolves G3 residual; cites E99, E94, E34, E62, E64, E12, E45, E79.)
+
+> **CORRECTION 2026-08-11 (C2/C3) — the evidence under "5 homework days" is withdrawn; the decision
+> needs re-ratification.** Three separate problems, in order of consequence:
+>
+> 1. **The count is 7, not 5.** The 2013 answer-key markup labels the sub-units `<!-- PACKET-1 -->` …
+>    `<!-- PACKET-7 -->`; there are exactly 182 = 26 × 7 per level, on every level parsed, and the
+>    seven are **homogeneous** (no distinct test or review packet). Official copy corroborates:
+>    weekly class, "**Each day**, student log onto the app to complete **a section** of their homework
+>    booklet", submitted end-of-week — and class-to-class is 7 days. The "x = 1–5" basis (E94) was
+>    **9 marketing images**; P(all 9 ≤ 5 | uniform 1–7) ≈ 4.8%.
+> 2. **The density is understated.** Measured, not sampled: **5–9 pages per packet, ~6 items per page,
+>    ~22–48 items per day** by level — against this default's "2–3 pages/day, 3–6 problems/page".
+>    This also **closes gap G-homework-volume**, previously listed as unresolved.
+> 3. **The interior arc here is stale against the build.** This default says Days 2–3 = fluency +
+>    *application*, Day 4 = word problems. The shipped build says Days 2–3 = fluency +
+>    **discrimination**, Day 4 = application (`build/FILL-ARCHITECTURE.md` §3 and the authored
+>    `a01.ts`). **The build is authoritative**; this wording is superseded.
+>
+> Shipping 5 days may still be the right product call — a school-week arc is defensible on its own
+> merits. But it must now be made **as a decision, not inherited as a finding**. The interior arc
+> remains genuinely `[original design]` and unresearchable: BB's in-packet day labels appear in no
+> indexed source. See `meta/RESEARCH-FINDINGS-CURRICULUM-SCOPE.md`.
 
 ## DD4 — Minute-by-minute session script `[original design]`
 
