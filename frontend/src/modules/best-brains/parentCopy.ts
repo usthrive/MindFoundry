@@ -4,13 +4,15 @@
  * Register per TEACHER-PERSONA §6.2 / SCREEN-SPECS appendix H parent strings:
  * verdict labels "Passed" / "One more round" ("Review"/"Failed" never
  * rendered); consistency lines effort-framed ("{n} practice days this week",
- * never "missed"); the 85% gate explained plainly; DD7 tags translated with
+ * never "missed"); the mastery gate explained plainly (threshold from
+ * constants); DD7 tags translated with
  * the program's own plan attached (diagnosis-and-treatment, never
  * symptoms-for-the-parent-to-treat). Everything uncited is [original design]
  * in the same calm register.
  */
 
 import type { BBLevel, ErrorTag, ReportVerdict } from './types';
+import { MASTERY_THRESHOLD_PCT } from './constants';
 
 /** Parent-facing verdict labels — the only vocabulary across the household. */
 export const VERDICT_LABELS: Record<ReportVerdict, string> = {
@@ -24,8 +26,8 @@ export function ackLabel(childName: string): string {
   return `Seen it — ${childName} will know their week counted`;
 }
 
-/** The 85% gate explainer (canonical). */
-export const GATE_EXPLAINER = "we call it mastered at 85%+ — stricter than school, on purpose.";
+/** The mastery-gate explainer (canonical; threshold sourced from constants so copy cannot drift). */
+export const GATE_EXPLAINER = `we call it mastered at ${MASTERY_THRESHOLD_PCT}%+ — stricter than school, on purpose.`;
 
 /**
  * DD7 tags in parent language, each with the program's plan (PARENT-FLOWS
@@ -34,7 +36,7 @@ export const GATE_EXPLAINER = "we call it mastered at 85%+ — stricter than sch
 export const TAG_GLOSSES: Record<ErrorTag, { gloss: string; plan: string }> = {
   'fact-recall': {
     gloss: "a math fact that isn't automatic yet",
-    plan: 'Warm-ups and optional sprints will resurface it until it comes for free.',
+    plan: 'Warm-ups and optional sprints keep facts like this in practice until they come for free.',
   },
   'procedure-slip': {
     gloss: 'knows the idea, skips a step under load',

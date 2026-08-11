@@ -4,7 +4,8 @@
  * (comments held; strategy-card-only anchor). Submission goes to the
  * bb_score_mastery_check RPC — the platform computes the score (Ms. Wren can
  * never alter it), applies DD1 + LS1-R5, and routes on the machine:
- * ≥85% (and week-stable) → WeekResolve; otherwise → StrengthenPlan.
+ * ≥ the DD1 pass threshold (MASTERY_THRESHOLD_PCT in constants) and
+ * week-stable → WeekResolve; otherwise → StrengthenPlan.
  * No other outcome states exist.
  */
 
