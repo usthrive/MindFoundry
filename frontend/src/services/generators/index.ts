@@ -125,12 +125,17 @@ const worksheetInfoGetters: Record<KumonLevel, WorksheetInfoGetter> = {
   'XS': getXSWorksheetInfo,
 }
 
-export function generateProblem(level: KumonLevel, worksheet: number): Problem {
-  const generator = generators[level]
+/**
+ * @param index Position of this problem within its worksheet (0-based). Levels that
+ *   teach a times table use it to present the table IN ORDER — 2×1, 2×2, 2×3 … —
+ *   which is how a table is learned. Levels that don't care simply ignore it.
+ */
+export function generateProblem(level: KumonLevel, worksheet: number, index?: number): Problem {
+  const generator = generators[level] as (worksheet: number, index?: number) => Problem
   if (!generator) {
     throw new Error(`No generator found for level: ${level}`)
   }
-  return generator(worksheet)
+  return generator(worksheet, index)
 }
 
 export function generateProblemSet(level: KumonLevel, worksheet: number, count: number = 10): Problem[] {

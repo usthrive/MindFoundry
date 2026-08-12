@@ -803,9 +803,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
     const mainCount = totalForPage - suppCount
 
-    // Generate main curriculum problems
+    // Generate main curriculum problems. The index is the problem's position within
+    // the whole worksheet, not the page — a times table has to run 1..10 across both
+    // pages to read as a table.
     for (let i = 0; i < mainCount; i++) {
-      problems.push(generateProblem(level, worksheetNumber))
+      problems.push(generateProblem(level, worksheetNumber, startIndex + i))
     }
 
     // Generate supplementary problems at the end

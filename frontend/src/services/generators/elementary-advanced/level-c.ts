@@ -2,62 +2,93 @@ import type { Problem, LevelCProblemType } from '../types'
 import { randomInt, generateId } from '../utils'
 import { generateAdditionHints, generateSubtractionHints, generateMultiplicationHints, generateDivisionHints, generateMissingFactorHints } from '../hintGenerator'
 
+/**
+ * How a times-table sheet presents its facts.
+ *
+ *   ordered — the table in sequence, 2×1, 2×2, 2×3 … 2×10. This is how a table is
+ *             learned: the child hears the count-by rhythm and the answers arrive in
+ *             a pattern rather than as ten unrelated facts.
+ *   random  — the same table out of order, once the sequence is known. This is where
+ *             recall becomes fluency rather than recitation.
+ *   mixed   — this table interleaved with every table learned so far, so the earlier
+ *             ones keep getting retrieved instead of quietly fading.
+ */
+type Presentation = 'ordered' | 'random' | 'mixed'
+
 function getWorksheetConfig(worksheet: number): {
   type: LevelCProblemType
   tables?: number[]
+  presentation?: Presentation
   maxMultiplicand?: number
   maxDivisor?: number
+  maxQuotient?: number
   allowRemainder?: boolean
+  /** Fraction of the sheet given to "3 × ___ = 12" — the bridge into division. */
+  missingFactorShare?: number
 } {
-  // Spec lines 481-491: times tables span 11-50, then 2-digit × 1-digit
-  // is 51-90 (Parts 1-5 with progressive operand ramp), 3-4 digit × 1-digit
-  // is 91-110, division intro at 111, then division with remainders to 160.
   if (worksheet <= 10) return { type: 'review_level_b' }
 
-  // Worksheets 11-20: ×2 and ×3 tables
-  if (worksheet <= 14) return { type: 'times_table_2_3', tables: [2] }
-  if (worksheet <= 17) return { type: 'times_table_2_3', tables: [3] }
-  if (worksheet <= 20) return { type: 'times_table_2_3', tables: [2, 3] }
+  // ── 11-50: the times tables ──
+  // Each table gets the same four-beat treatment: meet it in order, then out of
+  // order, then folded in with everything already learned. Two sheets per beat.
+  const T = (type: LevelCProblemType, tables: number[], presentation: Presentation) =>
+    ({ type, tables, presentation })
 
-  // Worksheets 21-30: ×4 and ×5 tables
-  if (worksheet <= 24) return { type: 'times_table_4_5', tables: [4] }
-  if (worksheet <= 27) return { type: 'times_table_4_5', tables: [5] }
-  if (worksheet <= 30) return { type: 'times_table_4_5', tables: [4, 5] }
+  if (worksheet <= 12) return T('times_table_2_3', [2], 'ordered')
+  if (worksheet <= 14) return T('times_table_2_3', [2], 'random')
+  if (worksheet <= 16) return T('times_table_2_3', [3], 'ordered')
+  if (worksheet <= 18) return T('times_table_2_3', [3], 'random')
+  if (worksheet <= 20) return T('times_table_2_3', [2, 3], 'mixed')
 
-  // Worksheets 31-40: ×6 and ×7 tables
-  if (worksheet <= 34) return { type: 'times_table_6_7', tables: [6] }
-  if (worksheet <= 37) return { type: 'times_table_6_7', tables: [7] }
-  if (worksheet <= 40) return { type: 'times_table_6_7', tables: [6, 7] }
+  if (worksheet <= 22) return T('times_table_4_5', [4], 'ordered')
+  if (worksheet <= 24) return T('times_table_4_5', [4], 'random')
+  if (worksheet <= 26) return T('times_table_4_5', [5], 'ordered')
+  if (worksheet <= 28) return T('times_table_4_5', [5], 'random')
+  if (worksheet <= 30) return T('times_table_4_5', [2, 3, 4, 5], 'mixed')
 
-  // Worksheets 41-50: ×8, ×9, then full mixed review of all tables
-  if (worksheet <= 44) return { type: 'times_table_8_9', tables: [8] }
-  if (worksheet <= 47) return { type: 'times_table_8_9', tables: [9] }
-  if (worksheet <= 50) return { type: 'times_table_8_9', tables: [2, 3, 4, 5, 6, 7, 8, 9] }
+  if (worksheet <= 32) return T('times_table_6_7', [6], 'ordered')
+  if (worksheet <= 34) return T('times_table_6_7', [6], 'random')
+  if (worksheet <= 36) return T('times_table_6_7', [7], 'ordered')
+  if (worksheet <= 38) return T('times_table_6_7', [7], 'random')
+  if (worksheet <= 40) return T('times_table_6_7', [2, 3, 4, 5, 6, 7], 'mixed')
 
-  // Worksheets 51-90: 2-digit × 1-digit (Parts 1-5 with progressive ramp).
-  // Previously this whole 40-sheet span used maxMultiplicand=99 with no scaling.
-  if (worksheet <= 58) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 29 }
-  if (worksheet <= 66) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 49 }
-  if (worksheet <= 74) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 69 }
-  if (worksheet <= 82) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 89 }
-  if (worksheet <= 90) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 99 }
+  if (worksheet <= 42) return T('times_table_8_9', [8], 'ordered')
+  if (worksheet <= 44) return T('times_table_8_9', [8], 'random')
+  if (worksheet <= 46) return T('times_table_8_9', [9], 'ordered')
+  if (worksheet <= 48) return T('times_table_8_9', [9], 'random')
+  if (worksheet <= 50) return T('times_table_8_9', [2, 3, 4, 5, 6, 7, 8, 9], 'mixed')
 
-  // Worksheets 91-110: 3-digit × 1-digit
+  // ── 51-100: 2-digit × 1-digit, in five parts of ten sheets each ──
+  if (worksheet <= 60) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 29 }
+  if (worksheet <= 70) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 49 }
+  if (worksheet <= 80) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 69 }
+  if (worksheet <= 90) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 89 }
+  if (worksheet <= 100) return { type: 'multiplication_2digit_by_1digit', maxMultiplicand: 99 }
+
+  // ── 101-110: 3-4 digits × 1 digit ──
   if (worksheet <= 110) return { type: 'multiplication_3digit_by_1digit', maxMultiplicand: 999 }
 
-  // Worksheets 111-120: division intro (exact, small divisors)
-  if (worksheet <= 120) return { type: 'division_intro', maxDivisor: 9, allowRemainder: false }
+  // ── 111-120: introduction to division ──
+  // Division arrives as the question the tables have already been answering. The
+  // first sheets ask it the way the child has been thinking — "3 × ? = 12" — before
+  // rewriting the same fact as "12 ÷ 3". Every quotient here is a table fact, so
+  // nothing new has to be worked out, only recognised from the other side.
+  if (worksheet <= 115) {
+    return { type: 'division_intro', maxDivisor: 9, maxQuotient: 9, allowRemainder: false, missingFactorShare: 0.5 }
+  }
+  if (worksheet <= 120) return { type: 'division_intro', maxDivisor: 9, maxQuotient: 9, allowRemainder: false }
 
-  // Worksheets 121-160: division with remainders (Parts 1-4: divisor ramp)
-  if (worksheet <= 130) return { type: 'division_with_remainder', maxDivisor: 5, allowRemainder: true }
-  if (worksheet <= 140) return { type: 'division_with_remainder', maxDivisor: 7, allowRemainder: true }
-  if (worksheet <= 150) return { type: 'division_with_remainder', maxDivisor: 9, allowRemainder: true }
-  if (worksheet <= 160) return { type: 'division_exact', maxDivisor: 9, allowRemainder: false }
+  // ── 121-160: division with remainders, divisor ramping ──
+  // Quotients stay inside the tables so the only new idea is the leftover.
+  if (worksheet <= 130) return { type: 'division_with_remainder', maxDivisor: 5, maxQuotient: 9, allowRemainder: true }
+  if (worksheet <= 140) return { type: 'division_with_remainder', maxDivisor: 7, maxQuotient: 9, allowRemainder: true }
+  if (worksheet <= 150) return { type: 'division_with_remainder', maxDivisor: 9, maxQuotient: 9, allowRemainder: true }
+  if (worksheet <= 160) return { type: 'division_with_remainder', maxDivisor: 9, maxQuotient: 9, allowRemainder: true }
 
-  // Worksheets 161-180: 2-digit ÷ 1-digit
+  // ── 161-180: 2-digit ÷ 1-digit ──
   if (worksheet <= 180) return { type: 'division_2digit_by_1digit', maxDivisor: 9, allowRemainder: true }
 
-  // Worksheets 181-200: 3-digit ÷ 1-digit
+  // ── 181-200: 3-digit ÷ 1-digit ──
   return { type: 'division_3digit_by_1digit', maxDivisor: 9, allowRemainder: true }
 }
 
@@ -101,71 +132,98 @@ function generateReviewProblem(): Problem {
   }
 }
 
-function generateTimesTableProblem(tables: number[]): Problem {
-  const table = tables[randomInt(0, tables.length - 1)]
-  const multiplier = randomInt(1, 9)
+/** Which of the four table groups a set of tables belongs to. */
+function tableSubtype(tables: number[]): LevelCProblemType {
+  const highest = Math.max(...tables)
+  if (highest <= 3) return 'times_table_2_3'
+  if (highest <= 5) return 'times_table_4_5'
+  if (highest <= 7) return 'times_table_6_7'
+  return 'times_table_8_9'
+}
+
+/**
+ * One times-table question.
+ *
+ * The multiplicand is always the table being learned and it is always written first:
+ * a child working the ×3 sheet sees 3×1, 3×2, 3×3 …, never 7×3 among them. Keeping
+ * it fixed is what lets the answers arrive as a pattern instead of ten unrelated
+ * facts, and it is why `index` matters — on an "ordered" sheet the multiplier walks
+ * 1 to 10 across the worksheet.
+ *
+ * Two things this deliberately does NOT do on a table sheet:
+ *  - swap the factors round (7 × 3 on the ×3 sheet), which breaks the count-by rhythm
+ *    exactly when the rhythm is the thing being taught;
+ *  - ask for a missing factor (3 × ___ = 12). That is division wearing multiplication's
+ *    clothes, and asking it before the fact is known makes the child work backwards
+ *    through something they cannot yet do forwards. It belongs at the division
+ *    introduction, and that is now where it lives.
+ */
+function generateTimesTableProblem(
+  tables: number[],
+  presentation: Presentation = 'random',
+  index?: number,
+  /** Worksheet number — varies the scramble so consecutive sheets differ. */
+  seed = 0
+): Problem {
+  const table = tables.length === 1 ? tables[0] : tables[randomInt(0, tables.length - 1)]
+  // Tables run to ×10 — 7 × 10 is a table fact and was previously never asked.
+  //
+  // On a single-table sheet the ten questions should be the ten facts, each once.
+  // Drawing at random gave 2×3 three times and 2×7 not at all, so a third of the
+  // table went unpractised on the very sheet meant to drill it. Stepping by 7 — which
+  // shares no factor with 10 — walks all ten in a scrambled order, and starting the
+  // walk at a different place on each sheet keeps consecutive sheets from matching.
+  const scrambled = (i: number, offset: number) => ((i * 7 + offset) % 10) + 1
+  const multiplier = presentation === 'ordered'
+    ? ((index ?? 0) % 10) + 1
+    : presentation === 'random'
+      ? scrambled(index ?? 0, seed)
+      : randomInt(1, 10)
   const product = table * multiplier
-  
-  const variants = ['standard', 'commutative', 'missing_factor'] as const
-  const variant = variants[randomInt(0, variants.length - 1)]
-  
-  if (variant === 'commutative') {
-    return {
-      id: generateId(),
-      level: 'C',
-      worksheetNumber: 1,
-      type: 'multiplication',
-      subtype: tables.includes(2) || tables.includes(3) ? 'times_table_2_3' :
-               tables.includes(4) || tables.includes(5) ? 'times_table_4_5' :
-               tables.includes(6) || tables.includes(7) ? 'times_table_6_7' : 'times_table_8_9',
-      difficulty: 1,
-      displayFormat: 'horizontal',
-      question: `${multiplier} × ${table} = ___`,
-      correctAnswer: product,
-      operands: [multiplier, table],
-      hints: [`${multiplier} × ${table} is the same as ${table} × ${multiplier}`],
-      graduatedHints: generateMultiplicationHints([multiplier, table], 'C'),
-    }
-  }
-  
-  if (variant === 'missing_factor') {
-    return {
-      id: generateId(),
-      level: 'C',
-      worksheetNumber: 1,
-      type: 'multiplication',
-      subtype: tables.includes(2) || tables.includes(3) ? 'times_table_2_3' :
-               tables.includes(4) || tables.includes(5) ? 'times_table_4_5' :
-               tables.includes(6) || tables.includes(7) ? 'times_table_6_7' : 'times_table_8_9',
-      difficulty: 2,
-      displayFormat: 'horizontal',
-      question: `${table} × ___ = ${product}`,
-      correctAnswer: multiplier,
-      operands: [table, multiplier],
-      hints: [`What times ${table} equals ${product}?`],
-      graduatedHints: generateMissingFactorHints(table, product, 'C'),
-    }
-  }
 
   return {
     id: generateId(),
     level: 'C',
     worksheetNumber: 1,
     type: 'multiplication',
-    subtype: tables.includes(2) || tables.includes(3) ? 'times_table_2_3' :
-             tables.includes(4) || tables.includes(5) ? 'times_table_4_5' :
-             tables.includes(6) || tables.includes(7) ? 'times_table_6_7' : 'times_table_8_9',
-    difficulty: 1,
+    subtype: tableSubtype(tables),
+    difficulty: presentation === 'ordered' ? 1 : 2,
     displayFormat: 'horizontal',
     question: `${table} × ${multiplier} = ___`,
     correctAnswer: product,
     operands: [table, multiplier],
     hints: [
-      `Count by ${table}s: ${Array.from({length: multiplier}, (_, i) => table * (i + 1)).join(', ')}`,
+      `Count by ${table}s: ${Array.from({ length: multiplier }, (_, i) => table * (i + 1)).join(', ')}`,
     ],
     graduatedHints: generateMultiplicationHints([table, multiplier], 'C'),
   }
 }
+
+/** "3 × ___ = 12" — the same table fact, asked from the division side. */
+function generateMissingFactorProblem(maxTable: number): Problem {
+  const table = randomInt(2, maxTable)
+  const multiplier = randomInt(2, 9)
+  const product = table * multiplier
+
+  return {
+    id: generateId(),
+    level: 'C',
+    worksheetNumber: 1,
+    type: 'multiplication',
+    subtype: 'division_intro',
+    difficulty: 2,
+    displayFormat: 'horizontal',
+    question: `${table} × ___ = ${product}`,
+    correctAnswer: multiplier,
+    operands: [table, multiplier],
+    hints: [
+      `Count by ${table}s until you reach ${product}. How many did you count?`,
+      `This is the same as asking ${product} ÷ ${table}`,
+    ],
+    graduatedHints: generateMissingFactorHints(table, product, 'C'),
+  }
+}
+
 
 function generateMultiDigitMultiplication(maxMultiplicand: number, subtype: LevelCProblemType): Problem {
   // Force a 2-digit minimum so Part 1 ramps (max=29, 49, 69, ...) still produce
@@ -199,19 +257,24 @@ function generateDivisionProblem(
   maxDivisor: number,
   allowRemainder: boolean,
   maxDividend: number,
-  subtype: LevelCProblemType
+  subtype: LevelCProblemType,
+  /** Largest answer allowed. While division is being introduced this is 9, so every
+   *  question is a times-table fact read backwards — "80 ÷ 4 = 20" is a different and
+   *  much later skill than "12 ÷ 3 = 4", and it was appearing on the first sheet. */
+  maxQuotient?: number
 ): Problem {
   const divisor = randomInt(2, maxDivisor)
+  const quotientCeiling = Math.max(2, Math.min(maxQuotient ?? Infinity, Math.floor(maxDividend / divisor)))
   let dividend: number
   let quotient: number
   let remainder: number
-  
+
   if (allowRemainder) {
-    quotient = randomInt(2, Math.floor(maxDividend / divisor))
+    quotient = randomInt(2, quotientCeiling)
     remainder = randomInt(0, divisor - 1)
     dividend = quotient * divisor + remainder
   } else {
-    quotient = randomInt(2, Math.floor(maxDividend / divisor))
+    quotient = randomInt(2, quotientCeiling)
     dividend = quotient * divisor
     remainder = 0
   }
@@ -239,7 +302,7 @@ function generateDivisionProblem(
   }
 }
 
-export function generateCProblem(worksheet: number): Problem {
+export function generateCProblem(worksheet: number, index?: number): Problem {
   const config = getWorksheetConfig(worksheet)
   let problem: Problem
   
@@ -251,7 +314,7 @@ export function generateCProblem(worksheet: number): Problem {
     case 'times_table_4_5':
     case 'times_table_6_7':
     case 'times_table_8_9':
-      problem = generateTimesTableProblem(config.tables || [2, 3])
+      problem = generateTimesTableProblem(config.tables || [2, 3], config.presentation, index, worksheet)
       break
     case 'multiplication_2digit_by_1digit':
       problem = generateMultiDigitMultiplication(config.maxMultiplicand || 99, config.type)
@@ -262,10 +325,16 @@ export function generateCProblem(worksheet: number): Problem {
       break
     case 'division_intro':
     case 'division_exact':
-      problem = generateDivisionProblem(config.maxDivisor || 9, false, 81, config.type)
+      // The bridge sheets alternate: half the questions still ask the multiplication
+      // the child knows ("3 × ___ = 12"), half ask the same fact as a division.
+      // Alternating by position rather than at random means every sheet carries both,
+      // and the pairing is visible down the page.
+      problem = config.missingFactorShare && ((index ?? 0) % 2 === 0)
+        ? generateMissingFactorProblem(config.maxDivisor || 9)
+        : generateDivisionProblem(config.maxDivisor || 9, false, 81, config.type, config.maxQuotient)
       break
     case 'division_with_remainder':
-      problem = generateDivisionProblem(config.maxDivisor || 9, true, 90, config.type)
+      problem = generateDivisionProblem(config.maxDivisor || 9, true, 90, config.type, config.maxQuotient)
       break
     case 'division_2digit_by_1digit':
       problem = generateDivisionProblem(config.maxDivisor || 9, true, 99, config.type)
@@ -284,7 +353,7 @@ export function generateCProblem(worksheet: number): Problem {
 export function generateCProblemSet(worksheet: number, count: number = 10): Problem[] {
   const problems: Problem[] = []
   for (let i = 0; i < count; i++) {
-    problems.push(generateCProblem(worksheet))
+    problems.push(generateCProblem(worksheet, i))
   }
   return problems
 }
