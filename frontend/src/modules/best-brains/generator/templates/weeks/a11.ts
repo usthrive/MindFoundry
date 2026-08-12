@@ -26,7 +26,7 @@
  *    different strictly-earlier week (A1, A2, A4, A6, A10) in a different
  *    format, so no day repeats a warm-up shape.
  *
- * ── EIGHT DISCLOSURES (FANOUT kit §E2.3: document the choice in the header) ──
+ * ── NINE DISCLOSURES (FANOUT kit §E2.3: document the choice in the header) ──
  *
  * 1. **THE RECIPE'S DISCRIMINATION CANNOT BE DRAWN AS TWO STRIPS, and that is
  *    provable rather than a judgement.** "AB vs ABB" wants an AB run and an ABB
@@ -165,6 +165,65 @@
  *    this concept has: a two-symbol pattern has a two-symbol "what comes next"
  *    (disclosure 2), and the week owns only four wide-answer forms, two of which
  *    slots 03 and 06 already use.
+ *
+ * 9. **SLOT 05 CARRIES AUTHORED OPTIONS, AND ITS STRIP GREW FROM SIX TO SEVEN
+ *    TO EARN THEM.** "Free-entry numeric" is not a real answer mode at band A: a
+ *    pre-reader cannot type, so `AnswerEntry` hands a choice-less numeric item to
+ *    `tapOptionsFor`, which invents four number buttons at render time — the
+ *    answer plus answer±1..3. Those buttons never exist in the pack, so no
+ *    per-pack gate can see them, and a runtime function cannot know a slot's
+ *    answer RANGE: `countOneKind` could only ever key 2, 3 or 4, and was offering
+ *    "1" on 120 of 120 Form B draws and "0" on 82 of them, keying neither.
+ *
+ *    - **EVERY NUMBER OFFERED IS NOW A COUNT THE SLOT CAN KEY.** The options are
+ *      drawn from the counts the strips themselves yield (`COUNTABLE`, worked out
+ *      at module load), so each is the truth on some other draw and nothing can
+ *      be struck out unread. Measured over 500 packs per form: 2, 3, 4 and 5 are
+ *      keyed on 21.0-28.6% of draws each and offered on 72.6-78.0%, and no option
+ *      is ever never-keyed.
+ *    - **THE RANK IS DEALT BEFORE THE PICTURE IS DRAWN.** Four countable values
+ *      mean the two ends can hold one rank each and the two middles two ranks
+ *      each, so the deal takes three quarters of a rank for the end value and a
+ *      quarter for the shared middle one — which leaves all four counts keyed
+ *      equally and all three ranks at a third. Measured over 500 packs per form:
+ *      the truth is the smallest number on 29.8-31.6% of draws, the middle on
+ *      31.4-34.8% and the largest on 35.4-37.0%, against a 33.3% floor.
+ *    - **SEVEN, NOT SIX, AND THE ODD LENGTH IS THE REPAIR.** At a whole number of
+ *      repeats the count of a kind that appears once in the part IS the number of
+ *      parts, always — so "count how many times the part came round" answered
+ *      this page on 66.7% of draws (exact, over the eighteen equiprobable
+ *      (kind, offset, kind-asked-for) cells the old generator drew from), double
+ *      its floor, in a slot that certifies. A seventh slot leaves a part
+ *      unfinished and breaks the identity; measured after the change, that
+ *      shortcut scores 38.2-39.6% over 500 packs per form. It cannot reach the
+ *      floor and the residue is arithmetic rather than authorship: a kind that
+ *      appears twice in seven slots is a kind appearing once per part over two
+ *      whole parts, so those draws must agree. Weighting the strips to break the
+ *      agreement would teach a worse lesson than the shortcut does — "if the
+ *      strip takes turns the answer is never three" is a rule a child could
+ *      actually learn.
+ *    - **THE OTHER KIND IS WRONG ON EVERY SINGLE DRAW, and that is the point of
+ *      the option rather than a defect in it.** Seven is odd, so the two kinds on
+ *      a strip can never be equal: "count the other kind" scores 0.0% of 1,000
+ *      measured draws. It is not a dead OPTION, because the number it puts on the
+ *      page is a count this slot keys on other draws — what is dead is the habit.
+ *      "Tap the whole strip" scores 0.0% too, and its number is never offered:
+ *      one kind's count is always less than the strip's length, so seven can
+ *      never be keyed and does not belong on the page (the L36 test).
+ *    - **NO NUMBER IS EVER SPOKEN.** `speakablePrompt` reads the strip and then
+ *      the question ("duck, flower, duck, duck, flower, duck, duck. Cato lays out
+ *      a strip. How many ducks?"), and across 1,000 measured draws neither
+ *      carries a count, so "tap the first number you hear" has nothing to work
+ *      on. The strip names both kinds, which is what a sighted child sees.
+ *    - **WHAT IS LEFT, MEASURED RATHER THAN WAVED AT.** One teaching page in this
+ *      week is still a bare numeral handed to the display layer: the Day-1
+ *      warm-up frame read from A2, offered "5" on 59.3% of 300 measured draws and
+ *      never able to key it, because a frame drawn 6-10 cannot hold five. It is a
+ *      retrieval slot, it certifies nobody, and `bb-answer-entropy-test`
+ *      suppresses a NEVER_CORRECT in a day slot on purpose. Its source week now
+ *      carries authored options on the same read, so the fix belongs with whoever
+ *      decides whether a warm-up should look like the week it came from or like
+ *      the week it is visiting. Recorded for the orchestrator.
  */
 
 import type { ErrorTag } from '../../../types';
@@ -856,6 +915,87 @@ function patternStory(which: 'mat' | 'ledge'): ItemGen {
 }
 
 /**
+ * THE STRIP THE COUNTING QUESTION IS ASKED OVER IS SEVEN LONG, AND THE ODD
+ * NUMBER IS THE WHOLE POINT (see disclosure 9).
+ *
+ * At six — a whole number of repeats for all three kinds — the count of a kind
+ * that appears ONCE in the part is the number of parts, every time: an AB strip
+ * holds three of each and three parts, an ABB strip two of the single kind and
+ * two parts. So "count how many times the part came round" answered the question
+ * on 66.7% of draws, twice its floor, in a slot that certifies. Seven leaves a
+ * part unfinished, which breaks the identity: a seven-long ABB run holds two,
+ * three, four or five of a kind depending on where it was picked up, while the
+ * parts still number two.
+ *
+ * It also empties the other blind habit. Seven is odd, so the two kinds can never
+ * be equal, and "count the other kind instead" is wrong on every single draw.
+ */
+const COUNT_LEN = 7;
+
+interface StripCell {
+  kind: PatternKind;
+  offset: number;
+  askIdx: 0 | 1;
+  /** How many of the asked-for kind this strip really holds. */
+  n: number;
+  /** Things said in one whole part. */
+  unitLen: number;
+  /** Whole parts standing on the strip. */
+  parts: number;
+}
+
+/**
+ * EVERY STRIP THIS SLOT CAN DRAW, WORKED OUT AT MODULE LOAD.
+ *
+ * The generator deals the rank the truth will take BEFORE it draws the picture
+ * (LEARNINGS L43), and that is only possible if the counts each picture yields
+ * are known in advance — so they are enumerated here rather than discovered by
+ * redrawing. Nothing is authored: `n` is counted off the same `runOf` the child
+ * is shown.
+ */
+const STRIP_CELLS: readonly StripCell[] = ALL_KINDS.flatMap((kind) =>
+  [0, 1, 2].flatMap((offset) =>
+    ([0, 1] as const).map((askIdx) => {
+      const run = runOf(kind, COUNT_LEN, offset);
+      return {
+        kind,
+        offset,
+        askIdx,
+        n: run.filter((s) => s === askIdx).length,
+        unitLen: UNIT[kind].length,
+        parts: Math.floor(COUNT_LEN / UNIT[kind].length),
+      };
+    }),
+  ),
+);
+
+/** The counts this slot can key — and therefore the only numbers it may offer. */
+const COUNTABLE: readonly number[] = [...new Set(STRIP_CELLS.map((c) => c.n))].sort((a, b) => a - b);
+const CELLS_FOR = new Map<number, StripCell[]>(
+  COUNTABLE.map((n): [number, StripCell[]] => [n, STRIP_CELLS.filter((c) => c.n === n)]),
+);
+
+/**
+ * Which counts can honestly sit at each rank of the three numbers offered: rank
+ * one needs two countable values above it, rank three needs two below, rank two
+ * needs one of each. With four countable values the two ends can each hold one
+ * rank only, and the two middles hold two ranks each.
+ */
+const AT_RANK: readonly number[][] = [0, 1, 2].map((rank) =>
+  COUNTABLE.filter(
+    (n) =>
+      COUNTABLE.filter((v) => v < n).length >= rank && COUNTABLE.filter((v) => v > n).length >= 2 - rank,
+  ),
+);
+AT_RANK.forEach((pool, rank) => {
+  if (pool.length !== 2) {
+    throw new Error(
+      `A11 countOneKind: rank ${String(rank + 1)} of three is reachable by ${String(pool.length)} counts, and the deal below assumes two`,
+    );
+  }
+});
+
+/**
  * Two kinds run through one strip and the question names ONE of them.
  *
  * The unused quantity is DRAWN rather than narrated, which is the `has-distractor`
@@ -865,24 +1005,113 @@ function patternStory(which: 'mat' | 'ledge'): ItemGen {
  * counting only their own kind, which is the counting substrate A1 and A2 built
  * put to work inside a pattern.
  *
- * Every strip is six long, so the three answers 2, 3 and 4 all occur: an AB strip
- * holds three of each, an ABB strip two of one and four of the other.
+ * AUTHORED OPTIONS, and why this slot could not be left to the display layer. As
+ * a choice-less numeric it was handed to `tapOptionsFor`, which invents four
+ * number buttons at render time — the answer plus answer±1..3 — so a slot whose
+ * every answer is 2, 3 or 4 was offered "1" on all 120 Form B draws and "0" on 82
+ * of them, and could never key either. A pre-reader cannot type, so those buttons
+ * were the real page all along.
+ *
+ * EVERY NUMBER OFFERED IS A COUNT THIS SLOT CAN KEY. The three options are drawn
+ * from `COUNTABLE`, which is worked out from the strips themselves, so each of
+ * them is the true answer on some other draw and no value can be struck out
+ * unread. And every one of them is also a real four-year-old's answer to THIS
+ * page, because a strip of two kinds offers a child several numbers to say:
+ *   the other kind    the strip holds both, and the ear followed the wrong one
+ *   the parts         how many times the part came round, not how many things
+ *   the part's length what the Day-2 and Day-3 pages ask about the same strip
+ *   one or two out    the right kind walked, with a slot met twice or missed
+ * Which meaning a number carries is read off the VALUE, never off the branch that
+ * produced it, so a rationale cannot drift from the number it explains.
+ *
+ * THE RANK IS DEALT BEFORE THE PICTURE IS DRAWN. The rank the truth will occupy
+ * is drawn first, then the count that can honestly occupy it, then a strip that
+ * really holds that count, and a hard check re-sorts the three shipped numbers
+ * and throws if the dealt rank is not the rank on the page. Drawing the strip
+ * first and choosing options afterwards is what pins a truth to one rank, and it
+ * has cost this corpus a certifying slot before.
  */
 function countOneKind(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-    const kind = r.pick(ALL_KINDS);
-    const len = 6;
-    // Six is a whole number of repeats for every kind here, so the count of each
-    // kind is the same wherever the strip is picked up: the offset varies the
-    // picture without touching the answer.
-    const offset = r.int(0, 2);
+    // The two counts that can hold a rank are not interchangeable: the outer one
+    // (the smallest count, or the largest) can hold that rank ONLY, while the
+    // inner one is also reachable from the neighbouring rank. Three quarters to
+    // the outer count and a quarter to the inner leaves all four counts keyed
+    // equally often while all three ranks stay at a third — measured, and the
+    // arithmetic is in disclosure 9.
+    const rank = r.int(0, 2);
+    const q = r.int(0, 3);
+    const n = rank === 1 ? AT_RANK[1][q < 2 ? 0 : 1] : rank === 0 ? AT_RANK[0][q < 3 ? 0 : 1] : AT_RANK[2][q < 1 ? 0 : 1];
+    const cell = r.pick(CELLS_FOR.get(n) ?? []);
     const nouns = twoKinds(r);
-    const run = runOf(kind, len, offset);
-    const askIdx = r.int(0, 1);
-    const asked = nouns[askIdx];
-    const n = run.filter((s) => s === askIdx).length;
+    const asked = nouns[cell.askIdx];
+    const other = nouns[1 - cell.askIdx];
+    const run = runOf(cell.kind, COUNT_LEN, cell.offset);
     const name = one(r);
+
+    // The re-derivation QG-5 no longer performs for a choice-key answer: the
+    // number keyed must be what the drawn strip actually holds, counted off the
+    // run the child is shown rather than taken from the table.
+    const counted = run.filter((s) => s === cell.askIdx).length;
+    if (counted !== n) {
+      throw new Error(
+        `A11 countOneKind: dealt a count of ${String(n)} but the ${cell.kind} strip drawn holds ${String(counted)}`,
+      );
+    }
+
+    const wrongValues =
+      rank === 0
+        ? r.shuffle(COUNTABLE.filter((v) => v > n)).slice(0, 2)
+        : rank === 2
+          ? r.shuffle(COUNTABLE.filter((v) => v < n)).slice(0, 2)
+          : [r.pick(COUNTABLE.filter((v) => v < n)), r.pick(COUNTABLE.filter((v) => v > n))];
+
+    const whyWrong = (v: number): { text: string; errorTag: ErrorTag; rationale: string } => {
+      if (v === COUNT_LEN - n) {
+        return {
+          text: String(v),
+          errorTag: 'task-comprehension',
+          rationale: `The ${unitFor(2, other)} counted instead - the strip holds two kinds and the question named the other one.`,
+        };
+      }
+      if (v === cell.parts) {
+        return {
+          text: String(v),
+          errorTag: 'task-comprehension',
+          rationale: 'How many times the whole part came round, counted instead of the things themselves.',
+        };
+      }
+      if (v === cell.unitLen) {
+        return {
+          text: String(v),
+          errorTag: 'task-comprehension',
+          rationale: 'How many are said in one part - the question this strip was asked on the days before.',
+        };
+      }
+      const k = Math.abs(v - n) === 1 ? 'One' : 'Two';
+      return v > n
+        ? {
+            text: String(v),
+            errorTag: 'procedure-slip',
+            rationale: `${k} too many - the named kind walked correctly, with a slot given its number twice.`,
+          }
+        : {
+            text: String(v),
+            errorTag: 'procedure-slip',
+            rationale: `${k} too few - the named kind walked correctly, with a slot passed over silently.`,
+          };
+    };
+    const { choices, correctKey } = makeChoices(r, String(n), wrongValues.map(whyWrong));
+
+    // The rank that was dealt must be the rank the page actually shows.
+    const shown = [n, ...wrongValues].sort((a, b) => a - b);
+    if (shown.indexOf(n) !== rank || new Set(shown).size !== 3) {
+      throw new Error(
+        `A11 countOneKind: dealt rank ${String(rank + 1)} but ${String(n)} came out at rank ${String(shown.indexOf(n) + 1)} of ${shown.join('/')}`,
+      );
+    }
+
     const scene = stripScene(run, nouns);
     const draft: ItemDraft = {
       type: 'word-problem',
@@ -891,11 +1120,11 @@ function countOneKind(): ItemGen {
       // narrows the strip to a single object before the child has looked.
       prompt: scenePrompt(scene, `${name} lays out a strip. How many ${asked}?`),
       figure: stripFigure(run, nouns, scene),
+      choices,
       answer: {
-        value: String(n),
-        acceptableForms: [numberWords(n), countNoun(n, asked)],
-        validation: 'exact-numeric',
-        units: asked,
+        value: correctKey,
+        acceptableForms: [String(n), numberWords(n), countNoun(n, asked)],
+        validation: 'choice-key',
       },
       difficulty,
       strand: 'computational',
@@ -1333,7 +1562,7 @@ export const buildA11 = makeWeekBuilder({
     { gen: puppetMixUp, diff: 3 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh strips off a separate stream. 01: what comes next on a take-turns strip. 02: what comes next where the next thing REPEATS the last one, so an alternating habit fails. 03: find where a ten-long strip stops fitting, with two whole repeats laid down before the break so the rule is settled before the question is asked. 04: a mat story whose next thing also repeats. 05: count one kind along a two-kind strip, with the other kind drawn and unused. 06: the puppet who carries a strip on by swapping, counted up to its first mix-up. Every strip in this pack is registered by its whole printed line, so no slot can reprint another slot strip - a pattern prompt carries no digits, so the shared numeric-surface guard never sees it.',
+    'Pairs by index; same generator and difficulty per slot, fresh strips off a separate stream. 01: what comes next on a take-turns strip. 02: what comes next where the next thing REPEATS the last one, so an alternating habit fails. 03: find where a ten-long strip stops fitting, with two whole repeats laid down before the break so the rule is settled before the question is asked. 04: a mat story whose next thing also repeats. 05: count one kind along a seven-long two-kind strip, with the other kind drawn and unused; the three numbers offered are counts the strip can really hold, the rank the truth will take is dealt before the picture is drawn, and the seventh slot leaves a part unfinished so the count of one kind stops agreeing with the number of parts. 06: the puppet who carries a strip on by swapping, counted up to its first mix-up. Every strip in this pack is registered by its whole printed line, so no slot can reprint another slot strip - a pattern prompt carries no digits, so the shared numeric-surface guard never sees it.',
   mistakeBank: [
     {
       errorTag: 'concept-misconception',
@@ -1350,17 +1579,26 @@ export const buildA11 = makeWeekBuilder({
       description:
         'Chants the strip correctly but loses the place while walking it, so the count or the position lands one or two out. A long strip makes it far likelier than a short one.',
       exampleWrongAnswer: 'the break at the seventh thing tapped as the sixth',
-      distractorRationale: 'Offer one place short, two places short and one place past the true answer on any item answered by a position along the strip.',
+      distractorRationale: 'Offer one place short, two places short and one place past the true answer on any item answered by a position along the strip - and on the counting slot too, where the same lost place gives a count one or two out.',
       reteachPointer: 'guidedExamples/A11-GE-03 (chant one whole part, then stop, then count what you said)',
     },
     {
       errorTag: 'task-comprehension',
       subtype: 'answers-about-the-whole-strip',
       description:
-        'Answers about the whole strip when the question asks about one part of it, or counts both kinds when the question names one. The strip holds several countable things at once.',
+        'Answers about the whole strip when the question asks about one part of it, or answers with one of the pattern\'s own numbers - how long the part is, or how many times it came round - instead of the count the question named. The strip holds several countable things at once.',
       exampleWrongAnswer: 'asked how many are said before a six-long strip repeats, answers 6',
-      distractorRationale: 'Offer the whole strip length beside the true answer whenever the question asks about a part of the strip.',
+      distractorRationale: 'Offer the whole strip length beside the true answer whenever the question asks about a part of the strip. On the counting slot the strip length can never be a count of one kind, so what is offered there instead is the number of whole parts and the length of one part - both of them numbers that slot really keys on other draws. Measured over 500 packs per form, answering with the number of parts scores 38.2-39.6% and answering with the length of the part 9.4-10.0%, against a 33.3% floor.',
       reteachPointer: 'Day-4 strip stories (the chant names two kinds; the question wants one)',
+    },
+    {
+      errorTag: 'task-comprehension',
+      subtype: 'counts-the-other-kind',
+      description:
+        'Counts the kind the question did not name. Both kinds run the length of the strip and the eye goes to whichever is commoner or louder, so the child walks the strip carefully and counts the wrong thing carefully.',
+      exampleWrongAnswer: 'asked how many ducks are on a duck-and-flower strip, counts the flowers',
+      distractorRationale: 'Offer the other kind\'s count beside the true one on the counting slot. Its strip is seven long, so the two kinds can never be equal and this reading is wrong on every draw - measured 0.0% of 1,000 - while the NUMBER it puts on the page is a count the same slot keys on other draws, so it cannot be struck out unread.',
+      reteachPointer: 'Day-4 counting page: say the kind out loud before walking the strip',
     },
     {
       errorTag: 'representation-misread',
