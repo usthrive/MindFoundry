@@ -580,7 +580,7 @@ function frameShows(): ItemGen {
       const { choices, correctKey } = makeChoices(r, String(n), wrongs);
       // Disclosure 2: this alt describes the picture the `clockAlt` way — the
       // layout, faithfully, without stating the number being asked for.
-      const scene = `a ten-frame with a full row and ${countNoun(extra, 'counters')} below`;
+      const scene = `the big frame with a full row and ${countNoun(extra, 'counters')} below`;
       const draft: ItemDraft = {
         type: 'representation',
         prompt: scenePrompt(scene, 'Tap the number this frame shows.'),
@@ -640,7 +640,7 @@ const STORY_FRAMES: Record<'shelf' | 'basket' | 'frame', StoryFrame> = {
   frame: {
     line: (name) => `${name} drops some counters into the frame.`,
     scene: (n) => `a frame of ${String(FRAME)} with ${countNoun(n, 'counters')} in it`,
-    alt: () => `a ten-frame with some counters in it`,
+    alt: () => `the big frame with some counters in it`,
     noun: 'counters',
     arrangement: 'in a frame',
     ladder: ['The frame shows its five before it shows more.', 'Start at five and carry on up.'],
@@ -949,7 +949,7 @@ export const buildA02 = makeWeekBuilder({
         { childDo: say('Say five, then count the bottom row on.'), expected: '10' },
       ], '10'),
       visual: 'A ten-frame with both rows full.',
-      figure: tenFrame(10, { alt: 'a ten-frame with both rows full', asserts: assertsAnswer }),
+      figure: tenFrame(10, { alt: 'the big frame with both rows full', asserts: assertsAnswer }),
     },
     {
       ...ge(2, 4, 'independent', scenePrompt('eight shells in a loose pile', 'How many shells?'), [

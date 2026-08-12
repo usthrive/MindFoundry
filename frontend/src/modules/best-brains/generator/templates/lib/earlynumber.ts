@@ -150,14 +150,32 @@ function looksLike(noun: string, arrangement: string): string {
 }
 
 /**
- * The frame named as the manipulative rather than as a number: "a ten-frame",
- * "two ten-frames". The capacity is a fixed structural property a child SEES
- * (and the taught vocabulary word), so naming it discloses nothing; what must
- * never be named is how many counters are sitting in it.
+ * The frame named by SIZE rather than by capacity.
+ *
+ * This replaced a `frameName()` that rendered "a ten-frame" / "a five-frame".
+ * Removing it left NO caller behind, which is the tell: every use of the taught
+ * term inside this library was a spoken figure alt. The term itself is not lost
+ * — each week teaches it in its own script, vocabulary and prompts, where a
+ * child reads or is read it deliberately rather than having it autoplayed over
+ * a question it can answer.
+ *
+ * The old comment on `frameName` argued that naming the capacity "discloses
+ * nothing" because it is a structural property the child sees. That is true of
+ * the frame and false of the WORD. A band-A alt is autoplayed to a pre-reader
+ * BEFORE the question, so "a ten-frame with some counters in it" says "ten"
+ * aloud — and on the draws where the answer IS ten, a child who echoes the last
+ * number word they heard is correct. Measured on the shipped A12: of 400 items
+ * whose alt named the ten-frame, **20.5% keyed 10**. `bb-spoken-answer-test`
+ * does not catch it because it does not split the hyphenated compound, so this
+ * has been live and green.
+ *
+ * The size words carry the same distinction a child needs (the discrimination
+ * in A13 varies capacity and nothing else) without speaking a number. The
+ * taught term survives everywhere it is taught.
  */
-function frameName(size: number, frames = 1): string {
-  const one = size === 5 ? 'five-frame' : 'ten-frame';
-  return frames > 1 ? `${numberWords(frames)} ${one}s` : `a ${one}`;
+function frameAltName(size: number, frames = 1): string {
+  const one = size === 5 ? 'small frame' : 'big frame';
+  return frames > 1 ? `the ${one}s` : `the ${one}`;
 }
 
 /** "ducks, leaves and stars" — the groups by kind, never by count. */
@@ -463,7 +481,7 @@ export function tenFrameRead(opts: FrameOpts): ItemGen {
         figure: tenFrame(n, {
           size,
           frames,
-          alt: `${frameName(size, frames)} with some counters in ${frames > 1 ? 'them' : 'it'}`,
+          alt: `${frameAltName(size, frames)} with some counters in ${frames > 1 ? 'them' : 'it'}`,
           asserts: assertsAnswer,
         }),
         answer: { value: String(n), acceptableForms: numForms(n), validation: 'exact-numeric' },
@@ -533,7 +551,7 @@ export function tenFrameEmpty(opts: FrameOpts): ItemGen {
         // the question states neither number.
         figure: tenFrame(filled, {
           size,
-          alt: `${frameName(size)} with some counters in it and some boxes empty`,
+          alt: `${frameAltName(size)} with some counters in it and some boxes empty`,
           asserts: assertsAnswerOf('empty'),
         }),
         answer: {
@@ -585,7 +603,7 @@ export function partnersHiding(opts: PartnerOpts): ItemGen {
           size: total,
           hidden,
           coverStyle: 'single',
-          alt: `${frameName(total)} with some counters showing and the rest hidden`,
+          alt: `${frameAltName(total)} with some counters showing and the rest hidden`,
           asserts: assertsAnswerOf('hidden'),
         }),
         answer: { value: String(hidden), acceptableForms: numForms(hidden), validation: 'exact-numeric' },
@@ -611,7 +629,18 @@ export function partnerBox(opts: PartnerOpts): ItemGen {
   const { total } = opts;
   return (rng: Rng, guard: TupleGuard, difficulty: number) =>
     drawUniqueItem(rng, guard, (r) => {
-      const shown = r.int(1, total - 1);
+      // NEVER the halfway bond on THIS form. The question states the shown part
+      // ("5 and ▢ make 10"), so when the two parts are equal the given IS the
+      // answer and a child who echoes the first number they hear is right
+      // without composing anything. Measured on the shipped A20 before this
+      // guard: the frame-of-10 draw keyed its own spoken given on 1 draw in 9.
+      // It is the same coincidence class as A16's "row holds twice what it
+      // loses", and it is guessable for a reader too, not only on audio.
+      // The halfway bond is not lost — `partnersHiding` and `allWaysToMake`
+      // both teach it, and neither states a part in the question.
+      const half = total % 2 === 0 ? total / 2 : -1;
+      let shown = r.int(1, total - 1);
+      if (shown === half) shown = shown === total - 1 ? 1 : shown + 1;
       const hidden = total - shown;
       const scene = `a frame of ${String(total)} with ${countNoun(shown, 'counters')} and a covered box`;
       const draft: ItemDraft = {
@@ -937,7 +966,15 @@ export function pictureJoin(opts: { min: number; max: number; maxTotal?: number 
         // only the sum — and at this band the counting IS the item.
         figure: counterGroups(
           [{ count: a, noun }, { count: b, noun }],
-          { relation: 'join', alt: `two groups of ${noun} put together`, asserts: assertsAnswer },
+          // NO NUMBER WORD IN THE ALT (L48: a number word is a number, wherever
+          // it appears). This said "two groups of …", and the alt is autoplayed
+          // to a pre-reader BEFORE the question — so on every 1+1 draw the word
+          // "two" spoke the sum aloud before asking for it. Found by
+          // `bb-spoken-answer-test` failing band A on A16, which warms up with
+          // this generator; A14 escaped only because it wrote its own join
+          // figure. The group count is visible in the drawing and needs no
+          // narration.
+          { relation: 'join', alt: `a group of ${noun} and another group, put together`, asserts: assertsAnswer },
         ),
         answer: {
           value: String(a + b),
@@ -968,16 +1005,22 @@ export function pictureTakeAway(opts: { min: number; max: number }): ItemGen {
       const draft: ItemDraft = {
         type: 'word-problem',
         prompt: scenePrompt(scene, `How many ${noun} are left?`),
-        // ASKS: how many are LEFT. The crossed-out count stays — it is the
-        // removal, it is drawn as crosses on the page, and it is not the answer
-        // — but the starting total goes, because "5 ducks with 3 crossed out"
-        // spoken aloud leaves nothing to count.
+        // ASKS: how many are LEFT. NO COUNT AT ALL in the alt, which is
+        // autoplayed to a pre-reader before the question is asked.
+        //
+        // This used to keep the crossed-out count, reasoning that the removal is
+        // drawn on the page and "is not the answer". It is the answer whenever
+        // the row holds exactly twice what it loses — 4 with 2 crossed out
+        // leaves 2 — and A16 measured that coincidence doing real work: it kept
+        // a blind "always subtract" habit alive at 19% of certifying forms after
+        // the first repair. A digit in a spoken alt buys nothing the drawing does
+        // not already show (L48).
         figure: counterGroups(
           [{ count: a, noun }],
           {
             relation: 'remove',
             crossedOut: b,
-            alt: `some ${noun} with ${String(b)} crossed out`,
+            alt: `some ${noun}, with the ones that went crossed through`,
             asserts: assertsAnswerOf('remaining'),
           },
         ),
@@ -1033,12 +1076,17 @@ export function joinOrTakeAway(opts: { min: number; max: number }): ItemGen {
         figure: isJoin
           ? counterGroups([{ count: a, noun }, { count: b, noun }], {
               relation: 'join',
-              alt: `two groups of ${noun} joined`,
+              // Same L48 repair as `pictureJoin` above. This generator's answer
+              // is the NAME of the move, not a count, so "two" discloses nothing
+              // today — but the phrase is one numeric ask away from being a leak,
+              // and the identical wording in `pictureJoin` was one.
+              alt: `a group of ${noun} and another group, joined`,
             })
           : counterGroups([{ count: a, noun }], {
               relation: 'remove',
               crossedOut: b,
-              alt: `some ${noun} with ${String(b)} crossed out`,
+              // Same L48 repair as `pictureTakeAway`: no count in a spoken alt.
+              alt: `some ${noun}, with the ones that went crossed through`,
             }),
         choices,
         answer: {

@@ -753,7 +753,7 @@ function writeIt(kind: 'line' | 'frame'): ItemGen {
         figure: tenFrame(n, {
           size: FRAME,
           icon: iconFor(noun),
-          alt: `a ten-frame with some ${noun} in it`,
+          alt: `the big frame with some ${noun} in it`,
           asserts: assertsAnswer,
         }),
         answer: {
@@ -867,7 +867,7 @@ function numeralForFrame(ladder: string[]): ItemGen {
       figure: tenFrame(n, {
         size: FRAME,
         icon: iconFor(noun),
-        alt: `a ten-frame with some ${noun} in it`,
+        alt: `the big frame with some ${noun} in it`,
         asserts: assertsParam('n'),
       }),
       choices,
@@ -968,7 +968,7 @@ function puppetWrites(): ItemGen {
       figure: tenFrame(n, {
         size: FRAME,
         icon: iconFor(noun),
-        alt: `a ten-frame with some ${noun} in it`,
+        alt: `the big frame with some ${noun} in it`,
         asserts: assertsParam('n'),
       }),
       choices,
