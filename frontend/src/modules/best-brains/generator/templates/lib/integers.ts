@@ -263,27 +263,70 @@ export function compareNegativesTrap(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'int-compare',
     draw: (r) => {
-      // Both negative, different magnitudes: exactly the shape where "8 > 3"
-      // pulls the wrong way.
-      const big = r.int(5, 15);
-      const small = r.int(1, big - 1);
-      const [a, b] = r.int(0, 1) === 0 ? [-big, -small] : [-small, -big];
+      // PAIR SHAPES, drawn — not always both-negative-and-unequal.
+      //
+      // This used to draw `big = int(5,15)`, `small = int(1, big-1)` and negate
+      // both. Two defects fell out of that, and E6's author refused to serve the
+      // generator because of them (measured, 2,000 draws):
+      //
+      //  1. `small < big` ALWAYS, so the two readings could never coincide and
+      //     the "=" card was offered on 2,000/2,000 draws and keyed on NONE — a
+      //     permanently unkeyable option (L38), which teaches a child to strike
+      //     it out unread. `compareWhole` in items.ts was repaired for exactly
+      //     this and draws a tie one time in five.
+      //  2. Both operands were always negative, so the true symbol was the
+      //     reverse of the magnitude comparison on 100% of draws — "compare the
+      //     digits, then flip" certified every time. A rule that is uniformly
+      //     invertible is not a discrimination.
+      //
+      // Both are fixed by drawing the SHAPE first: below-zero pairs still carry
+      // the week's trap and stay the most common, while cross-zero, on-zero and
+      // tied pairs make the flip-rule wrong and the "=" card reachable.
+      // Shape mix. `across` is the only shape on which "compare the digits, then
+      // flip" is WRONG, so it is weighted equally with `below` rather than left
+      // as a garnish: at 3-below/1-across the flip rule still won 90.9% of draws
+      // (measured), which is a rule a child can carry out of the week intact.
+      const shape = r.pick(['below', 'below', 'across', 'across', 'zero', 'tie'] as const);
+      let a: number;
+      let b: number;
+      if (shape === 'tie') {
+        const v = -r.int(1, 15);
+        [a, b] = [v, v];
+      } else if (shape === 'zero') {
+        const v = -r.int(1, 15);
+        [a, b] = r.int(0, 1) === 0 ? [v, 0] : [0, v];
+      } else if (shape === 'across') {
+        const neg = -r.int(1, 15);
+        const pos = r.int(1, 15);
+        [a, b] = r.int(0, 1) === 0 ? [neg, pos] : [pos, neg];
+      } else {
+        const big = r.int(5, 15);
+        const small = r.int(1, big - 1);
+        [a, b] = r.int(0, 1) === 0 ? [-big, -small] : [-small, -big];
+      }
       const truth = verifyCompareSymbol({ a, b });
       return {
         prompt: `Which symbol makes this true? ${fmtInt(a)} __ ${fmtInt(b)}`,
         correct: truth.correct,
-        distractors: [
-          {
-            text: truth.correct === '<' ? '>' : '<',
-            errorTag: 'concept-misconception',
-            rationale: 'Ranks the two by how far they sit from zero, so the bigger digits look like the bigger number.',
-          },
-          {
-            text: '=',
-            errorTag: 'representation-misread',
-            rationale: 'Reads both as "some amount of cold" without ordering them.',
-          },
-        ],
+        // The two symbols that are NOT the truth — derived, never hard-coded.
+        // Hard-coding '=' as a distractor was safe only while '=' could never be
+        // the answer; the moment a tie became drawable it produced a card set
+        // holding '=' twice, once keyed and once not.
+        distractors: (['<', '>', '='] as const)
+          .filter((sym) => sym !== truth.correct)
+          .map((sym) => (
+            sym === '='
+              ? {
+                text: '=',
+                errorTag: 'representation-misread' as const,
+                rationale: 'Reads both as "some amount of cold" without ordering them.',
+              }
+              : {
+                text: sym,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Ranks the two by how far they sit from zero, so the bigger digits look like the bigger number.',
+              }
+          )),
         hints: [
           'Which of these two would you meet FIRST walking left to right along a number line?',
           'Whatever comes first walking rightwards is the smaller number, however big its digits look.',

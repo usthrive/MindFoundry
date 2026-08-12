@@ -116,6 +116,49 @@ puppet named, never "a student", and "wrong" never appears · the alt is spoken 
 | `SituationType` has no `separate` member | join/separate/part-whole/compare is the early-years taxonomy; borrow `part-whole` | a16 |
 | `conceptFamily` cannot match compound ids (`add-and-subtract-within-10`) | BB-G1 still cannot demand a delta there; ship one anyway | a18 |
 
+## 4a. BAND E — what changes (added 2026-08-12, at the start of the E fill)
+
+§1 (orchestrator rules), §2(b) blind strategies and §2(c) unkeyable cards apply **unchanged** — they
+are about measurement, not about band. §2(a) and §3 are band-A laws and do **not** apply. §4's
+library gaps are band-A's; E's are recorded as they are found.
+
+**The alt rule does not transfer.** Band E is not `audioFirst`, so a figure description is not
+autoplayed over the question and a number in it is not a spoken answer. The *underlying* rule still
+holds in its general form — **no surface a child meets before answering may hand over the answer** —
+but at band E the surfaces that do that are the prompt, the hint ladder's rung 1, and a worked
+example, not the alt.
+
+**`GATE_PROFILE.E`** — every row is a floor and none may be weakened:
+
+| gate | E |
+|---|---|
+| `multiStep` | **`{weekWide: 2, day4: 1}`** — at least two genuine ≥2-op chains a week, at least one on Day 4. A one-step problem with a name attached is not multi-step; `multiStep()` derives the step count from the chain the item ships and throws if it is 1. |
+| `discrimination` | 1 in Days 2–3 |
+| `situationTypes` | **3** distinct structure-distinct types among word problems (not noun-swaps of one) |
+| `errorAnalysis` | true — full written form, ruled lines + extension, not the band-A puppet |
+| `metacog` | **true** — an estimate-first item in Days 2–4 AND estimate-first modelled in the lesson script |
+| `hintOrienting` | true — rung 1 is an algorithm-free orienting question |
+| `warmupFormats` | **3** distinct warm-up formats week-wide |
+| `puzzleRemoveConcept` | true — the puzzle may not collapse to a Day-1 structure |
+| `pictorialPerDay` | **0** — no figure requirement; E earns its pictures where they teach |
+
+**Band settings** (FILL-ARCHITECTURE §1): dose ~10–15 min, 6 items/day · full precise vocabulary,
+unglossed · answer modes symbolic, ruled explanation lines, inequality and graph forms · mascot and
+decoration minimal · metacognition full, with check-back native in E13–E15 · multi-step carries the
+full D-contract including **inverse-start** and **distractor-quantity** posing.
+
+**Recipes are complete** in FILL-ARCHITECTURE §6, with an eighth `Flag` column. Four weeks are
+R-flagged and ship a **computable core plus an honestly flagged open part** (§7), never a faked
+answer: **E12** prove-in-general · **E19** the measure-π lab · **E22** build-a-histogram/box-plot ·
+**E23** invent-a-fair-game. E4/E9/E24 are R-lite.
+
+**Generator families all exist** — `ratio.ts` (G4), `integers.ts` (G5), `algebra.ts` (G6),
+`stats.ts` (G7) — so every E week is blueprint-only. `compute.ts`'s Frac/Dec ops were signed-safe
+audited before `integers.ts` landed; exact integer-scaled arithmetic only, never floats.
+
+**Built already:** E1 (ratios, the G4 exemplar) and E13 (one-step equations, the on-thread heart).
+Read both before authoring anything.
+
 ## 5. Self-verify, then report
 
 Run the 200-seed sweep (kit §G) until it prints SEED-INVARIANT; then `tsc --noEmit` **to completion,
