@@ -541,6 +541,20 @@ export default function PracticePage() {
           itemKey={`practice-${item.id}`}
           band={band}
           item={item}
+          /* Durable working: kept for the whole level and exportable as a
+             notebook, instead of a module Map a tablet restart empties. */
+          notebook={
+            weekState
+              ? {
+                  childId,
+                  level: weekState.level,
+                  week: weekState.week,
+                  packId: pack.packId,
+                  itemId: item.id,
+                  prompt: item.prompt,
+                }
+              : undefined
+          }
           answerSlot={(close) => (
             <AnswerEntry
               item={item}

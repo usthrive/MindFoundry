@@ -35,6 +35,7 @@ import type { InteractionBand } from '../copy';
 import type { BBFigure } from '../figures/types';
 import BBFigureView from './figures/BBFigureView';
 import { promptText } from '../figures/prompt';
+import { decodeStrokes, encodeStrokes, loadPage, pageId, savePage } from '../services/bbNotebookStore';
 
 /** Session-scoped per-item stroke store (P3 persistPerItem). */
 const strokeStore = new Map<string, Stroke[]>();
@@ -91,10 +92,33 @@ export interface BBScratchPadProps {
    *   )}
    */
   answerSlot?: (close: () => void) => ReactNode;
+  /**
+   * Where this page belongs in the child's notebook. Supplying it makes the
+   * working DURABLE: it is kept for the whole level in IndexedDB and can be
+   * exported as a notebook, instead of living only in a module Map that a
+   * tablet restart empties.
+   *
+   * Omitted for surfaces that are not a child's own work (the lesson pad).
+   */
+  notebook?: { childId: string; level: string; week: number; packId: string; itemId: string; prompt: string };
 }
 
 /** Vertical padding on the full-screen canvas box (`p-2`, top + bottom). */
 const PAD_BOX_PADDING = 16;
+
+/**
+ * ONE frozen empty array, shared.
+ *
+ * `ScratchPad` runs `setStrokes(initialStrokes); setUndoStack([])` in an effect
+ * keyed on `initialStrokes` IDENTITY, so handing it a fresh `[]` on each render
+ * silently clears the child's undo history — and would clear the drawing itself
+ * the moment a parent re-render coincided with an empty store. A stable
+ * reference makes the effect fire only when the strokes genuinely change.
+ */
+const NO_STROKES: Stroke[] = Object.freeze([]) as unknown as Stroke[];
+
+/** How long the pad sits idle before the working is written to the notebook. */
+const SAVE_DEBOUNCE_MS = 800;
 
 /** Content-free stage names. Never an operation, never a quantity. */
 const STAGE_LABELS = ['First', 'Then', 'Next'] as const;
@@ -109,6 +133,7 @@ export default function BBScratchPad({
   item,
   onReplayPrompt,
   answerSlot,
+  notebook,
 }: BBScratchPadProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [full, setFull] = useState(false);
@@ -120,12 +145,80 @@ export default function BBScratchPad({
   // layout — and on a page where the count could hint at the structure, that is
   // exactly the leak this component is careful about elsewhere.
   const [syncedKey, setSyncedKey] = useState(itemKey);
+  const [seed, setSeed] = useState<Stroke[]>(() => strokeStore.get(itemKey) ?? NO_STROKES);
   if (syncedKey !== itemKey) {
     setSyncedKey(itemKey);
     setSpaces(layoutStore.get(itemKey) ?? 1);
     setOpen(defaultOpen);
     setFull(false);
+    setSeed(strokeStore.get(itemKey) ?? NO_STROKES);
   }
+
+  /**
+   * Rehydrate this page's working from the notebook.
+   *
+   * The in-memory map is the fast path and wins when it has anything: it holds
+   * whatever the child drew a moment ago, which is always fresher than the
+   * debounced write. IndexedDB is consulted only when the map is empty — the
+   * case that matters, because that is what a tablet restart leaves behind.
+   *
+   * `cancelled` guards the child paging on before the read returns; without it
+   * a late resolve would drop item n's working onto item n+1.
+   */
+  const nb = notebook;
+  const nbId = nb ? pageId(nb.childId, nb.level, nb.packId, nb.itemId) : null;
+  useLayoutEffect(() => {
+    if (!nbId || strokeStore.get(itemKey)?.length) return undefined;
+    let cancelled = false;
+    void loadPage(nbId).then((page) => {
+      if (cancelled || !page) return;
+      const strokes = decodeStrokes(page.data);
+      if (!strokes.length) return;
+      strokeStore.set(itemKey, strokes);
+      setSeed(strokes);
+    });
+    return () => { cancelled = true; };
+  }, [nbId, itemKey]);
+
+  /**
+   * Write-behind, debounced: a child drawing a long division should not queue a
+   * database write per pointer sample. The timer is cleared on unmount and the
+   * pending strokes flushed, so paging on or closing the tab does not drop the
+   * last few seconds of working.
+   */
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<Stroke[] | null>(null);
+  const flush = useCallback(() => {
+    if (!nb || !nbId || pending.current === null) return;
+    const strokes = pending.current;
+    pending.current = null;
+    void savePage({
+      id: nbId,
+      childId: nb.childId,
+      level: nb.level,
+      week: nb.week,
+      packId: nb.packId,
+      itemId: nb.itemId,
+      prompt: nb.prompt,
+      data: encodeStrokes(strokes),
+    });
+  }, [nb, nbId]);
+
+  useLayoutEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    flush();
+  }, [flush]);
+
+  const handleStrokes = useCallback(
+    (strokes: Stroke[]) => {
+      strokeStore.set(itemKey, strokes);
+      if (!nbId) return;
+      pending.current = strokes;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(flush, SAVE_DEBOUNCE_MS);
+    },
+    [itemKey, nbId, flush],
+  );
 
   const chooseSpaces = (n: number) => {
     setSpaces(n);
@@ -218,8 +311,8 @@ export default function BBScratchPad({
       <ScratchPad
         fillWidth
         height={isFull ? fullHeight : height}
-        initialStrokes={strokeStore.get(itemKey) ?? []}
-        onStrokesChange={(strokes) => strokeStore.set(itemKey, strokes)}
+        initialStrokes={seed}
+        onStrokesChange={handleStrokes}
         backgroundStyle="blank"
       />
       {spaces > 1 && (

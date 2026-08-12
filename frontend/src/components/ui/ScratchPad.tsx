@@ -212,7 +212,14 @@ const ScratchPad = forwardRef<ScratchPadRef, ScratchPadProps>(({
 
     // Redraw background under erased areas by compositing
     // (The destination-out approach handles this naturally)
-  }, [strokes, currentStroke, backgroundStyle])
+    //
+    // `effectiveWidth`/`effectiveHeight` are dependencies because SETTING a
+    // canvas's width or height attribute CLEARS it. Without them a resize wiped
+    // the drawing and nothing ever repainted it: the strokes were still in
+    // state (Clear stayed enabled) over a blank canvas. Latent while the pad
+    // was a fixed 220px strip; certain once the pad measured itself to fill a
+    // full-screen box, which resizes the canvas moments after mount.
+  }, [strokes, currentStroke, backgroundStyle, effectiveWidth, effectiveHeight])
 
   useEffect(() => {
     redrawCanvas()
