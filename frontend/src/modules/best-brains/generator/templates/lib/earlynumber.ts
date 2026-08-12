@@ -299,7 +299,13 @@ export function countByTens(opts: { minTens: number; maxTens: number }): ItemGen
           // child skip-counts, so it goes; "of ten blocks" stays, because every
           // tower being a ten is the structure the question itself names
           // ("Count by tens") and is what the picture is built out of.
-          { arrangement: 'towers', alt: 'some towers of ten blocks', asserts: assertsAnswer },
+          // NAMES THE TEN DELIBERATELY. The rule is not "no number in an alt" — it is
+          // "no number an alt speaks may equal the key" (L48). This generator draws
+          // 2–5 towers and keys 20–50, so "ten" can never be its answer, and a child
+          // who cannot see the picture needs to be told the towers ARE tens: that is
+          // the whole content. Stripping it (briefly done, 2026-08-12) bought nothing
+          // and cost the accessible reading of the week.
+          { arrangement: 'towers', alt: 'some towers of ten blocks, standing in a line', asserts: assertsAnswer },
         ),
         answer: { value: String(10 * k), acceptableForms: numForms(10 * k), validation: 'exact-numeric' },
         difficulty,
@@ -645,16 +651,24 @@ export function partnerBox(opts: PartnerOpts): ItemGen {
       const scene = `a frame of ${String(total)} with ${countNoun(shown, 'counters')} and a covered box`;
       const draft: ItemDraft = {
         type: 'computation',
-        // GIVENS, kept: the question is the algebra sentence itself ("3 and ▢
-        // make 5"), so both the shown part and the whole are stated to the child
-        // before the picture is described. The alt repeats what the question
-        // already says and discloses nothing the item is asking for.
+        // The SCENE keeps its numbers — it is never spoken and never shown, and
+        // the pack-wide surface guard signs on it (emptying it would leave the
+        // item unguarded, L29). The ALT does not: it is autoplayed to a
+        // pre-reader before the question.
+        //
+        // The old alt reused `scene`, on the argument that its numbers are
+        // givens the question states anyway. True today and fragile tomorrow —
+        // it is one differently-worded question away from speaking an answer,
+        // and two separate authors' draw-time alt checks fired on it while
+        // building against this generator. The house rule is now absolute: no
+        // digit and no number word in any band-A alt, no exceptions to reason
+        // about at the call site.
         prompt: scenePrompt(scene, `Fill the box: ${String(shown)} and ▢ make ${String(total)}.`),
         figure: tenFrame(shown, {
           size: total,
           hidden,
           coverStyle: 'single',
-          alt: scene,
+          alt: 'a frame with some counters in it and a box covered over',
           asserts: assertsAnswerOf('hidden'),
         }),
         answer: { value: String(hidden), acceptableForms: numForms(hidden), validation: 'exact-numeric' },
@@ -1120,11 +1134,13 @@ export function teenTenAnd(opts: { min?: number; max?: number } = {}): ItemGen {
       const scene = `a full frame of ten and ${countNoun(o, 'counters')} more`;
       const draft: ItemDraft = {
         type: 'computation',
-        // GIVENS, kept: the question is "Ten and 3 more. What number?", so both
-        // the full ten and the extras are stated before the picture is. The
-        // answer (the teen numeral) appears nowhere in the alt.
+        // The scene keeps its numbers (never spoken, never shown, and the
+        // surface guard signs on it); the ALT carries none. The answer here is
+        // the teen numeral, which the alt could not have said anyway — but the
+        // rule is absolute so that no call site has to re-derive that argument,
+        // and a frame a child can see is full needs no number to describe it.
         prompt: scenePrompt(scene, `Ten and ${String(o)} more. What number?`),
-        figure: tenFrame(10 + o, { frames: 2, alt: scene, asserts: assertsAnswer }),
+        figure: tenFrame(10 + o, { frames: 2, alt: 'a full frame and some more counters beside it', asserts: assertsAnswer }),
         answer: { value: String(10 + o), acceptableForms: numForms(10 + o), validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -1154,7 +1170,7 @@ export function teenExtra(opts: { min?: number; max?: number } = {}): ItemGen {
         // and one filled frame is what the picture looks like).
         figure: tenFrame(n, {
           frames: 2,
-          alt: 'a full frame of ten and some more counters',
+          alt: 'a full frame and some more counters beside it',
           asserts: assertsParam('n', 'filled'),
         }),
         answer: { value: String(n - 10), acceptableForms: numForms(n - 10), validation: 'exact-numeric' },
@@ -1231,8 +1247,8 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
         trap === 'six-nine'
           ? 'some buttons in a row'
           : trap === 'teen-ty'
-            ? 'two ten-frames with some counters in them'
-            : 'some towers of ten and some loose blocks';
+            ? 'a pair of big frames with some counters in them'
+            : 'some equal towers of blocks and some loose ones';
       const figure =
         trap === 'six-nine'
           ? counters(n, 'buttons', { arrangement: 'in a row', alt: altOf, asserts: assertsParam('n') })
@@ -1399,7 +1415,15 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
       question: 'Which one is heavier?',
     },
     capacity: {
-      things: [['jug', 'mug'], ['pot', 'cup'], ['bucket', 'bowl']],
+      // NEVER name a vessel after the unit it is measured in. This pool held
+      // ['pot', 'cup'] against a unit of `cups`, so one draw in three printed
+      // "the pot fills 5 cups, the cup fills 8 cups" — a cup holding eight cups.
+      // The rule is already written into the `length` pool above, after the same
+      // class of defect; it had simply never been applied here. Latent rather
+      // than shipped: A20 overrides this pool with its own, so no live week
+      // served it. Found by A21's author reading generated packs; no gate fires
+      // on it. (2026-08-12)
+      things: [['jug', 'mug'], ['pot', 'bowl'], ['bucket', 'tin']],
       unit: 'cups',
       question: 'Which one holds more?',
     },
@@ -1798,7 +1822,7 @@ export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number 
           // poses. The full ten stays — it is the picture's fixed structure.
           figure: tenFrame(n, {
             frames: 2,
-            alt: 'a full frame of ten and some more counters',
+            alt: 'a full frame and some more counters beside it',
             asserts: assertsParam('n'),
           }),
           choices,
