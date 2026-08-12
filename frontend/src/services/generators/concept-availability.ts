@@ -279,6 +279,31 @@ export function getConceptIntroduction(concept: string): ConceptIntroduction | u
   return CONCEPT_INTRODUCTION[concept]
 }
 
+/**
+ * The concepts a child is currently working inside — the most recent introduction at
+ * or before this worksheet, within this level.
+ *
+ * Distinct from getNewConceptsAtWorksheet, which only fires on the exact worksheet a
+ * concept begins. That is right for showing an introduction unprompted, but wrong for
+ * "explain this to me again": a child on C-013 is still doing the multiplication
+ * introduced at C-011 and should be able to ask for it back.
+ */
+export function getActiveConceptsForWorksheet(
+  level: KumonLevel,
+  worksheet: number
+): string[] {
+  let bestWorksheet = -1
+  for (const intro of Object.values(CONCEPT_INTRODUCTION)) {
+    if (intro.level === level && intro.worksheet <= worksheet && intro.worksheet > bestWorksheet) {
+      bestWorksheet = intro.worksheet
+    }
+  }
+  if (bestWorksheet < 0) return []
+  return Object.entries(CONCEPT_INTRODUCTION)
+    .filter(([, intro]) => intro.level === level && intro.worksheet === bestWorksheet)
+    .map(([concept]) => concept)
+}
+
 export function getNewConceptsAtWorksheet(
   level: KumonLevel,
   worksheet: number

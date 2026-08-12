@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import AudioButton from '@/components/homework/AudioButton'
 import type { KumonLevel, Video } from '@/types'
 import { getConceptAnimation, type ConceptIntroConfig } from '@/services/conceptAnimationMapping'
 import { recordVideoViewStart, getVideosForConcept } from '@/services/videoService'
@@ -750,18 +751,28 @@ export default function ConceptIntroModal({
                       {config?.title || currentConcept?.replace(/_/g, ' ')}
                     </h2>
 
-                    <p className="text-gray-600 mb-6 leading-relaxed">
-                      You will be learning about{' '}
-                      <strong className="text-primary">{config?.title || currentConcept?.replace(/_/g, ' ')}</strong>.
-                      <br />
-                      Please review the videos and the animation.
-                    </p>
-
+                    {/* The idea itself, said plainly and read aloud.
+                        This used to sit underneath "Please review the videos and the
+                        animation" as small grey italics — the one sentence that
+                        actually teaches something was the least prominent thing on
+                        screen, and unreadable to a child who cannot yet read well.
+                        It now leads, and it can be listened to. */}
                     {config?.description && (
-                      <p className="text-sm text-gray-500 mb-6 italic">
-                        {config.description}
-                      </p>
+                      <div className="mb-5 flex items-start justify-center gap-2">
+                        <p className="text-lg text-gray-800 leading-relaxed max-w-sm">
+                          {config.description}
+                        </p>
+                        <AudioButton
+                          text={`${config.title}. ${config.description}`}
+                          size="medium"
+                          className="shrink-0 mt-0.5"
+                        />
+                      </div>
                     )}
+
+                    <p className="text-sm text-gray-500 mb-6">
+                      Watch the video and the animation, then have a go.
+                    </p>
 
                     <motion.button
                       whileHover={!videosLoading ? { scale: 1.02 } : {}}

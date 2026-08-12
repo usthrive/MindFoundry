@@ -37,6 +37,7 @@ import { LEVEL_CONFIGS } from '@/data/levelConfig'
 import { useVideoPlayer } from '@/hooks/useVideoPlayer'
 import { useVideoSuggestion } from '@/hooks/useVideoSuggestion'
 import { getConceptFromProblem } from '@/services/videoSelectionService'
+import { getActiveConceptsForWorksheet } from '@/services/generators/concept-availability'
 import CountingObjectsAnimation from '@/components/animations/visualizations/CountingObjectsAnimation'
 import CohortScorecard from '@/components/cohorts/CohortScorecard'
 import EndOfSessionRecap from '@/components/cohorts/EndOfSessionRecap'
@@ -418,6 +419,23 @@ export default function StudyPage() {
   }
 
   // Handle completion of concept intro modal
+  /**
+   * "Show me again" — replays the introduction for the concept this worksheet is
+   * teaching, whether or not the child has already seen it.
+   *
+   * Until now an introduction appeared exactly once, on the exact worksheet where the
+   * concept began, and dismissing it marked it seen forever. A child who tapped
+   * through it — which is what a seven-year-old does with a modal standing between
+   * them and their worksheet — lost the explanation permanently, with no way back to
+   * it. Being able to ask again is what makes it safe for them to skip.
+   */
+  const handleReplayConceptIntro = () => {
+    const concepts = getActiveConceptsForWorksheet(currentLevel, currentWorksheet)
+    if (concepts.length === 0) return
+    setPendingConcepts(concepts)
+    setShowConceptIntro(true)
+  }
+
   const handleConceptIntroComplete = async () => {
     if (!currentChild) return
 
@@ -1782,11 +1800,25 @@ export default function StudyPage() {
         {!levelCompleted && (
         <Card variant="elevated" padding="lg" className="bg-gradient-to-br from-blue-50 to-purple-50">
           {/* Worksheet Info */}
-          <WorksheetInfo
-            level={currentLevel}
-            worksheetNumber={currentWorksheet}
-            label={getWorksheetLabel(currentLevel, currentWorksheet)}
-          />
+          <div className="flex items-start justify-between gap-3">
+            <WorksheetInfo
+              level={currentLevel}
+              worksheetNumber={currentWorksheet}
+              label={getWorksheetLabel(currentLevel, currentWorksheet)}
+            />
+            {getActiveConceptsForWorksheet(currentLevel, currentWorksheet).length > 0 && (
+              <button
+                type="button"
+                onClick={handleReplayConceptIntro}
+                className="shrink-0 mt-1 px-3 py-2 rounded-xl bg-white border-2 border-primary/30
+                           text-primary text-sm font-semibold shadow-sm active:scale-95
+                           hover:bg-primary-50 touch-manipulation"
+                title="Show me how this works again"
+              >
+                💡 Show me how
+              </button>
+            )}
+          </div>
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <EnhancedTimerDisplay
