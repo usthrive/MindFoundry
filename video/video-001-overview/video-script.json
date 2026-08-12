@@ -1,0 +1,288 @@
+{
+  "videoId": "video-001",
+  "theme": "product-overview",
+  "title": "Meet MindFoundry: Your Child's AI Math Tutor",
+  "targetDuration": 120,
+  "tone": "warm, parental, reassuring",
+  "platform": "YouTube / Social Media",
+  "ttsProvider": "elevenlabs",
+  "voice": "Daniel",
+  "fps": 30,
+  "resolution": { "width": 1920, "height": 1080 },
+
+  "scenes": [
+    {
+      "id": "hook",
+      "type": "hook",
+      "duration": 6,
+      "voiceover": {
+        "text": "Every night, millions of parents watch their child struggle with math. The tears. The frustration. The feeling that you can't help.",
+        "emotion": "empathetic, relatable",
+        "pace": "measured, slightly slow"
+      },
+      "visuals": {
+        "type": "b-roll",
+        "description": "Warm-lit living room scene. A parent and child (around age 8) sit at a kitchen table with scattered homework papers. The child looks down at a math worksheet with a pencil in hand, expression showing confusion. Soft, cinematic lighting.",
+        "background": "#1a1a2e",
+        "textOverlay": null,
+        "animation": "Slow zoom in on the scene. Subtle vignette effect."
+      },
+      "transition": "crossfade"
+    },
+    {
+      "id": "problem-cost",
+      "type": "problem",
+      "duration": 8,
+      "voiceover": {
+        "text": "Private tutoring costs fifty to a hundred and fifty dollars an hour. And even then — it's one size fits all. Your child deserves better than that.",
+        "emotion": "matter-of-fact, building frustration",
+        "pace": "steady"
+      },
+      "visuals": {
+        "type": "motion-graphics",
+        "description": "Split screen: Left side shows a calculator with dollar amounts ticking up ($50, $75, $100, $150/hr). Right side shows a clock spinning fast. Background gradient from dark to warm. Text: '$50-$150/hr' appears large, then 'One Size Fits All' fades in below.",
+        "background": "linear-gradient(135deg, #1a1a2e, #2d1b4e)",
+        "textOverlay": { "primary": "$50 - $150/hr", "secondary": "One Size Fits All" },
+        "animation": "Counter animation for dollar amounts. Clock spinning. Text fade-in."
+      },
+      "transition": "slide-left"
+    },
+    {
+      "id": "problem-gap",
+      "type": "problem",
+      "duration": 7,
+      "voiceover": {
+        "text": "You can see the grade on the report card. But you can't see what they don't understand. Until now.",
+        "emotion": "building tension, pivot to hope",
+        "pace": "slow, dramatic pause before 'Until now'"
+      },
+      "visuals": {
+        "type": "b-roll",
+        "description": "Close-up of a child's hand erasing an answer on a worksheet, eraser shavings visible. Camera pulls back slightly to reveal crumpled paper nearby. Then a subtle glow begins from the edge of frame.",
+        "background": "#1a1a2e",
+        "textOverlay": { "primary": "Until now." },
+        "animation": "Slow pan. Text 'Until now.' fades in with teal glow at the end."
+      },
+      "transition": "flash-white"
+    },
+    {
+      "id": "solution-intro",
+      "type": "solution",
+      "duration": 6,
+      "voiceover": {
+        "text": "Meet MindFoundry. Your child's personal AI math tutor.",
+        "emotion": "confident, warm reveal",
+        "pace": "clear, impactful"
+      },
+      "visuals": {
+        "type": "brand-reveal",
+        "description": "Dark screen. The MindFoundry logo fades in center screen with a warm orange-to-teal gradient burst behind it. Particles float upward. The tagline 'Your Child's AI Math Tutor' appears below.",
+        "background": "linear-gradient(135deg, #F97316, #0D9488)",
+        "textOverlay": { "primary": "MindFoundry", "secondary": "Your Child's AI Math Tutor" },
+        "animation": "Logo scale from 0 to 1 with spring physics. Gradient burst. Particle system. Tagline slides up."
+      },
+      "transition": "zoom-in"
+    },
+    {
+      "id": "solution-method",
+      "type": "solution",
+      "duration": 8,
+      "voiceover": {
+        "text": "Built on the Kumon method — proven across fifty countries and four million students — combined with an AI that teaches thinking, not just answers.",
+        "emotion": "credible, authoritative yet warm",
+        "pace": "steady, confident"
+      },
+      "visuals": {
+        "type": "motion-graphics",
+        "description": "World map with glowing dots in 50+ countries. Counter animates: '50 Countries' and '4M+ Students'. Then a split visual: left shows traditional Kumon worksheet, right shows the MindFoundry app interface, connected by a glowing bridge.",
+        "background": "#0f172a",
+        "textOverlay": { "primary": "50 Countries", "secondary": "4M+ Students" },
+        "animation": "Map dots light up progressively. Counters animate. Split screen merge animation."
+      },
+      "transition": "crossfade"
+    },
+    {
+      "id": "demo-practice",
+      "type": "demo",
+      "duration": 12,
+      "voiceover": {
+        "text": "Watch your child solve problems at their own pace. When they get stuck, Ms. Guide steps in — not with the answer, but with a hint that builds understanding.",
+        "emotion": "encouraging, demonstrative",
+        "pace": "slightly faster for demo energy"
+      },
+      "visuals": {
+        "type": "app-screenshot",
+        "description": "App study page showing a multi-problem worksheet view. Child taps a number on the number pad. A green checkmark appears for a correct answer. Then on the next problem, the child gets it wrong — Ms. Guide character appears with a speech bubble showing a micro hint. The hint is a gentle question, not the answer.",
+        "background": "#ffffff",
+        "textOverlay": null,
+        "animation": "Simulated app interaction. Number pad tap animation. Checkmark animation. Ms. Guide slide-in from right with speech bubble."
+      },
+      "transition": "slide-up"
+    },
+    {
+      "id": "demo-celebrate",
+      "type": "demo",
+      "duration": 8,
+      "voiceover": {
+        "text": "Every win gets celebrated. From their very first problem solved, to a hundred-day streak.",
+        "emotion": "joyful, celebratory",
+        "pace": "upbeat"
+      },
+      "visuals": {
+        "type": "app-screenshot",
+        "description": "App celebration screen. Confetti particles explode from center. A large achievement card shows '100-Day Streak!' with the child's avatar emoji, a gold badge, and a 'Share' button. The card has teal borders and gold corners.",
+        "background": "linear-gradient(135deg, #0D9488, #8B5CF6)",
+        "textOverlay": null,
+        "animation": "Confetti particle system (200 particles). Achievement card scales in with spring bounce. Badge glow pulse."
+      },
+      "transition": "crossfade"
+    },
+    {
+      "id": "feature-dashboard",
+      "type": "features",
+      "duration": 10,
+      "voiceover": {
+        "text": "And you? You see everything. Accuracy trends. Time spent. Which concepts need work. You'll know exactly where your child stands.",
+        "emotion": "empowering, reassuring",
+        "pace": "steady, authoritative"
+      },
+      "visuals": {
+        "type": "app-screenshot",
+        "description": "Parent dashboard view. Animated charts showing accuracy trends going up over time. A daily practice bar chart. A performance quadrant scatter plot. Key metrics highlighted: '94% Accuracy', '23 Day Streak', 'Level 3A → 2A Progress'.",
+        "background": "#f8fafc",
+        "textOverlay": null,
+        "animation": "Charts draw in progressively. Numbers count up. Metrics highlight with teal glow."
+      },
+      "transition": "slide-left"
+    },
+    {
+      "id": "feature-homework",
+      "type": "features",
+      "duration": 8,
+      "voiceover": {
+        "text": "Stuck on homework? Snap a photo. MindFoundry extracts every problem and Ms. Guide explains each one, step by step.",
+        "emotion": "practical, problem-solving",
+        "pace": "slightly faster, demonstrative"
+      },
+      "visuals": {
+        "type": "app-screenshot",
+        "description": "Homework Helper flow: Phone camera viewfinder pointing at a math worksheet. A capture button is tapped. Loading spinner. Then extracted problems appear in a clean list with checkboxes. Ms. Guide explains the selected problem with step-by-step breakdown.",
+        "background": "#ffffff",
+        "textOverlay": null,
+        "animation": "Camera shutter animation. Problems slide in from bottom. Explanation text types out."
+      },
+      "transition": "crossfade"
+    },
+    {
+      "id": "feature-library",
+      "type": "features",
+      "duration": 6,
+      "voiceover": {
+        "text": "Plus hundreds of instructional videos that unlock as they progress through each level.",
+        "emotion": "expansive, additive",
+        "pace": "moderate"
+      },
+      "visuals": {
+        "type": "app-screenshot",
+        "description": "Video library view showing category cards: 'Counting', 'Adding', 'Fractions', etc. Some cards have a lock icon, others show 'Unlocked!' with a checkmark. A recommended videos carousel scrolls at the top. One card glows as it transitions from locked to unlocked.",
+        "background": "#f0f9ff",
+        "textOverlay": null,
+        "animation": "Cards cascade in. Lock icon transforms to checkmark with particle effect. Carousel auto-scrolls."
+      },
+      "transition": "slide-up"
+    },
+    {
+      "id": "proof-numbers",
+      "type": "proof",
+      "duration": 10,
+      "voiceover": {
+        "text": "Twenty-six mastery levels. Over five thousand worksheets. More than fifty thousand problems. From counting to calculus — all in one app.",
+        "emotion": "impressive, building scale",
+        "pace": "rhythmic, each number lands with weight"
+      },
+      "visuals": {
+        "type": "motion-graphics",
+        "description": "Dark background. Three animated counters appear in sequence: '26 Levels' (with level badges cascading), '5,200 Worksheets' (with stacking paper animation), '52,000+ Problems' (with number matrix effect). Then a gradient bar showing the progression from '7A: Counting' to 'O: Calculus' with all levels marked.",
+        "background": "#0f172a",
+        "textOverlay": { "primary": "26 Levels", "secondary": "52,000+ Problems" },
+        "animation": "Counters spin up rapidly. Level badges cascade. Progress bar fills left to right with gradient."
+      },
+      "transition": "crossfade"
+    },
+    {
+      "id": "proof-family",
+      "type": "proof",
+      "duration": 8,
+      "voiceover": {
+        "text": "One account for the whole family. Add your children, track each one separately, and save with progressive discounts — up to fifty percent off.",
+        "emotion": "inclusive, value-oriented",
+        "pace": "warm, conversational"
+      },
+      "visuals": {
+        "type": "b-roll",
+        "description": "Happy family scene: parent with two children (ages ~6 and ~9) sitting on a couch, each child holding a tablet. The parent looks at their phone showing the parent dashboard. Warm lighting, cozy home environment. Overlay text shows pricing: '1 child: Full price', '2 children: 20% off', '3+: Up to 50% off'.",
+        "background": "warm-overlay",
+        "textOverlay": { "primary": "Family Pricing", "secondary": "Up to 50% Off" },
+        "animation": "Pricing tiers slide in from right. Discount percentages highlight in teal."
+      },
+      "transition": "crossfade"
+    },
+    {
+      "id": "cta",
+      "type": "cta",
+      "duration": 10,
+      "voiceover": {
+        "text": "Start your free sixty-day trial today. No credit card required. Give your child the math confidence they deserve.",
+        "emotion": "confident, warm, inviting",
+        "pace": "clear, measured, final word emphasis"
+      },
+      "visuals": {
+        "type": "cta-screen",
+        "description": "Clean dark background with MindFoundry logo centered. Below: a large glowing CTA button reading 'Start Free Trial'. Below that: '60 Days Free • No Credit Card'. The URL 'mindfoundry.app' appears at bottom. Subtle teal-to-orange gradient particles float in background. Brand colors pulse gently.",
+        "background": "linear-gradient(135deg, #0f172a, #1e293b)",
+        "textOverlay": {
+          "primary": "Start Free Trial",
+          "secondary": "60 Days Free • No Credit Card",
+          "url": "mindfoundry.app"
+        },
+        "animation": "Logo fade in. CTA button pulse with glow. URL slide up. Particle system continues. Gentle fade to black at end."
+      },
+      "transition": "fade-to-black"
+    }
+  ],
+
+  "music": {
+    "style": "Warm, uplifting, family-oriented",
+    "tempo": "Moderate (100-120 BPM)",
+    "instruments": "Piano, soft strings, light percussion",
+    "source": "Mixkit or similar royalty-free",
+    "volume": "Low (15-20% mix), ducking under voiceover",
+    "notes": "Music should swell during solution-intro and cta scenes. Quieter during problem scenes."
+  },
+
+  "colorPalette": {
+    "primary": "#F97316",
+    "secondary": "#0D9488",
+    "accent": "#8B5CF6",
+    "dark": "#0f172a",
+    "light": "#f8fafc",
+    "success": "#22C55E"
+  },
+
+  "totalEstimatedDuration": 117,
+  "sceneSummary": {
+    "hook": "6s - Emotional hook about parents watching children struggle",
+    "problem-cost": "8s - Private tutoring costs and one-size-fits-all problem",
+    "problem-gap": "7s - Parents can't see what children don't understand",
+    "solution-intro": "6s - MindFoundry brand reveal",
+    "solution-method": "8s - Kumon method + AI combination",
+    "demo-practice": "12s - App practice session with Ms. Guide hints",
+    "demo-celebrate": "8s - Achievement celebration with confetti",
+    "feature-dashboard": "10s - Parent dashboard analytics",
+    "feature-homework": "8s - Homework Helper photo flow",
+    "feature-library": "6s - Video library with unlock system",
+    "proof-numbers": "10s - 26 levels, 5200 worksheets, 52000 problems",
+    "proof-family": "8s - Family pricing with progressive discounts",
+    "cta": "10s - 60-day free trial call to action"
+  }
+}

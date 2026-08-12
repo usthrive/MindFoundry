@@ -1,0 +1,168 @@
+{
+  "projectName": "MindFoundry",
+  "projectPath": "/home/usthr/Penta_University/Math_Tutor/MindFoundry",
+  "analyzedAt": "2026-02-08T15:15:00Z",
+  "version": "0.1.0",
+
+  "summary": {
+    "oneLiner": "AI-powered math practice app for children ages 3-18, combining Kumon methodology with Claude AI tutoring",
+    "elevator": "MindFoundry is a family-centered math learning platform that pairs the proven Kumon mastery method with an AI tutor named Ms. Guide. Children practice at their own pace across 26 levels — from counting to calculus — while parents get real-time analytics on accuracy, streaks, and conceptual gaps. A built-in Homework Helper lets kids snap a photo of their worksheet and get step-by-step explanations instantly.",
+    "tagline": "Your child's personal AI math tutor"
+  },
+
+  "problem": {
+    "primary": "Parents struggle to help children with math homework and can't afford private tutoring ($50-150/hour)",
+    "secondary": [
+      "One-size-fits-all tutoring doesn't adapt to each child's pace",
+      "Parents have no visibility into what their child actually understands",
+      "Children lose motivation without celebration and progress tracking",
+      "Homework help is needed on demand, not on a tutor's schedule"
+    ],
+    "emotionalPain": "Parents watch their child struggle with math, feeling helpless. They see tears, frustration, and falling confidence — but can't pinpoint what's wrong or how to fix it."
+  },
+
+  "solution": {
+    "core": "An AI tutor that teaches thinking, not answers — available 24/7 for a fraction of tutoring costs",
+    "transformation": {
+      "before": "Frustrated child, anxious parent, expensive tutoring, no visibility",
+      "after": "Confident child, informed parent, affordable practice, clear progress"
+    },
+    "differentiators": [
+      "Kumon methodology proven in 50+ countries with 4M+ students",
+      "Ms. Guide AI uses graduated hints (Socratic → visual → teaching) — never just gives answers",
+      "Homework Helper: snap a photo, get instant step-by-step explanations",
+      "Family accounts with per-child tracking and progressive discounts",
+      "5-level celebration system with shareable achievement cards"
+    ]
+  },
+
+  "audience": {
+    "primary": {
+      "who": "Parents of children ages 4-11",
+      "demographics": "Ages 25-55, tech-savvy, education-focused",
+      "painPoints": ["Math homework struggles", "Tutoring cost", "No progress visibility", "Child frustration"],
+      "language": "Warm, supportive, non-technical, parent-to-parent"
+    },
+    "secondary": {
+      "who": "Parents of children ages 11-18",
+      "demographics": "Same as primary, with older children in algebra through calculus",
+      "painPoints": ["Advanced math beyond parent ability", "Test prep needs", "College readiness"]
+    },
+    "children": {
+      "ageRange": "3-18 years",
+      "gradeRange": "Pre-K through 12th grade"
+    }
+  },
+
+  "features": {
+    "practice": {
+      "name": "Adaptive Math Practice",
+      "description": "Worksheet-based sessions with age-appropriate problem counts, inline answers, and number pad input",
+      "details": "10 problems per session, 2 sessions daily, spaced repetition, mastery-before-advancement (90%+ threshold)"
+    },
+    "aiTutor": {
+      "name": "Ms. Guide AI Tutor",
+      "description": "Patient AI tutor with 3-level graduated hint system that teaches thinking, not answers",
+      "details": "96 hint generators across all 26 levels. Micro hints (Socratic questions), visual hints (setup shown), teaching hints (similar problem demo). Misconception detection and chat follow-ups."
+    },
+    "homeworkHelper": {
+      "name": "Homework Helper",
+      "description": "Upload 1-4 homework photos, AI extracts problems, Ms. Guide explains step-by-step",
+      "details": "Image quality validation, problem extraction with confidence scores, grade-level detection, follow-up chat"
+    },
+    "videoLibrary": {
+      "name": "Video Library",
+      "description": "Curated instructional videos that unlock as children progress through Kumon levels",
+      "details": "10 topic categories, multiple teaching styles (song, animation, whiteboard), recommended videos on homepage"
+    },
+    "achievements": {
+      "name": "Achievement & Celebration System",
+      "description": "5-level celebration intensity with confetti, badges, and shareable achievement cards",
+      "details": "9 achievement types including streaks, level completion, skill mastery, perfect sessions. Shareable 1080x1080 cards via native share API."
+    },
+    "parentDashboard": {
+      "name": "Parent Dashboard",
+      "description": "Comprehensive analytics with accuracy trends, session stats, focus metrics, and multi-child views",
+      "details": "Daily practice charts, performance quadrant (speed vs accuracy), concept time analytics, distraction tracking, badge gallery"
+    },
+    "familyAccounts": {
+      "name": "Family Accounts",
+      "description": "One subscription for the whole family with per-child tracking and progressive discounts",
+      "details": "Unlimited child profiles, individual Kumon level tracking, parental PIN, focus mode controls"
+    }
+  },
+
+  "content": {
+    "levels": 26,
+    "electives": 4,
+    "worksheetsPerLevel": 200,
+    "totalWorksheets": 5200,
+    "totalProblems": "52,000+",
+    "levelRange": "7A (counting) to O (calculus)",
+    "additionalLevels": ["XV (Vectors)", "XM (Matrices)", "XP (Probability)", "XS (Statistics)"]
+  },
+
+  "pricing": {
+    "freeTrial": "60 days",
+    "tiers": [
+      {
+        "name": "Foundation",
+        "features": "Core practice, basic hints, video library, parent dashboard, progress tracking"
+      },
+      {
+        "name": "Foundation AI",
+        "features": "Everything in Foundation + AI Hints, AI Explanations, Ms. Guide Chat, Homework Helper, Voice Assistant"
+      },
+      {
+        "name": "VIP",
+        "features": "Everything in Foundation AI + Live Tutor, Priority Support, Custom Curriculum, Advanced Analytics"
+      }
+    ],
+    "familyDiscount": "Progressive discounts for 2+ children (up to 50% off)",
+    "scholarship": "Available for low-income families"
+  },
+
+  "brand": {
+    "colors": {
+      "primary": "#F97316",
+      "primaryName": "Warm Orange",
+      "secondary": "#0D9488",
+      "secondaryName": "Deep Teal",
+      "accent": "#8B5CF6",
+      "accentName": "Purple",
+      "success": "#22C55E",
+      "error": "#EF4444"
+    },
+    "typography": {
+      "display": "Sassoon Primary (child-friendly, playful)",
+      "body": "Verdana (accessible, readable)",
+      "math": "SF Mono (monospace for equations)"
+    },
+    "visualStyle": "Child-centered, playful colors, minimal text, large touch targets (48-60px), mobile-first"
+  },
+
+  "techStack": {
+    "frontend": ["React 18.3", "TypeScript 5.6", "Vite 5.4", "Tailwind CSS 3.4", "Framer Motion 11"],
+    "backend": ["Supabase (PostgreSQL + Auth + Edge Functions)"],
+    "ai": ["Anthropic Claude Sonnet 4.5 (tutoring)", "OpenAI TTS (voice narration)"],
+    "payments": ["Stripe.js 8.6"],
+    "hosting": ["Netlify (frontend)", "Supabase (backend)"],
+    "additional": ["KaTeX (math rendering)", "TanStack React Query", "React Router DOM 6"]
+  },
+
+  "competitiveAdvantages": [
+    "Only app combining Kumon methodology with AI tutoring",
+    "Homework photo → instant AI explanations (unique feature)",
+    "Multi-child family pricing with progressive discounts",
+    "26 Kumon levels covering Pre-K through calculus",
+    "Ms. Guide never gives answers — teaches thinking process",
+    "Real-time parent dashboard with focus and distraction tracking",
+    "60-day free trial with no credit card required"
+  ],
+
+  "marketSize": {
+    "US_K5": "10M+ children",
+    "globalKumon": "4M+ students in 50+ countries",
+    "tutoring_market": "$7B+ US tutoring market"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "projectName": "MindFoundry",
+  "projectPath": "/home/usthr/Penta_University/Math_Tutor/MindFoundry",
+  "createdAt": "2026-02-08T15:15:00Z",
+  "videos": [
+    {
+      "id": "video-001",
+      "theme": "product-overview",
+      "title": "Meet MindFoundry: Your Child's AI Math Tutor",
+      "duration": 128.5,
+      "totalFrames": 3865,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "codec": "h264",
+      "crf": 18,
+      "fileSize": "33MB",
+      "createdAt": "2026-02-08T18:18:00Z",
+      "ttsProvider": "elevenlabs",
+      "ttsVoice": "Daniel",
+      "ttsModel": "eleven_multilingual_v2",
+      "imageProvider": "nano-banana-pro",
+      "scenes": 13,
+      "outputPath": "video/video-001-overview/remotion/out/promo-video.mp4",
+      "scriptPath": "video/video-001-overview/video-script.json",
+      "productionPlanPath": "video/video-001-overview/production-plan.json",
+      "status": "completed"
+    }
+  ],
+  "nextSuggestedTheme": "ai-tutor-deep-dive"
+}
