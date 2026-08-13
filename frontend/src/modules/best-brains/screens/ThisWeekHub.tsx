@@ -206,6 +206,22 @@ export default function ThisWeekHub() {
           </p>
         ))}
 
+      {/* Passed, but the calendar has not turned yet — SAY SO.
+          Without this line the winning path is the only one in the module that
+          ends on a screen with nothing to press and nothing to read: the
+          primary CTA is suppressed by `weekPassed`, every day tile is done and
+          disabled, the corrective thread is not showing, the reveal button is
+          not ready, and the one existing "comes back tomorrow" line below is
+          gated on `!weekPassed`. A child who passed on the day they finished
+          saw a settled Wren bubble and a dead screen. */}
+      {weekPassed && !revealReady && (
+        <p className="text-center text-sm text-text-muted">
+          {enrollment.currentWeek < WEEKS_PER_LEVEL
+            ? MODULE_COPY.nextWeekWaiting[band]
+            : MODULE_COPY.levelComplete[band]}
+        </p>
+      )}
+
       {/* Passed: the cycle turns when the calendar does (P1). */}
       {revealReady && (
         <button

@@ -238,6 +238,35 @@ export const MODULE_COPY = {
     B: 'Ready for the next idea? The trail continues.',
     C: 'Next concept is ready when you are.',
   } as BandCopy,
+  /**
+   * Hub: the week was won TODAY, so the reveal waits for the calendar to turn.
+   *
+   * The wait is deliberate (P1 — the cycle turns when the day does) but it was
+   * SILENT: a child who passed saw a settled Wren line, five finished tiles and
+   * no next step, with nothing on screen saying one was coming. The corrective
+   * path has said "opens tomorrow" all along; the winning path said nothing,
+   * so finishing well looked exactly like being stuck.
+   *
+   * Names the day, not a duration — "tomorrow" is a thing a six-year-old can
+   * check; "in 14 hours" is not.
+   */
+  nextWeekWaiting: {
+    A: 'A new adventure opens tomorrow!',
+    B: 'The next idea opens tomorrow — it will be waiting for you.',
+    C: 'The next concept opens tomorrow. Nothing more to do today — that is the point.',
+  } as BandCopy,
+  /**
+   * Hub: every week of the level is done. Deliberately says nothing about a
+   * next level, because the code path that would move a child to one does not
+   * exist yet (`advanceToNextWeek` clamps at WEEKS_PER_LEVEL and nothing
+   * changes `enrollment.level`). Promising it here would be the app lying to a
+   * child once a week until someone built it.
+   */
+  levelComplete: {
+    A: 'You finished every week! Ms. Wren is so proud of you.',
+    B: 'That is every week of this level finished — the whole trail, start to end.',
+    C: 'Every week at this level is complete. Worth telling whoever set this up for you.',
+  } as BandCopy,
   /** TreasureChest empty settled moment. */
   chestEmpty: {
     A: 'The chest is empty — all caught!',
