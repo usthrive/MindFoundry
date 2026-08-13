@@ -217,10 +217,47 @@ export function orderTemperatures(dir: 'asc' | 'desc' = 'asc'): ItemGen {
       situationType: 'comparison',
       cognitiveOp: 'int-order',
       draw: (r) => {
-        const values: number[] = [];
-        while (values.length < 4) {
+        // ZERO IS DRAWABLE — one set in four contains it.
+        //
+        // The set used to be filled from `signed(r, 1, 14)`, whose magnitude
+        // starts at 1, so zero appeared in 0 of 2,000 draws (measured). Zero is
+        // the mirror line this whole week is built on, and the week's own Day-5
+        // ordering item could not show it. It is also the one reading whose
+        // place in the order no amount of digit-comparing will settle, which is
+        // exactly the discrimination the item is for.
+        //
+        // The set is SHUFFLED before it is listed. Seeding zero into the array
+        // first would have printed it in the leftmost slot every time it was
+        // drawn — a positional tell traded for a coverage gap, which is the
+        // same defect `eaMagnitudeOrder` carries below.
+        const drawn: number[] = [];
+        if (r.int(1, 4) === 1) drawn.push(0);
+        while (drawn.length < 4) {
           const v = signed(r, 1, 14);
-          if (!values.includes(v)) values.push(v);
+          if (!drawn.includes(v)) drawn.push(v);
+        }
+        // `shuffle` returns a new array and leaves its input alone, so the
+        // shuffled one is what both the prose and `params` carry — one order,
+        // one source of truth, and QG-5/QG-13 re-derive from the listed set.
+        //
+        // THE LISTED ORDER IS NEITHER SORTED ORDER. Four values have 24
+        // arrangements, two of which are the answer and the answer backwards,
+        // so 4.4% of draws printed the readings already in the order the item
+        // asks for and another 4.1% printed them in exact reverse (measured,
+        // 4,000 draws per direction). "Four readings: 12, -2, -6, -13. Write
+        // them in order, WARMEST first" was served as a MASTERY slot, where the
+        // work is copying a line that is already done. Found by reading the
+        // pack; no gate sees it, because the answer is right.
+        //
+        // Rejecting both costs 2 of 24 arrangements and removes the one habit
+        // — copy the list, forwards or backwards — that reaches the answer
+        // without reading a single sign.
+        const ascending = [...drawn].sort((x, y) => cmpFrac({ n: x, d: 1 }, { n: y, d: 1 }));
+        const sortedKey = ascending.join(',');
+        const reverseKey = [...ascending].reverse().join(',');
+        let values = r.shuffle(drawn);
+        for (let i = 0; i < 40 && (values.join(',') === sortedKey || values.join(',') === reverseKey); i++) {
+          values = r.shuffle(drawn);
         }
         const day = r.pick(['week', 'cold snap', 'ski trip', 'field week']);
         const listed = values.map((v) => fmtInt(v)).join(', ');
@@ -346,9 +383,18 @@ export function oppositeValue(): ItemGen {
       draw: (r) => {
         const n = signed(r, 2, 40);
         const name = r.pick(NAMES);
-        const place = r.pick(['a cliff path', 'a lift shaft', 'a canyon walk', 'a harbour wall']);
+        // The preposition travels WITH the place. A single hard-coded "On"
+        // shipped "On a lift shaft, Zoe marks a height of…" on 24.1% of draws
+        // (measured) — you are in a lift shaft, not on one. There is no gate
+        // for English, so the only place this can be got right is at the draw.
+        const place = r.pick([
+          { prep: 'On', name: 'a cliff path' },
+          { prep: 'In', name: 'a lift shaft' },
+          { prep: 'On', name: 'a canyon walk' },
+          { prep: 'On', name: 'a harbour wall' },
+        ] as const);
         return {
-          prompt: `On ${place}, ${name} marks a height of ${countNoun(n, 'm')} against sea level. Which height is the OPPOSITE of that mark?`,
+          prompt: `${place.prep} ${place.name}, ${name} marks a height of ${countNoun(n, 'm')} against sea level. Which height is the OPPOSITE of that mark?`,
           answerValue: String(canonicalSigned(-n)),
           templateId: 'e_int_opposite_v1',
           params: { n },
@@ -380,7 +426,22 @@ export function absoluteValue(): ItemGen {
       situationType: 'measurement',
       cognitiveOp: 'int-abs',
       draw: (r) => {
-        const n = signed(r, 2, 30);
+        // THE SIGN IS WEIGHTED, three negative readings to one positive.
+        //
+        // `signed()` is an even coin, and on a POSITIVE draw |n| = n: the answer
+        // is the number already printed in the prompt, so "copy it out" is
+        // correct and the misconception this item exists to catch — report the
+        // reading as it stands, sign and all — scores 100%. Measured at 50.4%
+        // of 2,000 draws.
+        //
+        // Weighted rather than banned, deliberately. |+n| = n is a fact about
+        // distance the week has to teach; a child who only ever meets negatives
+        // learns "absolute value means strike out the minus sign", which is the
+        // wrong rule with the right answers. The residual 25% is that fact, not
+        // a defect — the same call `compareNegativesTrap` makes below about the
+        // flip rule being genuinely correct on both-negative pairs.
+        const mag = r.int(2, 30);
+        const n = r.int(1, 4) === 1 ? mag : -mag;
         const thing = r.pick(['a diving platform', 'a mine shaft entry', 'a drone', 'a submarine hatch']);
         return {
           prompt: `${thing[0].toUpperCase()}${thing.slice(1)} logs its position as ${countNoun(n, 'm')} relative to sea level. How FAR from sea level is it?`,
@@ -413,11 +474,42 @@ export function distanceBetween(): ItemGen {
       situationType: 'comparison',
       cognitiveOp: 'int-distance',
       draw: (r) => {
-        const a = signed(r, 2, 18);
-        let b = signed(r, 2, 18);
-        // A gap of 0 has nothing to compare and a gap of 1 would render the
-        // unit-bearing answer as "1 degrees" through some surfaces.
-        if (Math.abs(a - b) < 2) b = a + (a < 0 ? 5 : -5);
+        // THE PAIR SHAPE IS DRAWN, weighted to the readings that cross zero.
+        //
+        // Two independent `signed()` draws land on the same side of zero half
+        // the time (measured: 50.0% of 2,000), and a same-side pair is a plain
+        // whole-number subtraction wearing a minus sign — -14 and -3 are 11
+        // apart by exactly the arithmetic the child had before this week. Half
+        // of a signed-distance generator's draws carried no signed content.
+        //
+        // Shapes: `across` 3 (the week's actual content — the count runs
+        // through zero), `zero` 1 (distance from the mirror line itself, the
+        // case that makes |n| and "how far from zero" the same question), and
+        // `same` 1, kept because it is a real reading pair and the one place
+        // where "just subtract" is right.
+        //
+        // Every shape holds the old gap rule: a gap of 0 has nothing to compare
+        // and a gap of 1 renders the unit-bearing answer as "1 degrees" through
+        // some surfaces (the ±1 note in the header).
+        const shape = r.pick(['across', 'across', 'across', 'zero', 'same'] as const);
+        let a: number;
+        let b: number;
+        if (shape === 'zero') {
+          const v = signed(r, 2, 18);
+          [a, b] = r.int(0, 1) === 0 ? [v, 0] : [0, v];
+        } else if (shape === 'across') {
+          const neg = -r.int(2, 18);
+          const pos = r.int(2, 18);
+          [a, b] = r.int(0, 1) === 0 ? [neg, pos] : [pos, neg];
+        } else {
+          const sign = r.int(0, 1) === 0 ? -1 : 1;
+          const m1 = r.int(2, 18);
+          let m2 = r.int(2, 18);
+          // Nudged AWAY from m1 and always back inside 2…18, so the same-side
+          // shape cannot drift out of the range the story is written for.
+          if (Math.abs(m1 - m2) < 2) m2 = m1 <= 9 ? m1 + 5 : m1 - 5;
+          [a, b] = [sign * m1, sign * m2];
+        }
         const [n1, n2] = two(r);
         return {
           prompt: `${n1} records ${countNoun(a, 'degrees')} and ${n2} records ${countNoun(b, 'degrees')} on the same morning. How many degrees apart are the two readings?`,
@@ -457,14 +549,49 @@ export function temperatureSwing(): ItemGen {
       situationType: 'rate-of-change',
       cognitiveOp: 'int-addsub',
       draw: (r) => {
-        const start = negative(r, 2, 12);
-        const fall = r.int(2, 9);
-        let rise = r.int(2, 12);
-        // A rise equal to the fall makes the two moves cancel, which reads as a
-        // non-problem; and keep the reported answer clear of ±1 and 0, since the
-        // answer carries a unit.
-        if (rise === fall) rise += 3;
-        while (Math.abs(start - fall + rise) < 2) rise += 2;
+        // RESAMPLED, never nudged.
+        //
+        // This used to draw the triple once and then push `rise` until the draw
+        // was legal: +3 on a cancel, then +2 per round while |answer| < 2. Every
+        // one of those steps moves the ANSWER by the same amount, so the three
+        // answers the loop was written to exclude did not disappear — they were
+        // shunted onto their neighbours. -1 needed two rounds and landed on 3;
+        // 0 landed on 2; 1 landed on 3. Measured over 2,000 draws: 25 distinct
+        // answers, 20.8% of the mass on {1, 2, 3} and 12.9% on "3" alone. A
+        // child who notices that "3" is the house favourite has found a better
+        // strategy than adding, which is what the item is for.
+        //
+        // The third condition is new: the story prints `start`, `fall` and
+        // `rise`, so an answer equal to any of them is copied rather than
+        // computed (measured at 4.2% of draws — "It falls 2 degrees … then
+        // rises 10", answer 2).
+        //
+        // Resampling keeps every constraint and leaves the distribution alone.
+        // The seed values below are a documented last resort, not a default:
+        // well over half the 968-triple space is admissible, so 60 consecutive
+        // misses has probability around 1e-13. They are stated rather than left
+        // implicit because a draw loop that can fall off its own end and ship an
+        // inadmissible item is precisely the defect being repaired.
+        let start = -5;
+        let fall = 3;
+        let rise = 4; // answer -4: two moves that do not cancel, and distinct
+        for (let i = 0; i < 60; i++) {
+          const s = negative(r, 2, 12);
+          const f = r.int(2, 9);
+          const u = r.int(2, 12);
+          const answer = s - f + u;
+          // A rise equal to the fall makes the two moves cancel, which reads as
+          // a non-problem; the answer stays clear of ±1 and 0 because it
+          // carries a unit (the ±1 note in the header); and clear of every
+          // number the prompt already prints.
+          if (f === u) continue;
+          if (Math.abs(answer) < 2) continue;
+          if (answer === s || answer === f || answer === u) continue;
+          start = s;
+          fall = f;
+          rise = u;
+          break;
+        }
         const when = r.pick(['dawn', 'first light', 'the early shift', 'sunrise']);
         return {
           prompt: `At ${when} a weather station reads ${countNoun(start, 'degrees')}. It falls ${countNoun(fall, 'degrees')} by mid-morning, then rises ${countNoun(rise, 'degrees')} by noon. What does it read at noon?`,
@@ -499,7 +626,17 @@ export function eaMagnitudeOrder(): ItemGen {
       // output (the verify refuses any pair where it would not).
       const big = r.int(5, 15);
       const small = r.int(2, big - 1);
-      return { a: -big, b: -small };
+      // WHICH READING IS NAMED FIRST IS DRAWN.
+      //
+      // This used to return `{ a: -big, b: -small }` unconditionally, so the
+      // warmer reading — the one the item asks for — was named SECOND on
+      // 500/500 draws (measured). The item is manual-review, so no child is
+      // certified by it and the tell cannot pass anyone through the gate; that
+      // is exactly why it survived. What it can do is teach: "the second one is
+      // the answer" is a rule a child can carry out of Day 5, and it is a rule
+      // about nothing. `verifyIntCompare` reads the pair, not the order, so it
+      // recomputes the same truth either way.
+      return r.int(0, 1) === 0 ? { a: -big, b: -small } : { a: -small, b: -big };
     },
     build: (v, p) => ({
       prompt: `A student was asked which is the WARMER reading, ${countNoun(num(p, 'a'), 'degrees')} or ${countNoun(num(p, 'b'), 'degrees')}, and answered ${v.wrong}, saying the bigger number wins.`,

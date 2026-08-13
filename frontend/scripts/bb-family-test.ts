@@ -24,7 +24,11 @@
  * Run: npx tsx scripts/bb-family-test.ts [seeds]
  */
 
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { streamRng } from '../src/modules/best-brains/generator/rng';
+import { PERSON_NAMES } from '../src/modules/best-brains/generator/surface';
 import { TupleGuard } from '../src/modules/best-brains/generator/templates/shared';
 import { getTemplate } from '../src/modules/best-brains/generator/templates/registry';
 import { checkFigureShape, figureValue } from '../src/modules/best-brains/figures/assert';
@@ -272,6 +276,41 @@ for (const [family, mod] of FAMILIES) {
     `  ${family.padEnd(12)} ${String(exercised).padStart(2)} generators exercised` +
       (unexercised.length ? `   · not exercised (helpers or needing args): ${unexercised.join(', ')}` : ''),
   );
+}
+
+/**
+ * The same-day name guard's pool must cover every family's cast.
+ *
+ * `makeWeekBuilder` stops two items on one day naming the same child by
+ * scanning for `PERSON_NAMES` (generator/surface.ts). A family that adds an
+ * actor outside that list is simply not guarded — the guard goes blind without
+ * failing, which is the failure mode this suite exists to make impossible. So
+ * the pools are compared here, where every family is already imported.
+ *
+ * Read out of the SOURCE rather than from an export, because the seven copies
+ * are private `const NAMES` declarations; centralising them is a seven-file
+ * change and is not what this check is for.
+ */
+{
+  const here = dirname(fileURLToPath(import.meta.url));
+  const libDir = join(here, '../src/modules/best-brains/generator/templates/lib');
+  const pool = new Set(PERSON_NAMES);
+  let scanned = 0;
+  for (const file of ['items', 'integers', 'ratio', 'stats', 'clock', 'money', 'algebra']) {
+    const src = readFileSync(join(libDir, `${file}.ts`), 'utf8');
+    const m = /^const NAMES = \[([^\]]*)\]/m.exec(src);
+    if (!m) {
+      fail(file, 'NAMES', `no 'const NAMES = [...]' pool found — the same-day name guard cannot be checked against this family`);
+      continue;
+    }
+    scanned++;
+    const names = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+    const missing = names.filter((n) => !pool.has(n));
+    if (missing.length) {
+      fail(file, 'NAMES', `draws ${missing.join(', ')} but generator/surface.ts PERSON_NAMES does not list ${missing.length > 1 ? 'them' : 'it'} — makeWeekBuilder's same-day name guard is BLIND to ${missing.length > 1 ? 'those names' : 'that name'}`);
+    }
+  }
+  console.log(`\n  same-day name guard: ${scanned}/7 family pools ⊆ PERSON_NAMES (${pool.size} names)`);
 }
 
 if (leaks.length) {

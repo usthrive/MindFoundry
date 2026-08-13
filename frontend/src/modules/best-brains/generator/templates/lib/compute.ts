@@ -506,13 +506,21 @@ function binop(a: number, b: number, op: string): number {
 // Signed / integer misconception verifies (G5 — E6…E9).
 //
 // WHY THEY LIVE HERE and not in lib/integers.ts with the rest of the family:
-// `erroranalysis.ts` resolves `verifyTemplateId` against LIB_VERIFY_DEFS ONLY
-// (`const VERIFY = new Map(LIB_VERIFY_DEFS…)`), so a verify template registered
-// anywhere else is invisible to the error-analysis primitive. The family's
-// `answerFor` templates stay in integers.ts; only these four truths have to sit
-// on the shared list. Each one REFUSES params that do not actually exhibit its
-// misconception (wrong === correct throws), so an error-analysis item can never
-// show a "student error" that is really the right answer.
+// history, no longer necessity. `erroranalysis.ts` DID resolve `verifyTemplateId`
+// against LIB_VERIFY_DEFS only (`const VERIFY = new Map(LIB_VERIFY_DEFS…)`), so a
+// verify registered anywhere else was invisible to the error-analysis primitive
+// and these four had to sit on the shared list. That is fixed: `verifyTruth()`
+// now consults the REGISTRY first and falls back to LIB_VERIFY_DEFS, so a family
+// may register its own truths beside its generators — `integers.ts` already does
+// for the four choice-item truths at the foot of INTEGER_TEMPLATE_DEFS.
+//
+// These four stay put because moving a registered id is a corpus-wide change for
+// no gain, not because the primitive still requires it. A NEW family's verify
+// belongs with its family.
+//
+// Each one REFUSES params that do not actually exhibit its misconception
+// (wrong === correct throws), so an error-analysis item can never show a
+// "student error" that is really the right answer.
 // ---------------------------------------------------------------------------
 
 /** The ordered-pair surface every coordinate template renders: "(-3, 2)". */

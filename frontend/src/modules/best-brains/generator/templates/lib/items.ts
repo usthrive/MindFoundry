@@ -405,31 +405,99 @@ export function fracEquivFill(): ItemGen {
 export function fracCompareChoice(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const d1 = r.pick([2, 3, 4, 5, 6, 8]);
-      let d2 = r.pick([2, 3, 4, 5, 6, 8]);
-      if (d2 === d1) d2 = d1 === 8 ? 3 : d1 + 1;
-      const n1 = r.int(1, d1 - 1);
-      const n2 = r.int(1, d2 - 1);
-      const v1 = n1 / d1;
-      const v2 = n2 / d2;
-      if (Math.abs(v1 - v2) < 1e-9) return build(r, n1, d1, n2, d2 === 2 ? 4 : 2); // avoid ties by nudging
+      // ONE DRAW IN FIVE IS AN EQUIVALENT PAIR, so "they are equal" can be the
+      // answer. The generator used to nudge every tie away, so the card was
+      // offered on 2,000/2,000 draws and keyed on none (measured) — a
+      // permanently unkeyable option, the L38 class already repaired twice in
+      // this library (`compareWhole` above, `compareNegativesTrap` in G5). A
+      // child who meets it twice learns to strike it out and answer a two-way
+      // question.
+      //
+      // It is also the better item. "Which is greater: 2/4 or 1/2?" is the D9
+      // skill itself — two fractions that look different and name one amount —
+      // and it is the only draw on which every digit-comparing habit fails at
+      // once. The equal pair is built by SCALING, so the two surfaces always
+      // differ even though the values do not.
+      const equalDraw = r.int(1, 5) === 1;
+      let d1: number;
+      let d2: number;
+      let n1: number;
+      let n2: number;
+      if (equalDraw) {
+        const base = r.pick([2, 3, 4] as const);
+        const k = base === 2 ? r.pick([2, 3, 4] as const) : 2; // base*k stays in 4…8
+        d1 = base;
+        n1 = r.int(1, base - 1);
+        d2 = base * k;
+        n2 = n1 * k;
+        if (r.int(0, 1) === 0) {
+          [d1, d2] = [d2, d1];
+          [n1, n2] = [n2, n1];
+        }
+      } else {
+        // RESAMPLED until the two values genuinely differ.
+        //
+        // Nudging is what the old line did — swap the denominator, clamp the
+        // numerator back into range — and it could land straight back on an
+        // equivalent pair: 1/2 against 2/4 nudges d2 from 4 to 2, clamps n2 to
+        // 1, and hands `build` 1/2 against 1/2. The equal branch then fired and
+        // shipped the same card twice, once keyed and once not. Measured at 35
+        // duplicate card sets in 2,000 draws while this comment's predecessor
+        // was in place — the L38 defect reintroduced by its own repair, which is
+        // why the sweep is re-run after a fix and not only before one.
+        d1 = 2; n1 = 1; d2 = 3; n2 = 1; // fallback: 1/2 vs 1/3, see temperatureSwing
+        for (let i = 0; i < 60; i++) {
+          const b1 = r.pick([2, 3, 4, 5, 6, 8]);
+          let b2 = r.pick([2, 3, 4, 5, 6, 8]);
+          if (b2 === b1) b2 = b1 === 8 ? 3 : b1 + 1;
+          const a1 = r.int(1, b1 - 1);
+          const a2 = r.int(1, b2 - 1);
+          if (Math.abs(a1 / b1 - a2 / b2) < 1e-9) continue;
+          d1 = b1; n1 = a1; d2 = b2; n2 = a2;
+          break;
+        }
+      }
       function build(rr: Rng, a1: number, b1: number, a2: number, b2: number): ItemDraft {
-        const greater = a1 / b1 > a2 / b2 ? fracStr(a1, b1) : fracStr(a2, b2);
+        const equal = Math.abs(a1 / b1 - a2 / b2) < 1e-9;
+        const greater = equal ? 'they are equal' : a1 / b1 > a2 / b2 ? fracStr(a1, b1) : fracStr(a2, b2);
         const lesser = a1 / b1 > a2 / b2 ? fracStr(a2, b2) : fracStr(a1, b1);
-        const { choices, correctKey } = makeChoices(rr, greater, [
-          {
-            text: lesser,
-            errorTag: 'concept-misconception',
-            // Pick the misconception that genuinely yields THIS distractor.
-            rationale:
-              (a1 / b1 > a2 / b2 ? b2 > b1 : b1 > b2)
+        // Distractors DERIVED from the truth, never a fixed list. Hard-coding
+        // "they are equal" as a wrong card was safe only while it could not be
+        // the answer; the moment an equivalent pair became drawable the same
+        // list would have shipped a card set holding it twice, once keyed and
+        // once not — the third defect the G5 repair uncovered.
+        const wrongCards = equal
+          ? [
+            {
+              text: fracStr(a1, b1),
+              errorTag: 'concept-misconception' as const,
+              rationale: b1 > b2
                 ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
-                : (a1 / b1 > a2 / b2 ? a2 > a1 : a1 > a2)
-                  ? 'Judges size by the bigger top number alone, ignoring how big the pieces are.'
-                  : 'Compares the two fractions without first giving them a common piece-size.',
-          },
-          { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Skips finding a common size to compare fairly.' },
-        ]);
+                : 'Judges size by the bigger top number alone, ignoring how big the pieces are.',
+            },
+            {
+              text: fracStr(a2, b2),
+              errorTag: 'concept-misconception' as const,
+              rationale: b2 > b1
+                ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
+                : 'Judges size by the bigger top number alone, ignoring how big the pieces are.',
+            },
+          ]
+          : [
+            {
+              text: lesser,
+              errorTag: 'concept-misconception' as const,
+              // Pick the misconception that genuinely yields THIS distractor.
+              rationale:
+                (a1 / b1 > a2 / b2 ? b2 > b1 : b1 > b2)
+                  ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
+                  : (a1 / b1 > a2 / b2 ? a2 > a1 : a1 > a2)
+                    ? 'Judges size by the bigger top number alone, ignoring how big the pieces are.'
+                    : 'Compares the two fractions without first giving them a common piece-size.',
+            },
+            { text: 'they are equal', errorTag: 'representation-misread' as const, rationale: 'Skips finding a common size to compare fairly.' },
+          ];
+        const { choices, correctKey } = makeChoices(rr, greater, wrongCards);
         return {
           type: 'classification',
           prompt: `Which is greater: ${fracStr(a1, b1)} or ${fracStr(a2, b2)}?`,
@@ -440,7 +508,10 @@ export function fracCompareChoice(): ItemGen {
           isRetrieval: false,
           generator: { templateId: 'd_frac_compare_v1', params: { n1: a1, d1: b1, n2: a2, d2: b2 }, seed: rr.uint() },
           hintLadder: ['Compare each to a benchmark like 1/2, or re-cut both into the same size pieces.', 'A bigger bottom means smaller pieces, not a bigger amount.'],
-          errorTags: ['concept-misconception', 'representation-misread'],
+          // Declared from the cards actually shipped: on an equivalent pair both
+          // wrong cards are the same misconception, and claiming a tag no card
+          // carries is the bookkeeping QG-3 exists to check.
+          errorTags: equal ? ['concept-misconception'] : ['concept-misconception', 'representation-misread'],
         };
       }
       return build(r, n1, d1, n2, d2);
@@ -585,26 +656,51 @@ export function decCompareChoice(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       // One "short" decimal vs one "long" decimal to trap the longer-is-bigger error.
-      const a = `0.${r.int(1, 9)}`;
-      const b = `0.${String(r.int(11, 89)).padStart(2, '0')}`;
+      //
+      // ONE DRAW IN FIVE MAKES THEM EQUAL — 0.4 against 0.40. The generator used
+      // to redraw every tie away, so "they are equal" was offered on 2,000/2,000
+      // draws and keyed on none (measured): the L38 unkeyable card, the same one
+      // repaired in `compareWhole`, `fracCompareChoice` above and G5's
+      // `compareNegativesTrap`.
+      //
+      // Here the equal draw is not a concession to the card — it is the sharpest
+      // form of the item. "Longer means bigger" is exactly the misconception D12
+      // names, and 0.4 vs 0.40 is the one pair where a child who holds it has to
+      // choose between two identical amounts. The trailing zero is what makes
+      // the two surfaces differ while the values do not.
+      const equalDraw = r.int(1, 5) === 1;
+      const tenths = r.int(1, 9);
+      const a = `0.${tenths}`;
+      const b = equalDraw ? `0.${tenths}0` : `0.${String(r.int(11, 89)).padStart(2, '0')}`;
       const av = Number(a);
       const bv = Number(b);
-      if (Math.abs(av - bv) < 1e-9) return decCompareChoice()(r, guard, difficulty);
-      const greater = av > bv ? a : b;
+      // An unequal draw that lands on a round tenth (0.20 against 0.2) is a tie
+      // the shape did not ask for; it redraws, as before.
+      if (!equalDraw && Math.abs(av - bv) < 1e-9) return decCompareChoice()(r, guard, difficulty);
+      const equal = Math.abs(av - bv) < 1e-9;
+      const greater = equal ? 'they are equal' : av > bv ? a : b;
       const lesser = av > bv ? b : a;
-      const { choices, correctKey } = makeChoices(r, greater, [
-        {
-          text: lesser,
-          errorTag: 'concept-misconception',
-          // "Longer means bigger" only explains this distractor when the SMALLER
-          // decimal is in fact the longer one.
-          rationale:
-            lesser.length > greater.length
-              ? 'Chooses the one with more digits — "longer means bigger" misread of decimals.'
-              : 'Compares the digits after the point without lining up the places first.',
-        },
-        { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Ignores the tenths place, where the comparison is decided.' },
-      ]);
+      // Derived from the truth — a fixed list would ship "they are equal" twice
+      // on the draw where it is the answer.
+      const wrongCards = equal
+        ? [
+          { text: a, errorTag: 'concept-misconception' as const, rationale: 'Reads the shorter decimal as the smaller amount, counting digits instead of places.' },
+          { text: b, errorTag: 'concept-misconception' as const, rationale: 'Chooses the one with more digits — "longer means bigger" misread of decimals.' },
+        ]
+        : [
+          {
+            text: lesser,
+            errorTag: 'concept-misconception' as const,
+            // "Longer means bigger" only explains this distractor when the SMALLER
+            // decimal is in fact the longer one.
+            rationale:
+              lesser.length > greater.length
+                ? 'Chooses the one with more digits — "longer means bigger" misread of decimals.'
+                : 'Compares the digits after the point without lining up the places first.',
+          },
+          { text: 'they are equal', errorTag: 'representation-misread' as const, rationale: 'Ignores the tenths place, where the comparison is decided.' },
+        ];
+      const { choices, correctKey } = makeChoices(r, greater, wrongCards);
       return {
         type: 'classification',
         prompt: `Which is greater: ${a} or ${b}?`,
@@ -615,7 +711,8 @@ export function decCompareChoice(): ItemGen {
         isRetrieval: false,
         generator: { templateId: 'd_dec_compare_v1', params: { a, b }, seed: r.uint() },
         hintLadder: ['Line up the decimal points and compare the tenths first.', 'Add a zero so both have the same number of places, then compare.'],
-        errorTags: ['concept-misconception', 'representation-misread'],
+        // Declared from the cards actually shipped (see `fracCompareChoice`).
+        errorTags: equal ? ['concept-misconception'] : ['concept-misconception', 'representation-misread'],
       };
     });
 }
