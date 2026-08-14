@@ -938,8 +938,16 @@ export function writeExprChoice(): ItemGen {
 export function plotChoice(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const x = r.int(1, 9);
-      let y = r.int(1, 9);
+      // BOTH COUNTS START AT 2. At 1 the prompt read "Point P is 1 units
+      // right", on 20.7% of 4,000 draws — a QG-12c violation the gate could not
+      // see, because its stem minimum exempted three-letter plurals until this
+      // session, and `units` was reached through a bare `${…}` rather than
+      // `unitFor`. Latent rather than shipped: D22 is the only week that names
+      // this generator and its header explains it cannot serve the raw form in
+      // v2 core, so 300 served D22 packs contain none of them. It surfaced when
+      // E7 tried to use it and the draw failed E7's own 200-seed sweep.
+      const x = r.int(2, 9);
+      let y = r.int(2, 9);
       if (y === x) y = x === 9 ? 8 : x + 1;
       const correct = `(${x}, ${y})`;
       const { choices, correctKey } = makeChoices(r, correct, [

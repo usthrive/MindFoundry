@@ -175,6 +175,48 @@ export function barModel(
   };
 }
 
+/**
+ * A coordinate grid — the four-quadrant plane, or any window of it.
+ *
+ * WHY THIS EXISTS. Every other layer of the stack already supported this
+ * figure: `CoordinateGridParams` is typed, `CoordinateGridFig` renders it,
+ * `assert.ts` knows its `point` / `point:k` assertions, and the figure-render
+ * suite has carried a passing case labelled "(E7)" the whole time. The one
+ * missing piece was here — the authoring layer — so a week that wanted a grid
+ * had to hand-build the object and bypass the helpers that supply the alt text
+ * and the assertion. G5's four E7 generators ship no figure at all as a result:
+ * a coordinate-plane week with no coordinate plane on it.
+ *
+ * The `hundredChart` note below records the same shape of bug reaching a real
+ * child. Adding the constructor before E7 is authored is that lesson applied
+ * early rather than late.
+ *
+ * The window is the CALLER's, deliberately — a grid that silently resized to
+ * fit its points would move the axes between two items a child is asked to
+ * compare, which is exactly the comparison the week is for.
+ */
+export function coordinateGrid(
+  params: {
+    xMin: number; xMax: number; yMin: number; yMax: number; step?: number;
+    points?: Array<{ x: number; y: number; label?: string; style?: MarkStyle }>;
+    segments?: Array<{ from: [number, number]; to: [number, number]; label?: string }>;
+    showAxisLabels?: boolean;
+  },
+  opts: { alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  if (params.xMax <= params.xMin || params.yMax <= params.yMin) {
+    throw new Error(
+      `coordinateGrid: empty window x[${params.xMin}, ${params.xMax}] y[${params.yMin}, ${params.yMax}] — checkFigureShape requires max > min on both axes`,
+    );
+  }
+  for (const p of params.points ?? []) {
+    if (p.x < params.xMin || p.x > params.xMax || p.y < params.yMin || p.y > params.yMax) {
+      throw new Error(`coordinateGrid: point (${p.x}, ${p.y}) falls outside the window — it would render off the grid`);
+    }
+  }
+  return { type: 'coordinate-grid', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
 /** An area/array grid; `shadedRows`×`shadedCols` produces the double-shaded overlap. */
 export function areaGrid(
   params: {

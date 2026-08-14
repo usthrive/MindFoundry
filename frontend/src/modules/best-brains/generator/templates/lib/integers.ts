@@ -45,7 +45,7 @@ import type { AnswerDef, VerifyDef, VerifyResult } from './compute';
 import { canonicalSigned, cmpFrac, formatPoint, num, str } from './compute';
 import { discrimination } from './discrimination';
 import { errorAnalysis } from './erroranalysis';
-import { assertsParam, numberLine } from './figures';
+import { assertsParam, coordinateGrid, numberLine } from './figures';
 import { countNoun, fmtInt, unitFor } from './format';
 import { multiStep, type ItemGen } from './multistep';
 import { situation } from './situations';
@@ -660,9 +660,27 @@ export function namePointFromMoves(): ItemGen {
     situationType: 'measurement',
     cognitiveOp: 'int-plot',
     draw: (r) => {
+      // THE SIGN OF y IS DRAWN FIRST, INDEPENDENTLY; only its MAGNITUDE is
+      // redrawn on a collision.
+      //
+      // This began as `if (y === x) y = -x`, which converted every
+      // same-sign-same-magnitude draw into an opposite-sign pair and tilted the
+      // keys to QII/QIV on 57.9% of 2,400 draws. Redrawing y whole was better
+      // (54.8%) but not level, and could not be: x === y is only ever a
+      // SAME-SIGN event, so any rule that rejects it removes same-sign pairs
+      // and nothing else. Deciding the sign before the collision can happen is
+      // what makes the four quadrants equally likely — the magnitude redraw
+      // then keeps x !== y, which the swap misconception downstream needs.
+      //
+      // Four E weeks share this generator; a quadrant drawn less often is one a
+      // child meets less often.
       const x = signed(r, 2, 8);
-      let y = signed(r, 2, 8);
-      if (y === x) y = -x;
+      const ySign = r.int(0, 1) === 0 ? -1 : 1;
+      let yMag = r.int(2, 8);
+      if (ySign === Math.sign(x)) {
+        for (let i = 0; i < 20 && yMag === Math.abs(x); i++) yMag = r.int(2, 8);
+      }
+      const y = ySign * yMag;
       const name = r.pick(NAMES);
       const [xWord, xDir] = x > 0 ? ['right', 'east'] : ['left', 'west'];
       const [yWord, yDir] = y > 0 ? ['up', 'north'] : ['down', 'south'];
@@ -684,9 +702,24 @@ export function namePointFromMoves(): ItemGen {
   });
 }
 
+/**
+ * A square window that certainly contains `points` AND both axes.
+ *
+ * Square and symmetric on purpose: a reflection item whose grid was cropped to
+ * its own points would show the mirror line off-centre, which is the one visual
+ * fact the item depends on. `checkFigureShape` wants max > min on both axes;
+ * the padding guarantees it even for a point sitting on an axis.
+ */
+function gridWindow(points: Array<{ x: number; y: number }>): { xMin: number; xMax: number; yMin: number; yMax: number; step: number } {
+  const reach = Math.max(1, ...points.flatMap((p) => [Math.abs(p.x), Math.abs(p.y)]));
+  const span = reach + 1;
+  return { xMin: -span, xMax: span, yMin: -span, yMax: span, step: span <= 12 ? 1 : 2 };
+}
+
 /** Reflect a point across an axis (E7 plot-then-reflect). */
 export function reflectPoint(axis: 'x' | 'y' | 'origin' = 'x'): ItemGen {
-  return situation({
+  return withFigure(
+  situation({
     situationType: 'measurement',
     cognitiveOp: 'int-reflect',
     draw: (r) => {
@@ -695,7 +728,7 @@ export function reflectPoint(axis: 'x' | 'y' | 'origin' = 'x'): ItemGen {
       const name = r.pick(NAMES);
       const across =
         axis === 'x' ? 'across the x-axis' : axis === 'y' ? 'across the y-axis' : 'through the origin';
-      const thing = r.pick(['a mirrored tile', 'a folded map', 'a symmetric logo', 'a reflected buoy']);
+      const thing = r.pick(['a mirrored tile', 'a folded map', 'a symmetric logo', 'a harbour buoy']);
       return {
         prompt: `${name} is designing ${thing}. The point ${formatPoint(x, y)} is reflected ${across}. Which ordered pair names the reflected point?`,
         answerValue: intReflect({ x, y, axis }),
@@ -721,7 +754,35 @@ export function reflectPoint(axis: 'x' | 'y' | 'origin' = 'x'): ItemGen {
         errorTags: ['representation-misread', 'concept-misconception'],
       };
     },
-  });
+  }),
+    // The GIVEN point only — never the reflection. Plotting the answer would
+    // hand over the move the item asks for, the same rule `oppositeValue`
+    // follows above. What the grid supplies is the mirror line itself, which is
+    // the thing a child cannot reason about from two numbers in a bracket.
+    (p) => {
+      const x = num(p, 'x');
+      const y = num(p, 'y');
+      return coordinateGrid(
+        { ...gridWindow([{ x, y }]), points: [{ x, y, label: formatPoint(x, y), style: 'point' }] },
+        {
+          alt: `a four-quadrant grid with the starting point marked and both axes through zero`,
+          // NO `asserts`, deliberately, and for two independent reasons.
+          //
+          // Mechanically: `point:k` reads back the formatted PAIR, "(-2,-4)",
+          // and this template's params are the scalars x, y and axis. There is
+          // no param for `assertsParam` to compare it against — pairing it with
+          // `x` fails on every draw, which is how this was found.
+          //
+          // And in principle: the assertion binds a figure to the item's
+          // ANSWER, and this figure deliberately shows the point BEFORE the
+          // reflection. Tying it to the answer is exactly what must not happen
+          // here. `withFigure` already gives the QG-13 guarantee structurally —
+          // the picture is built from the same params the answer came from, so
+          // there is no second source of truth to disagree with.
+        },
+      );
+    },
+  );
 }
 
 /** Signs name the quadrant — (−3, 2) vs (2, −3) (E7 discrimination). */
@@ -743,7 +804,18 @@ export function quadrantSignTrap(): ItemGen {
           {
             text: swapped.correct === truth.correct ? mirrored.correct : swapped.correct,
             errorTag: 'representation-misread',
-            rationale: 'Reads the pair up-then-across, so the point lands where the swapped pair would.',
+            // THE RATIONALE FOLLOWS THE CARD, because the card is not always
+            // the swap. When x and y share a sign the point is in QI or QIII,
+            // both of which are swap-invariant — the swap lands back on the
+            // truth, so the code falls through to the y-mirror. That happens on
+            // 49.5% of 4,000 draws, and the fixed wording claimed the child had
+            // read the pair up-then-across on every one of them: a rationale
+            // naming a move that did not produce the option it is attached to,
+            // which is the DD7 bookkeeping QG-3 exists to keep honest.
+            rationale:
+              swapped.correct === truth.correct
+                ? 'Reads the first number\'s sign off the wrong side of the origin, so the point lands in the mirror-image corner.'
+                : 'Reads the pair up-then-across, so the point lands where the swapped pair would.',
           },
           {
             text:
@@ -769,14 +841,27 @@ export function eaCoordinateSwap(): ItemGen {
     verifyTemplateId: 'e_verify_point_v1',
     cognitiveOp: 'int-plot',
     drawParams: (r) => {
+      // Redrawn, not negated — same reason as `namePointFromMoves` above.
       const x = signed(r, 2, 8);
       let y = signed(r, 2, 8);
-      if (y === x) y = -x;
+      for (let i = 0; i < 20 && y === x; i++) y = signed(r, 2, 8);
       return { x, y, mode: 'swap' };
     },
     build: (v, p) => ({
-      prompt: `A student was asked to plot a point ${countNoun(Math.abs(num(p, 'x')), 'units')} along the x-axis and ${countNoun(Math.abs(num(p, 'y')), 'units')} along the y-axis, with the signs shown on the map. They wrote the point as ${v.wrong}.`,
-      extension: 'Plot both pairs on one grid, then write the pair the map really describes and say how the two spots differ.',
+      // THE DIRECTIONS ARE STATED, not referred to.
+      //
+      // This used to read "…along the y-axis, with the signs shown on the map"
+      // on 100% of draws, and the item ships no map — it is an errorAnalysis
+      // draft with no figure, measured at 0% (500 draws). The signs were
+      // technically recoverable from the student's wrong pair, so the item was
+      // answerable and no gate could object; a child who went looking for the
+      // map simply did not find one. Same shape as the hundred-chart items a
+      // six-year-old reported, recorded in figures.ts.
+      //
+      // Naming left/right and above/below states the signs in words, which is
+      // also the vocabulary the week is teaching.
+      prompt: `A student was asked to plot a point ${countNoun(Math.abs(num(p, 'x')), 'units')} to the ${num(p, 'x') < 0 ? 'LEFT' : 'RIGHT'} of the origin and ${countNoun(Math.abs(num(p, 'y')), 'units')} ${num(p, 'y') < 0 ? 'BELOW' : 'ABOVE'} it. They wrote the point as ${v.wrong}.`,
+      extension: 'Plot both pairs on one grid, then write the pair the directions really describe and say how the two spots differ.',
       hints: [
         'Which number in an ordered pair does the grid read first?',
         'Walk each pair out on the grid — across first, then up — and see where the two walks end.',
