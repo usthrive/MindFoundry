@@ -9,6 +9,7 @@
 
 import { useParams } from 'react-router-dom';
 import { COACH_ETIQUETTE } from '../../parentCopy';
+import { getParentSummarySeed } from '../../generator/packGenerator';
 import { speak as ttsSpeak } from '@/services/ttsService';
 import { useParentContext } from './FoundryParentLayout';
 
@@ -25,6 +26,10 @@ export default function CoachCorner() {
   const praise = latest?.narrative.homeFocus.praiseLine ?? null;
   const question = latest?.narrative.homeFocus.questionForChild ?? null;
   const strengths = enr?.placementResult?.strengths ?? [];
+  // The vocabulary belongs to the week the child is ON, not to the last report —
+  // a parent reading this on the day a new week opens should get the new words,
+  // and the report for that week does not exist yet.
+  const vocabulary = enr ? getParentSummarySeed(enr.level, enr.currentWeek)?.vocabularyForParent ?? [] : [];
 
   function speak(text: string) {
     void ttsSpeak(text).catch(() => undefined);
@@ -86,6 +91,31 @@ export default function CoachCorner() {
               teach-it-back question, fresh each week.
             </p>
           )}
+        </section>
+      )}
+
+      {/* THE SHARED WORDS.
+          `vocabularyForParent` is authored in every one of the 99 built cells
+          and validated by the schema, and until now it rendered on no screen at
+          all — written for an adult who teaches alongside the program, then
+          never shown to one. It is the cheapest thing on this page and possibly
+          the most useful: a parent who says "number path" where Ms. Wren says
+          "number path" is reinforcing her, and one who invents their own term
+          is quietly teaching a second vocabulary the child has to reconcile. */}
+      {vocabulary.length > 0 && (
+        <section className="mf-card flex flex-col gap-2 p-5">
+          <span className="mf-label mf-label-teal">The words {name} is using</span>
+          <ul className="flex flex-col gap-1.5">
+            {vocabulary.map((v) => (
+              <li key={v} className="mf-report-body text-[15px]">
+                · {v}
+              </li>
+            ))}
+          </ul>
+          <p className="text-[12.5px] text-text-secondary">
+            Ms. Wren uses these exact words this week — matching them saves {name} translating
+            between two sets.
+          </p>
         </section>
       )}
 
