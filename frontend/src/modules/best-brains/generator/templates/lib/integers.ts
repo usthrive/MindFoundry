@@ -201,7 +201,14 @@ function verifyQuadrant(p: Params): VerifyResult {
 /** Sign of a product from the COUNT of negative factors (E9 "count-the-signs"). */
 function verifySignCount(p: Params): VerifyResult {
   const factors = nums(p, 'factors');
-  if (factors.some((f) => f === 0)) throw new Error('e_int_sign_count_v1: a zero factor has no sign');
+  // A ZERO FACTOR IS AN OUTCOME, not an error. This used to throw, which left
+  // the choice item with only two reachable answers and a third card ("it
+  // depends on the sizes of the numbers") that was offered every time and
+  // keyed never — the L38 card, and one that cannot be made keyable because it
+  // is not true. Zero is the honest third case: one zero factor and the whole
+  // product is zero, whatever the signs do, which is exactly the fact a child
+  // counting minus signs forgets.
+  if (factors.some((f) => f === 0)) return { correct: 'zero' };
   const negatives = factors.filter((f) => f < 0).length;
   return { correct: negatives % 2 === 0 ? 'positive' : 'negative' };
 }
@@ -1119,8 +1126,20 @@ export function signedMultiplyStory(): ItemGen {
         templateId: 'e_int_mul_v1',
         params: { a: rate, b: k },
         units: 'degrees',
+        // THE HINT IS DIRECTION-NEUTRAL, and it has to be.
+        //
+        // Rung 1 asked "Does repeating a FALL…" on 100% of draws while the
+        // prose said "a rise each time" on 52.5% of them — a hint describing
+        // the opposite of the item beside it. The obvious repair, branching the
+        // wording on `falls`, is itself a defect: hint ladders must be
+        // SEED-INVARIANT (L19), because a ladder that varies with the draw
+        // breaks pack-generation dedup for whichever learner draws the unlucky
+        // seed. `bb-family-test` catches it, and did.
+        //
+        // So the rung is reworded to be true either way — repeating any signed
+        // move carries the total further from zero, whichever side it starts.
         hints: [
-          'Does repeating a fall make the total change bigger or smaller than one fall?',
+          'Does repeating the same move carry a total further from zero, or back towards it?',
           'Count the repeats of the same signed move, and keep the direction the story gave you.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
@@ -1135,8 +1154,12 @@ export function signedDivideStory(): ItemGen {
     situationType: 'sharing',
     cognitiveOp: 'int-div',
     draw: (r) => {
+      // The prompt prints `k` and `total`, so a rate equal to either is copied
+      // rather than divided — measured at 5.9% of 3,000 draws (it happens
+      // whenever a positive rate lands on the same value as the period count).
       const k = r.int(2, 9);
-      const rate = signed(r, 2, 9);
+      let rate = signed(r, 2, 9);
+      for (let i = 0; i < 20 && (rate === k || rate === rate * k); i++) rate = signed(r, 2, 9);
       const total = rate * k;
       const name = r.pick(NAMES);
       const unitWord = r.pick(['hour', 'day', 'week', 'round']);
@@ -1146,8 +1169,12 @@ export function signedDivideStory(): ItemGen {
         templateId: 'e_int_div_v1',
         params: { a: total, b: k },
         units: 'degrees',
+        // Direction-neutral for the same reason as `signedMultiplyStory` above:
+        // rung 1 opened "If the whole change was downward…" on 100% of draws,
+        // including the ones whose total is a rise, and a ladder that branches
+        // on the draw is seed-variant.
         hints: [
-          'If the whole change was downward, can any single step have been upward?',
+          'If every step was the same, can a single step point the opposite way to the whole change?',
           'Share the total change equally across the periods, direction included.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
@@ -1162,32 +1189,77 @@ export function countTheSignsTrap(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'int-sign',
     draw: (r) => {
+      // THE NEGATIVE COUNT IS DRAWN BY PARITY, and one draw in five plants a
+      // zero.
+      //
+      // The old form drew signs freely and then, if fewer than two factors were
+      // negative, SET two of them negative. Two is even, so every one of those
+      // draws became a positive product — and "fewer than two negatives" is
+      // half the sign patterns at size 3. The keyed answer was "positive" on
+      // 68.7% of 3,000 draws, so "always say positive" scored more than twice
+      // the §2(b) bar on the item whose entire subject is counting signs.
+      //
+      // Parity is now a fair coin and the count is drawn from the counts of
+      // that parity that are still >= 2 — which keeps the original intent (the
+      // item is about COUNTING signs, not spotting one) while making the two
+      // answers equally likely.
       const size = r.int(3, 4);
       const factors: number[] = [];
-      for (let i = 0; i < size; i++) factors.push(signed(r, 2, 9));
-      // Guarantee at least two negatives, so the item is about COUNTING signs
-      // rather than spotting a single one.
-      if (factors.filter((f) => f < 0).length < 2) {
-        factors[0] = -Math.abs(factors[0]);
-        factors[1] = -Math.abs(factors[1]);
+      for (let i = 0; i < size; i++) factors.push(Math.abs(signed(r, 2, 9)));
+      // THE OUTCOME IS DRAWN FIRST, uniformly over the three cards.
+      //
+      // Balancing the parity coin and planting a zero one draw in five left the
+      // keys at 40/40/20 (measured 3,000 served) — better than the 68.7%
+      // positive it replaced, but still 7 points of free edge for "always say
+      // negative", which is the exact reflex this week exists to defeat. E9's
+      // author had to filter the generator's output to serve it.
+      //
+      // Drawing which ANSWER the item will have, then building factors to
+      // match, is the same move `compareNegativesTrap` makes with its pair
+      // shape: decide the outcome, then construct a draw that has it. Three
+      // cards, three equally likely keys, no arithmetic-free edge at all.
+      const plantZero = r.int(1, 3) === 1;
+      if (plantZero) {
+        factors[r.int(0, size - 1)] = 0;
+        // The remaining signs are free; they cannot change a zero product, and
+        // leaving them varied stops "the one with a 0 in it looks different".
+        for (let i = 0; i < size; i++) if (factors[i] !== 0 && r.int(0, 1) === 0) factors[i] = -factors[i];
+      } else {
+        const even = r.int(0, 1) === 0;
+        const choices = [2, 3, 4].filter((c) => c <= size && c % 2 === (even ? 0 : 1));
+        const negCount = choices[r.int(0, choices.length - 1)];
+        const idx = r.shuffle(factors.map((_, i) => i)).slice(0, negCount);
+        for (const i of idx) factors[i] = -factors[i];
       }
       const truth = verifySignCount({ factors });
       const shown = factors.map((f) => fmtInt(f)).join(' x ');
       return {
         prompt: `Without multiplying it out: is the product ${shown} positive or negative?`,
         correct: truth.correct,
-        distractors: [
-          {
-            text: truth.correct === 'positive' ? 'negative' : 'positive',
-            errorTag: 'concept-misconception',
-            rationale: 'Carries the sign of the first factor (or of any negative seen) straight to the product.',
-          },
-          {
-            text: 'it depends on the sizes of the numbers',
-            errorTag: 'task-comprehension',
-            rationale: 'Looks at magnitudes, which never affect the sign of a product.',
-          },
-        ],
+        // THE TWO CARDS THAT ARE NOT THE TRUTH, derived from it.
+        //
+        // Hard-coding "the other sign" plus "zero" was safe only while zero
+        // could not be the answer; the moment it could, a zero draw shipped
+        // "zero" twice, once keyed and once not. This is the third time that
+        // exact mistake has been made in this library — `compareNegativesTrap`
+        // and `fracCompareChoice` both hit it when their previously-impossible
+        // card became reachable — so the rule is worth stating plainly:
+        // WHEN A DISTRACTOR BECOMES KEYABLE, THE CARD SET MUST BE DERIVED.
+        distractors: (['positive', 'negative', 'zero'] as const)
+          .filter((opt) => opt !== truth.correct)
+          .map((opt) => (
+            opt === 'zero'
+              ? {
+                text: 'zero',
+                errorTag: 'task-comprehension' as const,
+                rationale: 'A product is zero only when one of the factors is zero — check whether any of them is.',
+              }
+              : {
+                text: opt,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Carries the sign of the first factor (or of any negative seen) straight to the product.',
+              }
+          )),
         hints: [
           'How many of these factors pull the product to the other side of zero?',
           'Pair the negative factors off; each pair cancels, and what is left decides the sign.',
