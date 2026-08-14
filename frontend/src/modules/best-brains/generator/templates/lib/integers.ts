@@ -482,22 +482,28 @@ export function distanceBetween(): ItemGen {
         // apart by exactly the arithmetic the child had before this week. Half
         // of a signed-distance generator's draws carried no signed content.
         //
-        // Shapes: `across` 3 (the week's actual content — the count runs
-        // through zero), `zero` 1 (distance from the mirror line itself, the
-        // case that makes |n| and "how far from zero" the same question), and
-        // `same` 1, kept because it is a real reading pair and the one place
-        // where "just subtract" is right.
+        // Shapes: `across` 4 (the week's actual content — the count runs
+        // through zero) and `same` 1, kept because it is a real reading pair
+        // and the one place where "just subtract" is right.
+        //
+        // A `zero` shape was here and has been REMOVED — my own regression,
+        // added in the E6 triage for the pedagogically appealing reason that
+        // the distance from the mirror line is what |n| means. It answers
+        // itself: with one reading on zero the gap IS the other reading, so
+        // the prompt prints its own answer, and it did on 10.0% of 3,000 draws
+        // (the shape leaks whenever the surviving reading is positive). It also
+        // duplicated a job the family already does properly — `absoluteValue`
+        // asks exactly "how far from sea level", with one reading, on purpose.
+        // A two-reading comparison that collapses to a one-reading read-off is
+        // not a comparison. Found by E8's author; the fix is a deletion.
         //
         // Every shape holds the old gap rule: a gap of 0 has nothing to compare
         // and a gap of 1 renders the unit-bearing answer as "1 degrees" through
         // some surfaces (the ±1 note in the header).
-        const shape = r.pick(['across', 'across', 'across', 'zero', 'same'] as const);
+        const shape = r.pick(['across', 'across', 'across', 'across', 'same'] as const);
         let a: number;
         let b: number;
-        if (shape === 'zero') {
-          const v = signed(r, 2, 18);
-          [a, b] = r.int(0, 1) === 0 ? [v, 0] : [0, v];
-        } else if (shape === 'across') {
+        if (shape === 'across') {
           const neg = -r.int(2, 18);
           const pos = r.int(2, 18);
           [a, b] = r.int(0, 1) === 0 ? [neg, pos] : [pos, neg];
@@ -882,13 +888,43 @@ export function signedAddSubStory(op: '+' | '-' = '+'): ItemGen {
       situationType: op === '+' ? 'combine' : 'rate-of-change',
       cognitiveOp: 'int-addsub',
       draw: (r) => {
-        const a = negative(r, 2, 15);
-        // Subtracting a negative is the case E8 exists for; adding pairs a
-        // negative start with a positive move.
-        let b = op === '-' ? negative(r, 2, 9) : r.int(2, 12);
-        // Keep the ANSWER clear of ±1: `countNoun` would render it "-1 points",
-        // and QG-12c's "1 <plural>" scan has no boundary for the minus sign.
-        while (Math.abs(op === '+' ? a + b : a - b) < 2) b += op === '+' ? 1 : -1;
+        // RESAMPLED, never nudged — the `temperatureSwing` lesson, applied to
+        // the generator that had it worse.
+        //
+        // This drew the pair once and then walked `b` until the draw was legal
+        // (`b += op === '+' ? 1 : -1`). Each step moves the ANSWER by exactly
+        // one in the same direction, so the three answers the loop excludes did
+        // not vanish — -1, 0 and 1 all slid onto 2. Measured over 3,000 draws
+        // per operator: "2" took 27.2% of the add answers out of 21 distinct
+        // values, and 26.1% of the subtract answers out of 18. Better than a
+        // one-in-four chance that a child who simply writes "2" is right, on
+        // the week whose whole subject is which direction a signed move goes.
+        //
+        // The third condition is new: the story prints `a` and `b`, so an
+        // answer equal to either is copied rather than computed (measured at
+        // 5.6% on the subtract form).
+        //
+        // Fallback values are a documented last resort, not a default — most of
+        // the draw space is admissible, so 60 consecutive misses is
+        // vanishingly unlikely. Stated because a draw loop that can fall off
+        // its own end and ship an inadmissible item is the defect being fixed.
+        let a = -5;
+        let b = op === '-' ? -2 : 2; // answer -3: clear of ±1 and of both operands
+        for (let i = 0; i < 60; i++) {
+          const ca = negative(r, 2, 15);
+          // Subtracting a negative is the case E8 exists for; adding pairs a
+          // negative start with a positive move.
+          const cb = op === '-' ? negative(r, 2, 9) : r.int(2, 12);
+          const ans = op === '+' ? ca + cb : ca - cb;
+          // Keep the ANSWER clear of ±1: `countNoun` would render it "-1
+          // points", and QG-12c's "1 <plural>" scan has no boundary for the
+          // minus sign.
+          if (Math.abs(ans) < 2) continue;
+          if (ans === ca || ans === cb) continue;
+          a = ca;
+          b = cb;
+          break;
+        }
         const name = r.pick(NAMES);
         const value = op === '+' ? a + b : a - b;
         const prompt =
@@ -973,10 +1009,27 @@ export function minusNegativeTrap(): ItemGen {
     draw: (r) => {
       const a = negative(r, 2, 12);
       const b = r.int(3, 12);
-      const truth = verifyAddSubValue({ a, b: -b, op: '-' });
-      const trap = verifyAddSubValue({ a, b, op: '-' });
+      // WHICH CARD IS ASKED ABOUT IS DRAWN.
+      //
+      // This always asked about Card B. With `a` negative and `b` strictly
+      // positive the three options stand in a fixed order for every draw —
+      // a - b  <  a  <  a + b — so Card B's answer was the LARGEST number on
+      // the page on 3,000 of 3,000 draws (measured). "Pick the biggest"
+      // certified 100% of exposures, twenty times the §2(b) bar, on a
+      // discrimination whose entire job is telling two moves apart.
+      //
+      // Asking about either card is the item's own natural symmetry — the
+      // contrast IS minus-a-negative against minus-a-positive — and it makes
+      // the key the largest option half the time and the smallest the other
+      // half. The distractor set is unchanged in kind: whichever card is asked,
+      // the trap is the OTHER card's landing (reading both as the same move)
+      // and the third is the start itself.
+      const askB = r.int(0, 1) === 0;
+      const doubleUp = r.int(0, 1) === 0;
+      const truth = verifyAddSubValue({ a, b: askB ? -b : b, op: '-' });
+      const trap = verifyAddSubValue({ a, b: askB ? b : -b, op: '-' });
       return {
-        prompt: `Two cards are dealt from the same start of ${fmtInt(a)}. Card A says "subtract ${fmtInt(b)}". Card B says "subtract ${fmtInt(-b)}". Which number does Card B land on?`,
+        prompt: `Two cards are dealt from the same start of ${fmtInt(a)}. Card A says "subtract ${fmtInt(b)}". Card B says "subtract ${fmtInt(-b)}". Which number does Card ${askB ? 'B' : 'A'} land on?`,
         correct: truth.correct,
         distractors: [
           {
@@ -985,9 +1038,33 @@ export function minusNegativeTrap(): ItemGen {
             rationale: 'Treats both cards as the same move, since both say "subtract".',
           },
           {
-            text: String(canonicalSigned(a)),
-            errorTag: 'task-comprehension',
-            rationale: 'Cancels the two signs into no move at all and stays at the start.',
+            // NOT the start value, and NOT at a fixed rank.
+            //
+            // Two constant-rank defects were removed here in one sitting, and
+            // the second was introduced by the fix for the first — recorded
+            // because the lesson is the sequence, not either fix.
+            //
+            //  1. The card used to be `a` itself: printed in the prompt, never
+            //     the landing (the move is non-zero by construction), so a
+            //     child could strike it out on sight and guess between two.
+            //     The L38 card in its most learnable form — not merely
+            //     never-correct, but never-correct AND recognisable.
+            //  2. Replacing it with "applies the move twice" fixed that and
+            //     pinned the truth to the MIDDLE of the three on 100% of 3,000
+            //     draws, because doubling always overshoots past the truth.
+            //     "Pick the middle" replaced "pick the biggest" exactly.
+            //
+            // So the doubled move's DIRECTION is drawn too, independently of
+            // which card is asked. Doubling past the truth leaves it middle;
+            // doubling the other way leaves it at an end. Measured after:
+            // middle ~50%, largest ~25%, smallest ~25% — no rank is the
+            // answer, and every card still names a real slip.
+            text: String(canonicalSigned(doubleUp ? a + 2 * b : a - 2 * b)),
+            errorTag: 'procedure-slip',
+            rationale:
+              doubleUp === askB
+                ? 'Applies the named move a second time, stepping the same distance again the same way.'
+                : 'Doubles the move but reads it in the direction the other card points.',
           },
         ],
         hints: [
