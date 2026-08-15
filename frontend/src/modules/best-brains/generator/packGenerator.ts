@@ -114,6 +114,7 @@ import { buildD22 } from './templates/weeks/d22';
 import { buildD23 } from './templates/weeks/d23';
 import { buildD24 } from './templates/weeks/d24';
 import { buildE01 } from './templates/weeks/e01';
+import { buildE02 } from './templates/weeks/e02';
 import { buildE06 } from './templates/weeks/e06';
 import { buildE07 } from './templates/weeks/e07';
 import { buildE08 } from './templates/weeks/e08';
@@ -236,6 +237,7 @@ const WEEK_BUILDERS: ReadonlyMap<string, WeekBuilder> = new Map<string, WeekBuil
   ['D23', buildD23],
   ['D24', buildD24],
   ['E1', buildE01],
+  ['E2', buildE02],
   ['E6', buildE06],
   ['E7', buildE07],
   ['E8', buildE08],
@@ -260,8 +262,8 @@ export const V2_WEEKS: ReadonlySet<string> = new Set<string>([
   'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15',
   'C16', 'C17', 'C18', 'C19', 'C20', 'C21', 'C22', 'C23', 'C24', 'D1', 'D2', 'D3',
   'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12', 'D13', 'D14', 'D15',
-  'D16', 'D17', 'D18', 'D19', 'D20', 'D21', 'D22', 'D23', 'D24', 'E1', 'E6', 'E7',
-  'E8', 'E9', 'E13', 'E21',
+  'D16', 'D17', 'D18', 'D19', 'D20', 'D21', 'D22', 'D23', 'D24', 'E1', 'E2', 'E6',
+  'E7', 'E8', 'E9', 'E13', 'E21',
 // <<< END V2 WEEKS >>>
 ]);
 
@@ -363,6 +365,7 @@ export const GENERATED_WEEKS: ReadonlyArray<{ level: BBLevel; week: number }> = 
   { level: 'D', week: 23 },
   { level: 'D', week: 24 },
   { level: 'E', week: 1 },
+  { level: 'E', week: 2 },
   { level: 'E', week: 6 },
   { level: 'E', week: 7 },
   { level: 'E', week: 8 },

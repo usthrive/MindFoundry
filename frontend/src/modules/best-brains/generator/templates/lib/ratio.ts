@@ -104,13 +104,44 @@ function cashList(cents: readonly number[]): string[] {
  * (`bigEach·bigQ ≥ 30·8`) always exceeds the small pack's
  * (`≤ (bigEach+15)·4`), because `8e > 4e + 60` for every `e ≥ 30`.
  */
-function trapPacks(r: { int: (lo: number, hi: number) => number; pick: <T>(xs: readonly T[]) => T }): {
-  bigQ: number; smallQ: number; bigEach: number; smallEach: number; bigTotal: number; smallTotal: number;
-} {
-  const bigEach = r.int(6, 12) * 5;          // 30–60c per item — the better value
-  const smallEach = bigEach + r.int(1, 3) * 5; // dearer per item
+/**
+ * Two pack offers whose better-value side is DRAWN, not fixed.
+ *
+ * This used to be `trapPacks`, and its own comment stated the design: "the BIG
+ * pack is better per item … the small pack is the trap." Measured over 4,000
+ * draws of `betterBuy`, that made three faults at once:
+ *
+ *   · "the pack of three"/"the pack of four" were offered on ~50% of draws
+ *     each and keyed on 0.0% — so ALWAYS PICK THE BIGGER PACK won 100% of
+ *     exposures, with no arithmetic;
+ *   · "they are the same value" was offered on 100% and keyed on 0.0% — the
+ *     L38 permanently unkeyable card, the sixth instance in this library;
+ *   · and the strategy it rewards is false in life. "The big pack is better
+ *     value" is exactly the shopping misconception a better-buy item exists to
+ *     break, and the generator was teaching it.
+ *
+ * The outcome is now drawn first and the prices built to match — the move that
+ * fixed `countTheSignsTrap` and `compareNegativesTrap`. All three cards are
+ * reachable in equal thirds.
+ *
+ * The till-vs-per-item TRAP (the better-value pack costing more at the till) is
+ * only constructible when the larger pack wins — a smaller pack that is better
+ * per item is also cheaper at the till, necessarily. So the trap lives on the
+ * `larger` third, and the other two thirds carry the lesson that makes the trap
+ * safe to teach: you cannot know which side wins without working it out.
+ */
+type PackOutcome = 'larger' | 'smaller' | 'tie';
+
+function packOffers(
+  r: { int: (lo: number, hi: number) => number; pick: <T>(xs: readonly T[]) => T },
+  outcome: PackOutcome,
+): { bigQ: number; smallQ: number; bigEach: number; smallEach: number; bigTotal: number; smallTotal: number } {
+  const cheapEach = r.int(6, 12) * 5;              // 30–60c per item
+  const dearEach = cheapEach + r.int(1, 3) * 5;    // 5–15c dearer per item
   const bigQ = r.int(8, 12);
   const smallQ = r.pick([3, 4]);
+  const bigEach = outcome === 'smaller' ? dearEach : cheapEach;
+  const smallEach = outcome === 'larger' ? dearEach : cheapEach;
   return {
     bigQ, smallQ, bigEach, smallEach,
     bigTotal: bigEach * bigQ,
@@ -365,7 +396,12 @@ export function totalFromUnitPrice(): ItemGen {
     situationType: 'rate',
     cognitiveOp: 'rate-total',
     draw: (r) => {
-      const eachCents = r.int(6, 24) * 10;
+      // $1.00 A KILOGRAM IS EXCLUDED. `r.int(6, 24) * 10` included 100, and at
+      // exactly one dollar the cost of k kilograms IS k — the number the
+      // sentence has already printed — so the item answers itself. One draw in
+      // nineteen by construction; measured at 5.7% of 4,000 draws, and E2's
+      // author kept the generator off both mastery forms because of it.
+      const eachCents = r.pick([6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]) * 10;
       const count = r.int(3, 9);
       const [each] = cashList([eachCents]);
       return {
@@ -395,13 +431,27 @@ export function betterBuy(): ItemGen {
     cognitiveOp: 'compare-rates',
     draw: (r) => {
       const good = r.pick(GOODS);
-      const { bigQ, smallQ, bigTotal, smallTotal } = trapPacks(r);
-      // The BIG pack is better per item and costs MORE at the till; the small
-      // pack is the trap. Which one is named first is drawn, so the correct
-      // answer is not always in the same position.
+      // WHICH SIDE WINS IS DRAWN, in equal thirds — see `packOffers`.
+      const outcome: PackOutcome = r.pick(['larger', 'smaller', 'tie'] as const);
+      const { bigQ, smallQ, bigEach, smallEach, bigTotal, smallTotal } = packOffers(r, outcome);
+      // Which pack is NAMED first is drawn separately, so neither the winning
+      // side nor its position is predictable.
       const bigFirst = r.chance(0.5);
-      const value = `the pack of ${numberWords(bigQ)}`;
-      const trap = `the pack of ${numberWords(smallQ)}`;
+      const bigName = `the pack of ${numberWords(bigQ)}`;
+      const smallName = `the pack of ${numberWords(smallQ)}`;
+      const same = 'they are the same value';
+      // The key and the two cards that are not it, derived from the outcome —
+      // never a fixed list beside a truth that can now equal it (the rule three
+      // generators in this library learned the hard way).
+      const value = outcome === 'tie' ? same : outcome === 'larger' ? bigName : smallName;
+      const wrongCards: Array<{ text: string; why: 'till' | 'bulk' | 'same' }> =
+        outcome === 'tie'
+          ? [{ text: bigName, why: 'bulk' }, { text: smallName, why: 'till' }]
+          : outcome === 'larger'
+            ? [{ text: smallName, why: 'till' }, { text: same, why: 'same' }]
+            : [{ text: bigName, why: 'bulk' }, { text: same, why: 'same' }];
+      void bigEach;
+      void smallEach;
       const [firstQ, firstTotal, secondQ, secondTotal] = bigFirst
         ? [bigQ, bigTotal, smallQ, smallTotal]
         : [smallQ, smallTotal, bigQ, bigTotal];
@@ -409,18 +459,25 @@ export function betterBuy(): ItemGen {
       return {
         prompt: `A shop sells ${good.many} two ways: a pack of ${numberWords(firstQ)} for ${c1}, or a pack of ${numberWords(secondQ)} for ${c2}. Which is the better buy?`,
         correct: value,
-        distractors: [
-          {
-            text: trap,
-            errorTag: 'concept-misconception',
-            rationale: 'Picks the smaller amount at the till, which answers "which costs less", not "which costs less for each item".',
-          },
-          {
-            text: 'they are the same value',
-            errorTag: 'representation-misread',
-            rationale: 'Treats two different prices per item as one deal.',
-          },
-        ],
+        distractors: wrongCards.map((c) => (
+          c.why === 'till'
+            ? {
+              text: c.text,
+              errorTag: 'concept-misconception' as const,
+              rationale: 'Picks the smaller amount at the till, which answers "which costs less", not "which costs less for each item".',
+            }
+            : c.why === 'bulk'
+              ? {
+                text: c.text,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Assumes the bigger pack must be the better value, without bringing either offer down to one item.',
+              }
+              : {
+                text: c.text,
+                errorTag: 'representation-misread' as const,
+                rationale: 'Treats two different prices per item as one deal.',
+              }
+        )),
         hints: [
           'Which question is being asked — which costs less altogether, or which costs less for each one?',
           'Bring both offers down to what a single item costs, then the two are comparable.',
@@ -958,13 +1015,28 @@ export function eaUnitPriceMultiplied(): ItemGen {
     verifyTemplateId: 'd_verify_binop_misconception_v1',
     cognitiveOp: 'unit-rate',
     drawParams: (r) => {
+      // `a` STAYS A WHOLE NUMBER OF DOLLARS, and that is not laziness.
+      //
+      // The realism complaint is correct — "A pack of five sponges costs
+      // $20.00" is $4 a sponge — but the first repair fixed it by drawing the
+      // per-item price in 20c steps as a FLOAT, and `0.2 * 6` is
+      // 1.2000000000000002 in IEEE754. It threw inside `money()` on the third
+      // draw: "57.599999999999994 is finer than one cent". This file's own
+      // header states the law it broke — every value flows through scaled
+      // integers, never floats — so the float version is gone.
+      //
+      // `r.int(2, 9) * count` keeps `a / count` exactly integral, which is what
+      // makes the verify's a/b and a*b safe. The realism is fixed where it
+      // actually went wrong: the noun. $2-$9 each is absurd for a sponge and
+      // ordinary for a notebook, and the noun was hard-coded here while the
+      // rest of the family draws from `GOODS`.
       const count = r.pick([4, 5, 6, 8]);
       return { a: r.int(2, 9) * count, b: count, op: '/', wrongOp: '*' };
     },
     build: (v, p) => ({
       // Both amounts render with cents, so the string obeys the all-or-none rule.
-      prompt: `A pack of ${numberWords(Number(p.b))} sponges costs ${money(String(p.a))}. A student worked out the price of ONE sponge and wrote ${money(v.wrong)}.`,
-      extension: 'Write what a single sponge really costs, then say how the SIZE of that answer could have been predicted before any working.',
+      prompt: `A pack of ${numberWords(Number(p.b))} notebooks costs ${money(String(p.a))}. A student worked out the price of ONE notebook and wrote ${money(v.wrong)}.`,
+      extension: 'Write what a single notebook really costs, then say how the SIZE of that answer could have been predicted before any working.',
       hints: [
         'Should one item out of a pack cost more or less than the whole pack?',
         'Share the pack price out between the items rather than stacking copies of it.',
