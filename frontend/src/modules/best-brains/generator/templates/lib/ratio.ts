@@ -981,7 +981,15 @@ export function partWholeVsPartPart(): ItemGen {
       const c = r.pick(COLLECTIONS);
       const p = r.int(2, 6);
       const q = p + r.int(1, 4); // p ≠ q, so the two readings cannot coincide
-      const askFirst = r.int(0, 1) === 0;
+      // ASKED ABOUT ON A THIRD OF DRAWS, NOT A HALF, and the asymmetry is the
+      // point. When the SMALLER group is asked, p/(p+q) is below both other
+      // cards as a matter of arithmetic — there is no construction that moves
+      // it. When the larger is asked, the truth lands middle or top about
+      // evenly. So a half-and-half draw leaves "pick the smallest fraction"
+      // right 50.7% of the time against a 33.3% baseline; asking the smaller
+      // group a third of the time levels all three ranks without touching the
+      // mathematics or the discrimination the item teaches.
+      const askFirst = r.int(0, 2) === 0;
       const [askN, otherN] = askFirst ? [p, q] : [q, p];
       const askedWord = (askFirst ? c.a : c.b).split(' ')[0];
       return {

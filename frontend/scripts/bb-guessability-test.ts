@@ -152,6 +152,11 @@ const ARGS: Record<string, unknown[][]> = {
   'ratio.percentConversion': [['to-decimal'], ['to-fraction'], ['from-fraction']],
   // integers
   'integers.orderTemperatures': [['asc'], ['desc']],
+  // stats — the question the graph is read FOR, and the display it is read off
+  'stats.graphRead': [
+    ['value'], ['difference'], ['combine'],
+    ['value', 'pictograph'], ['difference', 'pictograph'], ['combine', 'pictograph'],
+  ],
   // algebra
   'algebra.oneStepEquation': [['add'], ['sub'], ['mul'], ['div']],
   'algebra.evaluateBothAtX': [['equivalent'], ['distribute-once']],
@@ -477,6 +482,16 @@ for (const [family, mod] of FAMILIES) {
     if (AUTHORED_CONTENT.has(qualified)) { authored.push(qualified); continue; }
 
     const factory = (mod as Record<string, (...a: unknown[]) => unknown>)[name];
+    // A FACTORY WITH REQUIRED PARAMETERS IS NEVER SWEPT BARE.
+    // `Function.length` counts the parameters before the first defaulted one, so
+    // it is exactly "how many arguments this factory cannot do without".
+    // `stats.graphRead(kind, mode = 'bar')` returns a perfectly good closure when
+    // called with nothing — it simply never matches any of its `kind` branches —
+    // so the first version of this sweep measured a degenerate configuration and
+    // reported it as a swept one. An untested generator must not look like a
+    // passing one; without an ARGS entry it is UNEXERCISED, which is the honest
+    // outcome and the one bb-family-test already commits to.
+    if (factory.length > 0 && !ARGS[qualified]) { unexercised.push(qualified); continue; }
     const argSets = ARGS[qualified] ?? [[]];
     const gens: Array<[unknown, string]> = [];
     for (const a of argSets) {

@@ -1031,8 +1031,18 @@ export function minusNegativeTrap(): ItemGen {
       // half. The distractor set is unchanged in kind: whichever card is asked,
       // the trap is the OTHER card's landing (reading both as the same move)
       // and the third is the start itself.
-      const askB = r.int(0, 1) === 0;
-      const doubleUp = r.int(0, 1) === 0;
+      // THE RANK IS DRAWN, NOT LEFT TO FALL OUT OF TWO INDEPENDENT COINS.
+      //
+      // Drawing `askB` and `doubleUp` independently gives four equally likely
+      // combinations, and TWO of them put the truth in the middle — so "pick the
+      // middle card" was right 49.4% of the time against a 33.3% baseline. That
+      // was measured and accepted last time as structural; it is not. Choosing
+      // the rank first and then the pair of flags that produces it levels all
+      // three, and `askB` still comes out an even coin, so the item's own
+      // symmetry is untouched.
+      const want = r.pick(['largest', 'middle', 'smallest'] as const);
+      const askB = want === 'largest' ? true : want === 'smallest' ? false : r.int(0, 1) === 0;
+      const doubleUp = want === 'largest' ? false : want === 'smallest' ? true : askB;
       const truth = verifyAddSubValue({ a, b: askB ? -b : b, op: '-' });
       const trap = verifyAddSubValue({ a, b: askB ? b : -b, op: '-' });
       return {

@@ -1773,6 +1773,24 @@ export type PuppetSlip = 'double-count' | 'skip-count' | 'count-back-start' | 't
  *   teen-writing      digits swapped (31 written for thirteen)
  */
 export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number }): ItemGen {
+  // A RANK RESIDUAL LIVES HERE AND IS BEING LEFT, DELIBERATELY.
+  //
+  // The guessability census reports, on every branch, that one end of the card
+  // set is never the answer: "never the largest" on double-count, count-back and
+  // teen-writing, "never the smallest" on skip-count. That is +16 over chance
+  // and it is not a construction accident — it is the form. The puppet's number
+  // is stated in the prompt and offered as a card (recognising it as wrong IS
+  // the task), and each slip has ONE direction by definition: a double-count
+  // runs over, a skipped object stops short, a reversed teen is always the
+  // larger numeral. So the truth cannot sit beyond the puppet's number, and the
+  // only ways to move it would be to drop the puppet's own answer from the
+  // options — which removes the error-analysis — or to flip the slip's
+  // direction, which makes it a different slip from the one the week asked for.
+  //
+  // The mitigation is at week level, not here: a day serving double-count
+  // beside skip-count has two exactly opposite residuals. That pairing is NOT
+  // currently verified anywhere, and checking it is a per-week measurement the
+  // census cannot make.
   const { slip } = opts;
   return (rng: Rng, guard: TupleGuard, difficulty: number) =>
     drawUniqueItem(rng, guard, (r) => {

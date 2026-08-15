@@ -547,9 +547,15 @@ export function graphRead(
         mode === 'pictograph'
           ? `A pictograph shows ${subject.thing}. ${labels[0]} has ${countNoun(counts[0], subject.symbol)}. ${labels[1]} has ${countNoun(counts[1], subject.symbol)}. ${labels[2]} has ${countNoun(counts[2], subject.symbol)}. The key says each ${unitFor(1, subject.symbol)} stands for ${countNoun(key, subject.thing)}.`
           : `A bar graph shows ${subject.thing}. ${labels[0]} is at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}.`;
-      // Order the two indices so a "how many more" question is never negative.
+      // WHICH TWO ENTRIES ARE COMPARED IS DRAWN, then ordered so a "how many
+      // more" question is never negative. Comparing the top two by construction
+      // meant the gap was the smallest of the three available, and free-entry
+      // answers piled up: "1" on 36.2% of difference draws over six reachable
+      // answers. Any pair of the three keeps the question honest and spreads the
+      // gap across its real range.
       const order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
-      const [hi, lo] = [order[0], order[1]];
+      const pair = r.shuffle([0, 1, 2]).slice(0, 2);
+      const [hi, lo] = counts[pair[0]] > counts[pair[1]] ? pair : [pair[1], pair[0]];
       if (kind === 'difference') {
         return {
           prompt: `${display} How many more ${subject.thing} does ${labels[hi]} show than ${labels[lo]}?`,
@@ -579,8 +585,13 @@ export function graphRead(
         };
       }
       // 'value' — deliberately never the tallest entry, so the tallest-bar
-      // misread produces a genuinely different number.
-      const index = order[order.length - 1];
+      // misread produces a genuinely different number. It used to be the
+      // SHORTEST entry specifically, which pinned the answer to the minimum of
+      // three distinct draws from 2–9: "2" came up on 38.1% of draws against a
+      // 16.7% uniform share, so answering 2 without reading the display scored
+      // more than twice what it should. Either of the two shorter entries keeps
+      // the tallest-misread property and spreads the answer.
+      const index = order[r.int(1, 2)];
       return {
         prompt: `${display} How many ${subject.thing} does ${labels[index]} show?`,
         answerValue: String(counts[index] * key),

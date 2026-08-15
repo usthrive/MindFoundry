@@ -383,9 +383,17 @@ export function primeChoice(): ItemGen {
 export function fracEquivFill(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const d1 = r.pick([2, 3, 4, 5, 6]);
-      const n1 = r.int(1, d1 - 1);
-      const k = r.int(2, 4);
+      // THE PAIR IS DRAWN, NOT THE DENOMINATOR AND THEN THE NUMERATOR.
+      // A denominator of 2 leaves exactly ONE legal numerator, so picking the
+      // denominator uniformly forced a fifth of all draws onto n1 = 1 — and 1
+      // scaled by a factor of 2–4 collides with 2 scaled by 2. "4" came out on
+      // 24.5% of draws against a 9.1% uniform share. Drawing uniformly over the
+      // legal (numerator, denominator) PAIRS gives each proper fraction the same
+      // chance, which is what "pick a fraction" was always meant to mean.
+      const pairs: Array<[number, number]> = [];
+      for (const d of [2, 3, 4, 5, 6]) for (let n = 1; n < d; n++) pairs.push([n, d]);
+      const [n1, d1] = r.pick(pairs);
+      const k = r.int(2, 5);
       const d2 = d1 * k;
       return {
         type: 'computation',
@@ -520,6 +528,12 @@ export function fracCompareChoice(): ItemGen {
 
 /** ± fractions with LIKE denominators (D10). op: 1 add, -1 sub. */
 export function fracAddSubLike(op: 1 | -1): ItemGen {
+  // "1" is the answer on 18.0% of addition draws, and that is arithmetic, not a
+  // defect. Two proper fractions over a common denominator d complete a whole
+  // whenever their numerators are complements, which is 1/(d-1) of uniform
+  // draws — and that is precisely the case the week most wants a child to meet.
+  // Widening the denominator pool would dilute it, at the cost of taking the
+  // fractions out of band. Stated rather than engineered around.
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       const d = r.pick([4, 5, 6, 8, 9, 10, 12]);
@@ -721,7 +735,13 @@ export function decCompareChoice(): ItemGen {
 export function fractionToDecimal(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const d = r.pick([2, 4, 5, 10, 20, 25, 50, 100]);
+      // HALVES ARE REACHED THROUGH THEIR EQUIVALENTS, NOT THROUGH d = 2.
+      // A denominator of 2 admits one numerator only, so an eighth of every draw
+      // landed on 1/2 and "0.5" was the answer on 19.3% of draws against a 1.0%
+      // uniform share — a child writing 0.5 every time beat one in five. The
+      // half is still reachable, and better taught, through 2/4, 5/10, 25/50 and
+      // 50/100, which is the re-cutting the hint ladder actually describes.
+      const d = r.pick([4, 5, 10, 20, 25, 50, 100]);
       const n = r.int(1, d - 1);
       return {
         type: 'computation',
