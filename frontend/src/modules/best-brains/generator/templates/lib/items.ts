@@ -914,21 +914,61 @@ export function writeExprChoice(): ItemGen {
     drawUniqueItem(rng, guard, (r) => {
       const a = r.int(2, 9);
       const b = r.int(2, 9);
-      const correct = `2 × (${a} + ${b})`;
-      const { choices, correctKey } = makeChoices(r, correct, [
-        { text: `2 × ${a} + ${b}`, errorTag: 'concept-misconception', rationale: 'Drops the grouping — doubles only the first number, not the whole sum.' },
-        { text: `${a} + ${b} + 2`, errorTag: 'task-comprehension', rationale: 'Reads "twice" as "add two" instead of "multiply by two".' },
-      ]);
+      // WHICH PHRASE IS ASKED IS DRAWN; the three expressions never change.
+      // Only the grouped form was ever the answer, and brackets make it the
+      // longest string on the page every time — "tap the longest expression"
+      // keyed 3000 of 3000 draws against a 33% baseline, on an item whose whole
+      // subject is that these three expressions are DIFFERENT. Rotating the
+      // phrase teaches the same distinction in all three directions, which is
+      // what the item claimed to do.
+      const GROUPED = `2 × (${a} + ${b})`;
+      const TWICE_FIRST = `2 × ${a} + ${b}`;
+      const PLUS_TWO = `${a} + ${b} + 2`;
+      const FORMS = [
+        {
+          form: 'grouped',
+          phrase: `twice the sum of ${a} and ${b}`,
+          correct: GROUPED,
+          distractors: [
+            { text: TWICE_FIRST, errorTag: 'concept-misconception' as const, rationale: 'Drops the grouping — doubles only the first number, not the whole sum.' },
+            { text: PLUS_TWO, errorTag: 'task-comprehension' as const, rationale: 'Reads "twice" as "add two" instead of "multiply by two".' },
+          ],
+        },
+        {
+          form: 'twice-first',
+          phrase: `${b} more than twice ${a}`,
+          correct: TWICE_FIRST,
+          distractors: [
+            { text: GROUPED, errorTag: 'concept-misconception' as const, rationale: 'Groups the two numbers first — doubles both of them, not just the one "twice" names.' },
+            { text: PLUS_TWO, errorTag: 'task-comprehension' as const, rationale: 'Reads "twice" as "add two" instead of "multiply by two".' },
+          ],
+        },
+        {
+          form: 'plus-two',
+          phrase: `two more than the sum of ${a} and ${b}`,
+          correct: PLUS_TWO,
+          distractors: [
+            { text: GROUPED, errorTag: 'concept-misconception' as const, rationale: 'Multiplies the sum by two instead of adding two to it.' },
+            { text: TWICE_FIRST, errorTag: 'task-comprehension' as const, rationale: 'Doubles the first number instead of adding two at the end.' },
+          ],
+        },
+      ];
+      const pick = r.pick(FORMS);
+      const { choices, correctKey } = makeChoices(r, pick.correct, pick.distractors);
       return {
         type: 'representation',
-        prompt: `Which expression means: "twice the sum of ${a} and ${b}"?`,
+        prompt: `Which expression means: "${pick.phrase}"?`,
         choices,
-        answer: { value: correctKey, acceptableForms: [correct], validation: 'choice-key' },
+        answer: { value: correctKey, acceptableForms: [pick.correct], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
-        generator: { templateId: 'd_write_expr_v1', params: { a, b }, seed: r.uint() },
-        hintLadder: ['"Sum of" must be grouped before anything is done to it.', '"Twice" multiplies the WHOLE sum by two.'],
+        generator: { templateId: 'd_write_expr_v1', params: { a, b, form: pick.form }, seed: r.uint() },
+        // ONE LADDER FOR ALL THREE PHRASINGS. Rungs that named the drawn form
+        // would be seed-variant, which is a hard family-test failure (L19), so
+        // these describe the METHOD — read the phrase in order, build it, then
+        // match — which is the same method whichever phrase was drawn.
+        hintLadder: ['Read the phrase in order: what is grouped, and what acts on that group?', 'Build the phrase one piece at a time, then match it against each expression.'],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
     });

@@ -1203,21 +1203,45 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
   const { trap } = opts;
   return (rng: Rng, guard: TupleGuard, difficulty: number) =>
     drawUniqueItem(rng, guard, (r) => {
+      // WHICH OF THE TWO NUMERALS IS THE ANSWER IS DRAWN, NOT CONSTRUCTED.
+      // Both confusable branches used to build the pair one way round only, so
+      // the key had a fixed RANK and a child could score without looking at the
+      // picture at all: the teen branch drew 13–19 against 30–90, so "tap the
+      // smaller number" keyed 3000 of 3000 draws; the swap branch drew its tens
+      // digit from 2–4 against an ones digit from 1–9, so the same reflex keyed
+      // 75.1%. Two cards means chance is 50%, so that is +50 and +25 points of
+      // free score on the item whose entire job is telling the pair apart.
+      // The cure is the standing one (generator-defect signature 2): draw the
+      // OUTCOME first, then build operands to match. Only the SHOWN number needs
+      // a picture a band-A child can count, so its tens stay at 2–5 towers (the
+      // range countByTens already establishes); the confusable numeral is only a
+      // card, so its digits are free.
       let n: number;
       let confused: number;
       if (trap === 'six-nine') {
         n = r.chance(0.5) ? 6 : 9;
         confused = n === 6 ? 9 : 6;
       } else if (trap === 'teen-ty') {
-        const o = r.int(3, 9);
-        n = 10 + o;
-        confused = o * 10;
+        if (r.chance(0.5)) {
+          const o = r.int(3, 9); // show the TEEN: 13–19 against 30–90
+          n = 10 + o;
+          confused = o * 10;
+        } else {
+          const k = r.int(2, 5); // show the TY: 20–50 against 12–15
+          n = 10 * k;
+          confused = 10 + k;
+        }
       } else {
-        const t = r.int(2, 4);
-        // o !== t, or "the same two digits swapped" would BE the same number and
+        // t !== o, or "the same two digits swapped" would BE the same number and
         // the trap would offer the correct answer twice.
-        const opts2 = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((v) => v !== t && 10 * v + t <= 99);
-        const o = r.pick(opts2);
+        const wantSmaller = r.chance(0.5);
+        const pairs: Array<[number, number]> = [];
+        for (let t = 2; t <= 5; t++) {
+          for (let o = 1; o <= 9; o++) {
+            if (o !== t && (wantSmaller ? t < o : t > o)) pairs.push([t, o]);
+          }
+        }
+        const [t, o] = r.pick(pairs);
         n = 10 * t + o;
         confused = 10 * o + t;
       }
@@ -1233,12 +1257,18 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
       // Each trap gets the picture that can actually SAY its number: a row for a
       // single digit, a double frame for a teen, tens-towers-plus-loose-ones for
       // a two-digit swap (which no ten-frame can hold — its cap is twenty).
+      // The teen-ty branch now shows either side of its pair, and a whole ten
+      // above twenty needs the towers picture for the same reason: a pair of
+      // frames holds at most twenty.
+      const asTowers = trap === 'digit-swap' || n >= 20;
       const scene =
         trap === 'six-nine'
           ? `${countNoun(n, 'buttons')} in a row`
-          : trap === 'teen-ty'
+          : !asTowers
             ? `two frames holding ${countNoun(n, 'counters')}`
-            : `${countNoun(Math.floor(n / 10), 'towers')} of ten and ${countNoun(n % 10, 'loose blocks')}`;
+            : n % 10 === 0
+              ? `${countNoun(n / 10, 'towers')} of ten blocks`
+              : `${countNoun(Math.floor(n / 10), 'towers')} of ten and ${countNoun(n % 10, 'loose blocks')}`;
       // ASKS: which numeral the picture shows. Every branch's scene named that
       // numeral outright — and the digit-swap branch named it TWICE over, since
       // "2 towers of ten and 4 loose blocks" reads out twenty-four in the exact
@@ -1246,13 +1276,20 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
       const altOf =
         trap === 'six-nine'
           ? 'some buttons in a row'
-          : trap === 'teen-ty'
+          : !asTowers
             ? 'a pair of big frames with some counters in them'
-            : 'some equal towers of blocks and some loose ones';
+            : n % 10 === 0
+              // Names the ten deliberately, on countByTens's precedent: the rule
+              // is "no number an alt speaks may equal the key" (L48), and this
+              // branch keys 20–50, so ten can never be its answer — while a
+              // child who cannot see the picture needs to be told the towers ARE
+              // tens, which is the whole content of the teen/ty distinction.
+              ? 'some towers of ten blocks, standing in a line'
+              : 'some equal towers of blocks and some loose ones';
       const figure =
         trap === 'six-nine'
           ? counters(n, 'buttons', { arrangement: 'in a row', alt: altOf, asserts: assertsParam('n') })
-          : trap === 'teen-ty'
+          : !asTowers
             ? tenFrame(n, { frames: 2, size: 10, alt: altOf, asserts: assertsParam('n') })
             : counterGroups(
                 [
@@ -1646,11 +1683,34 @@ interface Solid {
   rolls: boolean;
   stacks: boolean;
 }
+/**
+ * FOUR SOLIDS WERE NOT ENOUGH, in two measurable ways.
+ *
+ * With ball/box/can/cone, exactly ONE object failed the roll test, so "the box"
+ * was offered on 100% of `rolls` draws and could never be the answer — a child
+ * meeting the item a few times learns to strike it on sight, and a two-card item
+ * with one strikeable card is a one-card item. And every stacker was a 3-letter
+ * word while every non-stacker was 4+, so on the `stacks` test "tap the shorter
+ * word" keyed 100% of draws against a 50% baseline.
+ *
+ * Three ordinary objects fix both: a second non-roller (block), a long-named
+ * non-stacker (marble), and a short-named one (egg). Measured after the change:
+ * the length strategies sit at 40–58% against a 50% baseline, and no single
+ * distractor is offered more than about half the time.
+ *
+ * A residual stays and is NOT a defect: on "which one rolls?", no non-roller can
+ * ever be keyed. That is the question having an answer, not an unkeyable card in
+ * the L38 sense — the guessability census flags it, and this is the note that
+ * says why it is being left.
+ */
 const SOLIDS: readonly Solid[] = [
   { name: 'ball', rolls: true, stacks: false },
   { name: 'box', rolls: false, stacks: true },
   { name: 'can', rolls: true, stacks: true },
   { name: 'cone', rolls: true, stacks: false },
+  { name: 'block', rolls: false, stacks: true },
+  { name: 'marble', rolls: true, stacks: false },
+  { name: 'egg', rolls: true, stacks: false },
 ];
 
 /**
@@ -1973,12 +2033,19 @@ const SHAPE_BY_CORNERS: Record<number, string> = {
 };
 
 /** Which solids pass which test — the truth `a_solid_v1` re-derives. */
-const SOLID_PROPS: Record<string, { rolls: boolean; stacks: boolean }> = {
-  ball: { rolls: true, stacks: false },
-  box: { rolls: false, stacks: true },
-  can: { rolls: true, stacks: true },
-  cone: { rolls: true, stacks: false },
-};
+/**
+ * DERIVED from `SOLIDS`, not restated beside it.
+ *
+ * This was a second hand-written copy of the same truth table, and adding three
+ * solids to the item generator left the verify template still holding four —
+ * `a_solid_v1` threw "unknown solid marble" on every draw that reached it. The
+ * separation bought nothing it was meant to: what makes this verify honest is
+ * that it LOOKS THE SOLID UP and refuses a key the table does not support,
+ * which one shared table does exactly as well as two divergent ones.
+ */
+const SOLID_PROPS: Record<string, { rolls: boolean; stacks: boolean }> = Object.fromEntries(
+  SOLIDS.map((s) => [s.name, { rolls: s.rolls, stacks: s.stacks }]),
+);
 
 export const EARLYNUMBER_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
   // --- counting ------------------------------------------------------------

@@ -1200,21 +1200,46 @@ export function additiveVsMultiplicativeGrowth(): ItemGen {
       const a = r.int(2, 5);
       const b = a + r.int(2, 5);
       const k = r.int(3, 5);
+      // WHICH TERM IS MISSING, AND WHERE THE TRUTH SITS, ARE BOTH DRAWN.
+      // The item always scaled the FIRST part and asked for the second, and with
+      // b > a every distractor it could build then landed below b×k: "tap the
+      // biggest number" keyed 3000 of 3000 draws against a 33% baseline, on the
+      // exemplar item of the G4 family. Asking for the first part instead is the
+      // inverse-start posing the band-E contract already requires, and it puts
+      // the truth BELOW both distractors; scaling-then-also-adding puts it in
+      // the middle. Same mathematics, three reachable ranks.
+      const want = r.pick(['largest', 'middle', 'smallest'] as const);
+      const askSecond = want !== 'smallest';
+      const given = askSecond ? countNoun(a * k, mix.first) : countNoun(b * k, mix.second);
+      const asked = askSecond ? mix.second : mix.first;
+      const SCALED_AND_ADDED = {
+        text: String(b * k + a * (k - 1)),
+        errorTag: 'procedure-slip' as const,
+        rationale: 'Scales the second part correctly and then ALSO adds on what the first part gained — the same growth counted twice.',
+      };
+      const ADDITIVE_ON_SECOND = {
+        text: String(additiveScalingTerm(a, b, k)),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Adds to the second part the same number that was added to the first — additive scaling, which changes the mix.',
+      };
+      const ADDITIVE_ON_FIRST = {
+        text: String(additiveScalingTerm(b, a, k)),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Adds to the first part the same number that was added to the second — additive scaling, which changes the mix.',
+      };
+      const COPIES_OTHER_PART = {
+        text: String(askSecond ? a * k : b * k),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Repeats the part that was given, as if both parts of the mix were the same size.',
+      };
       return {
-        prompt: `${mix.what} uses ${countNoun(a, mix.first)} to ${countNoun(b, mix.second)}. Scaled up to ${countNoun(a * k, mix.first)}, which number of ${mix.second} keeps the mix the same?`,
-        correct: String(b * k),
-        distractors: [
-          {
-            text: String(additiveScalingTerm(a, b, k)),
-            errorTag: 'concept-misconception',
-            rationale: 'Adds to the second part the same number that was added to the first — additive scaling, which changes the mix.',
-          },
-          {
-            text: String(a * k),
-            errorTag: 'representation-misread',
-            rationale: 'Repeats the scaled first part, as if both parts of the mix were the same size.',
-          },
-        ],
+        prompt: `${mix.what} uses ${countNoun(a, mix.first)} to ${countNoun(b, mix.second)}. Scaled up to ${given}, which number of ${asked} keeps the mix the same?`,
+        correct: String(askSecond ? b * k : a * k),
+        distractors: want === 'largest'
+          ? [ADDITIVE_ON_SECOND, COPIES_OTHER_PART]
+          : want === 'middle'
+            ? [ADDITIVE_ON_SECOND, SCALED_AND_ADDED]
+            : [ADDITIVE_ON_FIRST, COPIES_OTHER_PART],
         hints: [
           'Which change leaves a mix tasting the same — adding to both parts, or copying both parts?',
           'Count how many copies of the original first part the new amount holds, then build the second part the same way.',

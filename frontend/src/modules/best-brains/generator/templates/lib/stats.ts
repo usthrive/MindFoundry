@@ -383,12 +383,44 @@ export function meanVsMedianOnSkew(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'compare-centres',
     draw: (r) => {
+      // A BALANCED SET IS DRAWN A THIRD OF THE TIME, and it has to be.
+      //
+      // Every draw used to carry an outlier, and the generator went to trouble
+      // to keep "they come out the same" genuinely false — which made that card
+      // permanently unkeyable (L38). It was offered on 100% of draws and could
+      // never be right, so a child learns to strike it, and what is left is a
+      // coin toss between two cards on an item that is supposed to teach when a
+      // far-off value moves a summary and when it does not. A set symmetric
+      // about its middle answers that honestly: mean and median coincide
+      // EXACTLY, by integer construction, and the skewed draws mean something
+      // because the balanced ones exist to contrast with.
+      const SAME = 'they come out the same';
+      if (r.chance(1 / 3)) {
+        const mid = r.int(20, 60);
+        const [near, far] = r.shuffle([r.int(2, 6), r.int(7, 12)]);
+        // Symmetric about `mid`: the two gaps cancel in the sum, so the mean is
+        // mid, and mid is the third of five sorted values, so the median is too.
+        const balanced = r.shuffle([mid - far, mid - near, mid, mid + near, mid + far]);
+        return {
+          prompt: `A data set reads ${listOf(balanced)}. Which summary comes out larger for it, the mean or the median?`,
+          correct: SAME,
+          distractors: [
+            { text: 'the mean', errorTag: 'concept-misconception', rationale: 'Expects the mean to be pulled off centre even where the values balance either side of the middle.' },
+            { text: 'the median', errorTag: 'concept-misconception', rationale: 'Expects the middle value to sit off the fair share even where the values balance either side of it.' },
+          ],
+          hints: [
+            'Which summary has to move when one value sits far away from the rest?',
+            'Locate the value in the middle, then judge whether the far-off value pulls the fair share past it.',
+          ],
+          errorTags: ['concept-misconception', 'representation-misread'],
+        };
+      }
       const cluster = distinctSet(r, 4, 10, 18);
       const high = r.chance(0.5);
       const drawn = high ? r.int(60, 90) : r.int(1, 3);
       // The outlier sits outside the cluster, so nudging it cannot move the
       // median — which makes this the safe way to break an exact tie and keep
-      // "they come out the same" genuinely false.
+      // "they come out the same" genuinely false ON THIS BRANCH.
       const median = Number(medianOf([...cluster, drawn]));
       const outlier = sumOf(cluster) + drawn === median * 5 ? drawn + (high ? 1 : -1) : drawn;
       const values = r.shuffle([...cluster, outlier]);
@@ -405,7 +437,7 @@ export function meanVsMedianOnSkew(): ItemGen {
             rationale: 'Misses which summary a single far-off value drags with it — only one of the two is pulled by the extreme.',
           },
           {
-            text: 'they come out the same',
+            text: SAME,
             errorTag: 'representation-misread',
             rationale: 'Treats a lopsided data set as if it were evenly balanced about its centre.',
           },
@@ -631,24 +663,46 @@ export function symbolCountVsValue(): ItemGen {
     cognitiveOp: 'graph-value',
     draw: (r) => {
       const subject = r.pick(GRAPH_SUBJECTS);
-      const key = r.pick([2, 5, 10]);
+      // WHERE THE TRUTH SITS AMONG THE CARDS IS DRAWN FIRST.
+      // Both distractors this item shipped with — the symbol count alone, and
+      // the count ADDED to the key — are necessarily below count × key for every
+      // legal draw, so "tap the biggest number" keyed 3000 of 3000 against a 33%
+      // baseline. Two further misconceptions on this item genuinely land ABOVE
+      // the truth (a symbol counted twice; every symbol assumed to be worth ten),
+      // which is what makes all three ranks reachable.
+      const want = r.pick(['largest', 'middle', 'smallest'] as const);
+      // "Every symbol is worth ten" only overshoots while the key is under ten.
+      const key = want === 'largest' ? r.pick([2, 5, 10]) : r.pick([2, 5]);
       const count = r.int(3, 7);
       const day = r.pick(DAYS);
+      const IGNORES_KEY = {
+        text: String(count),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Reads the symbols as the amount and leaves the key doing no work at all.',
+      };
+      const ADDS_KEY = {
+        text: String(count + key),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Joins the symbol count and the key as if the key were an extra amount to add on.',
+      };
+      const COUNTS_ONE_TWICE = {
+        text: String((count + 1) * key),
+        errorTag: 'procedure-slip' as const,
+        rationale: 'One symbol in the row counted twice, then valued correctly.',
+      };
+      const ALL_SYMBOLS_TEN = {
+        text: String(count * 10),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Every symbol taken to be worth ten, whatever the key says.',
+      };
       return {
         prompt: `On a pictograph, each ${unitFor(1, subject.symbol)} stands for ${countNoun(key, subject.thing)}. The row for ${day} shows ${countNoun(count, subject.symbol)}. Which number is the amount of ${subject.thing} for that row?`,
         correct: String(count * key),
-        distractors: [
-          {
-            text: String(count),
-            errorTag: 'representation-misread',
-            rationale: 'Reads the symbols as the amount and leaves the key doing no work at all.',
-          },
-          {
-            text: String(count + key),
-            errorTag: 'concept-misconception',
-            rationale: 'Joins the symbol count and the key as if the key were an extra amount to add on.',
-          },
-        ],
+        distractors: want === 'largest'
+          ? [IGNORES_KEY, ADDS_KEY]
+          : want === 'middle'
+            ? [IGNORES_KEY, ALL_SYMBOLS_TEN]
+            : [COUNTS_ONE_TWICE, ALL_SYMBOLS_TEN],
         hints: [
           'What job is the key doing on a pictograph?',
           'Say out loud what one symbol is worth. Then account for every symbol in the row.',
@@ -667,10 +721,41 @@ export function tallestVsAskedBar(): ItemGen {
     draw: (r) => {
       const subject = r.pick(GRAPH_SUBJECTS);
       const labels = r.shuffle([...DAYS]).slice(0, 3);
-      const counts = distinctSet(r, 3, 3, 14);
-      const order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
-      const tallest = order[0];
-      const asked = order[order.length - 1];
+      // TWO DEFECTS, ONE DRAW, both invisible to a correctness gate.
+      //
+      // (1) The question always named the SHORTEST bar, so its answer was the
+      //     smallest card on 67.7% of draws and never the largest — the item
+      //     that teaches "read the bar you were asked for" could be scored by
+      //     never reading it. The named bar is now drawn from the two that are
+      //     not the tallest, which is the only constraint the lesson needs.
+      // (2) The "how many more" distractor is a DIFFERENCE of two counts, and on
+      //     9.4% of draws it landed on a count already on a card — the same text
+      //     offered twice in one set. Distinct heights were never enough; the
+      //     gap has to be distinct from them too.
+      // The rank asked for is fixed BEFORE the redraw, or the loop would be
+      // checking one bar's gap and the item would then ship another's.
+      //
+      // The question names ANY of the three bars, including the tallest. Naming
+      // only the shorter ones left the tallest permanently unkeyable, so "never
+      // the bar that stands out" scored without reading the question — the exact
+      // reflex this item exists to break, rewarded. When the tallest IS the one
+      // asked for, the lure becomes the shortest bar: still "you read a bar you
+      // were not asked about", which is the whole discrimination, and now a
+      // child who has learnt to dodge the tall bar is caught by it.
+      const askedRank = r.int(0, 2);
+      const lureRank = askedRank === 0 ? 2 : 0;
+      const collides = (c: number[], ord: number[]): boolean => {
+        const gap = Math.abs(c[ord[lureRank]] - c[ord[askedRank]]);
+        return gap === c[ord[askedRank]] || gap === c[ord[lureRank]];
+      };
+      let counts = distinctSet(r, 3, 3, 14);
+      let order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
+      for (let i = 0; i < 40 && collides(counts, order); i++) {
+        counts = distinctSet(r, 3, 3, 14);
+        order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
+      }
+      const tallest = order[lureRank];
+      const asked = order[askedRank];
       return {
         prompt: `A bar graph shows ${subject.thing}. ${labels[0]} is at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}. Which number answers "how many for ${labels[asked]}"?`,
         correct: String(counts[asked]),
@@ -678,10 +763,12 @@ export function tallestVsAskedBar(): ItemGen {
           {
             text: String(counts[tallest]),
             errorTag: 'representation-misread',
-            rationale: 'Reads the bar that stands out rather than the bar the question names.',
+            rationale: askedRank === 0
+              ? 'Reads a different bar from the one the question names.'
+              : 'Reads the bar that stands out rather than the bar the question names.',
           },
           {
-            text: String(counts[tallest] - counts[asked]),
+            text: String(Math.abs(counts[tallest] - counts[asked])),
             errorTag: 'task-comprehension',
             rationale: 'Answers "how many more" — a comparison the question did not ask for.',
           },
