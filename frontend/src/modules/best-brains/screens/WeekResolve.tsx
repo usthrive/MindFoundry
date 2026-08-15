@@ -88,9 +88,20 @@ export default function WeekResolve() {
             without its own exit is a leaf, and this one's two exits both went
             sideways (chest, map). Reaching the hub meant entering the chest or
             the map first and finding their hub links, two screens deep. */}
+        {/* APRICOT when it leads to the new concept, teal when it does not.
+            The hub's reveal button is the module's only other apricot control,
+            so the two form one trail: the colour that means "a new idea starts
+            here" is the same colour on both screens a child passes through to
+            reach it. Teal for "back to my week", which is a return, not a
+            start — the distinction is the whole reason the colour carries
+            meaning. */}
         <Link
           to="/foundry/hub"
-          className="min-h-[56px] rounded-2xl bg-primary px-6 text-center leading-[56px] text-lg font-semibold text-white shadow-md hover:bg-primary-hover touch-manipulation"
+          className={
+            opensTomorrow
+              ? 'min-h-[56px] rounded-2xl bg-primary px-6 text-center leading-[56px] text-lg font-semibold text-white shadow-md hover:bg-primary-hover touch-manipulation'
+              : 'mf-btn-new flex items-center justify-center px-6 text-center shadow-md touch-manipulation'
+          }
         >
           {opensTomorrow ? 'Back to my week' : 'Go to the next idea'}
         </Link>
