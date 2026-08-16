@@ -314,8 +314,13 @@ export function partToWholeShare(): ItemGen {
     situationType: 'part-whole',
     cognitiveOp: 'part-whole-ratio',
     draw: (r) => {
+      // THE TWO GROUPS ARE NEVER THE SAME SIZE. Drawing them independently made
+      // them equal on 11.7% of draws, which both keyed 1/2 — every single 1/2 in
+      // the census came from here — and printed the pointless "4 shiny cards for
+      // every 4 matt cards". A part-whole share is worth asking about when the
+      // parts differ.
       const p = r.int(2, 7);
-      const q = r.int(2, 9);
+      const q = r.pick([2, 3, 4, 5, 6, 7, 8, 9].filter((v) => v !== p));
       const c = r.pick(COLLECTIONS);
       return {
         prompt: `A box holds ${countNoun(p, c.a)} for every ${countNoun(q, c.b)}. What fraction of all the ${c.thing} are ${c.a.split(' ')[0]}?`,
@@ -636,34 +641,84 @@ export function percentOfEquality(): ItemGen {
       // other two thirds put a genuinely larger side on each position, so the
       // pair has to be READ before the identity can be claimed. That is the
       // difference between meeting a surprising fact and learning a password.
+      // ONE POOL FOR BOTH SLOTS, AND THE UNEQUAL SIDES ARE BALANCED ON BOTH
+      // SURFACES. Three separate tells lived in this draw, and only the first
+      // had been found before.
+      //
+      //  1. The percents came from [20,25,40,60,80] and the amounts from
+      //     [30,50,70,90] — DISJOINT — and only the equal shape swapped them. So
+      //     "is the second percent one of 30, 50, 70, 90?" answered "they are
+      //     equal" with 100% accuracy on 36.2% of draws, with no arithmetic and
+      //     without even noticing the swap. One shared pool removes it. The swap
+      //     itself stays visible, and that is fine: p% of q = q% of p IS the
+      //     week's lesson, so a child who learns to see it has learnt the thing.
+      //  2. Picking the first pair in a fixed scan order made the built side
+      //     systematically extreme: "tap the side with the bigger amount" scored
+      //     46.6% against a 33.3% baseline.
+      //  3. Fixing (2) by drawing which side carries the bigger amount simply
+      //     moved the tell onto the percent, which rose to 47.8% — a surface
+      //     tell traded for a surface tell, the failure this whole census exists
+      //     to stop. Both have to be balanced at once.
+      //
+      // So an unequal pair is drawn uniformly from every quadruple where the
+      // winner leads on EXACTLY ONE surface — never both, which would be a free
+      // win by dominance — and which surface it leads on is its own coin.
+      const VALUES = [20, 25, 40, 50, 60, 80];
       const shape = r.pick(['equal', 'first', 'second'] as const);
-      const p = r.pick([20, 25, 40, 60, 80]);
-      const q = r.pick([30, 50, 70, 90]);
-      // For the unequal shapes the second side keeps the same GRAMMAR (a
-      // percent of an amount) but is built from its own pair, so the surface
-      // gives nothing away — only the arithmetic separates them.
-      const r2 = r.pick([20, 25, 40, 60, 80]);
-      const s2 = r.pick([30, 50, 70, 90]);
-      const lhs = p * q;
-      let rhsP = q;
-      let rhsQ = p;
-      if (shape !== 'equal') {
-        // Search the small cross-product space for a second side that is
-        // strictly larger or strictly smaller, as the shape demands.
-        const wantBigger = shape === 'second';
-        let found = false;
-        for (const a of [r2, 20, 25, 40, 60, 80]) {
-          for (const b of [s2, 30, 50, 70, 90]) {
-            const cmp = a * b;
-            if (wantBigger ? cmp > lhs : cmp < lhs) { rhsP = a; rhsQ = b; found = true; break; }
+      let p: number;
+      let q: number;
+      let rhsP: number;
+      let rhsQ: number;
+      if (shape === 'equal') {
+        // NOT ONLY THE SWAP. If every equal draw were q% of p against p% of q,
+        // then "the two sides use the same two numbers" would be a COMPLETE
+        // strategy: true whenever they are equal, false whenever they are not,
+        // and executable without arithmetic. Recognising the swap is the week's
+        // lesson and is welcome — but it must not be the whole of it. So every
+        // quadruple with a matching product is in the pool, which pulls in the
+        // non-swap coincidences (20% of 50 against 25% of 40, both ten) and
+        // makes "different numbers" stop meaning "not equal".
+        const eq: Array<[number, number, number, number]> = [];
+        for (const pp of VALUES) {
+          for (const qq of VALUES) {
+            for (const a of VALUES) {
+              for (const b of VALUES) {
+                if (a === pp && b === qq) continue; // the same side printed twice
+                if (a * b !== pp * qq) continue;
+                eq.push([pp, qq, a, b]);
+              }
+            }
           }
-          if (found) break;
         }
-        // Unreachable in practice (20·30 = 600 is below and 80·90 = 7200 above
-        // every drawable lhs except its own extreme); stated rather than left
-        // implicit, and the fallback is the identity, which is always true.
-        if (!found) { rhsP = q; rhsQ = p; }
+        [p, q, rhsP, rhsQ] = r.pick(eq);
+      } else {
+        const wantBigger = shape === 'second';
+        const winnerLeadsOnPercent = r.chance(0.5);
+        const quads: Array<[number, number, number, number]> = [];
+        const anyBalanced: Array<[number, number, number, number]> = [];
+        for (const pp of VALUES) {
+          for (const qq of VALUES) {
+            for (const a of VALUES) {
+              for (const b of VALUES) {
+                if (a === pp || b === qq) continue; // no shared surface to read off
+                const cmp = a * b - pp * qq;
+                if (wantBigger ? cmp <= 0 : cmp >= 0) continue;
+                const rhsLeadsPct = a > pp;
+                const rhsLeadsAmt = b > qq;
+                if (rhsLeadsPct === rhsLeadsAmt) continue; // dominance: a free win
+                anyBalanced.push([pp, qq, a, b]);
+                const winnerLeadsPct = wantBigger ? rhsLeadsPct : !rhsLeadsPct;
+                if (winnerLeadsPct === winnerLeadsOnPercent) quads.push([pp, qq, a, b]);
+              }
+            }
+          }
+        }
+        [p, q, rhsP, rhsQ] = r.pick(quads.length ? quads : anyBalanced);
       }
+      // The truth is READ BACK OFF the two sides, never inherited from `shape` —
+      // so a construction that failed to honour the shape it was asked for keys
+      // the side that is actually larger rather than the side it meant to.
+      const lhs = p * q;
       const rhs = rhsP * rhsQ;
       const truth = rhs === lhs ? 'they are equal' : rhs > lhs ? `${rhsP}% of ${rhsQ}` : `${p}% of ${q}`;
       return {
@@ -1155,7 +1210,13 @@ export function eaPercentPointDrop(): ItemGen {
     verifyTemplateId: 'd_verify_dec_v1',
     cognitiveOp: 'percent-of',
     drawParams: (r) => ({
-      a: String(r.int(2, 9) * 20),
+      // NEVER A BASE OF 100. At $100 the reduction IS the percent, so the true
+      // answer is already printed in the question — and the point-drop
+      // misconception lands on $100 too, so the student's shown figure is the
+      // printed price. Measured at 13.0% of draws before this list replaced
+      // `r.int(2, 9) * 20`. Found by E3's author, who could not route around it:
+      // this generator IS the week's mandated error analysis.
+      a: String(r.pick([40, 60, 80, 120, 140, 160, 180])),
       b: fracToDec(r.pick([10, 15, 20, 25, 30, 40]), 100),
       op: '*',
       wrongMode: 'point-drop',
