@@ -13,6 +13,15 @@
  *  4. Choice items compute the correct option from the same params; distractors
  *     carry a DD7 errorTag + rationale (QG-3), all from the closed enum (QG-9).
  *
+ * HINT LADDERS HERE ARE SEED-INVARIANT, and ten of them were not until
+ * 2026-08-16. A rung that interpolates a drawn value ("Think: 7 times WHAT
+ * lands on 63?") gives a different ladder per draw, which breaks the
+ * pack-generation dedup for whichever learner draws the unlucky seed (L19).
+ * bb-family-test has enforced that on every other family since it was written
+ * and never on this one, because its FAMILIES list did not include this file —
+ * so `factorPair` shipped 102 distinct ladders, unseen. The rungs now name
+ * ROLES ("the factor you are given", "the named digit"), never values.
+ *
  * Choice / short-text / manual-review items intentionally have no `answerFor`
  * (audit skipped): their correctness is the code-selected choice key, or they
  * are flagged for keyword / AI-runtime grading (open reasoning).
@@ -113,7 +122,7 @@ export function digitValue(digits = 6): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_pv_digit_value_v1', params: { digit, place }, seed: r.uint() },
-        hintLadder: [`Find which place the ${digit} sits in.`, 'The place multiplies the digit: ones, tens, hundreds, and up.'],
+        hintLadder: ['Find which place the named digit sits in.', 'The place multiplies the digit: ones, tens, hundreds, and up.'],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
     });
@@ -318,7 +327,7 @@ export function factorPair(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_factor_pair_v1', params: { n, f }, seed: r.uint() },
-        hintLadder: [`Think: ${f} times WHAT lands on ${n}?`, 'Skip-count by the factor, or divide to undo the multiply.'],
+        hintLadder: ['Think: the factor you are given times WHAT lands on the target?', 'Skip-count by the factor, or divide to undo the multiply.'],
         errorTags: ['fact-recall', 'concept-misconception'],
       };
     });
@@ -339,7 +348,7 @@ export function multipleFill(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_multiple_v1', params: { base, k }, seed: r.uint() },
-        hintLadder: [`Skip-count by ${base}.`, `The kth multiple is ${base} taken k times.`],
+        hintLadder: ['Skip-count by the number whose multiples are wanted.', 'The kth multiple is that number taken k times.'],
         errorTags: ['fact-recall', 'concept-misconception'],
       };
     });
@@ -369,7 +378,7 @@ export function primeChoice(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_prime_v1', params: { n, isPrime }, seed: r.uint() },
-        hintLadder: [`Try to split ${n} into equal groups bigger than one.`, 'Check 2, 3, 5, 7 as possible factors before deciding.'],
+        hintLadder: ['Try to split the number into equal groups bigger than one.', 'Check 2, 3, 5, 7 as possible factors before deciding.'],
         errorTags: ['concept-misconception', 'fact-recall'],
       };
     });
@@ -403,7 +412,7 @@ export function fracEquivFill(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_equiv_v1', params: { n1, d1, d2 }, seed: r.uint() },
-        hintLadder: [`What times ${d1} gives ${d2}? Scale the top by the same factor.`, 'Top and bottom both grow together — the amount stays the same.'],
+        hintLadder: ['What does the bottom number multiply by to reach the new bottom? Scale the top by that same factor.', 'Top and bottom both grow together — the amount stays the same.'],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
     });
@@ -596,7 +605,7 @@ export function fracTimesWhole(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_times_whole_v1', params: { k, n, d }, seed: r.uint() },
-        hintLadder: [`Picture ${k} copies of ${fracStr(n, d)} — count the unit-pieces.`, 'Multiply the top by the whole number; the piece-size stays the same.'],
+        hintLadder: ['Picture that many copies of the fraction — count the unit-pieces.', 'Multiply the top by the whole number; the piece-size stays the same.'],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
     });
@@ -655,7 +664,7 @@ export function fracDivide(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_div_v1', params: { n1: a.n, d1: a.d, n2: b.n, d2: b.d }, seed: r.uint() },
-        hintLadder: [wholeFirst ? `How many ${fracStr(1, d)}-pieces fit in one whole? In ${k} wholes?` : 'Splitting a small piece into equal shares makes even smaller pieces.', 'Dividing by a fraction is the same as multiplying by its flip.'],
+        hintLadder: ['Which way round is it — a whole amount measured out in small pieces, or one small piece shared into equal parts?', 'Dividing by a fraction is the same as multiplying by its flip.'],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
     });
@@ -1044,7 +1053,7 @@ export function patternTerm(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_pattern_term_v1', params: { start, step, k }, seed: r.uint() },
-        hintLadder: [`The 1st number is the start; each later number adds ${step}.`, `Add ${step} a total of one-less-than-${k} times to the start.`],
+        hintLadder: ['The first number is the start; each later number adds the same step.', 'Add the step to the start one time fewer than the term you are asked for.'],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
     });
@@ -1446,7 +1455,7 @@ export function storyFracTimesWhole(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_times_whole_v1', params: { k, n, d }, seed: r.uint() },
-        hintLadder: [`${k} equal batches — count the fraction that many times.`, 'Multiply the top by the number of batches; the piece-size stays.'],
+        hintLadder: ['Equal batches — count the fraction once for every batch.', 'Multiply the top by the number of batches; the piece-size stays.'],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
     });
@@ -1497,7 +1506,7 @@ export function storyFracDivide(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_div_v1', params: { n1: k, d1: 1, n2: 1, d2: d }, seed: r.uint() },
-        hintLadder: [`How many ${fracStr(1, d)}-cup scoops fill ONE cup? Then all ${k} cups.`, 'Dividing by a unit fraction multiplies by its bottom number.'],
+        hintLadder: ['How many scoops fill ONE cup? Then all of the cups.', 'Dividing by a unit fraction multiplies by its bottom number.'],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
     });
