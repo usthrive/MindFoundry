@@ -244,6 +244,34 @@ function parseValue(raw: string): { value: number; unit: string } | null {
   return null;
 }
 
+/**
+ * STRUCTURAL SURFACES — the class that cost a 100% strategy while this census
+ * called the generator clean.
+ *
+ * `algebra.groupingToTarget` offered `(a+b)^n`, `a + b^n` and `a^n + b^n`, and
+ * keyed the grouped reading on every draw. So "tap the card with the bracket in
+ * it" scored 100.0% — and nothing here saw it, because the key TEXT varies every
+ * draw (so card-identity stays low) and three expressions are not scalars (so no
+ * rank check runs). It was found by an author refusing to serve the item.
+ *
+ * A structural surface is a SHAPE a child can see without reading the
+ * mathematics: this card is the only one with a bracket, the only fraction, the
+ * only negative, the only one carrying a unit. Both directions are exploitable —
+ * if the odd card out is always the answer you tap it, and if it is never the
+ * answer you strike it and improve your guess.
+ */
+const SURFACES: Array<[string, RegExp]> = [
+  ['a bracket', /[()]/],
+  ['a fraction', /\d\s*\/\s*\d/],
+  ['a negative sign', /(^|\s)[-−]\s*\d/],
+  ['a decimal point', /\d\.\d/],
+  ['a percent sign', /%/],
+  ['a currency sign', /[$¢]/],
+  ['an exponent', /\^|[²³]/],
+  ['a letter', /[A-Za-z]/],
+  ['a mixed number', /\d\s+\d\s*\/\s*\d/],
+];
+
 // --- Per-generator accumulator ---------------------------------------------
 
 interface Acc {
@@ -284,6 +312,8 @@ interface Acc {
   cardCounts: Set<number>;
   /** Cards summed over choice draws — the mean is what every baseline is 1/n of. */
   cardTotal: number;
+  /** Per surface: draws where exactly ONE card shows it, and how often that card is the key. */
+  surfaceOdd: Map<string, { applies: number; keyed: number }>;
 }
 
 function newAcc(label: string, family: string): Acc {
@@ -295,7 +325,7 @@ function newAcc(label: string, family: string): Acc {
     unparsed: 0, mixedUnit: 0, unparsedSamples: new Set(),
     lenLongest: 0, lenShortest: 0, lenTied: 0,
     positions: new Map(), dupSets: 0, dupSamples: new Set(),
-    noKey: 0, selfLeak: 0, cardCounts: new Set(), cardTotal: 0,
+    noKey: 0, selfLeak: 0, cardCounts: new Set(), cardTotal: 0, surfaceOdd: new Map(),
   };
 }
 
@@ -364,6 +394,16 @@ function observe(acc: Acc, d: ItemDraft): void {
         else if (smaller === 0) acc.rankSmallest++;
         else acc.rankMiddle++;
       }
+    }
+
+    // (6) STRUCTURAL SURFACES — is the ODD CARD OUT the answer, or never it?
+    for (const [name, re] of SURFACES) {
+      const withIt = texts.filter((t) => re.test(t));
+      if (withIt.length !== 1) continue;
+      const e = acc.surfaceOdd.get(name) ?? { applies: 0, keyed: 0 };
+      e.applies++;
+      if (withIt[0] === keyText) e.keyed++;
+      acc.surfaceOdd.set(name, e);
     }
 
     // Key by TEXT LENGTH — reads the claim without reading the mathematics.
@@ -454,6 +494,22 @@ function flagsFor(a: Acc): Flag[] {
       .sort((x, y) => y[1].offered - x[1].offered);
     for (const [text, c] of dead.slice(0, 3)) {
       f.push({ code: 'DEAD', rate: c.offered / a.choiceDraws, detail: `card "${text}" is offered on ${pct(c.offered / a.choiceDraws)} of draws and keyed on NONE — L38 unkeyable card` });
+    }
+
+    // A surface only matters if it turns up often enough to be learnable, and
+    // it is exploitable in BOTH directions: the odd card out being the answer
+    // far too often, or far too rarely (in which case you strike it and guess
+    // between the rest).
+    for (const [name, e] of a.surfaceOdd) {
+      if (e.applies / a.choiceDraws < 0.25) continue;
+      const share = e.keyed / e.applies;
+      const chance = 1 / n;
+      const appliesPct = pct(e.applies / a.choiceDraws);
+      if (share - chance > T.excess) {
+        f.push({ code: 'SURF', rate: share - chance, detail: `the only card with ${name} IS the key — ${pct(share)} of the ${appliesPct} of draws where exactly one card has it (vs ${pct(chance)} chance)` });
+      } else if (chance - share > T.excess) {
+        f.push({ code: 'SURF', rate: chance - share, detail: `the only card with ${name} is NEVER the key — keyed ${pct(share)} on the ${appliesPct} of draws where exactly one card has it (vs ${pct(chance)} chance); strike it and guess between the rest` });
+      }
     }
 
     if (a.dupSets > 0) {
