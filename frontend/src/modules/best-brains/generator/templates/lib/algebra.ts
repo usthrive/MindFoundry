@@ -436,6 +436,41 @@ function verifyDistribute(p: Params): VerifyResult {
 }
 
 /**
+ * `3 more than twice n` written `2(n + 3)` — a bracket the words never asked
+ * for (E11's named slip, and the exact mirror of `verifyDistribute` above).
+ *
+ * BOTH DIRECTIONS HAVE TO EXIST, because they are different children's
+ * mistakes on different weeks. E12's child is handed the FACTORED form and
+ * expands it short. E11's is handed the WORDS and reaches for a grouping
+ * nothing in them spoke. Only E12's direction was registered, so E11's recipe
+ * cell appeared to have no template at all — which is how the previous two
+ * weeks' error-analyses came to be relocated.
+ *
+ * This one the library CAN express, and it is worth being exact about why: the
+ * slip changes how far the multiplication REACHES over a fixed ordered pair,
+ * which is an operation-shaped change. The open gap is narrower than "the
+ * verify library cannot express E11's slip" — it is that no template can swap
+ * the two OPERANDS (E4's inverted fraction, E5's LCM), and that gap is
+ * untouched by this.
+ *
+ * Guard rather than nudge: `a·x + b` and `a·(x + b)` differ by `b(a − 1)`, so
+ * they coincide exactly when `a = 1` (or `b = 0`), and the throw names it.
+ */
+function verifyMisgroup(p: Params): VerifyResult {
+  const a = num(p, 'a');
+  const b = num(p, 'b');
+  const x = num(p, 'x');
+  const correct = linearValue(a, x, b);
+  const wrong = factoredValue(a, x, b);
+  if (correct === wrong) {
+    throw new Error(
+      `e_alg_verify_misgroup_v1: a=${a}, b=${b} leaves the two expressions equal — the bracket only bites when the multiplier is above one and the extra is non-zero`,
+    );
+  }
+  return { correct: String(correct), wrong: String(wrong) };
+}
+
+/**
  * The one-step equation solved by the WRONG inverse: the child performs the
  * equation's own move on both sides instead of undoing it (E13's named slip —
  * adds where the equation asks for a subtraction).
@@ -870,8 +905,17 @@ export function evaluateAtX(): ItemGen {
 
 /**
  * Which expression means what the words say — `an + b` vs `a(n + b)` vs the
- * swapped roles (E11's "2n vs n² vs n+2" family, and the phrase its named EA
- * mistranslates as `2(n + 3)`).
+ * swapped roles: the phrase E11's named error-analysis mistranslates as
+ * `2(n + 3)`.
+ *
+ * THIS IS NOT E11's RECIPE DISCRIMINATION, and an earlier version of this
+ * comment said it was ("E11's 2n vs n² vs n+2 family"). It is not that: this
+ * item is about GROUPING and ROLE-SWAP over one shape, whereas the recipe's
+ * discrimination is about three shapes that GROW differently. Nothing in `lib/`
+ * builds the latter, so the week builds it locally — and it has to be built
+ * carefully, because for every n ≥ 3 the order n² > 2n > n+2 is fixed, which
+ * makes "pick the squared one" a free 100% on any which-is-biggest page. The
+ * distinction only bites at n ∈ {0, 1, 2}, which is also the whole point.
  */
 export function expressionMeaningTrap(): ItemGen {
   return discrimination({
@@ -906,15 +950,49 @@ export function expressionMeaningTrap(): ItemGen {
         errorTag: 'representation-misread' as const,
         rationale: 'Swaps the two numbers, so the one that scales and the one that is added trade places.',
       };
+      // AND WHICH NUMERAL THE PHRASE SPEAKS FIRST IS DRAWN TOO, INDEPENDENTLY.
+      // Rotating `wanted` alone fixed the bracket surface and left a second one
+      // the census cannot see, because it compares cards to CARDS and never the
+      // PROMPT to the cards. Every card carries the same two numerals, so their
+      // ORDER is a correspondence a child can read without any algebra — and
+      // with one phrasing per reading, two of the three phrases ran (a, b) and
+      // only one ran (b, a). Measured over 3,000 draws: "pick the card whose
+      // numbers run in the opposite order to the phrase" scored 50.6% against a
+      // 33.3% chance, and its mirror sat at 16.5%, so striking that card paid as
+      // well. Both directions are exploitable; see the census's own SURF note.
+      //
+      // Each reading therefore ships BOTH numeral orders, and the order is drawn
+      // independently of which reading is keyed. That makes the phrase's order
+      // carry no information about the key, by construction rather than by
+      // nudge: whichever expression is wanted, the phrase runs (a, b) half the
+      // time and (b, a) half the time, so every correspondence strategy above
+      // settles at exactly 1/3. The bracket rotation from `5314cbe` is untouched
+      // — `wanted` still keys each expression a third of the time.
       const READINGS = [
-        { phrase: `${fmtInt(b)} more than ${fmtInt(a)} times a number n`, correct: AN_PLUS_B },
-        { phrase: `${fmtInt(a)} times the sum of a number n and ${fmtInt(b)}`, correct: A_TIMES_SUM },
-        { phrase: `${fmtInt(a)} more than ${fmtInt(b)} times a number n`, correct: BN_PLUS_A },
+        {
+          // `an + b` — scale first, then add on.
+          ab: `${fmtInt(a)} times a number n, increased by ${fmtInt(b)}`,
+          ba: `${fmtInt(b)} more than ${fmtInt(a)} times a number n`,
+          correct: AN_PLUS_B,
+        },
+        {
+          // `a(n + b)` — gather first, then scale.
+          ab: `${fmtInt(a)} times the sum of a number n and ${fmtInt(b)}`,
+          ba: `the sum of a number n and ${fmtInt(b)}, multiplied by ${fmtInt(a)}`,
+          correct: A_TIMES_SUM,
+        },
+        {
+          // `bn + a` — the same shape as the first, with the roles traded.
+          ab: `${fmtInt(a)} more than ${fmtInt(b)} times a number n`,
+          ba: `${fmtInt(b)} times a number n, increased by ${fmtInt(a)}`,
+          correct: BN_PLUS_A,
+        },
       ];
       const wanted = r.int(0, 2);
       const pick = READINGS[wanted];
+      const phrase = r.int(0, 1) === 0 ? pick.ab : pick.ba;
       return {
-        prompt: `Which expression means "${pick.phrase}"?`,
+        prompt: `Which expression means "${phrase}"?`,
         correct: pick.correct.text,
         distractors: [AN_PLUS_B, A_TIMES_SUM, BN_PLUS_A]
           .filter((c) => c.text !== pick.correct.text)
@@ -1601,6 +1679,8 @@ export const ALGEBRA_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
   { id: 'e_alg_verify_grouping_v1', verifyFor: verifyGrouping },
   /** `2(x + 3) = 2x + 3` — the multiplier reaching only the first term. */
   { id: 'e_alg_verify_distribute_v1', verifyFor: verifyDistribute },
+  /** `3 more than twice n` written `2(n + 3)` — its mirror, and E11's slip. */
+  { id: 'e_alg_verify_misgroup_v1', verifyFor: verifyMisgroup },
   /** Adding to both sides where the equation asks for a subtraction. */
   { id: 'e_alg_verify_inverse_v1', verifyFor: verifyInverse },
   /** The inequality symbol flipped while adding. */

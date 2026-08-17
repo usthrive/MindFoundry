@@ -950,9 +950,35 @@ export function writeExprChoice(): ItemGen {
       // subject is that these three expressions are DIFFERENT. Rotating the
       // phrase teaches the same distinction in all three directions, which is
       // what the item claimed to do.
+      // AND ALL THREE CARDS LEAD WITH THE SAME TOKEN, which is a second repair
+      // on top of the phrase rotation below, not a restatement of it.
+      //
+      // `PLUS_TWO` used to render `a + b + 2` — the only card of the three
+      // beginning with a DRAWN number, where the other two begin with the
+      // literal 2. So "tap the card that starts with the phrase's first
+      // number" isolated exactly one card, and on the phrasing that leads with
+      // `a` and keys `PLUS_TWO` it isolated the KEY. Measured over 3,000 draws:
+      // 45.9% against a 33.3% baseline overall, and 91.0% on the third of draws
+      // asking "two more than the sum of …". Its mirror paid too — the key
+      // ended with the phrase's last number on only 25.5%, so striking that
+      // card improved a guess.
+      //
+      // The census cannot see this class: it compares cards to CARDS and never
+      // the PROMPT to the cards, so a correspondence between the two is
+      // invisible to every check it runs. This is the same defect, in the same
+      // shape, that `algebra.expressionMeaningTrap` carried — both of them
+      // BEHIND an earlier repair that had correctly closed a card-only tell.
+      // Rotating which phrase is asked fixes card identity and cannot touch a
+      // correspondence.
+      //
+      // `2 + a + b` is the same translation of "two more than the sum" —
+      // addition commutes and D21's subject is which OPERATION the words name,
+      // not which end the constant is written at. Now every card begins with
+      // the same token, so the strategy has nothing to isolate; and every card
+      // also ends with `b`, which retires the mirror at the same time.
       const GROUPED = `2 × (${a} + ${b})`;
       const TWICE_FIRST = `2 × ${a} + ${b}`;
-      const PLUS_TWO = `${a} + ${b} + 2`;
+      const PLUS_TWO = `2 + ${a} + ${b}`;
       const FORMS = [
         {
           form: 'grouped',
@@ -978,7 +1004,7 @@ export function writeExprChoice(): ItemGen {
           correct: PLUS_TWO,
           distractors: [
             { text: GROUPED, errorTag: 'concept-misconception' as const, rationale: 'Multiplies the sum by two instead of adding two to it.' },
-            { text: TWICE_FIRST, errorTag: 'task-comprehension' as const, rationale: 'Doubles the first number instead of adding two at the end.' },
+            { text: TWICE_FIRST, errorTag: 'task-comprehension' as const, rationale: 'Doubles the first number instead of adding two to the whole sum.' },
           ],
         },
       ];
