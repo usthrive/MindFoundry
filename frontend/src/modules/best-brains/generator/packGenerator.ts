@@ -140,7 +140,8 @@ import { buildE21 } from './templates/weeks/e21';
  *   different prose than it did at 1.1.0, while every computed answer is
  *   unchanged. Determinism is re-established at the new content.
  */
-export const CONTENT_VERSION = '1.2.0';
+export { CONTENT_VERSION } from '../contentVersion';
+import { CONTENT_VERSION } from '../contentVersion';
 
 type WeekBuilder = (packSeed: number, contentVersion: string) => WeeklyConceptPack;
 

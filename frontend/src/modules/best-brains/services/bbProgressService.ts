@@ -11,7 +11,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { CONTENT_VERSION } from '../generator/packGenerator';
+import { CONTENT_VERSION } from '../contentVersion';
 import { WEEK_STATE_TRANSITIONS } from '../constants';
 import type {
   BBEnrollment,
