@@ -398,11 +398,12 @@ function verifyPowerSwap(p: Params): VerifyResult {
   const exp = num(p, 'exp');
   const here = powerValue(base, exp);
   const swapped = powerValue(exp, base);
-  if (here === swapped) {
-    throw new Error(
-      `e_alg_verify_power_swap_v1: ${power(base, exp)} and ${power(exp, base)} are equal — the swap has nothing to decide`,
-    );
-  }
+  // An equal pair is RECOMPUTED, not refused. It used to throw, on the reasoning
+  // that the swap has nothing to decide — true of the pair list as it then
+  // stood, and no longer: 2^4 against 4^2 is drawn deliberately. The guard is
+  // not lost, it is inverted, which is the useful direction — keying a POWER on
+  // an equal pair now fails to recompute.
+  if (here === swapped) return { correct: POWER_SWAP_SAME };
   return { correct: here > swapped ? power(base, exp) : power(exp, base), wrong: String(Math.min(here, swapped)) };
 }
 
@@ -545,10 +546,38 @@ const POWER_PAIRS = [
  * absent because 2^4 and 4^2 are both sixteen — the only swap in reach that has
  * no larger side.
  */
-const SWAP_PAIRS = [
-  [2, 3], [3, 2], [2, 5], [5, 2], [2, 6], [6, 2],
-  [3, 4], [4, 3], [3, 5], [5, 3],
-] as const;
+/**
+ * 2^4 = 4^2 = 16 IS IN HERE, and it has to be.
+ *
+ * The list used to hold only pairs where the swap changes the value, and
+ * `verifyPowerSwap` threw on an equal pair — so "they are equal" was offered on
+ * every draw of `powerBaseSwapTrap` and could never be the answer. That is the
+ * L38 unkeyable card, in the item whose lesson is that a power is NOT a product
+ * and its two numbers do NOT trade places freely. A child who learns to strike
+ * that card has learnt the opposite of the point.
+ *
+ * (2,4) is the only non-trivial pair of positive integers with a^b = b^a, which
+ * makes it exactly the right thing to meet as a surprise rather than to be told:
+ * the swap usually changes the value, and here is the one place it does not.
+ */
+/**
+ * THREE POOLS, BECAUSE THE ARITHMETIC HAS THREE CASES AND ONLY ONE WAS COMMON.
+ *
+ * Among distinct whole numbers above one, a^b > b^a for EVERY pair except
+ * {2,3} — so on a flat draw the card with the bigger exponent won almost
+ * always, and "take the one with the bigger exponent" keyed 54.9% of 3,000
+ * draws against a 33.3% baseline (E10's author measured 49.4%; mine is worse).
+ * The exception and the equal pair are what make the item honest, so they are
+ * drawn as often as the ordinary case rather than being rarities.
+ */
+const SWAP_ORDINARY_PAIRS: ReadonlyArray<readonly [number, number]> = [
+  [2, 5], [5, 2], [2, 6], [6, 2], [3, 4], [4, 3], [3, 5], [5, 3],
+];
+/** 2^3 = 8 < 9 = 3^2 — the one pair where the SMALLER exponent wins. */
+const SWAP_EXCEPTION_PAIRS: ReadonlyArray<readonly [number, number]> = [[2, 3], [3, 2]];
+const SWAP_EQUAL_PAIRS: ReadonlyArray<readonly [number, number]> = [[2, 4], [4, 2]];
+/** "they are equal", named once and shared with the verify below. */
+const POWER_SWAP_SAME = 'they are equal';
 
 /** Things that multiply themselves each period — the honest home of a power. */
 const GROWTHS = [
@@ -685,22 +714,54 @@ export function groupingToTarget(): ItemGen {
       const exp = r.pick([2, 2, 3]);
       const a = r.int(2, exp === 2 ? 7 : 4);
       const b = r.int(2, exp === 2 ? 7 : 4);
-      const truth = verifyGrouping({ a, b, exp });
+      // WHICH READING THE TARGET NAMES IS DRAWN. The target used to be the
+      // GROUPED value on every draw, and that handed over the answer twice
+      // without any arithmetic: the key was the only card carrying a bracket on
+      // 100.0% of 3,000 draws, and — because gathering a sum before raising it
+      // always beats raising the parts — it was also the largest-valued card on
+      // 100.0%. Two independent free strategies, on the item that teaches what a
+      // grouping is worth.
+      //
+      // The guessability census called this generator CLEAN, and was right by
+      // its own lights: the key TEXT varies every draw so card-identity is low,
+      // and three expressions are not rankable so no rank check runs. "Carries a
+      // bracket" is a STRUCTURAL surface, and the census does not model those.
+      // Found by E10's author refusing to serve the item.
+      //
+      // The three readings stay exactly as they were; only the target rotates,
+      // so the key lands on each in turn. The three values cannot collide: the
+      // grouped reading exceeds the spread one by 2ab, and the spread exceeds
+      // the second-only one whenever a > 1, which the draw guarantees.
+      verifyGrouping({ a, b, exp });
+      const READINGS = [
+        {
+          text: `(${fmtInt(a)} + ${fmtInt(b)})^${fmtInt(exp)}`,
+          value: powerValue(a + b, exp),
+          errorTag: 'concept-misconception' as const,
+          rationale: 'Gathers the two numbers into one amount before the power acts — which is what a bracket asks for, and what this expression does not.',
+        },
+        {
+          text: `${fmtInt(a)} + ${power(b, exp)}`,
+          value: a + powerValue(b, exp),
+          errorTag: 'procedure-slip' as const,
+          rationale: 'Lets the exponent act on the second number alone, so the sum is never gathered before the power is taken.',
+        },
+        {
+          text: `${power(a, exp)} + ${power(b, exp)}`,
+          value: powerValue(a, exp) + powerValue(b, exp),
+          errorTag: 'concept-misconception' as const,
+          rationale: 'Spreads the exponent across a sum, which a power does not do — only a whole grouped amount can be raised.',
+        },
+      ];
+      const wanted = r.int(0, 2);
       return {
-        prompt: `Which expression has the value ${truth.correct}?`,
-        correct: `(${fmtInt(a)} + ${fmtInt(b)})^${fmtInt(exp)}`,
-        distractors: [
-          {
-            text: `${fmtInt(a)} + ${power(b, exp)}`,
-            errorTag: 'procedure-slip',
-            rationale: 'Lets the exponent act on the second number alone, so the sum is never gathered before the power is taken.',
-          },
-          {
-            text: `${power(a, exp)} + ${power(b, exp)}`,
-            errorTag: 'concept-misconception',
-            rationale: 'Spreads the exponent across a sum, which a power does not do — only a whole grouped amount can be raised.',
-          },
-        ],
+        prompt: `Which expression has the value ${fmtInt(READINGS[wanted].value)}?`,
+        correct: READINGS[wanted].text,
+        distractors: READINGS.filter((_, i) => i !== wanted).map((x) => ({
+          text: x.text,
+          errorTag: x.errorTag,
+          rationale: x.rationale,
+        })),
         hints: [
           'What has to be gathered into one amount before a power can act on it?',
           'Read the brackets as a fence: whatever sits inside is settled into a single number first.',
@@ -717,24 +778,35 @@ export function powerBaseSwapTrap(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'alg-power',
     draw: (r) => {
-      const [base, exp] = r.pick(SWAP_PAIRS);
+      // The OUTCOME is drawn first, then a pair built to match, so all three
+      // cards are reachable in equal thirds rather than two of them in halves.
+      const shape = r.pick(['equal', 'smaller-exponent-wins', 'ordinary'] as const);
+      const [base, exp] = r.pick(
+        shape === 'equal' ? SWAP_EQUAL_PAIRS
+          : shape === 'smaller-exponent-wins' ? SWAP_EXCEPTION_PAIRS
+            : SWAP_ORDINARY_PAIRS,
+      );
       const truth = verifyPowerSwap({ base, exp });
+      const SAME = {
+        text: POWER_SWAP_SAME,
+        errorTag: 'representation-misread' as const,
+        rationale: 'Reads both as "these two numbers combined", which loses the difference between what is repeated and how often.',
+      };
+      const SWAPPED = (text: string) => ({
+        text,
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Treats the two numbers as a pair that can trade places, as if a power behaved like a product.',
+      });
       const other = truth.correct === power(base, exp) ? power(exp, base) : power(base, exp);
       return {
         prompt: `Which is larger, ${power(base, exp)} or ${power(exp, base)}?`,
         correct: truth.correct,
-        distractors: [
-          {
-            text: other,
-            errorTag: 'concept-misconception',
-            rationale: 'Treats the two numbers as a pair that can trade places, as if a power behaved like a product.',
-          },
-          {
-            text: 'they are equal',
-            errorTag: 'representation-misread',
-            rationale: 'Reads both as "these two numbers combined", which loses the difference between what is repeated and how often.',
-          },
-        ],
+        // Derived from the truth, never listed beside it — the rule five
+        // generators in this library learned once a previously-impossible card
+        // became reachable.
+        distractors: truth.correct === POWER_SWAP_SAME
+          ? [SWAPPED(power(base, exp)), SWAPPED(power(exp, base))]
+          : [SWAPPED(other), SAME],
         hints: [
           'Which of the two numbers in a power says WHAT is repeated, and which says HOW OFTEN?',
           'Write each one out as its full line of factors and compare the two lines.',
