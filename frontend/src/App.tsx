@@ -16,11 +16,6 @@ import OnboardingPage from '@/pages/OnboardingPage'
 import ChildSelectPage from '@/pages/ChildSelectPage'
 import StudyPage from '@/pages/StudyPage'
 import ProgressDashboard from '@/pages/ProgressDashboard'
-import TestLevelsPage from '@/pages/TestLevelsPage'
-import AnimationTestPage from '@/pages/AnimationTestPage'
-import TestConceptsPage from '@/pages/TestConceptsPage'
-import FoundryPreviewPage from '@/pages/FoundryPreviewPage'
-import TestTTSPage from '@/pages/TestTTSPage'
 import VideoLibraryPage from '@/pages/VideoLibraryPage'
 import VideoCategoryPage from '@/pages/VideoCategoryPage'
 import VideoWatchPage from '@/pages/VideoWatchPage'
@@ -34,6 +29,18 @@ import CohortPage from '@/pages/CohortPage'
 // Best Brains-inspired module ("Foundry Method") — lazy chunk, route base /foundry
 const FoundryRoutes = lazy(() => import('@/modules/best-brains/FoundryRoutes'))
 
+// Developer and QA surfaces. No child ever opens these, so they have no business
+// in the bundle every child downloads — and FoundryPreviewPage was the reason the
+// whole Best Brains corpus sat in the main chunk despite /foundry being lazy: it
+// imports generatePack directly, which pulls in every week template. Making it
+// lazy puts the content back behind the boundary it was supposed to be behind,
+// so authoring more weeks no longer grows the app shell.
+const TestLevelsPage = lazy(() => import('@/pages/TestLevelsPage'))
+const AnimationTestPage = lazy(() => import('@/pages/AnimationTestPage'))
+const TestConceptsPage = lazy(() => import('@/pages/TestConceptsPage'))
+const FoundryPreviewPage = lazy(() => import('@/pages/FoundryPreviewPage'))
+const TestTTSPage = lazy(() => import('@/pages/TestTTSPage'))
+
 function App() {
   return (
     <AuthProvider>
@@ -42,6 +49,15 @@ function App() {
       <BrowserRouter>
         <NavigationGuardProvider>
         <div className="min-h-screen pb-24"> {/* Add padding for bottom nav (96px for nav + progress indicator) */}
+          {/* One boundary for every lazily-loaded route, so a chunk that is still
+              arriving shows a waiting state rather than a blank screen. */}
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center bg-background">
+                <p className="text-lg text-gray-600">Loading…</p>
+              </div>
+            }
+          >
           <Routes>
           <Route path="/login" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -209,6 +225,7 @@ function App() {
           <Route path="/test-tts" element={<ProtectedRoute><TestTTSPage /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
+          </Suspense>
           <BottomNav />
           {/* Global celebration modal - renders on top of everything */}
           <CelebrationModal />
