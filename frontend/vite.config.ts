@@ -85,10 +85,12 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Allow precaching of the main app bundle even after Cohorts feature
-        // pushed it past the default 2 MiB ceiling. Set to 4 MiB so we have
-        // headroom; revisit with manualChunks splitting in a follow-up.
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Back to the 2 MiB default. It was raised to 4 MiB as a stopgap when the
+        // shell first crossed it, and the shell then quietly grew to 4.44 MB and
+        // broke the build anyway — a raised ceiling only hides the next breach.
+        // With content split per level and behind /foundry, nothing comes close,
+        // so the default is once again a working tripwire rather than a formality.
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         // Cache strategies for the PWA
         runtimeCaching: [
           {
@@ -135,6 +137,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
+          // Authored week content, split by level. One chunk held every level's
+          // weeks and had grown to 2.9 MB on its way to the precache ceiling the
+          // app shell just hit — the corpus is 107 of 120 cells with the ladder
+          // planned far beyond that, so a single content chunk is a deadline, not
+          // a design. Per level, each stays small and finishing a level cannot
+          // push any other chunk over.
+          const week = id.match(/best-brains\/generator\/templates\/weeks\/([a-z])\d+/)
+          if (week) return `bb-content-${week[1]}`
+
           if (!id.includes('node_modules')) return undefined
           if (id.includes('react-router')) return 'vendor-router'
           if (id.includes('react-dom') || id.includes('react/')) return 'vendor-react'
