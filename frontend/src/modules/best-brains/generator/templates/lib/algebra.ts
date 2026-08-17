@@ -881,21 +881,44 @@ export function expressionMeaningTrap(): ItemGen {
       const a = r.int(2, 9);
       // b ≠ a, so the swapped-roles option is a genuinely different expression.
       const b = a + r.int(1, 6);
+      // WHICH PHRASE IS ASKED IS DRAWN. The un-bracketed reading was the answer
+      // on every draw, so `a(n + b)` — the only card carrying a bracket — could
+      // never be keyed: "strike the bracketed one" turned a three-way item into
+      // a coin toss, on 100% of draws, without reading the phrase. Found by the
+      // census's structural-surface check (b5fad96), which exists because
+      // `groupingToTarget` hid the same shape from every other check here.
+      //
+      // The three expressions are unchanged; only the phrase rotates, so each is
+      // the answer in turn and the bracket says nothing. Each rationale
+      // describes what its OWN card does, which stays true whichever is keyed.
+      const AN_PLUS_B = {
+        text: linearExpr(a, b, 'n'),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Scales the number and then adds the extra on, so the extra is never scaled.',
+      };
+      const A_TIMES_SUM = {
+        text: factoredExpr(a, b, 'n'),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Gathers the number and the extra together before scaling, so the multiplier reaches the extra as well.',
+      };
+      const BN_PLUS_A = {
+        text: linearExpr(b, a, 'n'),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Swaps the two numbers, so the one that scales and the one that is added trade places.',
+      };
+      const READINGS = [
+        { phrase: `${fmtInt(b)} more than ${fmtInt(a)} times a number n`, correct: AN_PLUS_B },
+        { phrase: `${fmtInt(a)} times the sum of a number n and ${fmtInt(b)}`, correct: A_TIMES_SUM },
+        { phrase: `${fmtInt(a)} more than ${fmtInt(b)} times a number n`, correct: BN_PLUS_A },
+      ];
+      const wanted = r.int(0, 2);
+      const pick = READINGS[wanted];
       return {
-        prompt: `Which expression means "${fmtInt(b)} more than ${fmtInt(a)} times a number n"?`,
-        correct: linearExpr(a, b, 'n'),
-        distractors: [
-          {
-            text: factoredExpr(a, b, 'n'),
-            errorTag: 'concept-misconception',
-            rationale: 'Gathers the number and the extra together before scaling, so the multiplier reaches the extra as well.',
-          },
-          {
-            text: linearExpr(b, a, 'n'),
-            errorTag: 'representation-misread',
-            rationale: 'Swaps the two numbers, so the one that scales and the one that is added trade places.',
-          },
-        ],
+        prompt: `Which expression means "${pick.phrase}"?`,
+        correct: pick.correct.text,
+        distractors: [AN_PLUS_B, A_TIMES_SUM, BN_PLUS_A]
+          .filter((c) => c.text !== pick.correct.text)
+          .map((c) => ({ text: c.text, errorTag: c.errorTag, rationale: c.rationale })),
         hints: [
           'Which happens to the number first — the scaling, or the extra being added on?',
           'Read the phrase from the inside out and build the expression in that same order.',
