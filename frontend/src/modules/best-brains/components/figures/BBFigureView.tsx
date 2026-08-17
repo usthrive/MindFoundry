@@ -99,26 +99,34 @@ export function PromptFigure({
 }) {
   if (figure) return <BBFigureView figure={figure} band={band} size={size} />;
 
-  // NO PICTURE? THEN SAY NOTHING TO THE CHILD.
+  // NO PICTURE? THEN SAY THE SCENE, AS A SENTENCE — NOT AS A STAGE DIRECTION.
   //
-  // This used to print the authored direction as a caption — a child working
-  // "[image: 6 rods and 2 cubes in labeled columns] Read the number." was shown
-  // "🖼 6 rods and 2 cubes in labeled columns" and asked to read a number off a
-  // diagram that had never been drawn. Describing a picture is not a fallback for
-  // showing one: to a six-year-old it is a sentence they cannot act on, sitting
-  // exactly where the thing they need should be, and the app then marks them wrong
-  // for a question no one could answer.
+  // This began as "🖼 6 rods and 2 cubes in labeled columns" in grey 14px under
+  // the question: a caption that looked like a broken image and read like a note
+  // to an illustrator. A child was asked to read a number off it.
   //
-  // The words are not thrown away — speakablePrompt() still reads the scene aloud,
-  // which is the one channel where a description genuinely substitutes for a
-  // picture, and the alt stays available to assistive technology. What stops is
-  // presenting a stage direction as if it were content. bb-verify-packs now fails
-  // on any child-facing prompt that reaches this branch, so the real repair — draw
-  // it, or reword the question so it does not need a picture — happens at build
-  // time rather than in front of a child.
+  // The first repair was to show nothing at all. That is right when the picture
+  // was only support — "45 - 27 = ?" stands on its own — but wrong when the
+  // scene carries the question. Three Level-A items put their whole content in
+  // the direction: strip it from "[image: 7 red balloons, 5 blue balloons] Which
+  // color has MORE?" and no colour is named anywhere. Silence made those
+  // unanswerable rather than merely confusing.
+  //
+  // So the words come back, but as CONTENT: the same size and colour as the
+  // question, sitting where a first sentence would, which is exactly where
+  // speakablePrompt already reads them for the audio-first band. A described
+  // scene is a poor substitute for a drawn one and every item here still wants
+  // its picture — bb-verify-packs fails on any that is not declared — but a
+  // sentence a child can act on beats both a caption they cannot and a blank
+  // space that tells them nothing.
   const alt = promptImageAlt(prompt);
   if (!alt) return null;
-  return <span className="sr-only">{alt}</span>;
+  const scene = alt.charAt(0).toUpperCase() + alt.slice(1);
+  return (
+    <p style={{ color: FIG.ink, fontSize: band === 'A' ? 20 : 18, textAlign: 'center' }}>
+      {scene}{/[.!?]$/.test(scene) ? '' : '.'}
+    </p>
+  );
 }
 
 export { promptText, promptImageAlt };

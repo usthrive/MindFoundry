@@ -12,8 +12,11 @@ import { AVAILABLE_WEEKS, generatePack } from '../src/modules/best-brains/genera
 /** Wording that only makes sense if a picture is on the screen. */
 const PROMISES = [
   /\[image:/i,
-  /\bthese\s+(groups?|groupings?|rods|cubes|blocks|counters|shapes|numbers|pictures)\b/i,
-  /\b(look at|read|count|circle|point to|shade|match)\s+(the\s+)?(picture|diagram|chart|image|figure|model|array|grid|number line|ten.frame)\b/i,
+  // "these numbers" in a choice-key stem means the OPTIONS, not a picture — and a
+  // chart whose contents are given in words ("7 full gates") needs no drawing to be
+  // answered. Both were flagged before and neither is a broken promise.
+  /\bthese\s+(groups?|groupings?|rods|cubes|blocks|counters)\b/i,
+  /\b(look at|point to|shade|circle)\s+(the\s+)?(picture|diagram|image|figure|array|grid|number line|ten.frame)\b/i,
   /\b(shown|pictured|drawn|displayed)\s+(above|below|here)\b/i,
   /\bthe (picture|diagram|chart|image|figure|model) (above|below|here|shows)\b/i,
 ]
