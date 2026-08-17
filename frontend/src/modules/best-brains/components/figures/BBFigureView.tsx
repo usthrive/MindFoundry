@@ -98,16 +98,27 @@ export function PromptFigure({
   size?: FigureSize;
 }) {
   if (figure) return <BBFigureView figure={figure} band={band} size={size} />;
+
+  // NO PICTURE? THEN SAY NOTHING TO THE CHILD.
+  //
+  // This used to print the authored direction as a caption — a child working
+  // "[image: 6 rods and 2 cubes in labeled columns] Read the number." was shown
+  // "🖼 6 rods and 2 cubes in labeled columns" and asked to read a number off a
+  // diagram that had never been drawn. Describing a picture is not a fallback for
+  // showing one: to a six-year-old it is a sentence they cannot act on, sitting
+  // exactly where the thing they need should be, and the app then marks them wrong
+  // for a question no one could answer.
+  //
+  // The words are not thrown away — speakablePrompt() still reads the scene aloud,
+  // which is the one channel where a description genuinely substitutes for a
+  // picture, and the alt stays available to assistive technology. What stops is
+  // presenting a stage direction as if it were content. bb-verify-packs now fails
+  // on any child-facing prompt that reaches this branch, so the real repair — draw
+  // it, or reword the question so it does not need a picture — happens at build
+  // time rather than in front of a child.
   const alt = promptImageAlt(prompt);
   if (!alt) return null;
-  return (
-    <p
-      style={{ color: FIG.inkMuted, fontSize: 14, textAlign: 'center' }}
-      aria-label={alt}
-    >
-      🖼 {alt}
-    </p>
-  );
+  return <span className="sr-only">{alt}</span>;
 }
 
 export { promptText, promptImageAlt };

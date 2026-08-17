@@ -148,6 +148,10 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
   const IMAGE = /\[image:/i;
   type Row = { figures: number; unmigrated: number; scriptFigs: number; scriptSegs: number; geFigs: number; ges: number };
   const rows = new Map<string, Row>();
+  // Every level, not just A. A child served an un-migrated [image: …] sees no
+  // picture at all — the prompt strips the direction and PromptFigure now says
+  // nothing — so the question is unanswerable whatever level it is on.
+  const unmigrated: string[] = [];
   const unmigratedA: string[] = [];
 
   for (const cell of AVAILABLE_WEEKS) {
@@ -157,18 +161,26 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
       if (it.figure) row.figures++;
       else if (IMAGE.test(it.prompt)) {
         row.unmigrated++;
+        unmigrated.push(`${it.id}: ${it.prompt.slice(0, 60)}`);
         if (cell.level === 'A') unmigratedA.push(`${it.id}: ${it.prompt.slice(0, 60)}`);
       }
     }
     if (pack.puzzle.figure) row.figures++;
     else if (IMAGE.test(pack.puzzle.prompt)) {
       row.unmigrated++;
+      unmigrated.push(`${pack.puzzle.id}: ${pack.puzzle.prompt.slice(0, 60)}`);
       if (cell.level === 'A') unmigratedA.push(`${pack.puzzle.id}: ${pack.puzzle.prompt.slice(0, 60)}`);
     }
     row.scriptSegs += pack.explanation.script.length;
     row.scriptFigs += pack.explanation.script.filter((s) => s.figure).length;
     row.ges += pack.guidedExamples.length;
     row.geFigs += pack.guidedExamples.filter((g) => g.figure).length;
+    for (const g of pack.guidedExamples) {
+      if (!g.figure && IMAGE.test(g.prompt)) {
+        row.unmigrated++;
+        unmigrated.push(`${g.id}: ${g.prompt.slice(0, 60)}`);
+      }
+    }
     rows.set(cell.level, row);
   }
 
@@ -197,20 +209,29 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
     'A15-D4-03': 'deliberately NOT drawn: the item\'s own rationale says one group is drawn larger and spread out, and a one-to-one compare figure would hand over the answer the conservation trap exists to withhold',
     'A15-D5-04': 'a shape gallery (triangle/circle/square side by side) — angle-figure draws one polygon and no circle',
     'A15-PZ-01': 'a labelled-sum garden — no primitive',
+    // Answerable without the picture: stripping the direction leaves
+    // "45 - 27 = ? Trade first if the ones can't pay.", which is the whole task.
+    // The base-ten model was support, not the question. Worth drawing (b14 has a
+    // placeValueChart helper) but it does not block a child.
+    'B14-D1-03': 'base-ten model of 45 — supportive only; the subtraction is fully stated in the prompt. Drawable via b14 placeValueChart; not yet migrated',
+    // NOT answerable without the picture — the child is asked about a shape that
+    // is never shown. This one needs content repair, not a permit, and is listed
+    // so it stays visible until it gets one.
+    'C22-D5-02': 'BLOCKING: a rhombus balanced on a corner with equal-side ticks — angle-figure cannot express the rotation or the tick marks, and the question cannot be answered without the shape. Needs a primitive or a reworded item',
   };
-  const undeclared = unmigratedA.filter((m) => !FIGURE_DEBT[m.split(':')[0]]);
-  for (const miss of undeclared) console.error(`  FAIL  Level A prints an UNDECLARED placeholder — ${miss}`);
-  assert(undeclared.length === 0, `Level A has no undeclared [image: …] prompts (${undeclared.length} found)`);
+  const undeclared = unmigrated.filter((m) => !FIGURE_DEBT[m.split(':')[0]]);
+  for (const miss of undeclared) console.error(`  FAIL  serves an UNDECLARED [image: …] with no picture — ${miss}`);
+  assert(undeclared.length === 0, `no undeclared [image: …] prompts on ANY level (${undeclared.length} found)`);
 
   // …and the permit list must not outlive what it permits. A key matching no
   // observed surface is a dead permit: it reports nothing, looks like diligence,
   // and pre-authorises whatever later reuses that id. Four such keys survived an
   // entire A2 rebuild before anyone noticed (L49).
-  const observedA = new Set(unmigratedA.map((m) => m.split(':')[0]));
-  const deadPermits = Object.keys(FIGURE_DEBT).filter((id) => !observedA.has(id));
+  const observed = new Set(unmigrated.map((m) => m.split(':')[0]));
+  const deadPermits = Object.keys(FIGURE_DEBT).filter((id) => !observed.has(id));
   for (const id of deadPermits) console.error(`  FAIL  FIGURE_DEBT declares '${id}', which no Level-A surface emits — stale permit`);
   assert(deadPermits.length === 0, `FIGURE_DEBT has no dead permits (${deadPermits.length} found)`);
-  console.log(`  Level-A figure debt: ${unmigratedA.length} declared surfaces awaiting a primitive B1.0 does not have`);
+  console.log(`  Figure debt: ${unmigrated.length} declared surface(s) with no picture (Level A: ${unmigratedA.length})`);
   for (const [id, why] of Object.entries(FIGURE_DEBT)) console.log(`    · ${id} — ${why}`);
 }
 

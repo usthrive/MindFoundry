@@ -478,6 +478,15 @@ export function buildB02(packSeed: number, contentVersion: string): WeeklyConcep
         id: contentId('B', 2, 'GE', 2),
         fadeLevel: 'completion',
         prompt: '[image: 6 rods and 2 cubes in labeled columns] Read the number.',
+        // The direction stays in the prompt (it is what QG-1/QG-4 sign), but the
+        // picture is now DRAWN. Without this the child was shown the direction
+        // itself — "🖼 6 rods and 2 cubes in labeled columns" — and asked to read
+        // a number off a diagram that was never on the screen.
+        figure: {
+          type: 'place-value-chart',
+          alt: '6 rods and 2 cubes in labeled tens and ones columns',
+          params: { digits: '62', showValues: true },
+        },
         steps: [
           { teacherSay: 'Count the rods by tens with me: 10, 20...' },
           { childDo: 'Finish the tens, then count the cubes on.', expected: '60... 61, 62' },
