@@ -12,6 +12,7 @@ import type { WeeklyConceptPack } from '../../../types';
 import { FAST_TRACK_PCT, MASTERY_THRESHOLD_PCT, SPRINT_DURATION_SECONDS } from '../../../constants';
 import { streamRng, Rng } from '../../rng';
 import { unitFor } from '../lib/format';
+import { baseTenBlocks } from '../lib/figures';
 import {
   contentId,
   drawFresh,
@@ -433,22 +434,46 @@ export function buildB02(packSeed: number, contentVersion: string): WeeklyConcep
         'a code for bundles-and-loose: in 47, the 4 counts bags of ten and the 7 counts ' +
         'loose marbles. The why: the POSITION of a digit tells what it counts - that is the ' +
         'whole trick of writing big numbers with only ten digits.',
+      // THE LESSON IS A STORYBOARD, AND IT NOW HAS PICTURES.
+      //
+      // All four of these segments were authored as animator's directions —
+      // "magnetize into", "flash and snap", "slides to the tens column" — and
+      // carried NO figure. `LessonRoom` falls back to printing the direction as
+      // italic prose, so a six-year-old opening "watch the lesson again" was
+      // told "Ten cubes magnetize into a single rod labeled 10" and shown an
+      // empty dashed box. He reported it himself. Nothing in the figure system
+      // animates, so each segment now draws the change the way a teacher draws
+      // it at a whiteboard: both states, arrow between. Stepping the lesson IS
+      // the motion, and a child who needs to dwell on the middle can.
       script: [
         {
           say: 'Watch me bundle: ten loose cubes snap into one rod. Rods are tens; loose cubes are ones.',
-          visual: 'Ten cubes magnetize into a single rod labeled 10.',
+          visual: 'Ten loose cubes on the left, and the single ten-rod they make on the right.',
+          figure: baseTenBlocks(
+            { rods: 0, ones: 10 },
+            { then: { rods: 1, ones: 0 }, connector: 'becomes', highlight: 'ones' },
+          ),
         },
         {
           say: 'Now 47: I grab 4 rods - 10, 20, 30, 40 - and 7 loose cubes: 41, 42... 47. Four tens and seven ones.',
-          visual: 'Tens|ones columns fill: 4 rods left, 7 cubes right; numeral 47 forms above.',
+          visual: 'Four ten-rods and seven loose cubes, under tens and ones headings, making 47.',
+          figure: baseTenBlocks({ rods: 4, ones: 7 }, { showColumns: true, showNumeral: true }),
         },
         {
           say: 'The code reads left to right: tens digit first, ones digit second. 47 and 74 use the same digits but are very different numbers!',
-          visual: '47 and 74 side by side; rods/cubes show the size gap.',
+          visual: 'Forty-seven in blocks beside seventy-four in blocks, so the size gap shows.',
+          figure: baseTenBlocks(
+            { rods: 4, ones: 7, label: '47' },
+            { then: { rods: 7, ones: 4, label: '74' }, connector: 'beside' },
+          ),
         },
         {
           say: 'Trap time: 3 tens and 12 ones. Too many loose ones! Ten of them bundle into another rod - now 4 tens, 2 ones. Same amount, tidy code: 42.',
-          visual: 'Twelve cubes; ten flash and snap into a rod that slides to the tens column.',
+          visual: 'Three rods with twelve loose cubes, and the same amount tidied into four rods and two cubes.',
+          figure: baseTenBlocks(
+            { rods: 3, ones: 12 },
+            { then: { rods: 4, ones: 2 }, connector: 'becomes', highlight: 'ones', showNumeral: true },
+          ),
         },
       ],
       summary:

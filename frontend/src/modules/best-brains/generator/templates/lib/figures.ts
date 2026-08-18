@@ -148,6 +148,60 @@ export function tenFrame(
   };
 }
 
+/** Say one base-ten state the way a child would describe the pieces. */
+function blocksPhrase(s: { flats?: number; rods: number; ones: number }): string {
+  const bits: string[] = [];
+  if (s.flats) bits.push(countNoun(s.flats, 'hundred square'));
+  if (s.rods) bits.push(countNoun(s.rods, 'ten-rod'));
+  if (s.ones) bits.push(countNoun(s.ones, 'loose cube'));
+  if (!bits.length) return 'no blocks';
+  if (bits.length === 1) return bits[0];
+  return `${bits.slice(0, -1).join(', ')} and ${bits[bits.length - 1]}`;
+}
+
+/**
+ * Base-ten blocks. `then` renders a CHANGE as before → after with an arrow,
+ * which is how a lesson visual written as motion ("ten cubes magnetize into a
+ * rod") gets drawn by a system that has no animation.
+ *
+ * The alt text is the picture's accessible name AND, at band A, part of what is
+ * spoken — so it is written as what a child SEES, never as a direction to an
+ * artist. That distinction is the whole of LEARNINGS L27.
+ */
+export function baseTenBlocks(
+  state: { flats?: number; rods: number; ones: number; label?: string },
+  opts: {
+    then?: { flats?: number; rods: number; ones: number; label?: string };
+    connector?: 'becomes' | 'beside';
+    highlight?: 'ones' | 'rods' | 'none';
+    showColumns?: boolean;
+    showNumeral?: boolean;
+    alt?: string;
+    asserts?: FigureAssertion;
+  } = {},
+): BBFigure {
+  const connector = opts.connector ?? 'becomes';
+  const alt =
+    opts.alt ??
+    (opts.then
+      ? connector === 'becomes'
+        ? `${blocksPhrase(state)} turning into ${blocksPhrase(opts.then)}`
+        : `${blocksPhrase(state)} beside ${blocksPhrase(opts.then)}`
+      : blocksPhrase(state));
+  return {
+    type: 'base-ten-blocks',
+    alt,
+    params: {
+      state,
+      ...(opts.then ? { then: opts.then, connector } : {}),
+      ...(opts.highlight ? { highlight: opts.highlight } : {}),
+      ...(opts.showColumns ? { showColumns: opts.showColumns } : {}),
+      ...(opts.showNumeral ? { showNumeral: opts.showNumeral } : {}),
+    },
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
+  };
+}
+
 /** A number line, optionally partitioned, with marks and hops. */
 export function numberLine(
   params: {

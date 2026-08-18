@@ -77,7 +77,7 @@ const PROSE_PROMISES = [
 ];
 
 // ── Findings ───────────────────────────────────────────────────────────────
-type Axis = 'REACH' | 'CAPACITY' | 'MARKING' | 'INFO' | 'WELLFORMED';
+type Axis = 'REACH' | 'CAPACITY' | 'MARKING' | 'INFO' | 'WELLFORMED' | 'SCENE';
 interface Finding { axis: Axis; level: string; week: number; surface: string; id: string; detail: string; }
 const findings: Finding[] = [];
 const fail = (f: Finding) => findings.push(f);
@@ -85,6 +85,29 @@ const fail = (f: Finding) => findings.push(f);
 let surfacesChecked = 0;
 let answerBearing = 0;
 const permitsSeen = new Set<string>();
+
+/**
+ * SCENE DEBT — lesson-script segments that describe a picture and draw nothing.
+ *
+ * Not answerability (the child is not answering a lesson segment), but the same
+ * bug class, and the one my son hit on Level B Day 1: he opened "watch the
+ * lesson again", was told "Ten cubes magnetize into a single rod labeled 10",
+ * and was shown an empty dashed box with that sentence italicised inside it.
+ * The sentence is a direction to an animator. He read it as the lesson.
+ *
+ * This is a RATCHET, not a pass/fail line. The existing debt is real and large
+ * (Level D has barely any lesson pictures at all) and blocking every build on it
+ * would help nobody. What must not happen is the number going UP — a new
+ * undrawn scene is a new child staring at an empty box. Ceilings come down as
+ * weeks get drawn; they may never go up without a deliberate edit here.
+ */
+const sceneDebt = new Map<string, number>();
+// Measured 2026-08-18, after B2's four segments were drawn. 119 scenes across
+// the corpus describe a picture and draw nothing; Level D has almost no lesson
+// pictures at all. Each number is a debt to pay down, never a budget to spend.
+const SCENE_DEBT_CEILING: Record<string, number> = {
+  A: 10, B: 20, C: 10, D: 71, E: 8,
+};
 
 // ── Producibility ──────────────────────────────────────────────────────────
 
@@ -303,10 +326,22 @@ for (const cell of AVAILABLE_WEEKS) {
   const L = cell.level;
   const W = cell.week;
 
-  for (const [i, seg] of (pack.explanation?.segments ?? []).entries()) {
+  // `explanation.script`, NOT `.segments`. `bb-broken-promise-scan` read
+  // `.segments` — a field that has never existed on the Explanation type — and
+  // `?? []` made the mistake silent, so its lesson-script loop iterated NOTHING
+  // on every green run. This gate inherited the bug by copying the walk, and the
+  // scene-debt counter reporting a flat 0 against a census showing 71 undrawn
+  // Level-D segments is what exposed it. Third time this exact shape has bitten:
+  // masteryCheck.items, explanation.segments, and items.ts in bb-family-test.
+  // A `?? []` on a misspelt field is indistinguishable from clean content.
+  for (const [i, seg] of (pack.explanation?.script ?? []).entries()) {
     surfacesChecked++;
     checkInfo(L, W, 'lesson script', `${L}${W}-SEG-${i + 1}`, seg.say ?? '', !!seg.figure);
     if (seg.visual) checkInfo(L, W, 'lesson script', `${L}${W}-SEG-${i + 1}`, seg.visual, !!seg.figure);
+    // A described-but-undrawn scene. `LessonRoom` falls back to printing the
+    // `visual` as italic prose, so this is not a quiet gap — the stage
+    // direction is shown to the child AS the lesson.
+    if (seg.visual && !seg.figure) sceneDebt.set(L, (sceneDebt.get(L) ?? 0) + 1);
   }
 
   for (const ge of pack.guidedExamples ?? []) {
@@ -339,6 +374,7 @@ const AXIS_BLURB: Record<Axis, string> = {
   MARKING: 'every producible input is marked wrong',
   INFO: 'the child is not given what they need to answer',
   WELLFORMED: 'the stored answer is not a string a child would write',
+  SCENE: 'a lesson describes a picture and draws nothing, so the child is shown the stage direction',
 };
 
 console.log(`Answerability gate — ${surfacesChecked} surfaces walked (${answerBearing} answer-bearing) across ${AVAILABLE_WEEKS.length} weeks.\n`);
@@ -348,6 +384,23 @@ console.log('Not covered by this run (stated, not skipped quietly):');
 console.log('  · fluency sprint items — generated at runtime from a GeneratorSpec, not materialised in the pack');
 console.log('  · Kumon worksheets (StudyPage/PracticeTest) — a separate engine; see the session report');
 console.log('  · guided examples are checked for INFO only; they carry a display answer, not an AnswerSpec\n');
+
+console.log('Scene debt — lesson segments that describe a picture and draw nothing:');
+for (const level of [...new Set([...sceneDebt.keys(), ...Object.keys(SCENE_DEBT_CEILING)])].sort()) {
+  const n = sceneDebt.get(level) ?? 0;
+  const cap = SCENE_DEBT_CEILING[level];
+  if (cap === undefined) {
+    console.log(`  Level ${level}: ${n} — NO CEILING SET`);
+    fail({ axis: 'SCENE', level, week: 0, surface: 'lesson script', id: `level-${level}`, detail: `${n} undrawn scene(s) and no ceiling declared — add one to SCENE_DEBT_CEILING` });
+    continue;
+  }
+  const mark = n > cap ? 'ABOVE CEILING' : n < cap ? `below ceiling ${cap} — lower it` : `at ceiling ${cap}`;
+  console.log(`  Level ${level}: ${n} undrawn / ceiling ${cap} — ${mark}`);
+  if (n > cap) {
+    fail({ axis: 'SCENE', level, week: 0, surface: 'lesson script', id: `level-${level}`, detail: `${n} undrawn scenes exceeds the ceiling of ${cap} — a new one was added; draw it or it prints stage directions to a child` });
+  }
+}
+console.log();
 
 const stale = Object.keys(FIGURE_PERMITS).filter((id) => !permitsSeen.has(id));
 for (const id of stale) {
@@ -362,7 +415,7 @@ if (findings.length === 0) {
 const byAxis = new Map<Axis, Finding[]>();
 for (const f of findings) byAxis.set(f.axis, [...(byAxis.get(f.axis) ?? []), f]);
 
-for (const axis of ['REACH', 'CAPACITY', 'MARKING', 'INFO', 'WELLFORMED'] as Axis[]) {
+for (const axis of ['REACH', 'CAPACITY', 'MARKING', 'INFO', 'WELLFORMED', 'SCENE'] as Axis[]) {
   const fs = byAxis.get(axis);
   if (!fs?.length) continue;
   console.log(`${axis} — ${AXIS_BLURB[axis]} (${fs.length})`);

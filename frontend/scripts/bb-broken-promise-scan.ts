@@ -37,8 +37,12 @@ for (const cell of AVAILABLE_WEEKS) {
   const pack = generatePack(cell.level, cell.week, 12345) as any
   const L = cell.level, W = cell.week
 
-  // 1. Lesson script segments
-  for (const seg of pack.explanation?.segments ?? []) {
+  // 1. Lesson script segments.
+  // This read `explanation.segments` until 2026-08-18 — a field that has never
+  // existed on the Explanation type, which is `script`. `?? []` turned it into
+  // silence, so this loop iterated NOTHING and no lesson segment was ever
+  // scanned for a broken promise.
+  for (const seg of pack.explanation?.script ?? []) {
     const p = promises(seg.say) || promises(seg.visual)
     if (!p) continue
     note(L, !!seg.figure)

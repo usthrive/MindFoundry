@@ -21,6 +21,7 @@ import AreaGridFig from './AreaGridFig';
 import TenFrameFig from './TenFrameFig';
 import CountersFig from './CountersFig';
 import PlaceValueChartFig from './PlaceValueChartFig';
+import BaseTenBlocksFig from './BaseTenBlocksFig';
 import ClockFig from './ClockFig';
 import CoinSetFig from './CoinSetFig';
 import CoordinateGridFig from './CoordinateGridFig';
@@ -41,6 +42,7 @@ function Primitive({ figure, size }: { figure: BBFigure; size: FigureSize }) {
     case 'ten-frame': return <TenFrameFig params={figure.params} size={size} />;
     case 'counters': return <CountersFig params={figure.params} size={size} />;
     case 'place-value-chart': return <PlaceValueChartFig params={figure.params} size={size} />;
+    case 'base-ten-blocks': return <BaseTenBlocksFig params={figure.params} size={size} />;
     case 'clock': return <ClockFig params={figure.params} size={size} />;
     case 'coin-set': return <CoinSetFig params={figure.params} size={size} />;
     case 'coordinate-grid': return <CoordinateGridFig params={figure.params} size={size} />;
