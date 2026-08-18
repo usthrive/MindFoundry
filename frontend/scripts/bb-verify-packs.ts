@@ -288,10 +288,12 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
     // The base-ten model was support, not the question. Worth drawing (b14 has a
     // placeValueChart helper) but it does not block a child.
     'B14-D1-03': 'base-ten model of 45 — supportive only; the subtraction is fully stated in the prompt. Drawable via b14 placeValueChart; not yet migrated',
-    // NOT answerable without the picture — the child is asked about a shape that
-    // is never shown. This one needs content repair, not a permit, and is listed
-    // so it stays visible until it gets one.
-    'C22-D5-02': 'BLOCKING: a rhombus balanced on a corner with equal-side ticks — angle-figure cannot express the rotation or the tick marks, and the question cannot be answered without the shape. Needs a primitive or a reworded item',
+    // C22-D5-02 sat here reading "BLOCKING: … the question cannot be answered
+    // without the shape" — and this suite printed it and exited 0 for weeks. It
+    // is gone because the item is FIXED: `eaTiltedSquareSkipped` now attaches
+    // the week's own `tiltedSquareFig()`, which had been drawing that very card
+    // three lines away the whole time. The permit's stated obstacle was never
+    // real. See scripts/bb-answerability-gate.ts, which fails rather than prints.
   };
   const undeclared = unmigrated.filter((m) => !FIGURE_DEBT[m.split(':')[0]]);
   for (const miss of undeclared) console.error(`  FAIL  serves an UNDECLARED [image: …] with no picture — ${miss}`);

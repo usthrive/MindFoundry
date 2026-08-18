@@ -607,7 +607,20 @@ const discrimAsn = discrimination({
 // See the ⚠ note in the file header for why the naming slip is posed as a count.
 // ---------------------------------------------------------------------------
 
-const eaTiltedSquareSkipped = errorAnalysis({
+/**
+ * The picture was missed here and only here. Three other sites in this week
+ * attach `tiltedSquareFig()` to the same `TILT_SCENE` bracket; this one opened
+ * with the bracket and returned no figure, so `promptText` stripped the scene
+ * and the child was asked to re-count a wall containing a card they were never
+ * shown. It was then permitted as "BLOCKING: angle-figure cannot express the
+ * rotation or the tick marks" — which is not so. `tiltedSquareFig` sets
+ * `rotation: 45` and `sideMarks: [1,1,1,1]`, its alt text IS `TILT_SCENE`, and
+ * it had been drawing exactly this card a few lines further up all along.
+ *
+ * The permit outlived the obstacle it described. That is the whole reason the
+ * answerability gate refuses to let a permit stand in for a picture.
+ */
+const eaTiltedSquareSkipped = withFigureOf(errorAnalysis({
   verifyTemplateId: 'a_verify_count_slip_v1',
   cognitiveOp: 'count-family-members',
   drawParams: (r) => ({ n: r.int(4, 8) + 1, slip: 'skip-count' }),
@@ -626,7 +639,7 @@ const eaTiltedSquareSkipped = errorAnalysis({
       answerKeywords: ['square', 'turned', 'corners', 'sides the same length'],
     };
   },
-});
+}), () => tiltedSquareFig());
 
 // ---------------------------------------------------------------------------
 // The week

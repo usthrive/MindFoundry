@@ -14,6 +14,7 @@ import NumberPad from '@/components/input/NumberPad';
 import type { InteractionBand } from '../copy';
 import type { PackItem } from '../types';
 import { tapOptionsFor } from '../answers';
+import { needsTypedEntry, PAD_MAX_DIGITS } from '../inputSurface';
 
 export interface AnswerEntryProps {
   item: PackItem;
@@ -21,12 +22,6 @@ export interface AnswerEntryProps {
   onSubmit: (answer: string) => void;
   disabled?: boolean;
   className?: string;
-}
-
-function needsTypedEntry(item: PackItem): boolean {
-  return ['short-text-keyword', 'ordered-list', 'set', 'manual-review', 'number-sentence'].includes(
-    item.answer.validation,
-  );
 }
 
 export default function AnswerEntry({ item, band, onSubmit, disabled, className }: AnswerEntryProps) {
@@ -197,7 +192,7 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
           if (n === -1) setValue((v) => (v.startsWith('-') ? v.slice(1) : `-${v}`));
           else if (n === -2) setValue((v) => (v.includes('.') ? v : `${v}.`));
           else if (n === -3) setValue((v) => (v.includes('/') ? v : `${v}/`));
-          else setValue((v) => (v.length < 8 ? `${v}${n}` : v));
+          else setValue((v) => (v.length < PAD_MAX_DIGITS ? `${v}${n}` : v));
         }}
         onBackspace={() => setValue((v) => v.slice(0, -1))}
         onClear={() => setValue('')}
