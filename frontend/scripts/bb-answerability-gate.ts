@@ -56,7 +56,9 @@ const FIGURE_PERMITS: Record<string, { channel: Channel; why: string }> = {
   'A15-D4-03': { channel: 'spoken', why: 'a one-to-one compare figure would hand over the answer the conservation trap withholds; the spoken scene gives both counts' },
   'A15-D5-04': { channel: 'spoken', why: 'shape gallery — angle-figure draws one polygon and no circle; the spoken scene names all three' },
   'A15-PZ-01': { channel: 'spoken', why: 'labelled-sum garden — no primitive; the spoken scene carries the labels' },
-  'B14-D1-03': { channel: 'spoken', why: 'supportive only — the subtraction is fully stated in the visible prompt. Drawable via b14 placeValueChart' },
+  // B14-D1-03's permit lived here until 2026-08-20, when base-ten-blocks made
+  // its "model of 45" drawable and it was drawn; the stale-permit guard forced
+  // the deletion, in this table and in bb-verify-packs' FIGURE_DEBT alike.
   'C7-GE-03':  { channel: 'in-words', why: 'a bird-watch chart whose tally contents are stated in the visible prompt — nothing is read off a drawing' },
   // C22-D5-02 held a `channel: 'blocking'` permit until 2026-08-17. It is gone
   // because the item is FIXED, not because the permit was softened: the week's
