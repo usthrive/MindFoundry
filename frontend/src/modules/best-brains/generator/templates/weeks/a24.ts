@@ -1804,7 +1804,14 @@ export const buildA24 = makeWeekBuilder({
       },
       {
         say: say('Same picture, different words. The words pick the move.'),
-        visual: 'The two mats side by side, one grown and one shrunk.',
+        visual: 'The two mats side by side: the mat that grew to seven, and the mat that shrank to four.',
+        figure: counterGroups(
+          [
+            { count: 7, noun: 'shells', label: 'it grew' },
+            { count: 4, noun: 'shells', label: 'it shrank' },
+          ],
+          { alt: 'two mats of shells side by side, one grown to seven and one shrunk to four' },
+        ),
       },
       {
         say: say('One more. These only moved. The number held still.'),

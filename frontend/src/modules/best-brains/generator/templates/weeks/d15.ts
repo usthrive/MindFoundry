@@ -28,6 +28,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { article, fmtInt, wholeMoney } from '../lib/format';
+import { columnMethod, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const D3 = { level: 'D' as const, week: 3 };
@@ -210,9 +211,76 @@ export const buildD15 = makeWeekBuilder({
     whyBeforeHow:
       'Because a three-digit by two-digit product is just a big rectangle cut into place-value rooms, the standard algorithm can record each room as a partial product in its own stacked row — that is why the placeholder zero matters, since it holds the tens row in its true column so no partial slips a place. An estimate from rounding both factors brackets the whole thing, so a dropped row or a lost zero shows up at a glance rather than hiding in a tidy-looking answer.',
     script: [
-      { say: 'Watch me build the standard algorithm one row at a time: the ones row first, then the tens row underneath it, each a bundle of partial products.', visual: 'Two algorithm rows form; their partials tie back to the rooms of a rectangle.' },
-      { say: 'The tens row ends in a placeholder zero on purpose, because I am really multiplying by a whole ten, and that zero keeps every partial in its true column.', visual: 'The placeholder zero slides into the second row before the digits.' },
-      { say: 'Before I trust the total, I estimate: round both factors to their leading place and the exact answer should land near that round product — a dropped row or a missing zero jumps out right away.', visual: 'A rounded bracket sits beside the exact answer, close but not equal.' },
+      {
+        say: 'Watch me build the standard algorithm one row at a time: the ones row first, then the tens row underneath it, each a bundle of partial products.',
+        visual: 'The week\'s own 243 × 57 stacked, with its two rows written out: 1,701 from the ones and 12,150 from the tens.',
+        // The hook's own numbers, so the algorithm the child watches is the one
+        // the estimate in segment three brackets. The result row is left EMPTY
+        // here and in the segment below: guidedExamples[3] asks for this exact
+        // product COLD, so the rows are what the lesson shows and the total
+        // stays the child's. Leading '' cells hold the empty place columns open.
+        figure: columnMethod(
+          {
+            op: '×',
+            rows: [
+              { cells: ['', '', '2', '4', '3'], role: 'operand' },
+              { cells: ['', '', '', '5', '7'], role: 'operand' },
+              { cells: ['', '1', '7', '0', '1'], role: 'partial' },
+              { cells: ['1', '2', '1', '5', '0'], role: 'partial' },
+              { cells: ['', '', '', '', ''], role: 'result' },
+            ],
+          },
+          {
+            alt:
+              '243 stacked over 57 with a times sign, the ones row 1,701 written under them and the tens row 12,150 ' +
+              'under that, with the answer line ruled and still empty',
+          },
+        ),
+      },
+      {
+        say: 'The tens row ends in a placeholder zero on purpose, because I am really multiplying by a whole ten, and that zero keeps every partial in its true column.',
+        visual: 'The same two rows with the ones column shaded, so the tens row\'s placeholder zero stands under the 1 of 1,701.',
+        // Deliberately the SAME still as the segment above with one column
+        // shaded, because nothing about the algorithm changes here — only where
+        // the eye goes. The shaded column is the ones column, where the tens
+        // row's zero sits, and holding the rest of the picture still is what
+        // makes the zero the only new thing on the page.
+        figure: columnMethod(
+          {
+            op: '×',
+            rows: [
+              { cells: ['', '', '2', '4', '3'], role: 'operand' },
+              { cells: ['', '', '', '5', '7'], role: 'operand' },
+              { cells: ['', '1', '7', '0', '1'], role: 'partial' },
+              { cells: ['1', '2', '1', '5', '0'], role: 'partial' },
+              { cells: ['', '', '', '', ''], role: 'result' },
+            ],
+            highlightCols: [4],
+          },
+          {
+            alt:
+              'the same stacked 243 times 57 with the ones column shaded, so the placeholder zero that ends the tens ' +
+              'row 12,150 stands directly under the 1 that ends the ones row 1,701',
+          },
+        ),
+      },
+      {
+        say: 'Before I trust the total, I estimate: round both factors to their leading place and the exact answer should land near that round product — a dropped row or a missing zero jumps out right away.',
+        visual: 'A number line with the round product 12,000 flagged and the exact 13,851 marked to its right — near it, and not equal to it.',
+        figure: numberLine(
+          {
+            min: 10000,
+            max: 16000,
+            step: 1000,
+            labels: 'none',
+            marks: [
+              { at: 12000, label: '12,000', style: 'flag' },
+              { at: 13851, label: '13,851', style: 'point' },
+            ],
+          },
+          { alt: 'a number line with a flag on the rounded estimate 12,000 and a dot on the exact product 13,851 a little further along' },
+        ),
+      },
     ],
     summary: 'Break both factors by place, multiply row by row with the ten-row placeholder zero, and add. Round both factors first so the estimate brackets the answer and any slip is obvious.',
     vocabulary: [

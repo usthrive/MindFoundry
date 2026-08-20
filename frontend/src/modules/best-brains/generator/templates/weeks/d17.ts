@@ -47,6 +47,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { addFrac, formatFrac, subFrac } from '../lib/compute';
 import { partitionWord } from '../lib/format';
+import { barModel } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C15 = { level: 'C' as const, week: 15 };
@@ -286,9 +287,57 @@ export const buildD17 = makeWeekBuilder({
     whyBeforeHow:
       'A fraction counts pieces of one particular size, and its bottom number names that size. Two fractions with different bottoms are counting different things, so they run into a naming wall: nothing can be added until both are re-named into one shared size. Equivalence is what gets you over the wall — 1/3 and 1/4 both live comfortably as twelfths, because twelve is a size that three and four both divide into. Any such shared size is legal; the least one simply keeps the numbers small. Once both amounts wear the same size of piece, the week you already know takes over: count the tops, keep the shared bottom. The slip this week exists to kill is adding the bottoms as well as the tops — it looks like arithmetic, but it quietly swaps the piece-size mid-count, and it can hand you a total smaller than one of the amounts you started with.',
     script: [
-      { say: 'Watch the wall first. I want 1/3 + 1/4. I lay a third-bar beside a quarter-bar and try to count them as one number — and I cannot, because they are not the same size. So I look for a size they both fit: twelfths. 1/3 is 4/12, 1/4 is 3/12.', visual: 'A third-bar and a quarter-bar refuse to line up; a twelfths ruler slides under both and both snap to it.' },
-      { say: 'Now the counting is the easy part, and it is last, not first: four twelfth-pieces and three twelfth-pieces make seven twelfth-pieces, 7/12. Notice the bottom I kept is the shared one — twelfths — not three plus four.', visual: 'Seven twelfth-pieces sit on one bar; 3 and 4 are crossed out at the bottom.' },
-      { say: 'And I estimate before I ever start, to protect myself: 1/3 is under a half, 1/4 is under a half, so the total must stay under one whole. If my answer came out at 2/7, I would stop — 2/7 is smaller than the 1/3 I started with, and joining things cannot shrink them.', visual: 'Two under-half bars stacked stay short of a full bar; a 2/7 bar sits shorter still, flagged.' },
+      {
+        say: 'Watch the wall first. I want 1/3 + 1/4. I lay a third-bar beside a quarter-bar and try to count them as one number — and I cannot, because they are not the same size. So I look for a size they both fit: twelfths. 1/3 is 4/12, 1/4 is 3/12.',
+        visual: 'A third-bar and a quarter-bar drawn above a twelfths ruler, each re-named on it — the third as 4/12, the quarter as 3/12.',
+        figure: barModel(
+          [
+            { label: '1/3 = 4/12', segments: [{ value: 4 }] },
+            { label: '1/4 = 3/12', segments: [{ value: 3 }] },
+            {
+              label: 'the twelfths ruler',
+              segments: [
+                { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 },
+                { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 },
+              ],
+            },
+          ],
+          { scaleMax: 12, alt: 'a third-bar and a shorter quarter-bar drawn above a full ruler of twelve equal twelfths, so the third covers four of them and the quarter covers three' },
+        ),
+      },
+      {
+        say: 'Now the counting is the easy part, and it is last, not first: four twelfth-pieces and three twelfth-pieces make seven twelfth-pieces, 7/12. Notice the bottom I kept is the shared one — twelfths — not three plus four.',
+        visual: 'Seven twelfth-pieces on one bar — four, then three more — braced and labelled 7/12.',
+        figure: barModel(
+          [
+            {
+              segments: [
+                { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 },
+                { value: 1, fill: 'soft' }, { value: 1, fill: 'soft' }, { value: 1, fill: 'soft' },
+              ],
+            },
+          ],
+          { scaleMax: 12, brace: { label: '7/12' }, alt: 'a bar of twelve places carrying seven twelfth-pieces, four in one shade and three in another, braced underneath and labelled 7/12' },
+        ),
+      },
+      {
+        say: 'And I estimate before I ever start, to protect myself: 1/3 is under a half, 1/4 is under a half, so the total must stay under one whole. If my answer came out at 2/7, I would stop — 2/7 is smaller than the 1/3 I started with, and joining things cannot shrink them.',
+        visual: 'The two under-half bars added into seven twelfths, a full bar beneath for comparison, and a hatched 2/7 bar shorter than the third it started from.',
+        figure: barModel(
+          [
+            {
+              label: '1/3 + 1/4',
+              segments: [
+                { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 },
+                { value: 1, fill: 'soft' }, { value: 1, fill: 'soft' }, { value: 1, fill: 'soft' },
+              ],
+            },
+            { label: 'one whole', segments: [{ value: 12 }] },
+            { label: '2/7', segments: [{ value: 24 / 7, fill: 'hatch' }] },
+          ],
+          { scaleMax: 12, alt: 'a bar of seven twelfths, a full bar below it, and a short hatched bar for 2/7 that stops before even the four twelfths the first bar started from' },
+        ),
+      },
     ],
     summary: 'Different bottoms mean different-sized pieces, and different-sized pieces cannot be counted together. Re-name both into a shared size — any common one works, the least is tidiest — then count the tops and keep that shared bottom. Estimate against 1/2 and 1 first, and simplify at the end.',
     vocabulary: [

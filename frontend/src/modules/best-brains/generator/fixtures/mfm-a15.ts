@@ -36,7 +36,9 @@ export const MFM_A15: WeeklyConceptPack = {
           "params": { "min": 0, "max": 10, "step": 1, "labels": "all",
             "marks": [{ "at": 4, "label": "4", "style": "flag" }, { "at": 7, "style": "unknown" }],
             "hops": [{ "from": 4, "to": 5 }, { "from": 5, "to": 6 }, { "from": 6, "to": 7 }] } } },
-      { "say": "We can write the story as a number sentence: 4 + 3 = 7. Plus means join. Equals means 'in all'.", "visual": "4 + 3 = 7 builds symbol by symbol under the ducks." },
+      { "say": "We can write the story as a number sentence: 4 + 3 = 7. Plus means join. Equals means 'in all'.", "visual": "The number sentence 4 + 3 = 7 written out large under the ducks.",
+        "figure": { "type": "math-sentence", "alt": "the number sentence 4 plus 3 equals 7 written out large",
+          "params": { "tokens": [{ "text": "4" }, { "text": "+", "mark": "ring" }, { "text": "3" }, { "text": "=", "mark": "ring" }, { "text": "7" }] } } },
       { "say": "Secret: 4 + 3 and 3 + 4 land on the same number. Joining is fair - it doesn't care who came first. So always start with the BIG number.", "visual": "The two groups swap sides; total stays 7.",
         "figure": { "type": "counters", "alt": "the same two groups swapped over: three ducks and four ducks, still seven in all",
           "params": { "groups": [{ "count": 3, "icon": "duck" }, { "count": 4, "icon": "duck" }], "relation": "join" } } }

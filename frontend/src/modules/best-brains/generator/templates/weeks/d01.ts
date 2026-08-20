@@ -33,6 +33,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { an, fmtInt } from '../lib/format';
+import { mathSentence, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C1 = { level: 'C' as const, week: 1 };
@@ -228,10 +229,61 @@ export const buildD01 = makeWeekBuilder({
     whyBeforeHow:
       'Each place is worth ten times the place to its right, and because that ten-times pattern never breaks, a place-value chart can line every digit up in columns where each column holds ten of the one on its right — that is why just ten digits can name any number, however huge. Read a big number in groups of three, ones then thousands then millions, and each group is only the hundreds, tens, and ones you already know.',
     script: [
-      { say: 'Watch the columns grow by tens: one, then ten, then a hundred, then a thousand — each column seats ten of the one on its right.', visual: 'A place-value chart fills leftward; each new column is ten copies of its right neighbor.' },
-      { say: 'Split a big number into groups of three from the right — the thousands group, then the ones group — read each group, then say its period name.', visual: 'Commas drop in; "three hundred forty-eight thousand, two hundred seven" appears.' },
-      { say: 'A digit\'s worth is its face times its place: an eight in the thousands column is worth eight thousand, not eight. The place multiplies the digit, the way it always has.', visual: 'The eight is highlighted; a block of eight thousand appears beneath it.' },
-      { say: 'Before you round, estimate which friendly number the count sits nearest — that benchmark tells you about how big the rounded answer should be, so a wild answer stands out.', visual: 'A number line with two round neighbors; the deciding digit flashes.' },
+      {
+        say: 'Watch the columns grow by tens: one, then ten, then a hundred, then a thousand — each column seats ten of the one on its right.',
+        visual: 'A place-value chart holding the same digit 1 in the thousands, hundreds, tens and ones columns, with what each column is worth printed underneath it.',
+        figure: {
+          type: 'place-value-chart',
+          alt: 'a place chart with the same digit 1 standing in four columns — thousands, hundreds, tens and ones — and the worth of each printed under it, so one digit is worth a thousand, then a hundred, then ten, then one',
+          params: { digits: '1111', showValues: true },
+        },
+      },
+      {
+        say: 'Split a big number into groups of three from the right — the thousands group, then the ones group — read each group, then say its period name.',
+        visual: 'The number 348,207 with its comma ringed, and under it the way it is read: 348 thousand 207.',
+        // The comma IS the lesson, so the comma is the token that gets the ring:
+        // it is the mark that cuts the digits into periods. The second line is
+        // the reading rule carried out — each group read, then its period name —
+        // rather than the number spelled out in words, which would not fit a
+        // sentence token and would say the answer for the reader instead of
+        // showing the cut that produces it.
+        figure: mathSentence(
+          [{ text: '348' }, { text: ',', mark: 'ring' }, { text: '207' }],
+          {
+            then: { connector: 'reads-as', tokens: [{ text: '348' }, { text: 'thousand' }, { text: '207' }] },
+            alt:
+              'the number 348,207 written large with a ring round its comma, and under it the same number read ' +
+              'group by group as 348 thousand 207',
+          },
+        ),
+      },
+      {
+        say: 'A digit\'s worth is its face times its place: an eight in the thousands column is worth eight thousand, not eight. The place multiplies the digit, the way it always has.',
+        visual: 'The number 348,207 in a place-value chart with the thousands column ringed, and what each column is worth printed beneath it.',
+        figure: {
+          type: 'place-value-chart',
+          alt: 'a place chart holding 348,207 with the thousands column ringed, its 8 standing over a worth of eight thousand while the other columns show theirs',
+          params: { digits: '348207', highlight: 'thousands', showValues: true },
+        },
+      },
+      {
+        say: 'Before you round, estimate which friendly number the count sits nearest — that benchmark tells you about how big the rounded answer should be, so a wild answer stands out.',
+        visual: 'A number line flagged at the two round neighbours 280,000 and 290,000, with 284,650 marked just short of the halfway tick.',
+        figure: numberLine(
+          {
+            min: 280000,
+            max: 290000,
+            step: 5000,
+            labels: 'none',
+            marks: [
+              { at: 280000, label: '280,000', style: 'flag' },
+              { at: 284650, label: '284,650', style: 'point' },
+              { at: 290000, label: '290,000', style: 'flag' },
+            ],
+          },
+          { alt: 'a number line flagged at 280,000 and 290,000, with 284,650 marked just short of the halfway tick between them' },
+        ),
+      },
     ],
     summary: 'Places grow ten times leftward and read in groups of three. A digit is worth its face times its place; compare and round by the place that decides.',
     vocabulary: [

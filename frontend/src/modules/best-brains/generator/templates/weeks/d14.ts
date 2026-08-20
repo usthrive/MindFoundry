@@ -27,6 +27,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { addDec, subDec } from '../lib/compute';
 import { bill, money } from '../lib/format';
+import { columnMethod, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import type { Rng } from '../../rng';
 
@@ -230,9 +231,81 @@ export const buildD14 = makeWeekBuilder({
     whyBeforeHow:
       'Decimals add and subtract place by place, exactly like whole numbers, because tenths can only join tenths and hundredths only hundredths — that is why the aligned decimal point is the whole method: it forces every digit over its matching place before a single column is added. A number that stops at tenths can wear an extra zero so the columns stay even, since a zero on the empty right end fills a place without changing the value. Estimating first keeps a point that has drifted from slipping past unnoticed.',
     script: [
-      { say: 'Watch: to add a value written to tenths and one written to hundredths, I stack them and line up the points, then let the shorter one wear a filler zero so every column has a partner.', visual: 'Two decimals stack with points aligned; a filler zero appears in the empty place.' },
-      { say: 'Subtraction is the same picture: I fill the shorter number with a zero, then take each column, borrowing where a place cannot pay.', visual: 'Aligned columns with a borrow arrow across the hundredths.' },
-      { say: 'Before I compute I estimate: round each number to the nearest whole and add — the exact answer should land near that, so a wandering point that jumps far off is easy to catch as unreasonable.', visual: 'A rounded ballpark flags the sensible range for the answer.' },
+      {
+        say: 'Watch: to add a value written to tenths and one written to hundredths, I stack them and line up the points, then let the shorter one wear a filler zero so every column has a partner.',
+        visual: '4.75 stacked over 3.9 with the points lined up, the filler zero shaded in the hundredths place, and 8.65 under the line.',
+        // The week's own pair: segment three flags 9 as the ballpark and 8.65 as
+        // the exact total, so this is that total being made. The filler zero is
+        // written into 3.9 rather than described, and its column is the shaded
+        // one — a hundredths column with a partner in both rows is the entire
+        // claim of the say. The point is drawn down every row by pointAfterCol,
+        // so the alignment is visible instead of asserted.
+        figure: columnMethod(
+          {
+            op: '+',
+            pointAfterCol: 0,
+            rows: [
+              { cells: ['1', '', ''], role: 'carry' },
+              { cells: ['4', '7', '5'], role: 'operand' },
+              { cells: ['3', '9', '0'], role: 'operand' },
+              { cells: ['8', '6', '5'], role: 'result' },
+            ],
+            highlightCols: [2],
+          },
+          {
+            alt:
+              '4.75 stacked over 3.90 with the decimal points in one line, the filler zero standing under the 5 in ' +
+              'the shaded hundredths column, a carried 1 above the ones, and 8.65 under the line',
+          },
+        ),
+      },
+      {
+        say: 'Subtraction is the same picture: I fill the shorter number with a zero, then take each column, borrowing where a place cannot pay.',
+        visual: '5.2 written as 5.20 over 1.86, with the borrow marked across the hundredths and the answer line left empty.',
+        // The same apparatus running backwards. The result row is left EMPTY on
+        // purpose: this subtraction is what guidedExamples[1] hands the child to
+        // finish, so the picture stops where the say stops — the rule is ruled
+        // and the aligned point under it shows where the answer's point will go.
+        // The rewritten digits ride in the carry row, the one place a two-digit
+        // note ("10 hundredths") is allowed.
+        figure: columnMethod(
+          {
+            op: '−',
+            pointAfterCol: 0,
+            rows: [
+              { cells: ['4', '1', '10'], role: 'carry' },
+              { cells: ['5', '2', '0'], role: 'operand', struck: [0, 1, 2] },
+              { cells: ['1', '8', '6'], role: 'operand' },
+              { cells: ['', '', ''], role: 'result' },
+            ],
+            highlightCols: [2],
+          },
+          {
+            alt:
+              '5.20 stacked over 1.86 with the points in one line, every digit of 5.20 struck through and rewritten ' +
+              'small above it as 4, 1 and 10 where the borrow crossed the shaded hundredths column, and the answer ' +
+              'line ruled and still empty',
+          },
+        ),
+      },
+      {
+        say: 'Before I compute I estimate: round each number to the nearest whole and add — the exact answer should land near that, so a wandering point that jumps far off is easy to catch as unreasonable.',
+        visual: 'A number line from 8 to 10 with the rounded ballpark 9 flagged and the exact total 8.65 marked just to its left.',
+        figure: numberLine(
+          {
+            min: 8,
+            max: 10,
+            step: 1,
+            partition: 10,
+            labels: 'majors',
+            marks: [
+              { at: 9, label: 'about 9', style: 'flag' },
+              { at: 8.65, label: '8.65', style: 'point' },
+            ],
+          },
+          { alt: 'a number line from 8 to 10 stepped in tenths, with a flag on 9 for the rounded ballpark and a dot on 8.65 for the exact total' },
+        ),
+      },
     ],
     summary: 'Line up the decimal points, fill short numbers with a zero on the right, then add or subtract by place. Estimate first to catch a misplaced point.',
     vocabulary: [

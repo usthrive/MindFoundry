@@ -294,6 +294,62 @@ export interface AngleFigureParams {
   rotation?: number;
 }
 
+/**
+ * One token of a written mathematics line — a numeral, an operator, a word —
+ * with the pen-mark a teacher would put on it while talking.
+ *
+ * WHY THIS PRIMITIVE EXISTS. The corpus's largest figure gap was never a shape:
+ * it was the WRITING. "The carried 1 hops", "the parentheses glow", "5 − 2 = 3
+ * appears under the picture" — scenes whose whole content is a line of
+ * mathematics with one part emphasised. The band-A gap table asked for a
+ * number-sentence primitive in the first Level-A fill (a14/a15/a17/a18) and
+ * every level since has re-hit it. Marks are a teacher's pen, not animation:
+ * ring what you are talking about, underline what was decided, box the blank.
+ */
+export interface SentenceToken {
+  /** ≤ 8 characters; a numeral, operator, word, or '▢' for a blank. */
+  text: string;
+  mark?: 'ring' | 'underline' | 'box' | 'fade';
+}
+
+export interface MathSentenceParams {
+  tokens: SentenceToken[];
+  /** Optional second line under a connector; `and` stacks two peer lines (a fact family), no arrow. */
+  then?: { tokens: SentenceToken[]; connector: 'becomes' | 'equals' | 'reads-as' | 'and' };
+  /**
+   * A written equation is SELF-AUDITED by the shape gate: when a line parses as
+   * `a op b … = k` over plain numerals, a false one is refused — a lesson may
+   * not put untrue mathematics on the board by accident. Error-analysis scenes
+   * that show a wrong line ON PURPOSE must say so here, the same contract as
+   * the verify library's wrong===correct guards: deliberate, never silent.
+   */
+  deliberate?: true;
+}
+
+/**
+ * The vertical written algorithm as a still — the other half of the writing
+ * gap. Rows are right-aligned columns of cells; '' holds a column open.
+ * `carry` cells sit small above the top operand; `borrow` renders struck-out.
+ * A `pointAfterCol` draws the decimal alignment line D14/E5 teach.
+ */
+export interface ColumnMethodParams {
+  /** Right-aligned rows, top to bottom. Every row the same length. */
+  rows: Array<{
+    cells: string[];
+    role: 'carry' | 'operand' | 'partial' | 'result';
+    /** Struck through — the borrow/adjust notation. */
+    struck?: number[];
+  }>;
+  /** Operator drawn beside the LAST operand row ('+', '−', '×'). */
+  op?: '+' | '−' | '×';
+  /** Draw the decimal point after this column index, aligned down all rows. */
+  pointAfterCol?: number;
+  /** Columns to shade — the column the say is talking about. */
+  highlightCols?: number[];
+  /** As on MathSentenceParams: a knowingly-wrong worked column must declare itself. */
+  deliberate?: true;
+}
+
 // ---------------------------------------------------------------------------
 // The figure union
 // ---------------------------------------------------------------------------
@@ -309,11 +365,14 @@ export type BBFigureType =
   | 'clock'
   | 'coin-set'
   | 'coordinate-grid'
-  | 'angle-figure';
+  | 'angle-figure'
+  | 'math-sentence'
+  | 'column-method';
 
 export const FIGURE_TYPES: readonly BBFigureType[] = [
   'number-line', 'bar-model', 'area-grid', 'ten-frame', 'counters',
   'place-value-chart', 'base-ten-blocks', 'clock', 'coin-set', 'coordinate-grid', 'angle-figure',
+  'math-sentence', 'column-method',
 ] as const;
 
 /**
@@ -354,7 +413,9 @@ export type BBFigure =
   | (FigureBase & { type: 'clock'; params: ClockParams })
   | (FigureBase & { type: 'coin-set'; params: CoinSetParams })
   | (FigureBase & { type: 'coordinate-grid'; params: CoordinateGridParams })
-  | (FigureBase & { type: 'angle-figure'; params: AngleFigureParams });
+  | (FigureBase & { type: 'angle-figure'; params: AngleFigureParams })
+  | (FigureBase & { type: 'math-sentence'; params: MathSentenceParams })
+  | (FigureBase & { type: 'column-method'; params: ColumnMethodParams });
 
 /** Narrow a figure to one type (renderers take the concrete params shape). */
 export type FigureOf<T extends BBFigureType> = Extract<BBFigure, { type: T }>;

@@ -87,7 +87,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam, counterGroups, hundredChart, tenFrame } from '../lib/figures';
+import { assertsAnswer, assertsParam, baseTenBlocks, counterGroups, hundredChart, tenFrame } from '../lib/figures';
 import type { BBFigure, FigureAssertion, PlaceName } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -994,7 +994,11 @@ export const buildB13 = makeWeekBuilder({
       },
       {
         say: 'One habit before I write anything down. I check the size first. 4 tens and 2 tens make 6 tens. The ones came to thirteen, so one more ten is coming. My answer has to reach 70.',
-        visual: 'Six tens laid out, with a seventh ten waiting to join them.',
+        visual: 'Six ten-rods in a row, and a seventh rod set apart, waiting to join them.',
+        figure: baseTenBlocks(
+          { rods: 6, ones: 0, label: '6 tens' },
+          { then: { rods: 1, ones: 0, label: 'one more coming' }, connector: 'beside' },
+        ),
       },
     ],
     summary:

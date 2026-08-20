@@ -29,6 +29,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { article, countNoun } from '../lib/format';
+import { areaGrid, barModel, counterGroups } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C9 = { level: 'C' as const, week: 9 };
@@ -298,9 +299,59 @@ export const buildD07 = makeWeekBuilder({
     whyBeforeHow:
       'A remainder is real, but what to DO with it depends on the question, so the fair-sharing model settles it every time: because a leftover either still needs a whole group of its own, cannot complete a group, or IS the very thing being counted, you reread the question after dividing instead of guessing. Round up when the leftover needs its own group, drop it when it cannot fill one, report it when the question asks for the leftover, and split it into a fraction when the story shares it out. Interpreting is a reading skill riding on top of the fair-sharing picture, which is why one division can honestly give four different answers.',
     script: [
-      { say: 'Watch me share 26 riders into buses that hold 4. Six buses fill up and 2 riders are still standing; those 2 still need a seat, so I round UP to 7 buses.', visual: 'Six full buses; two riders board a seventh.' },
-      { say: 'Same numbers, new story: 26 cm of ribbon at 4 cm per bow makes only 6 whole bows — the 2 leftover cm cannot make a bow, so I DROP them.', visual: 'Six bows tied; a 2 cm scrap set aside.' },
-      { say: 'Before answering, estimate whether the leftover needs its own group, cannot fill one, or IS what is counted — that quick check tells me to round up, drop, or report the leftover. The fair-sharing picture keeps the three moves apart.', visual: 'Three labeled bins: round up, drop, report the leftover.' },
+      {
+        say: 'Watch me share 26 riders into buses that hold 4. Six buses fill up and 2 riders are still standing; those 2 still need a seat, so I round UP to 7 buses.',
+        visual: 'Six stacks of four riders, one stack for each full bus, and the two riders still waiting beside them.',
+        figure: counterGroups(
+          [
+            { count: 4, noun: 'counters', label: 'bus 1' },
+            { count: 4, noun: 'counters', label: 'bus 2' },
+            { count: 4, noun: 'counters', label: 'bus 3' },
+            { count: 4, noun: 'counters', label: 'bus 4' },
+            { count: 4, noun: 'counters', label: 'bus 5' },
+            { count: 4, noun: 'counters', label: 'bus 6' },
+            { count: 2, noun: 'counters', label: 'waiting' },
+          ],
+          {
+            arrangement: 'stack',
+            alt: 'six stacks of four counters, one stack for each full bus, and a shorter stack of two counters still waiting at the end',
+          },
+        ),
+      },
+      {
+        say: 'Same numbers, new story: 26 cm of ribbon at 4 cm per bow makes only 6 whole bows — the 2 leftover cm cannot make a bow, so I DROP them.',
+        visual: 'One 26 cm ribbon marked off into six 4 cm bows with a 2 cm scrap left at the end.',
+        figure: barModel(
+          [
+            {
+              segments: [
+                { value: 4, label: '4' },
+                { value: 4, label: '4' },
+                { value: 4, label: '4' },
+                { value: 4, label: '4' },
+                { value: 4, label: '4' },
+                { value: 4, label: '4' },
+                { value: 2, label: '2', fill: 'soft' },
+              ],
+            },
+          ],
+          { brace: { label: '26 cm' }, alt: 'a ribbon bar marked into six equal 4 cm lengths with a shorter 2 cm scrap at the end, the whole braced as 26 cm' },
+        ),
+      },
+      {
+        say: 'Before answering, estimate whether the leftover needs its own group, cannot fill one, or IS what is counted — that quick check tells me to round up, drop, or report the leftover. The fair-sharing picture keeps the three moves apart.',
+        visual: 'A card of three labelled bins: round up, drop the leftover, report the leftover.',
+        figure: areaGrid(
+          {
+            rows: 3,
+            cols: 1,
+            colLabels: ['three moves'],
+            rowLabels: ['round up', 'drop the leftover', 'report the leftover'],
+            shadedCells: [0, 1, 2],
+          },
+          { alt: 'a card headed three moves, with three filled plates in a column reading round up, drop the leftover and report the leftover' },
+        ),
+      },
     ],
     summary: 'Do the division, then let the story interpret the leftover: round up when it needs its own group, drop it when it cannot fill one, or report the leftover itself — and sometimes share it out as a fraction.',
     vocabulary: [

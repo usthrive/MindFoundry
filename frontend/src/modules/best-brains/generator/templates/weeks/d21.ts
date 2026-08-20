@@ -27,6 +27,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { barModel, mathSentence } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -213,9 +214,74 @@ export const buildD21 = makeWeekBuilder({
     whyBeforeHow:
       'Order of operations is a shared agreement, and it exists because one written expression must mean exactly one thing to everyone — that is why multiplication and division are settled before addition and subtraction, working left to right within a level. Grouping with parentheses is the deliberate override: whatever sits inside a grouping is done first, so writing "(3 + 4) × 2" forces the addition ahead of the multiply. Writing an expression from words is the reverse move — "twice the sum of 3 and 5" groups the sum, then doubles it: 2 × (3 + 5).',
     script: [
-      { say: 'Watch 3 + 4 × 2: I do the multiplication first because × outranks +, so 4 × 2 = 8, and only then 3 + 8 = 11 — not straight left to right.', visual: 'The × step highlights, then the + step.' },
-      { say: 'Parentheses are a grouping I can add on purpose: (3 + 4) × 2 forces the add first, giving 7, then × 2 = 14. Same digits, the grouping changed the value.', visual: 'The parentheses glow; the add happens inside first.' },
-      { say: 'Before computing, estimate: grouping a sum before multiplying makes the answer clearly larger, so check that your result lands well above either number — if it barely moved, you probably added when you should have multiplied.', visual: 'A rough benchmark: grouped-then-times towers over the plain sum.' },
+      {
+        say: 'Watch 3 + 4 × 2: I do the multiplication first because × outranks +, so 4 × 2 = 8, and only then 3 + 8 = 11 — not straight left to right.',
+        visual: '3 + 4 × 2 = 11 with a ring round the 4 × 2, and under it the same line once that step is done: 3 + 8 = 11.',
+        // The ring is drawn round the three tokens that make up the times step,
+        // which is what "the × step highlights" means when nothing can move on
+        // the page. The second line carries the ring forward onto the 8, so the
+        // child can see the ringed part became a single number and the rest of
+        // the line never changed.
+        figure: mathSentence(
+          [
+            { text: '3' }, { text: '+' }, { text: '4', mark: 'ring' }, { text: '×', mark: 'ring' },
+            { text: '2', mark: 'ring' }, { text: '=' }, { text: '11' },
+          ],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: '3' }, { text: '+' }, { text: '8', mark: 'ring' },
+                { text: '=' }, { text: '11', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the line three plus four times two equals eleven, with a ring round the four, the times sign and ' +
+              'the two, and under it the same line with those three replaced by a ringed eight: three plus eight ' +
+              'equals eleven',
+          },
+        ),
+      },
+      {
+        say: 'Parentheses are a grouping I can add on purpose: (3 + 4) × 2 forces the add first, giving 7, then × 2 = 14. Same digits, the grouping changed the value.',
+        visual: 'The bracketed line (3 + 4) × 2 = 14 with both brackets ringed, and under it the same line once the inside is done: 7 × 2 = 14.',
+        // The brackets themselves are the ringed tokens, because the brackets
+        // are the thing the say added on purpose. The second line shows the 7
+        // they produced standing where the whole bracket stood — same digits as
+        // the segment above, different value, which is the entire comparison the
+        // next segment then draws as bars.
+        figure: mathSentence(
+          [
+            { text: '(', mark: 'ring' }, { text: '3' }, { text: '+' }, { text: '4' },
+            { text: ')', mark: 'ring' }, { text: '×' }, { text: '2' }, { text: '=' }, { text: '14' },
+          ],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: '7', mark: 'ring' }, { text: '×' }, { text: '2' },
+                { text: '=' }, { text: '14', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the line open bracket three plus four close bracket times two equals fourteen, with a ring round ' +
+              'each bracket, and under it the same line with a ringed seven standing where the bracket stood: ' +
+              'seven times two equals fourteen',
+          },
+        ),
+      },
+      {
+        say: 'Before computing, estimate: grouping a sum before multiplying makes the answer clearly larger, so check that your result lands well above either number — if it barely moved, you probably added when you should have multiplied.',
+        visual: 'Three bars to one scale: the grouped 14 towering over the ungrouped 11, and the plain sum 7 shortest of all.',
+        figure: barModel(
+          [
+            { label: '(3 + 4) × 2', segments: [{ value: 14, label: '14' }] },
+            { label: '3 + 4 × 2', segments: [{ value: 11, label: '11' }] },
+            { label: '3 + 4', segments: [{ value: 7, label: '7' }] },
+          ],
+          { scaleMax: 14, alt: 'three bars to one scale — the grouped expression reaching 14, the ungrouped one reaching 11, and the plain sum reaching only 7' },
+        ),
+      },
     ],
     summary: 'Follow the order: parentheses, then × and ÷, then + and −, left to right. Grouping changes the order on purpose; translate "sum/product" phrases into grouped expressions.',
     vocabulary: [

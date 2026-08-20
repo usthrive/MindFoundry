@@ -1581,8 +1581,16 @@ export const buildA21 = makeWeekBuilder({
         }),
       },
       {
+        // NAMED, AND DONE WITH HANDS RATHER THAN DRAWN BY THE APP. There is no
+        // cone primitive, and a cone is the one solid on the table whose answer
+        // CHANGES with how it is put down: stood on its base it will not roll,
+        // laid on its side it rolls in a circle. A still picture would have to
+        // pick one of those two and would then teach half the shape. So this
+        // segment carries a direction instead of a figure, which is the honest
+        // form — the scaffold note already asks for a real hat on the table,
+        // and this is the sentence that spends it.
         say: say('A party hat is a cone. It rolls on its side.'),
-        visual: 'A party hat lying on its side beside an upright one - hands do this, no picture can.',
+        visual: 'Lay the party hat on its side and give it a push, then stand it up and try again.',
       },
       {
         // The discrimination, taught where nothing is assessed. The counter dot

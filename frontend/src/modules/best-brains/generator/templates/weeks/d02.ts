@@ -31,6 +31,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { fmtInt, wholeMoney } from '../lib/format';
+import { columnMethod, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C3 = { level: 'C' as const, week: 3 };
@@ -230,9 +231,80 @@ export const buildD02 = makeWeekBuilder({
     whyBeforeHow:
       'Because each place-value column can hold only nine before it must trade ten of itself for one of the next column up, adding and subtracting large numbers are really the same small moves repeated — the columns just keep going. That is why lining the numbers up by place matters so much: a digit only ever meets a digit of its own place-value column, so every carry and every borrow stays honest. Subtraction runs the trade in reverse — when a column cannot pay, it borrows one from the place to its left, and across a row of zeros that borrow has to ripple until it reaches a column with something to give.',
     script: [
-      { say: 'Stack the numbers so ones sit over ones, then work from the ones column leftward, trading a ten to the next column whenever one spills past ten.', visual: 'Two large numbers align by place; a carried 1 hops to the next column.' },
-      { say: 'Subtracting across a row of zeros: a zero has nothing to lend, so the borrow travels left to the first place that does, then ripples back to the ones.', visual: 'A row of zeros lights up; a borrow ripples left, then unwinds.' },
-      { say: 'Estimate first with rounded numbers so you carry a ballpark in mind; if your careful answer lands far from that estimate, a trade probably slipped and it is worth a second look.', visual: 'Rounded numbers give a range; the exact answer lands inside it.' },
+      {
+        say: 'Stack the numbers so ones sit over ones, then work from the ones column leftward, trading a ten to the next column whenever one spills past ten.',
+        visual: '61,900 + 28,400 stacked by place, with a small carried 1 above each of the two columns that received one.',
+        // The week's OWN addition: segment three flags 90,000 as the estimate and
+        // 90,300 as the exact total, so the sum drawn here is the sum that
+        // segment checks. Two columns overflow, not one, and both carried ones
+        // are drawn — a picture showing a single carry would be a tidier lie
+        // about the arithmetic actually on the page. The shaded columns are the
+        // two that RECEIVED a ten, which is where the say's eye goes.
+        figure: columnMethod(
+          {
+            op: '+',
+            rows: [
+              { cells: ['1', '1', '', '', ''], role: 'carry' },
+              { cells: ['6', '1', '9', '0', '0'], role: 'operand' },
+              { cells: ['2', '8', '4', '0', '0'], role: 'operand' },
+              { cells: ['9', '0', '3', '0', '0'], role: 'result' },
+            ],
+            highlightCols: [0, 1],
+          },
+          {
+            alt:
+              '61,900 written above 28,400 with ones over ones, a small carried 1 above the thousands column and ' +
+              'another above the ten-thousands column, and 90,300 under the line',
+          },
+        ),
+      },
+      {
+        say: 'Subtracting across a row of zeros: a zero has nothing to lend, so the borrow travels left to the first place that does, then ripples back to the ones.',
+        visual: '50,004 − 1,236 stacked, every zero struck out and rewritten as the borrow ripples back: 4, 9, 9, 9 and 14.',
+        // The week's pinned across-zeros case (it is also what the parent page
+        // asks about at home). The result row is left EMPTY on purpose: this
+        // segment is about the ripple, and the same subtraction is what
+        // guidedExamples[1] hands the child to finish. So the line is ruled and
+        // the answer is not written — the picture stops exactly where the say
+        // stops. The rewritten digits ride in the carry row, which is the one
+        // place two-digit notes ("14 ones") are allowed.
+        figure: columnMethod(
+          {
+            op: '−',
+            rows: [
+              { cells: ['4', '9', '9', '9', '14'], role: 'carry' },
+              { cells: ['5', '0', '0', '0', '4'], role: 'operand', struck: [0, 1, 2, 3, 4] },
+              { cells: ['', '1', '2', '3', '6'], role: 'operand' },
+              { cells: ['', '', '', '', ''], role: 'result' },
+            ],
+            highlightCols: [1, 2, 3],
+          },
+          {
+            alt:
+              '50,004 written above 1,236, every digit of the top number struck through and rewritten small above ' +
+              'it as 4, 9, 9, 9 and 14 while the borrow travels left across the three shaded zero columns, with the ' +
+              'answer line ruled and still empty',
+          },
+        ),
+      },
+      {
+        say: 'Estimate first with rounded numbers so you carry a ballpark in mind; if your careful answer lands far from that estimate, a trade probably slipped and it is worth a second look.',
+        visual: 'A number line with the rounded estimate 90,000 flagged and the exact total 90,300 marked a short way to its right.',
+        figure: numberLine(
+          {
+            min: 89500,
+            max: 90500,
+            step: 500,
+            partition: 5,
+            labels: 'none',
+            marks: [
+              { at: 90000, label: '90,000', style: 'flag' },
+              { at: 90300, label: '90,300', style: 'point' },
+            ],
+          },
+          { alt: 'a number line flagged at the rounded estimate 90,000, with the exact total 90,300 marked three small steps to its right' },
+        ),
+      },
     ],
     summary: 'Line up the places, work ones-first, trade a ten when a column overflows (or borrow when it cannot pay). Estimate first so a slipped trade shows up right away.',
     vocabulary: [

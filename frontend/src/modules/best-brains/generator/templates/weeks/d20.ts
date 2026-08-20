@@ -31,6 +31,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { divDecByWhole, formatDec, mulDec } from '../lib/compute';
 import { money } from '../lib/format';
+import { mathSentence, numberLine } from '../lib/figures';
 import type { Rng } from '../../rng';
 
 /** A realistic shelf price to the cent, in 5-cent steps: "1.05"…"8.95". */
@@ -226,9 +227,68 @@ export const buildD20 = makeWeekBuilder({
     whyBeforeHow:
       'When you multiply decimals you can ignore the point at first and just multiply the digits, because the digits obey the same times-tables you already know; the point is placed afterward by counting how many decimal places the two factors carried together, since tenths times tenths make hundredths. That counting move is the place-the-point idea, and estimation is its safety net: 0.3 × 0.4 is about a third of a bit under a half, clearly small, so the point must sit well to the left. Dividing a decimal by a whole number works the same way — share place by place with the point held straight above the line.',
     script: [
-      { say: 'Watch me multiply 0.6 × 7. First I ignore the point and multiply the digits, six times seven, to get forty-two. The two factors carry one decimal place together, so I slide the point over one spot: 4.2.', visual: 'Digits multiply; one place-count slides the point over.' },
-      { say: 'Now 4.8 ÷ 6: I share 4.8 into six equal parts, keeping the point straight above the line, and land on 0.8.', visual: 'A decimal shares into six parts; the point stays aligned.' },
-      { say: 'Before trusting any answer, I estimate to place the point: 0.3 × 0.4 must be small, well under a half, so it can only be 0.12 — never 1.2 or 12.', visual: 'An estimate rules out the wrong point positions.' },
+      {
+        say: 'Watch me multiply 0.6 × 7. First I ignore the point and multiply the digits, six times seven, to get forty-two. The two factors carry one decimal place together, so I slide the point over one spot: 4.2.',
+        visual: 'The digit line 6 × 7 = 42 written first, and under it the same line with the point back in: 0.6 × 7 = 4.2.',
+        // Both of the say's states, still, one under the other with the arrow
+        // between: the digits multiplied with the point ignored, then the point
+        // put back one place along. Writing only the finished 4.2 would hide the
+        // move the whole segment is about, and 42 is a true line in its own
+        // right, not a wrong one being corrected.
+        figure: mathSentence(
+          [{ text: '6' }, { text: '×' }, { text: '7' }, { text: '=' }, { text: '42' }],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: '0.6' }, { text: '×' }, { text: '7' },
+                { text: '=' }, { text: '4.2', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the digits multiplied first, six times seven equals forty-two, and under it the same line with the ' +
+              'point put back one place along, nought point six times seven equals four point two, underlined',
+          },
+        ),
+      },
+      {
+        say: 'Now 4.8 ÷ 6: I share 4.8 into six equal parts, keeping the point straight above the line, and land on 0.8.',
+        visual: 'The division written out large: 4.8 ÷ 6 = 0.8, with the answer underlined.',
+        // A division laid out with the point standing above the line is the one
+        // arrangement `columnMethod` does not model — it draws stacked rows, and
+        // a quotient sits above a bracket, not under a rule. So the segment is
+        // drawn as the written line instead, which is honest about what it can
+        // show; the point staying put is visible in the tenths on both sides.
+        figure: mathSentence(
+          [
+            { text: '4.8' }, { text: '÷' }, { text: '6' },
+            { text: '=' }, { text: '0.8', mark: 'underline' },
+          ],
+          {
+            alt:
+              'the line four point eight divided by six equals nought point eight written out large, with the ' +
+              'answer underlined',
+          },
+        ),
+      },
+      {
+        say: 'Before trusting any answer, I estimate to place the point: 0.3 × 0.4 must be small, well under a half, so it can only be 0.12 — never 1.2 or 12.',
+        visual: 'A number line from 0 to 1.5: 0.12 flagged down at the small end, and 1.2 drawn hollow as the spot an estimate rules out.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1.5,
+            step: 0.5,
+            partition: 5,
+            labels: 'majors',
+            marks: [
+              { at: 0.12, label: '0.12', style: 'flag' },
+              { at: 1.2, label: 'not 1.2', style: 'open' },
+            ],
+          },
+          { alt: 'a number line from 0 to 1.5 with a flag close to zero at 0.12 and a hollow circle far to the right at 1.2, the spot the estimate rules out' },
+        ),
+      },
     ],
     summary: 'Multiply the digits, then place the point by counting the factors\' decimal places — tenths times tenths make hundredths. Divide by a whole by sharing with the point held above. Estimate to place the point.',
     vocabulary: [

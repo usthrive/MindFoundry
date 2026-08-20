@@ -76,7 +76,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { an, countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam } from '../lib/figures';
+import { assertsAnswer, assertsParam, barModel } from '../lib/figures';
 import { drawUniqueItem } from '../lib/guard';
 import { drawFresh, numberWords } from '../shared';
 import type { ItemDraft } from '../shared';
@@ -664,7 +664,18 @@ export const buildC01 = makeWeekBuilder({
       },
       {
         say: 'One habit before I write any three-digit number down. I check roughly how big it ought to be. The hundreds column alone can tell me. Four hundreds and a few tens must land near four hundred and fifty. So say my answer came out as forty-seven. I would not hunt for a slip in my digits. I would go and count my columns.',
-        visual: 'Two labelled bars side by side, one about four hundred and fifty long, one only forty-seven.',
+        visual: 'Two bars to one scale: the size the answer ought to be, and the size forty-seven really is.',
+        // The size check drawn rather than described. Both bars are lengths of
+        // the same kind, so one scale is honest here: 47 comes out a tenth of
+        // the bar it was mistaken for, which is the whole reason a rough size
+        // catches a lost column before any digit is re-checked.
+        figure: barModel(
+          [
+            { label: 'about four hundred and fifty', segments: [{ value: 450 }], total: '450' },
+            { label: 'forty-seven', segments: [{ value: 47 }], total: '47' },
+          ],
+          { alt: 'a long bar for about four hundred and fifty and, to the same scale, a very short bar for forty-seven' },
+        ),
       },
     ],
     summary:

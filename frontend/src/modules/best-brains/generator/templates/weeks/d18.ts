@@ -22,6 +22,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { coprimeNumerator } from '../lib/format';
+import { areaGrid, barModel } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import { addFrac, formatFrac, mulFrac } from '../lib/compute';
 
@@ -226,9 +227,43 @@ export const buildD18 = makeWeekBuilder({
     whyBeforeHow:
       'When a problem says two-thirds OF three-quarters, it wants a part of a part, and that is why an area square settles it: because "of" between fractions means multiply and never add, you shade 3/4 across the square and 2/3 of that down, and the double-shaded overlap IS the product. Counting the overlap gives six shaded cells out of twelve, which is exactly multiplying the tops together and the bottoms together. Taking a piece of a piece is why a fraction times a fraction below one lands smaller than either factor — the opposite of whole-number multiplying.',
     script: [
-      { say: '2/3 × 3/4 asks for two-thirds OF three-quarters. I shade 3/4 across a square, then 2/3 of that strip down; the double-shaded overlap is the product.', visual: 'A unit square shaded two ways; the overlap is counted.' },
-      { say: 'The overlap is six of twelve cells, so tops multiply (two times three) and bottoms multiply (three times four): the fraction is 6/12, which simplifies to 1/2.', visual: 'Tops and bottoms multiply; 6/12 collapses to 1/2.' },
-      { say: 'Before multiplying, estimate: a part of a part is smaller than either fraction, so a sensible answer sits below both — if it grew, I added by mistake.', visual: 'A shrinking bar shows the part-of-a-part.' },
+      {
+        say: '2/3 × 3/4 asks for two-thirds OF three-quarters. I shade 3/4 across a square, then 2/3 of that strip down; the double-shaded overlap is the product.',
+        visual: 'A unit square cut into twelve cells, shaded one way across and another way down, so the six double-shaded cells stand out where the two shadings meet.',
+        figure: areaGrid(
+          { rows: 3, cols: 4, shadedRows: 2, shadedCols: 3 },
+          { alt: 'a square cut into three rows and four columns, with three of the four columns shaded one way and two of the three rows shaded the other, so six of the twelve cells carry both shadings and are ringed' },
+        ),
+      },
+      {
+        say: 'The overlap is six of twelve cells, so tops multiply (two times three) and bottoms multiply (three times four): the fraction is 6/12, which simplifies to 1/2.',
+        visual: 'Six of twelve pieces filled on one bar, and the very same length shown as one half of two on the bar beneath it.',
+        figure: barModel(
+          [
+            {
+              label: '6/12',
+              segments: [
+                { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 },
+                { value: 1, fill: 'none' }, { value: 1, fill: 'none' }, { value: 1, fill: 'none' },
+                { value: 1, fill: 'none' }, { value: 1, fill: 'none' }, { value: 1, fill: 'none' },
+              ],
+            },
+            { label: '1/2', segments: [{ value: 6 }, { value: 6, fill: 'none' }] },
+          ],
+          { scaleMax: 12, alt: 'a bar of twelve pieces with six filled, above a bar cut into just two pieces with one filled — the filled parts reach exactly the same length' },
+        ),
+      },
+      {
+        say: 'Before multiplying, estimate: a part of a part is smaller than either fraction, so a sensible answer sits below both — if it grew, I added by mistake.',
+        visual: 'Three quarters drawn as a bar, and two thirds of that bar drawn shorter beneath it.',
+        figure: barModel(
+          [
+            { label: '3/4', segments: [{ value: 9 }] },
+            { label: '2/3 of it', segments: [{ value: 6 }] },
+          ],
+          { scaleMax: 12, alt: 'a bar reaching three quarters of the whole, and beneath it a shorter bar reaching only two thirds of that' },
+        ),
+      },
     ],
     summary: 'To multiply fractions, multiply the tops together and the bottoms together — the double-shaded overlap in an area square. A fraction OF a fraction is a part of a part, so the product is smaller than either factor.',
     vocabulary: [

@@ -25,6 +25,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { barModel, mathSentence } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -181,9 +182,62 @@ export const buildD24 = makeWeekBuilder({
     whyBeforeHow:
       'Volume counts the unit cubes that pack a solid with no gaps, so one flat layer covers length-by-width cubes and a filled box is just height copies of that layer — that is why V = length × width × height, the area idea pushed up into a third dimension. Because every layer is an identical copy, you multiply by the height rather than adding it, and this exit week gathers the level\'s place-value, fraction, and decimal habits so they carry, fluent and connected, into Level E.',
     script: [
-      { say: 'One bottom layer of a 4-by-3 base holds 4 × 3 = 12 cubes; stack 5 such layers and 12 × 5 = 60 cubes fill the box.', visual: 'A base layer of 12 cubes stacks into five identical layers.' },
-      { say: 'So volume = length × width × height — the base layer times the number of layers.', visual: 'The formula appears over the filled box.' },
-      { say: 'Before multiplying, estimate: round the edges to friendly numbers and picture the pile, so a sensible answer lands near that ballpark and you can check it.', visual: 'A rounded box beside the exact one, the two piles about the same size.' },
+      {
+        say: 'One bottom layer of a 4-by-3 base holds 4 × 3 = 12 cubes; stack 5 such layers and 12 × 5 = 60 cubes fill the box.',
+        visual: 'The five layers laid out flat as five equal blocks of 12 cubes, braced and labelled 60 cubes — the solid drawn as a row rather than a stack.',
+        figure: barModel(
+          [
+            {
+              segments: [
+                { value: 12, label: '12' },
+                { value: 12, label: '12' },
+                { value: 12, label: '12' },
+                { value: 12, label: '12' },
+                { value: 12, label: '12' },
+              ],
+            },
+          ],
+          { brace: { label: '60 cubes' }, alt: 'five equal blocks of 12 laid end to end, one block for each identical layer, the whole row braced and labelled 60 cubes' },
+        ),
+      },
+      {
+        say: 'So volume = length × width × height — the base layer times the number of layers.',
+        visual: 'The formula written in words, volume = length × width × height, and under it the box just filled: 4 × 3 × 5 = 60.',
+        // The formula in words above the same box's own three edges below it,
+        // token for token: length under length, width under width, height under
+        // height. The row of five twelves in the segment above is where the 4,
+        // the 3 and the 5 came from, so the two figures are one picture read
+        // twice — the general rule, and the box that was just counted.
+        figure: mathSentence(
+          [
+            { text: 'volume' }, { text: '=' }, { text: 'length' }, { text: '×' },
+            { text: 'width' }, { text: '×' }, { text: 'height' },
+          ],
+          {
+            then: {
+              connector: 'equals',
+              tokens: [
+                { text: '4' }, { text: '×' }, { text: '3' }, { text: '×' },
+                { text: '5' }, { text: '=' }, { text: '60', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the formula volume equals length times width times height written out, and under it this box\'s own ' +
+              'edges in the same order, four times three times five equals sixty, with the sixty underlined',
+          },
+        ),
+      },
+      {
+        say: 'Before multiplying, estimate: round the edges to friendly numbers and picture the pile, so a sensible answer lands near that ballpark and you can check it.',
+        visual: 'A crate 9 by 4 by 6 drawn as an exact pile of 216 cubes, beside the rounded 10 by 4 by 6 estimate of 240 — two piles about the same size.',
+        figure: barModel(
+          [
+            { label: 'exact', segments: [{ value: 216 }], total: '216 cubes' },
+            { label: 'rounded', segments: [{ value: 240, fill: 'soft' }], total: '240 cubes' },
+          ],
+          { scaleMax: 240, alt: 'two bars to one scale, the exact pile of 216 cubes only a little shorter than the rounded-edge estimate of 240' },
+        ),
+      },
     ],
     summary: 'Volume = length × width × height — one layer of unit cubes times the number of layers. This exit week also gathers the level\'s arithmetic, fractions, and decimals, ready for Level E.',
     vocabulary: [

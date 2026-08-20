@@ -93,7 +93,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam, numberLine } from '../lib/figures';
+import { areaGrid, assertsAnswer, assertsParam, barModel, numberLine } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -666,7 +666,18 @@ export const buildC19 = makeWeekBuilder({
     script: [
       {
         say: 'Watch me guess before I measure. I pick up this jar and I do not reach for the scale yet. I hold it against something I already know. A paperclip is about a gram. A bag of sugar is about a kilogram. So I ask myself one question. Is this jar nearer the paperclip, or nearer the sugar? Nearer the sugar. So my answer will be in hundreds of grams. I knew that before measuring anything.',
-        visual: 'A jar held in one hand, a bag of sugar in the other.',
+        visual: 'The benchmark card: a paperclip beside about 1 g, a bag of sugar beside about 1 kg.',
+        // THE ONE PLACE IN THIS WEEK WHERE TWO BARS TO ONE SCALE WOULD LIE.
+        // A gram against a kilogram is 1 against 1,000: drawn honestly to one
+        // scale the paperclip is a hairline and the card teaches nothing, and
+        // drawn legibly it is not to scale at all. So the two benchmarks are
+        // stamped on a card to be carried in the head, which is exactly what
+        // the say asks for — the jar is not on it, because the say holds the
+        // jar UP against these two and does not yet claim a number for it.
+        figure: areaGrid(
+          { rows: 2, cols: 1, rowLabels: ['a paperclip', 'a bag of sugar'], cellLabels: ['1 g', '1 kg'] },
+          { alt: 'a benchmark card with two rows: a paperclip beside a box reading 1 g, and a bag of sugar beside a box reading 1 kg' },
+        ),
       },
       {
         say: 'Now the scale, and here is the trap on every scale ever made. The little lines do not stand for one. Look at this dial. The numbered lines are a hundred grams apart. Each gap has five equal steps, so one step is twenty grams. Watch me count on from four hundred in twenties. Four hundred and twenty, four hundred and forty, four hundred and sixty. Three steps, sixty grams, not three grams.',
@@ -703,11 +714,37 @@ export const buildC19 = makeWeekBuilder({
       },
       {
         say: 'Before I write any measurement down I check it against a benchmark. It takes me one second. If my answer says a mug of tea holds two liters, I stop. A mug is nowhere near a big bottle. If it says a cat has a mass of five grams, I stop. Five grams is a few paperclips. Estimating first is not a soft version of measuring. It tells me whether the measuring went right.',
-        visual: 'A mug and a large bottle side by side, nowhere near the same size.',
+        visual: 'A short bar for a mug of tea beside a much longer one for a big bottle, both to the same scale.',
+        // Both benchmarks are already stated in millilitres by this point — a
+        // mug is about a quarter of a litre (the segment above) and a big
+        // bottle about 2 l (the why) — so ONE scale is honest here in a way it
+        // is not for the gram-against-kilogram card. Drawn, the claim the say
+        // makes ("a mug is nowhere near a big bottle") stops being an assertion
+        // and becomes something the child can see the size of.
+        figure: barModel(
+          [
+            { label: 'a mug of tea', segments: [{ value: 250 }], total: 'about 250 ml' },
+            { label: 'a big bottle', segments: [{ value: 2000 }], total: 'about 2 l' },
+          ],
+          { scaleMax: 2000, alt: 'a short bar for a mug of tea and, to the same scale, a much longer bar for a big bottle' },
+        ),
       },
       {
         say: 'One last thing, and it is the one that costs people marks. Grams and kilograms say how heavy something is. Milliliters and liters say how much a container holds. They are not two sizes of the same thing. So a mass can never be written in milliliters. A number with the wrong kind of unit is not a wrong answer. It is not an answer at all.',
-        visual: 'Two labels: one reading grams and kilograms, the other milliliters and liters.',
+        visual: 'The four units in two rows: g and kg for how heavy, ml and l for how much it holds.',
+        // The week's whole unit set, sorted by the QUESTION each one answers
+        // rather than by size. Two rows and no arrow between them is the
+        // picture of the claim: these are not two sizes of one thing, so there
+        // is no road from the top row to the bottom one.
+        figure: areaGrid(
+          {
+            rows: 2,
+            cols: 2,
+            rowLabels: ['how heavy', 'how much it holds'],
+            cellLabels: ['g', 'kg', 'ml', 'l'],
+          },
+          { alt: 'a card of four unit boxes in two rows: g and kg on the row for how heavy something is, ml and l on the row for how much a container holds' },
+        ),
       },
     ],
     summary:

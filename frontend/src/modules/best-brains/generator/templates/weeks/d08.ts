@@ -25,6 +25,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { areaGrid, barModel, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const D3 = { level: 'D' as const, week: 3 };
@@ -210,9 +211,54 @@ export const buildD08 = makeWeekBuilder({
     whyBeforeHow:
       'Because both factors are broken by place, the area rectangle cuts into four rooms — tens by tens, tens by ones, ones by tens, and ones by ones — one room for every pairing of a place-part from each factor, so the whole product is the sum of all four room areas. The standard algorithm folds those four rooms into two written rows, which is why drawing the four rooms first is what keeps a partial product from quietly going missing.',
     script: [
-      { say: 'Watch: 24 × 36. I split 24 into 20 and 4, and 36 into 30 and 6. That gives four rooms — 20 × 30 = 600, 20 × 6 = 120, 4 × 30 = 120, and 4 × 6 = 24.', visual: 'A rectangle cut into four labeled rooms.' },
-      { say: 'I add all four rooms — six hundred, one hundred twenty, one hundred twenty, and twenty-four — and the total is 864. Every room has to be counted, or the answer comes up short.', visual: 'Four room areas gather into one running sum.' },
-      { say: 'Before trusting the total, I estimate: 20 by 40 is about 800, so a sensible answer sits near there — if my total were tiny, I would know a room had gone missing.', visual: 'A rounded estimate brackets the four-room total.' },
+      {
+        say: 'Watch: 24 × 36. I split 24 into 20 and 4, and 36 into 30 and 6. That gives four rooms — 20 × 30 = 600, 20 × 6 = 120, 4 × 30 = 120, and 4 × 6 = 24.',
+        visual: 'A rectangle with its sides cut into 20 and 4 down, 30 and 6 across, making four rooms holding 600, 120, 120 and 24.',
+        figure: areaGrid(
+          {
+            rows: 2,
+            cols: 2,
+            rowLabels: ['20', '4'],
+            colLabels: ['30', '6'],
+            cellLabels: ['600', '120', '120', '24'],
+          },
+          { alt: 'a rectangle cut into four rooms — a big 20 by 30 room holding 600, a 20 by 6 room and a 4 by 30 room each holding 120, and a small 4 by 6 room holding 24' },
+        ),
+      },
+      {
+        say: 'I add all four rooms — six hundred, one hundred twenty, one hundred twenty, and twenty-four — and the total is 864. Every room has to be counted, or the answer comes up short.',
+        visual: 'The four room areas laid end to end on one bar — 600, 120, 120 and 24 — braced and labelled 864.',
+        figure: barModel(
+          [
+            {
+              segments: [
+                { value: 600, label: '600' },
+                { value: 120, label: '120' },
+                { value: 120, label: '120' },
+                { value: 24, label: '24' },
+              ],
+            },
+          ],
+          { brace: { label: '864' }, alt: 'one bar built from the four room areas in order, 600 then 120 then 120 then 24, braced underneath and labelled 864' },
+        ),
+      },
+      {
+        say: 'Before trusting the total, I estimate: 20 by 40 is about 800, so a sensible answer sits near there — if my total were tiny, I would know a room had gone missing.',
+        visual: 'A number line from 0 to 1,000 with the rounded estimate 800 flagged and the exact total 864 marked just past it.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1000,
+            step: 100,
+            labels: 'ends',
+            marks: [
+              { at: 800, label: '800', style: 'flag' },
+              { at: 864, label: '864', style: 'point' },
+            ],
+          },
+          { alt: 'a number line from 0 to 1,000 ticked every hundred, with the rounded estimate 800 flagged and the exact total 864 marked a little to its right' },
+        ),
+      },
     ],
     summary: 'Break both factors by place, find all four rooms (tens by tens down to ones by ones), and add them. Estimate with rounded factors to catch a room that went missing.',
     vocabulary: [

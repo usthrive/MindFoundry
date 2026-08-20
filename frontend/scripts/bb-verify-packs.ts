@@ -284,10 +284,9 @@ console.log('\nFigure census — drawn pictures vs un-migrated [image: …] dire
     'A15-D5-04': 'a shape gallery (triangle/circle/square side by side) — angle-figure draws one polygon and no circle',
     'A15-PZ-01': 'a labelled-sum garden — no primitive',
     // Answerable without the picture: stripping the direction leaves
-    // "45 - 27 = ? Trade first if the ones can't pay.", which is the whole task.
-    // The base-ten model was support, not the question. Worth drawing (b14 has a
-    // placeValueChart helper) but it does not block a child.
-    'B14-D1-03': 'base-ten model of 45 — supportive only; the subtraction is fully stated in the prompt. Drawable via b14 placeValueChart; not yet migrated',
+    // B14-D1-03's permit lived here ("base-ten model of 45 — supportive only")
+    // until 2026-08-20, when the base-ten-blocks primitive made it drawable and
+    // it was drawn. The dead-permit guard below is what forced this deletion.
     // C22-D5-02 sat here reading "BLOCKING: … the question cannot be answered
     // without the shape" — and this suite printed it and exited 0 for weeks. It
     // is gone because the item is FIXED: `eaTiltedSquareSkipped` now attaches

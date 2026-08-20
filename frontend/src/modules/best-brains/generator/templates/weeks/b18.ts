@@ -897,7 +897,11 @@ export const buildB18 = makeWeekBuilder({
       },
       {
         say: 'One habit before I write any answer down. I check the end of the number I landed on. A fives count that finishes on 32 has gone wrong somewhere. I would rather find that out myself.',
-        visual: 'A finger travelling back along the fives landings, checking each ending.',
+        visual: 'The fives landings 5 to 35 along one line — every landing ends in a five or a zero.',
+        figure: numberLine(
+          { min: 0, max: 35, step: 5, labels: 'all' },
+          { alt: 'a line from 0 to 35 with every landing of five labelled: 5, 10, 15, 20, 25, 30, 35' },
+        ),
       },
     ],
     summary:

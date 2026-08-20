@@ -28,6 +28,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { coprimeNumerator } from '../lib/format';
+import { barModel } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import { addFrac, formatFrac, mulFrac } from '../lib/compute';
 
@@ -193,9 +194,56 @@ export const buildD11 = makeWeekBuilder({
     whyBeforeHow:
       'Because a fraction is built from unit-fraction bricks, taking copies of a fraction just piles up more of those same bricks — that is why multiplying a fraction by a whole number multiplies only the top count and keeps the bottom fixed: the brick size never changes, only how many bricks you have. When the copies stack past one whole, rename the improper result as a mixed number.',
     script: [
-      { say: 'Watch three groups of two-thirds: I copy the two-thirds bar three times and count the thirds — six thirds, which fills two whole cups. Copies, not a new piece size.', visual: 'Three groups of two fifth-bricks line up into one long bar.' },
-      { say: 'Only the count on top is multiplied; the brick size on the bottom holds still.', visual: 'The bottom number stays fixed while the top count grows.' },
-      { say: 'Estimate first to stay reasonable: four copies of three-quarters sit near four times three-quarters, so expect an answer close to three whole cups — if you land near zero, you changed the piece size by mistake.', visual: 'Benchmark: four short bars stacked, landing just under three whole cups.' },
+      {
+        say: 'Watch three groups of two-thirds: I copy the two-thirds bar three times and count the thirds — six thirds, which fills two whole cups. Copies, not a new piece size.',
+        // The authored visual said "fifth-bricks" while the say teaches THIRDS.
+        // The picture is drawn from the say's own numbers and the stage
+        // direction is rewritten to match it.
+        visual: 'Three copies of two-thirds laid end to end on one bar — six third-pieces in all, braced as two whole cups.',
+        figure: barModel(
+          [
+            {
+              segments: [
+                { value: 1, label: '1/3' },
+                { value: 1, label: '1/3' },
+                { value: 1, label: '1/3', fill: 'soft' },
+                { value: 1, label: '1/3', fill: 'soft' },
+                { value: 1, label: '1/3' },
+                { value: 1, label: '1/3' },
+              ],
+            },
+          ],
+          { scaleMax: 6, brace: { label: '6 thirds = 2 wholes' }, alt: 'one long bar of six equal third-pieces, shaded in three pairs to show the three copies, braced underneath as six thirds making two wholes' },
+        ),
+      },
+      {
+        say: 'Only the count on top is multiplied; the brick size on the bottom holds still.',
+        visual: 'Three bars built from the same third-piece — two thirds, then four, then six — so the piece size holds while the count grows.',
+        figure: barModel(
+          [
+            { label: 'one copy', segments: [{ value: 1 }, { value: 1 }] },
+            { label: 'two copies', segments: [{ value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }] },
+            {
+              label: 'three copies',
+              segments: [{ value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }],
+            },
+          ],
+          { scaleMax: 6, alt: 'three bars stacked, built from third-pieces of exactly the same width — two of them, then four, then six' },
+        ),
+      },
+      {
+        say: 'Estimate first to stay reasonable: four copies of three-quarters sit near four times three-quarters, so expect an answer close to three whole cups — if you land near zero, you changed the piece size by mistake.',
+        visual: 'Four copies of three-quarters drawn to one scale, bracketed together as three whole cups.',
+        figure: barModel(
+          [
+            { label: '3/4', segments: [{ value: 1 }, { value: 1 }, { value: 1 }] },
+            { label: '3/4', segments: [{ value: 1 }, { value: 1 }, { value: 1 }] },
+            { label: '3/4', segments: [{ value: 1 }, { value: 1 }, { value: 1 }] },
+            { label: '3/4', segments: [{ value: 1 }, { value: 1 }, { value: 1 }] },
+          ],
+          { scaleMax: 4, brace: { label: '3 whole cups' }, alt: 'four equal bars, each three quarter-pieces of a four-piece cup, bracketed at the side as three whole cups' },
+        ),
+      },
     ],
     summary: 'n × a/b makes n copies of a fraction: multiply the top by n, keep the bottom, and rename an over-one result as a mixed number.',
     vocabulary: [

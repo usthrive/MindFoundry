@@ -807,7 +807,16 @@ export const buildB06 = makeWeekBuilder({
       },
       {
         say: 'So before I decide anything, I check the two sides against each other. If one side has plainly more on it, the line cannot be true. I know that without working out the exact amounts.',
-        visual: 'Two pans held side by side, one clearly longer than the other.',
+        visual: 'Two pans side by side, one plainly fuller than the other — no amounts written on either.',
+        // Unlabelled deliberately: the say's whole point is knowing WITHOUT the
+        // exact amounts, so the pans carry no numbers (pan() would print them).
+        figure: barModel(
+          [
+            { label: 'one pan', segments: [{ value: 9 }] },
+            { label: 'the other pan', segments: [{ value: 4 }] },
+          ],
+          { alt: 'two pans drawn to one scale, one plainly fuller than the other, with no amounts written' },
+        ),
       },
       {
         say: 'One more, and this one surprises people. Eight on the left, all by itself. Five and three on the right. The bar sits flat, so this line is true as well. The single number may go first. The adding may follow the sign.',

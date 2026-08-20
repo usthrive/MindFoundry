@@ -890,7 +890,8 @@ export const buildB19 = makeWeekBuilder({
       },
       {
         say: 'One habit before I write an answer down. I check the very last digit and ask what it would leave over. A count of fives reaches 15, but 15 still leaves one over.',
-        visual: 'A finger resting on the last digit of a number, before any answer is written.',
+        visual: 'Fifteen counters pushed into twos: seven pairs, and one counter left standing alone.',
+        figure: inTwos(15, 'counters', 'fifteen counters pushed into twos, with one left over on its own'),
       },
     ],
     summary:

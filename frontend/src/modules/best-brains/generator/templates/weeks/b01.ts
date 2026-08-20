@@ -21,7 +21,7 @@ import {
   numberWords,
   TupleGuard,
 } from '../shared';
-import { hundredChart } from '../lib/figures';
+import { barModel, hundredChart, numberLine } from '../lib/figures';
 import { unitFor } from '../lib/format';
 
 const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Noor'] as const;
@@ -579,22 +579,44 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
         '100 is not a wall - it is just ten tens. The song keeps going: 101, 102, 103... ' +
         'The why: once you hear the pattern, you can start counting from ANY number. ' +
         'There is no need to go back to 1.',
+      // Authored as animator's directions ("glows", "light in sequence") with no
+      // figure — the italic-prose-over-an-empty-box failure b02 fixed first.
+      // Each segment now draws its scene; the motion words become the still a
+      // teacher would leave on the whiteboard at that point in the telling.
       script: [
         {
           say: 'Listen to the count cross a ten: 37, 38, 39... the ones are full, so a new ten begins: 40!',
-          visual: 'Number path with 37-41; the 39→40 hop glows as the tens digit flips.',
+          visual: 'A number path from 37 to 41, with a hop landing on 40 where the new ten begins.',
+          figure: numberLine(
+            { min: 37, max: 41, step: 1, labels: 'all', marks: [{ at: 40, style: 'flag' }], hops: [{ from: 39, to: 40 }] },
+            { alt: 'a number path from 37 to 41 with a hop from 39 landing on 40' },
+          ),
         },
         {
           say: 'The hundred chart shows the song as rows. Every row is ten numbers. The end of a row is where the new ten begins.',
-          visual: 'Hundred chart; one full row highlights, then the first square of the next row.',
+          visual: 'A hundred chart with the row from 31 to 40 shaded, ending where the next ten begins.',
+          figure: hundredChart({
+            highlight: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
+            alt: 'a hundred chart with the whole row from 31 to 40 shaded',
+          }),
         },
         {
           say: 'Now the big crossing: 98, 99, 100... and the song keeps going: 101, 102! One hundred, then one hundred one.',
-          visual: 'Chart extends past 100 to 120; the 99→100→101 squares light in sequence.',
+          visual: 'The chart rows from 91 to 120, with 99, 100 and 101 shaded in a row across the crossing.',
+          figure: hundredChart({
+            start: 91,
+            rows: 3,
+            highlight: [99, 100, 101],
+            alt: 'three chart rows from 91 to 120 with 99, 100 and 101 shaded',
+          }),
         },
         {
           say: 'Number words are the same code. "One hundred twelve" means 1 hundred, 1 ten, 2 ones. We write 112, not 10012.',
-          visual: '"one hundred twelve" splits into 100 + 12 and snaps together as 112.',
+          visual: 'A bar of 100 and a bar of 12 joined under one brace labelled 112.',
+          figure: barModel(
+            [{ segments: [{ value: 100, label: '100' }, { value: 12, label: '12' }] }],
+            { brace: { label: '112' }, alt: 'a bar of 100 joined to a bar of 12, the whole braced and labelled 112' },
+          ),
         },
       ],
       summary:

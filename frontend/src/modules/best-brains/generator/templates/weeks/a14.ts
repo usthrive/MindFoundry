@@ -293,7 +293,7 @@ import {
   COUNTABLE_NOUNS,
   PUPPETS,
 } from '../lib/earlynumber';
-import { assertsAnswer, assertsAnswerOf, counterGroups, counters } from '../lib/figures';
+import { assertsAnswer, assertsAnswerOf, counterGroups, counters, mathSentence } from '../lib/figures';
 import { countNoun, unitFor } from '../lib/format';
 import { drawUniqueItem } from '../lib/guard';
 import type { ItemGen } from '../lib/items';
@@ -1498,11 +1498,28 @@ export const buildA14 = makeWeekBuilder({
       },
       {
         say: say('That little cross is a plus sign. It means: put them together.'),
-        visual: 'A finger pointing at the plus sign between the two groups of shells.',
+        visual: 'The plus sign standing between the two groups of shells.',
+        // The same joined picture as the segment above, held still while the
+        // symbol in the middle of it is named. Nothing moves between the two
+        // segments because nothing should: the child has already watched the
+        // groups slide together, and this is the moment the mark that records
+        // it gets its name.
+        figure: counterGroups(
+          [{ count: 2, noun: 'shells' }, { count: 3, noun: 'shells' }],
+          { relation: 'join', alt: 'two groups of shells with a plus sign standing between them' },
+        ),
       },
       {
         say: say('We write it like this. 2 + 3 = 5. Five shells!'),
-        visual: 'The number sentence written under the picture, with each part pointed at in turn.',
+        visual: 'The number sentence 2 + 3 = 5 written out large, with the 5 underlined.',
+        // The three segments above built the join out of shells; this one is the
+        // WRITING, which is a picture in its own right and was carrying none.
+        // The underline sits under the 5 because that is the part the say ends
+        // on ("Five shells!") — a teacher's pen, not an animation.
+        figure: mathSentence(
+          [{ text: '2' }, { text: '+' }, { text: '3' }, { text: '=' }, { text: '5', mark: 'underline' }],
+          { alt: 'the number sentence two plus three equals five written out large, with the five underlined' },
+        ),
       },
     ],
     summary: say(

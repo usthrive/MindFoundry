@@ -26,6 +26,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { wholeMoney } from '../lib/format';
+import { areaGrid, barModel, columnMethod } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -222,9 +223,49 @@ export const buildD05 = makeWeekBuilder({
     whyBeforeHow:
       'Multiplication is the area of a rectangle, and because the whole area is just the sum of its parts, splitting one side by place value lets you find each smaller room\'s area (a partial product) and add them up. That is why 6 × 47 equals 6 × 40 plus 6 × 7: the area rectangle makes the parts recombine into the whole, and the standard algorithm only records those same partials, stacked more compactly.',
     script: [
-      { say: 'Watch me set up 6 × 47: I draw a rectangle and cut the 47 side into 40 and 7. Now I have two rooms — 6 × 40 = 240 and 6 × 7 = 42.', visual: 'A rectangle splits into a 6×40 room and a 6×7 room, each labeled.' },
-      { say: 'Add the partial products: 240 + 42 = 282. The parts always add back to the whole area — no room can be left out.', visual: 'The two room areas slide together into 282.' },
-      { say: 'Estimate first to stay honest: 6 × 50 is about 300, so 282 is reasonable. The standard algorithm records the SAME partials, just stacked.', visual: 'Area partials line up beside the stacked algorithm.' },
+      {
+        say: 'Watch me set up 6 × 47: I draw a rectangle and cut the 47 side into 40 and 7. Now I have two rooms — 6 × 40 = 240 and 6 × 7 = 42.',
+        visual: 'A rectangle 6 tall with its long side cut into 40 and 7, the wide room holding 240 and the narrow one holding 42.',
+        figure: areaGrid(
+          { rows: 1, cols: 2, rowLabels: ['6'], colLabels: ['40', '7'], cellLabels: ['240', '42'] },
+          { alt: 'a rectangle 6 tall, cut into a wide room 40 across holding 240 and a narrow room 7 across holding 42' },
+        ),
+      },
+      {
+        say: 'Add the partial products: 240 + 42 = 282. The parts always add back to the whole area — no room can be left out.',
+        visual: 'The two room areas laid end to end on one bar, 240 and 42, braced and labelled 282.',
+        figure: barModel(
+          [{ segments: [{ value: 240, label: '240' }, { value: 42, label: '42' }] }],
+          { brace: { label: '282' }, alt: 'one bar made of the two room areas, a long 240 joined to a short 42, braced underneath and labelled 282' },
+        ),
+      },
+      {
+        say: 'Estimate first to stay honest: 6 × 50 is about 300, so 282 is reasonable. The standard algorithm records the SAME partials, just stacked.',
+        visual: 'The same 6 × 47 stacked as the written algorithm, with its two partial rows 42 and 240 adding to 282.',
+        // The claim in the say is that the algorithm holds the SAME two numbers
+        // the rooms held, so the two partials are written on their own rows
+        // rather than collapsed into one — 42 and 240 are exactly the rooms of
+        // segment one and the bar segments of segment two. Leading '' cells hold
+        // the empty place columns open, which is what puts each partial under
+        // its own place.
+        figure: columnMethod(
+          {
+            op: '×',
+            rows: [
+              { cells: ['', '4', '7'], role: 'operand' },
+              { cells: ['', '', '6'], role: 'operand' },
+              { cells: ['', '4', '2'], role: 'partial' },
+              { cells: ['2', '4', '0'], role: 'partial' },
+              { cells: ['2', '8', '2'], role: 'result' },
+            ],
+          },
+          {
+            alt:
+              '47 stacked over 6 with a times sign, then the two partial rows the rooms gave — 42 from six sevens ' +
+              'and 240 from six forties — and 282 under the line',
+          },
+        ),
+      },
     ],
     summary: 'Break a factor by place, multiply each part (partial products), then add. The area rectangle shows why the parts recombine into the whole product.',
     vocabulary: [
