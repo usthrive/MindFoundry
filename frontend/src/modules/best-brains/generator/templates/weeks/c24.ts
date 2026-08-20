@@ -81,7 +81,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtFrac, wholeMoney } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { areaGrid, assertsParam, barModel } from '../lib/figures';
+import { areaGrid, assertsParam, barModel, mathSentence, numberLine } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -711,11 +711,51 @@ export const buildC24 = makeWeekBuilder({
       },
       {
         say: 'Now the second story. There are 6 baskets, and every one holds 48 apples. Nothing is being split here at all. One load is repeating, so 6 × 48 = 288 apples. Same two numbers, opposite shapes, and two answers that are nowhere near each other.',
-        visual: 'Six baskets side by side, each one a full crate rather than a share of one.',
+        visual: 'Six baskets in a row, each one a full 48, braced together as 288.',
+        // The same drawing as the segment above and the opposite story, which
+        // is the point of putting them next to each other: there the bar WAS
+        // the 48 and the parts were cut out of it, here the 48 is one part and
+        // the bar is six of them. Nothing is being cut, so the brace under the
+        // whole row is bigger than anything it is made of.
+        figure: barModel(
+          [
+            {
+              label: 'six baskets, each a full crate',
+              segments: [
+                { value: 48, label: '48' },
+                { value: 48, label: '48' },
+                { value: 48, label: '48' },
+                { value: 48, label: '48' },
+                { value: 48, label: '48' },
+                { value: 48, label: '48' },
+              ],
+            },
+          ],
+          { scaleMax: 288, brace: { label: '288' }, alt: 'one bar made of six equal baskets of 48, braced underneath and labelled 288' },
+        ),
       },
       {
         say: 'The word each turned up in both of those stories. It pointed a different way each time. That is the reason I never let a single word choose my move for me. I ask what is happening to the pile. The word can say what it likes.',
-        visual: 'The word each written once between the two stories, with an arrow to each of them.',
+        visual:
+          'The two stories written out as number sentences, 48 ÷ 6 = 8 above 6 × 48 = 288, with a ring round each sign.',
+        // The word is not the picture; what the word LICENSED is. Both stories
+        // hold the same two numbers and the same word, so the only thing on the
+        // page that differs is the sign — which is why the sign is the only
+        // thing ringed. Two peer lines under `and` with no arrow between them:
+        // neither sentence turns into the other, and a connector claiming it did
+        // would teach the opposite of the segment.
+        figure: mathSentence(
+          [{ text: '48' }, { text: '÷', mark: 'ring' }, { text: '6' }, { text: '=' }, { text: '8' }],
+          {
+            then: {
+              connector: 'and',
+              tokens: [{ text: '6' }, { text: '×', mark: 'ring' }, { text: '48' }, { text: '=' }, { text: '288' }],
+            },
+            alt:
+              'the two stories written one under the other as 48 divided by 6 equals 8 and 6 times 48 equals 288, ' +
+              'with a ring round the division sign and round the multiplication sign',
+          },
+        ),
       },
       {
         say: 'Some jobs want two tools, one after the other. A gallery wall holds 9 paintings across and 4 down. A full wall takes 9 × 4 = 36 paintings. If 14 are already pinned up, the ones still missing come to 22. I had to pick two different moves to get there.',
@@ -727,7 +767,26 @@ export const buildC24 = makeWeekBuilder({
       },
       {
         say: 'One last habit before any arithmetic. I check roughly how big my answer ought to be. Sharing a pile makes the number smaller. Repeating a group makes it bigger. If my answer lands on the other side of that, I stop. Then I look at the shape of the story again, not at my columns.',
-        visual: 'Two arrows from a starting number, one running up and one running down.',
+        visual: 'One line with 48 marked on it, and two arrows leaving it: one down to 8, one up to 288.',
+        // The size check, drawn on the week's own two answers rather than on a
+        // pair of nameless arrows. Both moves start from the same 48 and the
+        // gap between where they land is the whole argument: an answer on the
+        // wrong side of the mark was the wrong shape read, not a slip in a
+        // column, and the line says so before any arithmetic is re-checked.
+        figure: numberLine(
+          {
+            min: 0,
+            max: 300,
+            step: 50,
+            labels: 'majors',
+            marks: [{ at: 48, label: '48', style: 'flag' }],
+            hops: [
+              { from: 48, to: 8, label: 'shared into 6' },
+              { from: 48, to: 288, label: 'repeated 6 times' },
+            ],
+          },
+          { alt: 'a line from 0 to 300 with 48 flagged, an arrow from 48 back to 8 labelled shared into 6, and an arrow from 48 on to 288 labelled repeated 6 times' },
+        ),
       },
     ],
     summary:

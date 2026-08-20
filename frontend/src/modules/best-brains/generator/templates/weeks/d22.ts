@@ -35,6 +35,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
+import { coordinateGrid } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -187,9 +188,67 @@ export const buildD22 = makeWeekBuilder({
     whyBeforeHow:
       'Every point on a coordinate grid is named by how far RIGHT (x) and how far UP (y) it sits from the origin (0, 0), so the order is x-before-y for a reason: the first number is the across-move because that is the direction we count from the origin first. A number pattern is honest in the same way — it has a starting value and one fixed step, so its rule, start + step × (n − 1), can predict any term without listing them all, since every term is just the start plus that many equal jumps. Plotting the terms turns the rule into a straight staircase on the grid, which is why the picture and the rule always tell the same story.',
     script: [
-      { say: '(3, 4): from the origin, count 3 to the right first, then 4 up. The first number is always the across-move.', visual: 'A dot walks 3 right, then 4 up on a grid.' },
-      { say: 'A pattern that starts at 2 and adds 5 goes 2, 7, 12, 17 — the 1st term is the start, and each later term adds one more 5.', visual: 'A table fills as a staircase of dots climbs the grid.' },
-      { say: 'Before listing every term, estimate: the 6th term is about six equal jumps above the start, so a sensible answer sits far past the start — the rule then pins it exactly, and you can check the two agree.', visual: 'The rule jumps straight to the 6th term; a benchmark bar shows it far above the start.' },
+      {
+        say: '(3, 4): from the origin, count 3 to the right first, then 4 up. The first number is always the across-move.',
+        visual: 'A first-quadrant grid with the path drawn three squares right from the origin, then four squares up, landing on the marked point (3, 4).',
+        figure: coordinateGrid(
+          {
+            xMin: 0,
+            xMax: 6,
+            yMin: 0,
+            yMax: 6,
+            step: 1,
+            segments: [
+              { from: [0, 0], to: [3, 0], label: '3 right' },
+              { from: [3, 0], to: [3, 4], label: '4 up' },
+            ],
+            points: [{ x: 3, y: 4, label: '(3, 4)' }],
+          },
+          { alt: 'a first-quadrant grid with a path running three squares right along the bottom from the origin and then four squares up, ending on a dot labelled (3, 4)' },
+        ),
+      },
+      {
+        say: 'A pattern that starts at 2 and adds 5 goes 2, 7, 12, 17 — the 1st term is the start, and each later term adds one more 5.',
+        visual: 'The pattern 2, 7, 12, 17 plotted as four dots climbing the grid, one square right and five up each time.',
+        figure: coordinateGrid(
+          {
+            xMin: 0,
+            xMax: 6,
+            yMin: 0,
+            yMax: 20,
+            step: 1,
+            points: [
+              { x: 1, y: 2, label: '2' },
+              { x: 2, y: 7, label: '7' },
+              { x: 3, y: 12, label: '12' },
+              { x: 4, y: 17, label: '17' },
+            ],
+          },
+          { alt: 'four dots climbing a grid at (1, 2), (2, 7), (3, 12) and (4, 17), each one square right and five squares up from the one before' },
+        ),
+      },
+      {
+        say: 'Before listing every term, estimate: the 6th term is about six equal jumps above the start, so a sensible answer sits far past the start — the rule then pins it exactly, and you can check the two agree.',
+        visual: 'The same staircase carried on to the 6th term, the start labelled at the bottom and the 6th dot flagged far above it.',
+        figure: coordinateGrid(
+          {
+            xMin: 0,
+            xMax: 6,
+            yMin: 0,
+            yMax: 30,
+            step: 1,
+            points: [
+              { x: 1, y: 2, label: 'start' },
+              { x: 2, y: 7 },
+              { x: 3, y: 12 },
+              { x: 4, y: 17 },
+              { x: 5, y: 22 },
+              { x: 6, y: 27, style: 'flag' },
+            ],
+          },
+          { alt: 'six dots climbing a grid from the labelled start at (1, 2) up to a flagged dot at (6, 27), far above where the climb began' },
+        ),
+      },
     ],
     summary: 'Plot a point as (right, up) from the origin — x before y. A pattern\'s nth term is start + step × (n − 1); use the rule to predict any term, then estimate to check it is sensible.',
     vocabulary: [

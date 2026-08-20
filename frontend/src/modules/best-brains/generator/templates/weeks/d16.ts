@@ -32,6 +32,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { barModel, mathSentence, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const D3 = { level: 'D' as const, week: 3 };
@@ -204,9 +205,59 @@ export const buildD16 = makeWeekBuilder({
     whyBeforeHow:
       'Dividing by a 2-digit number is the same fair-share idea as dividing by one digit, but the "how many fit" step is hard to eyeball, so we reach for an estimate-quotient move: round the divisor to a friendly ten and try that guess first. Because the rounded divisor makes each trial easy to picture, a quick check by multiplying tells you at once whether the guess overshoots (lower it) or leaves room (raise it); bracketing the whole quotient between two round products first keeps every long-division step honest.',
     script: [
-      { say: '736 ÷ 23: round 23 to 20. About how many 20s are in 73, the leading part? Roughly 3, so I try 3 as the first quotient digit.', visual: 'The divisor rounds to 20; a trial quotient digit appears.' },
-      { say: 'Check the trial: 3 × 23 = 69, which is under 73, so there is room — I bring down and keep going, guessing then verifying.', visual: 'The trial product checks against the working number.' },
-      { say: 'Bracket first: the quotient of 736 ÷ 23 sits between 30 and 40, because 23 × 30 = 690 and 23 × 40 = 920 trap it. That bracket keeps my long division honest.', visual: 'The quotient is bracketed between two round products.' },
+      {
+        say: '736 ÷ 23: round 23 to 20. About how many 20s are in 73, the leading part? Roughly 3, so I try 3 as the first quotient digit.',
+        visual: 'The rounding written out, 23 is about 20, and under it the trial it buys: 73 divided by 20 is about 3.',
+        // Two lines because the say has two moves: round the divisor, then ask
+        // the easy question the rounded one allows. Both lines are written with
+        // "is about", not "equals" — 73 ÷ 20 is not 3, and a picture claiming it
+        // was would teach the opposite of a TRIAL digit. The 3 is underlined as
+        // the digit chosen, and the very next segment tests it.
+        figure: mathSentence(
+          [{ text: '23' }, { text: '≈' }, { text: '20', mark: 'ring' }],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: '73' }, { text: '÷' }, { text: '20' },
+                { text: '≈' }, { text: '3', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the divisor rounded — 23 is about 20, with the 20 ringed — and under it the trial that buys, ' +
+              '73 divided by 20 is about 3, with the 3 underlined',
+          },
+        ),
+      },
+      {
+        say: 'Check the trial: 3 × 23 = 69, which is under 73, so there is room — I bring down and keep going, guessing then verifying.',
+        visual: 'The trial product 69 drawn just short of the working number 73, both to the same scale.',
+        figure: barModel(
+          [
+            { label: 'the trial', segments: [{ value: 69, label: '3 × 23 = 69' }] },
+            { label: 'the number', segments: [{ value: 73, label: '73' }] },
+          ],
+          { scaleMax: 73, alt: 'two bars to one scale, the trial product 69 stopping a little short of the working number 73' },
+        ),
+      },
+      {
+        say: 'Bracket first: the quotient of 736 ÷ 23 sits between 30 and 40, because 23 × 30 = 690 and 23 × 40 = 920 trap it. That bracket keeps my long division honest.',
+        visual: 'A number line trapping 736 between the two round products 690 and 920.',
+        figure: numberLine(
+          {
+            min: 600,
+            max: 1000,
+            step: 100,
+            labels: 'none',
+            marks: [
+              { at: 690, label: '23 × 30', style: 'flag' },
+              { at: 736, label: '736', style: 'point' },
+              { at: 920, label: '23 × 40', style: 'flag' },
+            ],
+          },
+          { alt: 'a number line from 600 to 1,000 with flags on the round products 690 and 920 and a dot for 736 sitting between them' },
+        ),
+      },
     ],
     summary: 'Round the divisor to a friendly ten to estimate each quotient digit, check the guess by multiplying, and adjust up or down. Bracket the whole quotient between two round products before you dive in.',
     vocabulary: [

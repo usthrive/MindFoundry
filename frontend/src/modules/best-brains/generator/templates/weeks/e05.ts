@@ -229,7 +229,7 @@ import { withCheckBack, withEstimateFirst } from '../lib/metacog';
 import { article, countNoun } from '../lib/format';
 import { addDec, formatDec, gcd, lcm, mulDec } from '../lib/compute';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { areaGrid, barModel, hundredChart } from '../lib/figures';
+import { areaGrid, barModel, columnMethod, hundredChart } from '../lib/figures';
 import { makeChoices } from '../shared';
 import type { ErrorTag } from '../../../types';
 import type { Rng } from '../../rng';
@@ -1372,7 +1372,33 @@ export const buildE05 = makeWeekBuilder({
       },
       {
         say: 'And the decimals are the same idea inside one number. The point tells me which digit is counting which size of piece, so before I add 4.7 and 0.35 I make sure tenths are standing over tenths and hundredths over hundredths — 4.70 and 0.35. If I shove the digits right instead I am adding a count of tenths to a count of hundredths, and the answer comes out about five times too small. So I estimate first: 4.7 is near 5 and 0.35 is small, so I am expecting a bit over 5, and I check the answer against that call before I write it down. The digits will look right either way. The size is the only thing that objects.',
-        visual: 'Two column additions side by side, one with the points lined up and one with the digits pushed right.',
+        visual: '4.70 stacked over 0.35 with the points in one line, the filler zero shaded in the hundredths place, and 5.05 under the line.',
+        // ONE addition, not two. The say's wrong version is a picture of digits
+        // in the wrong columns, and a figure drawing it would be a place-value
+        // chart of a lie standing beside a place-value chart of the truth, with
+        // nothing on the page saying which is which — a still cannot carry the
+        // "if I shove the digits right instead" the way a sentence can. So the
+        // correct alignment is drawn, the say names the rival, and the shaded
+        // hundredths column is where the argument actually lives: 4.7 wearing
+        // its filler zero is what gives the 5 a partner to be added to.
+        figure: columnMethod(
+          {
+            op: '+',
+            pointAfterCol: 0,
+            rows: [
+              { cells: ['1', '', ''], role: 'carry' },
+              { cells: ['4', '7', '0'], role: 'operand' },
+              { cells: ['0', '3', '5'], role: 'operand' },
+              { cells: ['5', '0', '5'], role: 'result' },
+            ],
+            highlightCols: [2],
+          },
+          {
+            alt:
+              '4.70 stacked over 0.35 with the decimal points in one line, the filler zero standing over the 5 in ' +
+              'the shaded hundredths column, a carried 1 above the ones, and 5.05 under the line',
+          },
+        ),
       },
     ],
     summary:

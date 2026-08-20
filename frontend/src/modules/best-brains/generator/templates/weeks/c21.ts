@@ -64,7 +64,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { areaGrid, assertsAnswer, assertsParam, barModel } from '../lib/figures';
+import { areaGrid, assertsAnswer, assertsParam, barModel, mathSentence } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -670,8 +670,35 @@ export const buildC21 = makeWeekBuilder({
         ),
       },
       {
+        // ONCE WRITTEN BY THE ADULT, NOW DRAWN — and the reason it could not be
+        // drawn before is worth keeping, because it is also why THIS drawing is
+        // the right one. Every other segment here has a shape; this one is about
+        // the WORDS after the number, and until `mathSentence` existed the
+        // figure system could only draw quantities. Both quantity candidates
+        // teach something false: two bars put 16 and 15 on one scale, which says
+        // these are two sizes of one measure — the exact belief the week exists
+        // to break — and a grid just re-draws the garden of segments one to
+        // four. A written line has no scale, so the two answers sit side by side
+        // without being compared, and the ring falls on the LABEL, which is the
+        // only part the say is talking about.
         say: 'So before I write anything down I check the label I am about to use. A fence answer is in meters; a covering answer is in square meters. If I estimate roughly and the label feels wrong, I have answered the other question.',
-        visual: 'Two labelled answer boxes side by side: meters for the fence, square meters for the field.',
+        visual:
+          'The two answers written one under the other with their labels ringed: fence: 16 meters, and field: 15 square meters.',
+        figure: mathSentence(
+          [{ text: 'fence:' }, { text: '16' }, { text: 'meters', mark: 'ring' }],
+          {
+            then: {
+              connector: 'and',
+              tokens: [
+                { text: 'field:' }, { text: '15' },
+                { text: 'square', mark: 'ring' }, { text: 'meters', mark: 'ring' },
+              ],
+            },
+            alt:
+              'the two answers written one under the other — fence: 16 meters, and field: 15 square meters — ' +
+              'with a ring drawn round each label',
+          },
+        ),
       },
     ],
     summary:

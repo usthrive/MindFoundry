@@ -341,7 +341,7 @@ import {
   COUNTABLE_NOUNS,
   PUPPETS,
 } from '../lib/earlynumber';
-import { assertsParam, counterGroups, counters, tenFrame } from '../lib/figures';
+import { assertsParam, counterGroups, counters, mathSentence, tenFrame } from '../lib/figures';
 import { countNoun, unitFor } from '../lib/format';
 import { drawUniqueItem } from '../lib/guard';
 import type { ItemGen } from '../lib/items';
@@ -1876,7 +1876,24 @@ export const buildA18 = makeWeekBuilder({
       },
       {
         say: spoken('Same blocks, same two. The story chose the move.'),
-        visual: 'The two sentences one under the other: 6 + 2 = 8 and 6 − 2 = 4.',
+        visual:
+          'The two sentences one under the other, 6 + 2 = 8 and 6 − 2 = 4, with a ring round each sign.',
+        // Two peer lines, no arrow between them: neither sentence becomes the
+        // other, which is the whole point of the segment. Only the SIGN differs,
+        // so only the sign is ringed — the six and the two are deliberately left
+        // unmarked so the child's eye lands on the one thing the story changed.
+        figure: mathSentence(
+          [{ text: '6' }, { text: '+', mark: 'ring' }, { text: '2' }, { text: '=' }, { text: '8' }],
+          {
+            then: {
+              connector: 'and',
+              tokens: [{ text: '6' }, { text: '−', mark: 'ring' }, { text: '2' }, { text: '=' }, { text: '4' }],
+            },
+            alt:
+              'two number sentences one under the other, six plus two equals eight and six minus two equals four, ' +
+              'with a ring drawn round the plus sign and round the minus sign',
+          },
+        ),
       },
     ],
     summary: spoken(

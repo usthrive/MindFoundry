@@ -31,6 +31,7 @@ import { multiStep } from '../lib/multistep';
 import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
+import { areaGrid, barModel } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -247,9 +248,43 @@ export const buildD03 = makeWeekBuilder({
     whyBeforeHow:
       'Because a factor divides a number evenly with no remainder, every factor pair is simply a different tile rectangle built from the same tiles — that is why a prime, which forms only one 1-by-itself rectangle, stands apart from a composite, which can be rebuilt as several rectangles. Factors and multiples are one fact seen two ways: since 6 divides 24, a rectangle 6 tiles wide fills 24, so 24 is a multiple of 6.',
     script: [
-      { say: 'Watch me build 24: one row of 24, then two rows of 12, then three rows of 8, then four rows of 6. Each tile rectangle is a different factor pair of 24.', visual: 'Four rectangles of 24 tiles morph into one another.' },
-      { say: 'A prime like 7 makes only ONE rectangle, a single row of 7. No other whole numbers fill it evenly, so it has just two factors: 1 and itself.', visual: 'A 1-by-7 strip; other rectangles fail to fill evenly.' },
-      { say: 'Before you decide a big number is prime, estimate which small factors could even fit, then check 2, 3, 5, and 7 — that quick reasonable check keeps you from missing a factor pair.', visual: 'Divisibility checks flash beside a number.' },
+      {
+        say: 'Watch me build 24: one row of 24, then two rows of 12, then three rows of 8, then four rows of 6. Each tile rectangle is a different factor pair of 24.',
+        visual: 'Four bars of 24 drawn to one scale, cut a different way each time: one 24, two 12s, three 8s, four 6s.',
+        figure: barModel(
+          [
+            { label: 'one row of 24', segments: [{ value: 24, label: '24' }] },
+            { label: 'two rows of 12', segments: [{ value: 12, label: '12' }, { value: 12, label: '12' }] },
+            { label: 'three rows of 8', segments: [{ value: 8, label: '8' }, { value: 8, label: '8' }, { value: 8, label: '8' }] },
+            {
+              label: 'four rows of 6',
+              segments: [{ value: 6, label: '6' }, { value: 6, label: '6' }, { value: 6, label: '6' }, { value: 6, label: '6' }],
+            },
+          ],
+          { scaleMax: 24, alt: 'four bars of the same length, one whole 24, then two 12s, then three 8s, then four 6s — the factor pairs of 24' },
+        ),
+      },
+      {
+        say: 'A prime like 7 makes only ONE rectangle, a single row of 7. No other whole numbers fill it evenly, so it has just two factors: 1 and itself.',
+        visual: 'A single row of seven tiles — the one rectangle 7 tiles will build.',
+        figure: areaGrid(
+          { rows: 1, cols: 7, showCounts: true },
+          { alt: 'a strip of seven tiles in a single row, counted as one row of 7' },
+        ),
+      },
+      {
+        say: 'Before you decide a big number is prime, estimate which small factors could even fit, then check 2, 3, 5, and 7 — that quick reasonable check keeps you from missing a factor pair.',
+        visual: 'A checking card: four boxes reading 2, 3, 5 and 7, each with its quick test written beside it.',
+        figure: areaGrid(
+          {
+            rows: 4,
+            cols: 1,
+            rowLabels: ['ends even', 'digit sum in 3s', 'ends 0 or 5', 'try dividing'],
+            cellLabels: ['2', '3', '5', '7'],
+          },
+          { alt: 'a card of four boxes in a column reading 2, 3, 5 and 7, with the quick test beside each — ends even, digit sum in 3s, ends 0 or 5, try dividing' },
+        ),
+      },
     ],
     summary: 'Factors divide evenly (tile rectangles); multiples are skip-count landings. A prime makes exactly one rectangle (1 and itself); a composite makes more. Factor and multiple are the same fact seen two ways.',
     vocabulary: [

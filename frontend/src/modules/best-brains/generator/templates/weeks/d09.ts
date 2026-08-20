@@ -25,6 +25,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { coprimeNumerator } from '../lib/format';
 import { boundAttribute } from '../lib/contexts';
+import { numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -288,9 +289,59 @@ export const buildD09 = makeWeekBuilder({
     whyBeforeHow:
       'Two fractions are equivalent because they mark the SAME point on a number line even when the pieces are cut differently — since scaling the top and bottom by the same factor only re-cuts each piece, the amount cannot move. That is why a number line settles every comparison: slide each fraction to its point, and the one farther from zero is the larger, no matter which has the bigger bottom. A bigger denominator just means more, smaller pieces — never a bigger amount, which is the trap this week is built to catch.',
     script: [
-      { say: 'Watch me scale one half by three: top and bottom each times three gives three sixths. On the number line the point does not budge, so it is the very same amount wearing a new name.', visual: 'A 1/2 tick re-labeled 3/6; the point holds still.' },
-      { say: 'To compare three fifths and one half, I lean each on the one-half benchmark: three fifths sits just past the middle, so it is the larger — no cross-multiplying needed.', visual: 'Three fifths and one half on a 0–1 line with a half flag.' },
-      { say: 'Estimate before you commit: a fraction near zero is tiny and one near a whole is almost all of it, so a quick landmark check tells you whether an answer is even sensible.', visual: 'Benchmarks 0, one half, and 1 marked along the line.' },
+      {
+        say: 'Watch me scale one half by three: top and bottom each times three gives three sixths. On the number line the point does not budge, so it is the very same amount wearing a new name.',
+        visual: 'A 0-to-1 line cut into sixths, with the halfway mark flagged and labelled 1/2 = 3/6.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1,
+            step: 1,
+            partition: 6,
+            labels: 'all',
+            labelAs: 'fraction',
+            marks: [{ at: 0.5, label: '1/2 = 3/6', style: 'flag' }],
+          },
+          { alt: 'a number line from 0 to 1 cut into six equal steps, with a flag standing on the halfway mark labelled 1/2 = 3/6' },
+        ),
+      },
+      {
+        say: 'To compare three fifths and one half, I lean each on the one-half benchmark: three fifths sits just past the middle, so it is the larger — no cross-multiplying needed.',
+        visual: 'A 0-to-1 line cut into tenths, with one half flagged and three fifths marked just to its right.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1,
+            step: 1,
+            partition: 10,
+            labels: 'ends',
+            marks: [
+              { at: 0.5, label: '1/2', style: 'flag' },
+              { at: 0.6, label: '3/5', style: 'point' },
+            ],
+          },
+          { alt: 'a number line from 0 to 1 cut into ten equal steps, with a flag on the halfway mark for one half and a dot one step further along for three fifths' },
+        ),
+      },
+      {
+        say: 'Estimate before you commit: a fraction near zero is tiny and one near a whole is almost all of it, so a quick landmark check tells you whether an answer is even sensible.',
+        visual: 'A 0-to-1 line with flags standing on the three landmarks: 0, one half and 1.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1,
+            step: 1,
+            partition: 2,
+            labels: 'none',
+            marks: [
+              { at: 0, label: '0', style: 'flag' },
+              { at: 0.5, label: '1/2', style: 'flag' },
+              { at: 1, label: '1', style: 'flag' },
+            ],
+          },
+          { alt: 'a number line from 0 to 1 with a flag at each end and one on the halfway mark, labelled 0, 1/2 and 1' },
+        ),
+      },
     ],
     summary: 'Scale the top and bottom together to make equivalent fractions. Compare by a shared piece-size or a benchmark, and remember that a bigger bottom means smaller pieces.',
     vocabulary: [

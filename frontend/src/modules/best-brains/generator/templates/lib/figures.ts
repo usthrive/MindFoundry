@@ -14,7 +14,10 @@
  * the backstop proving no template bypassed them (L28).
  */
 
-import type { AngleFigureParams, BBFigure, CounterIcon, FigureAssertion, MarkStyle } from '../../../figures/types';
+import type {
+  AngleFigureParams, BBFigure, ColumnMethodParams, CounterIcon, FigureAssertion,
+  MarkStyle, MathSentenceParams, SentenceToken,
+} from '../../../figures/types';
 // The coin picture NAMES its coins ("1 penny", "3 pennies") in its accessible
 // name, so it renders that phrase through the same authority every prompt uses.
 import { countNoun } from './format';
@@ -355,6 +358,48 @@ export function shapeFigure(
   opts: { alt: string; asserts?: FigureAssertion },
 ): BBFigure {
   return { type: 'angle-figure', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
+/**
+ * A written line of mathematics with a teacher's pen-marks — the primitive the
+ * band-A gap table asked for from the first fill. `tokens` is the line;
+ * `mark` rings/underlines/boxes a token the say is talking about; `then` draws
+ * a second line under a connector arrow ("becomes" / "is the same as").
+ *
+ * The default alt reads the line as words so a screen reader hears the
+ * mathematics, not a soup of glyphs; pass `opts.alt` to override.
+ */
+export function mathSentence(
+  tokens: Array<string | SentenceToken>,
+  opts: { then?: MathSentenceParams['then']; alt?: string; asserts?: FigureAssertion } = {},
+): BBFigure {
+  const toks: SentenceToken[] = tokens.map((t) => (typeof t === 'string' ? { text: t } : t));
+  const spoken = (line: SentenceToken[]) =>
+    line.map((t) => t.text)
+      .join(' ')
+      .replace(/×/g, 'times').replace(/÷/g, 'divided by').replace(/−/g, 'minus')
+      .replace(/\+/g, 'plus').replace(/=/g, 'equals').replace(/▢/g, 'an empty box');
+  const alt =
+    opts.alt ??
+    `the line ${spoken(toks)} written out large${opts.then ? `, and under it ${spoken(opts.then.tokens)}` : ''}`;
+  return {
+    type: 'math-sentence',
+    alt,
+    params: { tokens: toks, ...(opts.then ? { then: opts.then } : {}) },
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
+  };
+}
+
+/**
+ * The vertical written algorithm as a still — carries, borrows, partial rows,
+ * the placeholder zero, the decimal alignment line. Rows are top-to-bottom;
+ * every row the same cell count; '' holds a column open.
+ */
+export function columnMethod(
+  params: ColumnMethodParams,
+  opts: { alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  return { type: 'column-method', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
 }
 
 /** Shorthand for the two assertions templates actually use. */

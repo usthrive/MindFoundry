@@ -352,7 +352,7 @@ import {
   COUNTABLE_NOUNS,
   PUPPETS,
 } from '../lib/earlynumber';
-import { assertsAnswerOf, assertsParam, counterGroups, counters } from '../lib/figures';
+import { assertsAnswerOf, assertsParam, counterGroups, counters, mathSentence } from '../lib/figures';
 import { countNoun, unitFor } from '../lib/format';
 import { drawUniqueItem } from '../lib/guard';
 import type { ItemGen } from '../lib/items';
@@ -1755,11 +1755,26 @@ export const buildA16 = makeWeekBuilder({
       },
       {
         say: say('The crossed ones are gone. Count the rest with me.'),
-        visual: 'A finger touching each uncrossed shell in turn, skipping the crossed ones.',
+        visual: 'The same row of shells, the two crossed ones skipped, the three whole ones left to count.',
+        figure: counterGroups(
+          [{ count: 5, noun: 'shells' }],
+          {
+            relation: 'remove',
+            crossedOut: 2,
+            alt: 'the same row of shells with two crossed through, leaving three whole shells to count',
+          },
+        ),
       },
       {
         say: say('Five take away two is three. We write it like this.'),
-        visual: 'The take-away sentence written under the picture: 5 − 2 = 3.',
+        visual: 'The take-away sentence 5 − 2 = 3 written out large, with the 3 underlined.',
+        // The shells showed what went; this is the same story written down. The
+        // minus glyph is the one the vocabulary names two lines below, and the
+        // underline marks the count the child has just made out loud.
+        figure: mathSentence(
+          [{ text: '5' }, { text: '−' }, { text: '2' }, { text: '=' }, { text: '3', mark: 'underline' }],
+          { alt: 'the number sentence five minus two equals three written out large, with the three underlined' },
+        ),
       },
     ],
     summary: say(

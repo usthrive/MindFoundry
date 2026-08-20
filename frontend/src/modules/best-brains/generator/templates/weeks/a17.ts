@@ -350,7 +350,7 @@ import {
   COUNTABLE_NOUNS,
   PUPPETS,
 } from '../lib/earlynumber';
-import { assertsAnswerOf, assertsParam, counters, numberLine, tenFrame } from '../lib/figures';
+import { assertsAnswerOf, assertsParam, counters, mathSentence, numberLine, tenFrame } from '../lib/figures';
 import { countNoun, unitFor } from '../lib/format';
 import { drawUniqueItem } from '../lib/guard';
 import type { ItemGen } from '../lib/items';
@@ -1857,11 +1857,19 @@ export const buildA17 = makeWeekBuilder({
       },
       {
         say: spoken('I did not say eight. Eight is where I began.'),
-        visual: 'A hand resting on the eight while the first arc leaves it, so the flag is a place and not a hop.',
+        visual: 'The flag standing on eight while the first arc leaves it — eight is a place, not a hop.',
+        figure: walkedFigure(8, 1),
       },
       {
         say: spoken('She lands on five. We write it: 8 − 3 = 5.'),
-        visual: 'The count-back sentence written under the path: 8 − 3 = 5.',
+        visual: 'The count-back sentence 8 − 3 = 5 written out large, with the 5 underlined.',
+        // The three hops are drawn above; this is the line that records them.
+        // The 5 is underlined because it is where the walk STOPPED — the
+        // vocabulary entry "number sentence" three lines down is this picture.
+        figure: mathSentence(
+          [{ text: '8' }, { text: '−' }, { text: '3' }, { text: '=' }, { text: '5', mark: 'underline' }],
+          { alt: 'the number sentence eight minus three equals five written out large, with the five underlined' },
+        ),
       },
     ],
     summary: spoken(

@@ -32,6 +32,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { an } from '../lib/format';
+import { shapeFigure } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -224,7 +225,14 @@ export const buildD23 = makeWeekBuilder({
       'An angle measures an amount of turning, and the angle sum of a straight line is always 180° because the two angles open out to one flat, straight edge — so a missing angle is found by subtracting from that fixed total, never by guessing. The same idea drives triangles: their angle sum is 180°, so the third angle is whatever the first two leave, and the LARGEST of the three names the triangle (acute, right, or obtuse). Shapes nest the same way by their properties: since every square has four right angles and four equal sides, it satisfies the rectangle definition, so a square is a special rectangle — a member of the family, not an outsider.',
     script: [
       { say: 'Two angles that sit on one straight line always open out to a straight angle, so if one is 65° the other must be 115° — the straight line is shared between them.', visual: 'A straight angle splits into 65° and 115°.' },
-      { say: 'A triangle\'s three angles fill a straight angle too. Given two of them, I subtract from the total to find the third.', visual: 'Three triangle angles fold onto a straight line.' },
+      {
+        say: 'A triangle\'s three angles fill a straight angle too. Given two of them, I subtract from the total to find the third.',
+        visual: 'A triangle with two of its angles marked 50° and 60°, the third left standing as the unknown the subtraction finds.',
+        figure: shapeFigure(
+          { shape: 'triangle', angles: [50, 60, null] },
+          { alt: 'a triangle with an arc and 50° at one corner, an arc and 60° at the next, and a question mark at the third corner' },
+        ),
+      },
       { say: 'To name a triangle, I look only at its LARGEST angle: under a square corner is acute, exactly a square corner is right, over a square corner is obtuse.', visual: 'Three triangles sort by their biggest angle.' },
       { say: 'Before I finish, I estimate: the missing angle should be whatever is left of the straight line or triangle, so I check that a large given angle leaves a small partner — if they do not add up sensibly, I look again.', visual: 'A benchmark: a big angle beside a small leftover, filling one straight line.' },
     ],

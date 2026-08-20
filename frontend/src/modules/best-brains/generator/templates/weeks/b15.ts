@@ -933,7 +933,10 @@ export const buildB15 = makeWeekBuilder({
       },
       {
         say: 'So before I work anything out, I check the size of the answer first. I ask which child should end up with more. Suppose my answer comes out smaller than that child already had. Then I go back and read the question again, not my counting.',
-        visual: 'A finger travelling along the two bars, checking which reaches further.',
+        visual: "The same two bars to one scale, Omar's bar running past the end of Ines's.",
+        figure: barModel([statedBar("Ines's foil stars", 12), matchedPlusExtra("Omar's foil stars", 12, 5)], {
+          alt: "the two bars to one scale, Omar's bar running five past the end of Ines's",
+        }),
       },
     ],
     summary:

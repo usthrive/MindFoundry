@@ -818,7 +818,11 @@ export const buildB20 = makeWeekBuilder({
       },
       {
         say: 'One habit before I write any answer down. I check roughly how big it ought to be. A whole array holds a good deal more than one row. A row-sized answer is my warning.',
-        visual: 'A finger travelling down the rows, one row at a time.',
+        visual: 'A whole array of three rows of five with only the top row shaded — one row is far less than the whole.',
+        figure: areaGrid(
+          { rows: 3, cols: 5, shadedCells: [0, 1, 2, 3, 4] },
+          { alt: 'an array of three rows of five with only the top row shaded' },
+        ),
       },
     ],
     summary:

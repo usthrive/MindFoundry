@@ -92,7 +92,7 @@ import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
 import type { ItemDraft } from '../lib/assemble';
-import { shapeFigure } from '../lib/figures';
+import { areaGrid, shapeFigure } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { ErrorTag } from '../../../types';
 import type { Rng } from '../../rng';
@@ -685,7 +685,26 @@ export const buildC22 = makeWeekBuilder({
       },
       {
         say: 'So before I write a name on any card, I check every test. Not just the first one that fits. I also check whether I have stopped too early. If I have written only one name, I ask which wider families it joins.',
-        visual: 'One card with a name tag long enough for several names.',
+        visual: 'One card\'s name tag, with a plate for every name it has earned, widest family last.',
+        // The names are the lesson here, so the names are what gets drawn. The
+        // five plates are the square from the segments above, read outwards:
+        // it passed both tests, so it holds its own name and both family names,
+        // and every one of those sits inside the parallelogram family, which
+        // sits inside the quadrilateral family the first card was given. Nobody
+        // is being asked to pick one — the picture of "several at once" is a
+        // tag with room on it, which is what stopping too early costs.
+        figure: areaGrid(
+          {
+            rows: 5,
+            cols: 1,
+            colLabels: ['one card, all its names'],
+            rowLabels: ['square', 'rhombus', 'rectangle', 'parallelogram', 'quadrilateral'],
+            shadedCells: [0, 1, 2, 3, 4],
+          },
+          {
+            alt: 'a name tag for one card, with five filled plates in a column reading square, rhombus, rectangle, parallelogram and quadrilateral',
+          },
+        ),
       },
     ],
     summary:

@@ -634,7 +634,18 @@ export const buildC17 = makeWeekBuilder({
       },
       {
         say: 'Before I share anything, I guess roughly where the answer should land. One share out of several must be much smaller than the whole pile. Keeping most of the shares must land close to the whole pile. If my answer breaks that, I grabbed the bottom number. Then I go back to the groups.',
-        visual: 'The whole pile beside a single share, so the size difference is obvious.',
+        visual: 'The whole pile of twelve as one bar, and a single share of four beside it on the same scale.',
+        // The size check the say asks for, drawn. Both bars count the same
+        // objects, so one scale is honest: one share out of three lands at a
+        // third of the pile, and any answer that comes out near the pile's own
+        // length was the bottom number being counted instead of shares.
+        figure: barModel(
+          [
+            { label: 'the whole pile', segments: [{ value: 12, label: '12' }], total: '12' },
+            { label: 'one share', segments: [{ value: 4, label: '4' }], total: '4' },
+          ],
+          { scaleMax: 12, alt: 'a bar of twelve for the whole pile and, to the same scale, a bar of four for one share' },
+        ),
       },
     ],
     summary:

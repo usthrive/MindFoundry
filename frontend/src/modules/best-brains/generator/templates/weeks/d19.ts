@@ -26,6 +26,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { divFrac, formatFrac } from '../lib/compute';
 import { an, countNoun } from '../lib/format';
+import { barModel } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -218,9 +219,64 @@ export const buildD19 = makeWeekBuilder({
     whyBeforeHow:
       'Dividing a whole number by a unit fraction asks how many of the small pieces fit inside it, and because each whole holds a full set of those pieces, the count comes out far larger than the whole — that is why the scoop model settles it every time: fill each whole with the little scoops and count them, so dividing by a third lands on three times as many, never fewer. Turned around, a unit fraction divided by a whole splits one small piece into equal shares, so that piece only gets smaller. The scoop model makes both directions visible before any flip-and-multiply rule.',
     script: [
-      { say: 'For 4 ÷ 1/3, I fill each of the 4 cups with 1/3-scoops and count: each cup takes 3 scoops, so 4 × 3 = 12 scoops in all.', visual: 'Four bars each cut into thirds; twelve scoops counted.' },
-      { say: 'For 1/3 ÷ 4, I cut one third into 4 equal shares; each share is a smaller piece, one twelfth of the whole.', visual: 'One third splits into four twelfth-pieces.' },
-      { say: 'Before I compute, I estimate: a smaller scoop must give more scoops, so a sensible answer for whole ÷ unit fraction lands well above the number of wholes — if it came out smaller, I would check again.', visual: 'A rough size check: many little scoops versus a few big cups.' },
+      {
+        say: 'For 4 ÷ 1/3, I fill each of the 4 cups with 1/3-scoops and count: each cup takes 3 scoops, so 4 × 3 = 12 scoops in all.',
+        visual: 'Four cups drawn as four equal bars, each cut into three third-cup scoops — twelve scoops in all.',
+        figure: barModel(
+          [
+            { label: 'cup 1', segments: [{ value: 1, label: '1/3' }, { value: 1, label: '1/3' }, { value: 1, label: '1/3' }] },
+            { label: 'cup 2', segments: [{ value: 1, label: '1/3' }, { value: 1, label: '1/3' }, { value: 1, label: '1/3' }] },
+            { label: 'cup 3', segments: [{ value: 1, label: '1/3' }, { value: 1, label: '1/3' }, { value: 1, label: '1/3' }] },
+            { label: 'cup 4', segments: [{ value: 1, label: '1/3' }, { value: 1, label: '1/3' }, { value: 1, label: '1/3' }] },
+          ],
+          { scaleMax: 3, alt: 'four bars of the same length, one for each cup, every bar cut into three equal third-cup scoops' },
+        ),
+      },
+      {
+        say: 'For 1/3 ÷ 4, I cut one third into 4 equal shares; each share is a smaller piece, one twelfth of the whole.',
+        visual: 'One third of a bar beside the same third cut into four equal shares, each a twelfth of the whole.',
+        figure: barModel(
+          [
+            { label: '1/3', segments: [{ value: 4 }] },
+            {
+              label: 'shared by 4',
+              segments: [
+                { value: 1, fill: 'soft' }, { value: 1, fill: 'soft' },
+                { value: 1, fill: 'soft' }, { value: 1, fill: 'soft' },
+              ],
+            },
+          ],
+          { scaleMax: 12, alt: 'a whole third drawn as one block, and beneath it the same length cut into four equal shares, each one twelfth of the whole bar' },
+        ),
+      },
+      {
+        say: 'Before I compute, I estimate: a smaller scoop must give more scoops, so a sensible answer for whole ÷ unit fraction lands well above the number of wholes — if it came out smaller, I would check again.',
+        visual: 'The same amount shown twice to one scale: as four big cups, and as twelve little third-cup scoops.',
+        // The comparison the say makes is a COUNT, not an amount — twelve
+        // scoops and four cups are the same quantity of liquid. Drawn as two
+        // bars of different length it would claim twelve is more to drink,
+        // which is the misconception the segment exists to prevent.
+        figure: barModel(
+          [
+            {
+              label: 'big cups',
+              segments: [{ value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }],
+              total: '4 cups',
+            },
+            {
+              label: 'little scoops',
+              segments: [
+                { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' },
+                { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' },
+                { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' },
+                { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' }, { value: 1 / 3, fill: 'soft' },
+              ],
+              total: '12 scoops',
+            },
+          ],
+          { scaleMax: 4, alt: 'two bars of exactly the same length: the top one cut into four big cups, the bottom one into twelve little scoops' },
+        ),
+      },
     ],
     summary: 'Whole ÷ unit fraction counts how many small pieces fit, giving a bigger number; unit fraction ÷ whole splits one piece into smaller shares. Picture the scoops first, then use flip-and-multiply.',
     vocabulary: [

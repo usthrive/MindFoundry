@@ -193,7 +193,7 @@ import { drawUniqueItem } from '../lib/guard';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { areaGrid, barModel } from '../lib/figures';
+import { areaGrid, barModel, mathSentence } from '../lib/figures';
 import {
   eaBaseTimesExponent,
   evaluatePower,
@@ -995,11 +995,62 @@ export const buildE10 = makeWeekBuilder({
       },
       {
         say: 'Now watch what happens when I swap the two numbers over. Two cubed is two times two times two, which is eight. Three squared is three times three, which is nine. Different answers, so the swap matters — the base and the exponent are not a pair that trades places. And here is the one place that catches everybody: two to the fourth is sixteen, and four squared is also sixteen. One pair, out of all the whole numbers there are. It is not a rule, it is a coincidence worth knowing about, and it is the only one.',
-        visual: 'Four swapped pairs written out as their factor lines, with the two sixteens meeting at the end.',
+        visual: 'The swapped pair written out as its factor lines: 2^4 is four twos and 4^2 is two fours, with both sixteens underlined.',
+        // The swap the say calls the one that catches everybody, written as the
+        // factor lines that explain it: four twos on one line, two fours on the
+        // other, and the two sixteens meeting. A sentence holds two lines, so
+        // the earlier pair in the say (2^3 against 3^2) is carried by the words
+        // and this still carries the coincidence — the part a picture can settle
+        // and prose cannot, because the sameness has to be SEEN to land as a
+        // coincidence rather than a rule.
+        figure: mathSentence(
+          [
+            { text: '2^4' }, { text: '=' }, { text: '2' }, { text: '×' }, { text: '2' },
+            { text: '×' }, { text: '2' }, { text: '×' }, { text: '2' }, { text: '=' },
+            { text: '16', mark: 'underline' },
+          ],
+          {
+            then: {
+              connector: 'and',
+              tokens: [
+                { text: '4^2' }, { text: '=' }, { text: '4' }, { text: '×' },
+                { text: '4' }, { text: '=' }, { text: '16', mark: 'underline' },
+              ],
+            },
+            alt:
+              'two to the fourth written out as two times two times two times two equals sixteen, and under it ' +
+              'four squared written out as four times four equals sixteen, with both sixteens underlined',
+          },
+        ),
       },
       {
         say: 'Here is why the order of operations puts a power first, and it is not because somebody decided so. Take two plus three squared times four. The three squared is standing in for three times three — it is a line of multiplication with a coat on. I cannot multiply by four until I know what I am multiplying, so I collect it: nine. Now four nines is thirty-six, and two more is thirty-eight. The power did not push in at the front of a queue. It was never in the queue; it was a number that had not been written out yet.',
-        visual: 'The same line settled in three stages: the power collected, then the multiplication, then the addition.',
+        visual: 'The line 2 + 3^2 × 4 with the power ringed, and under it the same line once the power is collected: 2 + 9 × 4 = 38.',
+        // Two stages drawn, three named. A sentence holds two lines, so the pair
+        // chosen is the one the say argues about: the power turning into the
+        // number it was always standing for. The ring travels from the 3^2 to
+        // the 9 it collected into, which is the claim in the say — the power did
+        // not push in at the front of a queue, it was a number not yet written
+        // out. What follows it (four nines, then two more) is ordinary and the
+        // second line's own equals sign carries it.
+        figure: mathSentence(
+          [
+            { text: '2' }, { text: '+' }, { text: '3^2', mark: 'ring' },
+            { text: '×' }, { text: '4' },
+          ],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: '2' }, { text: '+' }, { text: '9', mark: 'ring' }, { text: '×' },
+                { text: '4' }, { text: '=' }, { text: '38', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the line two plus three squared times four with a ring round the three squared, and under it the ' +
+              'same line with a ringed nine in its place: two plus nine times four equals thirty-eight',
+          },
+        ),
       },
       {
         say: 'One habit before the arithmetic and one after. Before: I estimate. A square whose edge is five and three together is not five squared plus three squared — I can see that on the drawing, because gathering the edge first builds two extra rectangles that the two separate squares leave out. Sixty-four, not thirty-four. After: I check the size against what I expected. Powers run away from you, so an answer that is roughly right in size is worth more than digits that look tidy, and if my answer is nowhere near my estimate I have found my mistake rather than failed to check it.',

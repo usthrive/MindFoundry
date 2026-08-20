@@ -24,6 +24,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { roundDec } from '../lib/compute';
+import { numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 import type { Rng } from '../../rng';
 
@@ -222,9 +223,42 @@ export const buildD13 = makeWeekBuilder({
     whyBeforeHow:
       'Every place to the right of the decimal point is worth ten times less than the place before it — tenths, then hundredths, then thousandths — because the ten-times place-value rule that builds whole numbers simply keeps running to the right. That is why a place chart settles every question this week: line each digit up in its own column, and its worth is fixed by the column it lands in, not by how many digits trail behind it. Reading, rounding, and comparing to thousandths all become the same move — find the column. To round, look at the single digit one column to the right of the place you are keeping, since that one neighbour decides whether the kept digit holds or ticks up.',
     script: [
-      { say: 'Watch the places shrink by tens as we step right: four tenths, then four hundredths, then four thousandths — each column a tenth of the one before it.', visual: 'A place chart extends right of the point; each column a tenth of the last.' },
-      { say: 'In a number like 3.472 the last digit names the thousandths, the one before it the hundredths, and the first the tenths — I read a digit by its column on the place chart, not by how big it looks.', visual: 'Each decimal digit sits in a labelled column.' },
-      { say: 'Before rounding, estimate: a rounded value lands on the nearest friendly decimal, so it should sit right beside the original — if your answer jumped far, check which column you used to decide.', visual: 'Benchmark: the original and its rounded neighbour, a whisker apart.' },
+      {
+        say: 'Watch the places shrink by tens as we step right: four tenths, then four hundredths, then four thousandths — each column a tenth of the one before it.',
+        visual: 'A place chart running right of the point, the same digit 4 in the tenths, hundredths and thousandths columns with what each is worth printed underneath.',
+        figure: {
+          type: 'place-value-chart',
+          alt: 'a place chart with the point drawn on the ones-tenths boundary and the same digit 4 standing in the tenths, hundredths and thousandths columns, each worth printed beneath — four tenths, four hundredths, four thousandths',
+          params: { digits: '0.444', showValues: true },
+        },
+      },
+      {
+        say: 'In a number like 3.472 the last digit names the thousandths, the one before it the hundredths, and the first the tenths — I read a digit by its column on the place chart, not by how big it looks.',
+        visual: 'The number 3.472 in a place chart, each digit standing in its own named column.',
+        figure: {
+          type: 'place-value-chart',
+          alt: 'a place chart holding 3.472, with 3 in the ones column, 4 in the tenths, 7 in the hundredths and 2 in the thousandths, and each digit\'s worth printed beneath its column',
+          params: { digits: '3.472', showValues: true },
+        },
+      },
+      {
+        say: 'Before rounding, estimate: a rounded value lands on the nearest friendly decimal, so it should sit right beside the original — if your answer jumped far, check which column you used to decide.',
+        visual: 'A number line stepped in thousandths, with 2.463 marked and its rounded neighbour 2.46 flagged a whisker to its left.',
+        figure: numberLine(
+          {
+            min: 2.45,
+            max: 2.47,
+            step: 0.01,
+            partition: 10,
+            labels: 'majors',
+            marks: [
+              { at: 2.46, label: '2.46', style: 'flag' },
+              { at: 2.463, label: '2.463', style: 'point' },
+            ],
+          },
+          { alt: 'a number line from 2.45 to 2.47 with ten small steps in each hundredth, the rounded 2.46 flagged and 2.463 marked three small steps to its right' },
+        ),
+      },
     ],
     summary: 'Places shrink ten-fold to the right: tenths, hundredths, thousandths. Name a digit by its column on the place chart; to round, let the digit one place to the right decide.',
     vocabulary: [

@@ -102,11 +102,16 @@ const permitsSeen = new Set<string>();
  * weeks get drawn; they may never go up without a deliberate edit here.
  */
 const sceneDebt = new Map<string, number>();
-// Measured 2026-08-18, after B2's four segments were drawn. 119 scenes across
-// the corpus describe a picture and draw nothing; Level D has almost no lesson
-// pictures at all. Each number is a debt to pay down, never a budget to spend.
+// Re-measured 2026-08-20, after the corpus-wide figure fill: 119 scenes paid
+// down to 7, every remaining one DELIBERATE and named — a21 (a cone in the
+// hands teaches what a still cannot) · b08 (the fact triangle the adult draws
+// on paper) · b23 (a dot plot needs baseline-aligned stacks CountersFig cannot
+// draw — measured rejection in b23's header) · d06 (a counterfactual "if" has
+// no still) · d23 ×3 (adjacent-angles-on-a-line and a three-shape gallery,
+// neither expressible by the one-opening angle figure — the recorded gap).
+// Each number is a debt to pay down, never a budget to spend.
 const SCENE_DEBT_CEILING: Record<string, number> = {
-  A: 10, B: 20, C: 10, D: 71, E: 8,
+  A: 1, B: 2, C: 0, D: 4, E: 0,
 };
 
 // ── Producibility ──────────────────────────────────────────────────────────

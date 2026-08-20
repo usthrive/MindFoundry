@@ -239,6 +239,87 @@ export function checkFigureShape(fig: BBFigure): string[] {
       }
       break;
     }
+    case 'math-sentence': {
+      const p = fig.params;
+      for (const [name, line] of [['tokens', p.tokens], ['then.tokens', p.then?.tokens]] as const) {
+        if (!line) continue;
+        if (line.length === 0) bad(`${name} is empty — a sentence needs at least one token`);
+        if (line.length > 12) bad(`${name} has ${line.length} tokens — past 12 the type shrinks below reading size`);
+        line.forEach((t, i) => {
+          if (!t.text.trim()) bad(`${name}[${i}] is blank — use '▢' for an answer blank`);
+          if (t.text.length > 8) bad(`${name}[${i}] "${t.text}" is ${t.text.length} chars — tokens cap at 8; split it`);
+        });
+        // SELF-AUDIT (the base-ten 'becomes'-conserves precedent): a line that
+        // writes `a op b … = k` in plain numerals must be TRUE. Lesson figures
+        // are audited with no answer target (validator passes null), so this is
+        // the only gate that can see a lying equation on a lesson board — found
+        // by the fill agent that had been told the audit existed when it did
+        // not. A knowingly-wrong line declares `deliberate: true`.
+        if (!p.deliberate && line !== undefined) {
+          const s = sentenceEquation(line);
+          if (s && Math.abs(s.value - s.claimed) > 1e-9) {
+            bad(`${name} writes ${s.text} but the left side makes ${s.value} — a lesson may not show untrue mathematics; if the wrong line IS the lesson, declare deliberate: true`);
+          }
+        }
+      }
+      break;
+    }
+    case 'column-method': {
+      const p = fig.params;
+      if (!p.rows?.length || p.rows.length < 2) bad('column-method needs at least two rows');
+      // SELF-AUDIT, same contract as math-sentence: a plain two-operand + or −
+      // with a COMPLETE result row must total. Partial rows, blank results (the
+      // ruled-line-answer-not-written form) and × are left to the author.
+      if (!p.deliberate && (p.op === '+' || p.op === '−')) {
+        const operands = p.rows.filter((r) => r.role === 'operand');
+        const res = p.rows.find((r) => r.role === 'result');
+        const hasPartials = p.rows.some((r) => r.role === 'partial');
+        const readRow = (cells: string[]): number | null => {
+          let s = cells.join('');
+          if (!/^\d+$/.test(s)) return null;
+          if (p.pointAfterCol !== undefined) {
+            const before = cells.slice(0, p.pointAfterCol + 1).join('').length;
+            s = `${s.slice(0, before)}.${s.slice(before)}`;
+          }
+          return Number(s);
+        };
+        if (operands.length === 2 && res && !hasPartials) {
+          const a = readRow(operands[0].cells);
+          const b = readRow(operands[1].cells);
+          const k = readRow(res.cells);
+          if (a !== null && b !== null && k !== null) {
+            const v = p.op === '+' ? a + b : a - b;
+            if (Math.abs(v - k) > 1e-9) {
+              bad(`the columns write ${a} ${p.op} ${b} = ${k}, but it makes ${v} — declare deliberate: true only if the wrong total IS the lesson`);
+            }
+          }
+        }
+      }
+      const width = p.rows?.[0]?.cells.length ?? 0;
+      if (width === 0) bad('rows need at least one column');
+      if (width > 9) bad(`${width} columns will not fit the figure width (max 9)`);
+      p.rows?.forEach((r, i) => {
+        if (r.cells.length !== width) bad(`row ${i} has ${r.cells.length} cells; row 0 has ${width} — ragged rows misalign the columns`);
+        if (r.role === 'carry') {
+          // One digit for a carry; two for a borrow's rewritten "13 ones".
+          r.cells.forEach((c, j) => { if (c && !/^\d{1,2}$/.test(c)) bad(`carry row ${i} cell ${j} "${c}" — a carry or borrow note is one or two digits`); });
+        } else {
+          // A column holds ONE digit — writing "47" in a cell defeats the whole
+          // picture, which exists to show place columns as columns.
+          r.cells.forEach((c, j) => { if (c.length > 1) bad(`row ${i} cell ${j} "${c}" is ${c.length} chars — a column holds a single digit`); });
+        }
+        for (const s of r.struck ?? []) {
+          if (!isInt(s) || s < 0 || s >= width) bad(`row ${i} strikes column ${s}, outside 0–${width - 1}`);
+        }
+      });
+      if (p.pointAfterCol !== undefined && (!isInt(p.pointAfterCol) || p.pointAfterCol < 0 || p.pointAfterCol >= width)) {
+        bad(`pointAfterCol ${p.pointAfterCol} is outside the columns`);
+      }
+      for (const h of p.highlightCols ?? []) {
+        if (!isInt(h) || h < 0 || h >= width) bad(`highlightCols entry ${h} is outside 0–${width - 1}`);
+      }
+      break;
+    }
   }
   return e;
 }
@@ -390,7 +471,78 @@ export function figureValue(fig: BBFigure, selector?: string): string[] | null {
       if (p.degrees !== undefined) return [String(p.degrees), `${p.degrees}°`];
       return null;
     }
+    case 'math-sentence': {
+      // 'value' evaluates a plain `a op b … = k` with × ÷ before + −, and
+      // answers with the k the sentence claims ONLY when the left side really
+      // reaches it — a figure asserting a false equation must fail its audit.
+      // (Falsehood is also a SHAPE error unless declared deliberate — see
+      // checkFigureShape; this path serves item-level assertions.)
+      const p = fig.params;
+      if (of !== undefined && of !== 'value') return null;
+      const s = sentenceEquation(p.tokens);
+      if (!s) return null;
+      return Math.abs(s.value - s.claimed) < 1e-9 ? [String(s.claimed)] : [String(s.value)];
+    }
+    case 'column-method': {
+      // The result row re-read as one number (with the drawn point, if any) —
+      // so an item's answer can be audited against the algorithm's own total.
+      const p = fig.params;
+      if (of !== undefined && of !== 'result') return null;
+      const res = p.rows.find((r) => r.role === 'result');
+      if (!res) return null;
+      let s = res.cells.join('');
+      if (p.pointAfterCol !== undefined) {
+        const digitsBefore = res.cells.slice(0, p.pointAfterCol + 1).join('').length;
+        s = `${s.slice(0, digitsBefore)}.${s.slice(digitsBefore)}`;
+      }
+      if (!/^\d+(\.\d+)?$/.test(s)) return null;
+      const n = Number(s);
+      return [s, String(n)];
+    }
   }
+}
+
+/**
+ * Parse a written line as `a op b … = k` over plain numerals, or null when the
+ * line is anything else (words, blanks, powers, brackets — all legitimately
+ * unparseable and so unaudited). The corpus writes minus as U+2212, and the
+ * first version of this parser accepted only ASCII '-' — a silent null on
+ * every negative line, found by the fill agent working Level E. Both forms
+ * are accepted everywhere a sign can occur.
+ */
+function sentenceEquation(
+  tokens: ReadonlyArray<{ text: string }>,
+): { value: number; claimed: number; text: string } | null {
+  const NUM = /^[-−]?\d+(\.\d+)?$/;
+  const toNum = (t: string) => Number(t.replace('−', '-'));
+  const texts = tokens.map((t) => t.text.trim());
+  const eq = texts.indexOf('=');
+  if (eq <= 0 || eq !== texts.length - 2) return null;
+  const left = texts.slice(0, eq);
+  const claimed = texts[eq + 1];
+  if (!NUM.test(claimed)) return null;
+  const nums: number[] = [];
+  const ops: string[] = [];
+  for (const [i, t] of left.entries()) {
+    if (i % 2 === 0) {
+      if (!NUM.test(t)) return null;
+      nums.push(toNum(t));
+    } else {
+      if (!['+', '−', '-', '×', '÷'].includes(t)) return null;
+      ops.push(t);
+    }
+  }
+  if (nums.length !== ops.length + 1 || nums.length === 0) return null;
+  const n2: number[] = [nums[0]];
+  const o2: string[] = [];
+  for (const [i, op] of ops.entries()) {
+    if (op === '×') n2[n2.length - 1] *= nums[i + 1];
+    else if (op === '÷') n2[n2.length - 1] /= nums[i + 1];
+    else { o2.push(op); n2.push(nums[i + 1]); }
+  }
+  let v = n2[0];
+  for (const [i, op] of o2.entries()) v = op === '+' ? v + n2[i + 1] : v - n2[i + 1];
+  return { value: v, claimed: toNum(claimed), text: texts.join(' ') };
 }
 
 /** The selectors each figure type answers to; anything else is an authoring typo. */
@@ -406,6 +558,8 @@ const SELECTORS: Record<BBFigure['type'], RegExp[]> = {
   'coin-set': [/^cents$/, /^count$/],
   'coordinate-grid': [/^point$/, /^point:\d+$/],
   'angle-figure': [/^angle$/, /^sum$/, /^missing$/],
+  'math-sentence': [/^value$/],
+  'column-method': [/^result$/],
 };
 
 const PLACE_WORTH: Record<string, number> = {

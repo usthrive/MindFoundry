@@ -26,6 +26,8 @@ import ClockFig from './ClockFig';
 import CoinSetFig from './CoinSetFig';
 import CoordinateGridFig from './CoordinateGridFig';
 import AngleFig from './AngleFig';
+import MathSentenceFig from './MathSentenceFig';
+import ColumnMethodFig from './ColumnMethodFig';
 
 /** Band A gets the biggest drawing: small hands, unpractised eyes, no reading. */
 export function sizeForBand(band: InteractionBand): FigureSize {
@@ -47,6 +49,8 @@ function Primitive({ figure, size }: { figure: BBFigure; size: FigureSize }) {
     case 'coin-set': return <CoinSetFig params={figure.params} size={size} />;
     case 'coordinate-grid': return <CoordinateGridFig params={figure.params} size={size} />;
     case 'angle-figure': return <AngleFig params={figure.params} size={size} />;
+    case 'math-sentence': return <MathSentenceFig params={figure.params} size={size} />;
+    case 'column-method': return <ColumnMethodFig params={figure.params} size={size} />;
   }
 }
 

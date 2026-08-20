@@ -237,7 +237,7 @@ import { drawUniqueItem } from '../lib/guard';
 import { withEstimateFirst } from '../lib/metacog';
 import { article, countNoun, fmtInt, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { barModel } from '../lib/figures';
+import { areaGrid, barModel, mathSentence } from '../lib/figures';
 import {
   evaluateAtX,
   evaluatePower,
@@ -1153,15 +1153,81 @@ export const buildE11 = makeWeekBuilder({
       },
       {
         say: 'Now here are three machines side by side, and I want you to see me get this wrong on purpose. Two n, n squared, and n plus two. Which is biggest? I cannot tell you, and neither can anybody else, because nobody has said what n is. Feed all three a nought: nought, nought, and two — the adding one wins. Feed them a one: two, one, three — still the adding one, and the squaring one is now last. Feed them a two: four, four and four, all three level. Feed them a three: six, nine, five, and from here the squaring one is in front and stays in front for ever. Four answers to one question, and the only honest first move is to ask what is in the bag.',
-        visual: 'A table of the three machines fed nought, one, two and three, with the row at two ruled across where all three land together.',
+        visual: 'A table of the three machines fed nought to three, with the row where all three make four shaded.',
+        // Every number in this table is said aloud in the segment, so the
+        // picture hands over nothing; what it adds is the SHAPE of the four
+        // answers, which prose cannot hold in one glance. Read down a column
+        // and one machine grows its own way. Read across and the order of the
+        // three changes three times in four rows. The shaded row is the only
+        // place they agree, and it is the reason "which is bigger" is not a
+        // question until somebody says what is in the bag. The squaring machine
+        // is written with the caret the whole file uses (see SQUARE) — no
+        // superscript glyph reaches a served surface anywhere in this corpus.
+        figure: areaGrid(
+          {
+            rows: 4,
+            cols: 3,
+            rowLabels: ['fed 0', 'fed 1', 'fed 2', 'fed 3'],
+            colLabels: ['2n', SQUARE, 'n + 2'],
+            cellLabels: ['0', '0', '2', '2', '1', '3', '4', '4', '4', '6', '9', '5'],
+            shadedCells: [6, 7, 8],
+          },
+          { alt: 'a table of the three machines fed 0, 1, 2 and 3, with the row where all three make 4 shaded' },
+        ),
       },
       {
         say: 'Two habits, one before the arithmetic and one after. Before: I estimate. Feeding nine into six n plus five, I say to myself that six nines is somewhere near sixty, so I am expecting an answer in the high fifties — and then I work it out properly and get fifty-nine. If I had got fourteen I would have caught myself putting the nine in the wrong place. After: I check the size against what I expected, because a substitution that has gone wrong is just as tidy on the page as one that has not, and roughly right beats neatly wrong every time.',
-        visual: 'The estimate written above the working, with the finished answer set beside it.',
+        visual: 'The rough call written above the working — six nines is about 60, with the 60 ringed — and under it 6 × 9 + 5 = 59.',
+        // The estimate is the TOP line and the working the bottom one, in that
+        // order, because the order is the habit: the call is made before the
+        // digits exist. It is written with "is about" rather than an equals
+        // sign, since six nines is not sixty and a line claiming it was would
+        // teach the opposite of estimating. The ballpark is ringed and the
+        // finished answer underlined, so the two numbers the say asks the child
+        // to hold against each other are the two marked ones.
+        figure: mathSentence(
+          [{ text: '6' }, { text: '×' }, { text: '9' }, { text: '≈' }, { text: '60', mark: 'ring' }],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: '6' }, { text: '×' }, { text: '9' }, { text: '+' },
+                { text: '5' }, { text: '=' }, { text: '59', mark: 'underline' },
+              ],
+            },
+            alt:
+              'the estimate written first, six times nine is about sixty with the sixty ringed, and under it the ' +
+              'working done properly, six times nine plus five equals fifty-nine, with the fifty-nine underlined',
+          },
+        ),
       },
       {
         say: 'Last, the one that catches everybody. Three more than twice n. Watch the order: twice n first, then three more. So it is two n, then plus three — the doubling is written first because it happens first. Here is what a lot of people write instead: two, bracket, n plus three. Feed both a seven. Mine gives fourteen and three, which is seventeen. The bracket one adds first and gets ten, then doubles it and gets twenty. Twenty is not seventeen, and the bracket is the whole difference — it made the adding happen first, and the words never asked for that.',
-        visual: 'The phrase written out with the doubling underlined first, set against the bracketed version and the two values they give at the same number.',
+        visual: 'The phrase 3 more than twice n with the doubling underlined, and under it what it reads as: 2n + 3.',
+        // The words on the top line and the expression under them, because the
+        // segment is about ORDER and the picture has to keep that order: twice n
+        // is underlined where it stands in the phrase, and 2n is written first
+        // in the line below it. The rival 2(n + 3) and the two values it splits
+        // — seventeen against twenty at n = 7 — stay in the spoken line. The
+        // second drawn line is already spent on the correct reading, and the
+        // alternative — drawing the wrong expression with nothing on the page
+        // marking it wrong — would leave a child who skims the figure holding
+        // exactly the version being warned against.
+        figure: mathSentence(
+          [
+            { text: '3' }, { text: 'more' }, { text: 'than' },
+            { text: 'twice', mark: 'underline' }, { text: 'n', mark: 'underline' },
+          ],
+          {
+            then: {
+              connector: 'reads-as',
+              tokens: [{ text: '2n' }, { text: '+' }, { text: '3' }],
+            },
+            alt:
+              'the words three more than twice n written out with twice n underlined, and under them the ' +
+              'expression they read as, two n plus three',
+          },
+        ),
       },
     ],
     summary:

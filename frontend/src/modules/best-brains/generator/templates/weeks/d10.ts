@@ -32,6 +32,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { addFrac, formatFrac, subFrac } from '../lib/compute';
 import { partitionWord } from '../lib/format';
+import { barModel } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -227,9 +228,52 @@ export const buildD10 = makeWeekBuilder({
     whyBeforeHow:
       'A fraction counts equal pieces, and because two fractions with the same denominator are built from the same unit brick, you only ever add or subtract the counts on top — the bottom names the brick and it never moves. The tempting slip is to add the bottoms too, but that would swap the brick for a smaller one halfway through the count, which makes no sense. So keep the denominator, combine the top counts, handle whole parts on their own, and simplify at the end when the top and bottom share a factor.',
     script: [
-      { say: 'Watch: 3/8 and 2/8 are both eighth-bricks. I slide them onto one bar and count — three bricks, then two more — and read off five eighth-bricks, 5/8. The bottom brick never changed.', visual: 'Eighth-bricks snap together on one bar.' },
-      { say: 'Subtracting is the same picture in reverse: from 5/6 I slide off two sixth-bricks, three sixth-bricks stay, 3/6, and I rename that to the tidier 1/2.', visual: 'Two of five sixth-bricks slide off; 3/6 collapses to 1/2.' },
-      { say: 'Estimate first to stay safe: two sixth-bricks plus one sixth-brick is nowhere near a whole, so if an answer looked close to one whole I would know I had changed the brick size by mistake.', visual: 'A bar barely half-filled versus a full bar — the gap is the check.' },
+      {
+        say: 'Watch: 3/8 and 2/8 are both eighth-bricks. I slide them onto one bar and count — three bricks, then two more — and read off five eighth-bricks, 5/8. The bottom brick never changed.',
+        visual: 'Five eighth-bricks on one bar — three, then two more — braced and labelled 5/8.',
+        figure: barModel(
+          [
+            {
+              segments: [
+                { value: 1, label: '1/8' },
+                { value: 1, label: '1/8' },
+                { value: 1, label: '1/8' },
+                { value: 1, label: '1/8', fill: 'soft' },
+                { value: 1, label: '1/8', fill: 'soft' },
+              ],
+            },
+          ],
+          { scaleMax: 8, brace: { label: '5/8' }, alt: 'a bar of eight equal places with five eighth-bricks laid on it, three of one shade and two of another, braced and labelled 5/8' },
+        ),
+      },
+      {
+        say: 'Subtracting is the same picture in reverse: from 5/6 I slide off two sixth-bricks, three sixth-bricks stay, 3/6, and I rename that to the tidier 1/2.',
+        visual: 'Five sixth-bricks on one bar and, to the same scale, the three that stay after two come off.',
+        figure: barModel(
+          [
+            {
+              label: '5/6',
+              segments: [{ value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }],
+            },
+            { label: '3/6 = 1/2', segments: [{ value: 1 }, { value: 1 }, { value: 1 }] },
+          ],
+          { scaleMax: 6, alt: 'a bar of five sixth-bricks above a shorter bar of three of the same bricks, the shorter one reaching exactly half way' },
+        ),
+      },
+      {
+        say: 'Estimate first to stay safe: two sixth-bricks plus one sixth-brick is nowhere near a whole, so if an answer looked close to one whole I would know I had changed the brick size by mistake.',
+        visual: 'A bar of three sixth-bricks under a full bar of six — the gap between them is the check.',
+        figure: barModel(
+          [
+            { label: '2/6 + 1/6', segments: [{ value: 1 }, { value: 1 }, { value: 1 }] },
+            {
+              label: 'one whole',
+              segments: [{ value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }, { value: 1 }],
+            },
+          ],
+          { scaleMax: 6, alt: 'a short bar of three sixth-bricks drawn above a full bar of six, so the gap left over is plain' },
+        ),
+      },
     ],
     summary: 'Same denominator means same-size bricks, so add or subtract only the top counts and keep the bottom. Combine whole parts separately, estimate to check, and simplify at the end.',
     vocabulary: [

@@ -21,6 +21,7 @@ import { discrimination } from '../lib/discrimination';
 import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { unitFor } from '../lib/format';
+import { barModel, mathSentence } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C9 = { level: 'C' as const, week: 9 };
@@ -242,9 +243,44 @@ export const buildD06 = makeWeekBuilder({
     whyBeforeHow:
       'Division is repeated fair-sharing: you keep handing out equal amounts because every group must get the same, and you stop when what is left is too small to give everyone one more. That leftover is the remainder, and since another whole group would form the moment it reached the divisor, the remainder is always smaller than the divisor. The written method is just bookkeeping for this fair-sharing story, and you can always check it by rebuilding: the quotient times the divisor, plus the remainder, returns the number you started with.',
     script: [
-      { say: 'Deal 38 counters into 5 equal piles: each pile gets 7 (that is 35 handed out), and 3 are left with nowhere to go. Those 3 are the remainder.', visual: 'Counters deal into 5 equal piles; three sit outside.' },
+      {
+        say: 'Deal 38 counters into 5 equal piles: each pile gets 7 (that is 35 handed out), and 3 are left with nowhere to go. Those 3 are the remainder.',
+        visual: 'Five equal piles of 7 drawn as five bars to one scale, with the 3 that would not go round on a shorter bar below them.',
+        // 38 counters drawn as counters shrink the glyph to about five viewBox
+        // units across — countable only in principle. Bars to one scale keep the
+        // "each pile the same, the leftover shorter than a pile" claim visible.
+        figure: barModel(
+          [
+            { label: 'pile 1', segments: [{ value: 7, label: '7' }] },
+            { label: 'pile 2', segments: [{ value: 7, label: '7' }] },
+            { label: 'pile 3', segments: [{ value: 7, label: '7' }] },
+            { label: 'pile 4', segments: [{ value: 7, label: '7' }] },
+            { label: 'pile 5', segments: [{ value: 7, label: '7' }] },
+            { label: 'left over', segments: [{ value: 3, label: '3', fill: 'soft' }] },
+          ],
+          { scaleMax: 7, alt: 'five bars of equal length holding 7 each, one for every pile, and a shorter bar of 3 left over underneath them' },
+        ),
+      },
       { say: 'The remainder is always smaller than the number of piles. If 5 or more were left, another whole pile could still be filled, so the sharing would not be finished.', visual: 'A too-big leftover regroups into one more pile.' },
-      { say: 'Before you write an answer, estimate about how many each pile should get, then check by rebuilding: quotient times divisor plus remainder should return the start.', visual: 'A rough estimate, then quotient times divisor plus remainder rebuilds the original.' },
+      {
+        say: 'Before you write an answer, estimate about how many each pile should get, then check by rebuilding: quotient times divisor plus remainder should return the start.',
+        visual: 'The rebuild written out on this week\'s own share: 7 × 5 + 3 = 38, with the 38 underlined.',
+        // The rebuild drawn on the SAME deal as segment one — 7 to a pile, 5
+        // piles, 3 left over — so the line is the picture above it read back as
+        // arithmetic rather than a second example to hold in mind. The 38 is
+        // underlined because returning to the start is the whole check.
+        figure: mathSentence(
+          [
+            { text: '7' }, { text: '×' }, { text: '5' }, { text: '+' },
+            { text: '3' }, { text: '=' }, { text: '38', mark: 'underline' },
+          ],
+          {
+            alt:
+              'the check written out large — seven times five plus three equals thirty-eight — with the ' +
+              'thirty-eight underlined as the count it started from',
+          },
+        ),
+      },
     ],
     summary: 'Share into equal groups until you cannot; the leftover is the remainder, always smaller than the divisor. Rebuild with quotient times divisor plus remainder to check.',
     vocabulary: [

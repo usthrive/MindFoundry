@@ -351,7 +351,9 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsParam, barModel, clock as clockFigure, clockAlt } from '../lib/figures';
+import {
+  assertsParam, barModel, clock as clockFigure, clockAlt, mathSentence, numberLine,
+} from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -1242,7 +1244,26 @@ export const buildB24 = makeWeekBuilder({
       },
       {
         say: 'The word altogether did not choose my job. It sat in both stories and pointed two ways. So I read what the story does to the amounts.',
-        visual: 'The word altogether written once between the two stories, with an arrow to each.',
+        visual:
+          'The two stories written out as number sentences, 45 − 18 = 27 above 45 + 18 = 63, with a ring round each sign.',
+        // The word itself cannot be drawn: `altogether` is ten characters and a
+        // sentence token caps at eight. So the picture shows what the word
+        // LICENSED instead — the same two numbers, the two different jobs, one
+        // sentence each. Two peer lines under `and`, deliberately with no arrow:
+        // neither story becomes the other. Only the signs are ringed, because
+        // the signs are the entire difference between them.
+        figure: mathSentence(
+          [{ text: '45' }, { text: '−', mark: 'ring' }, { text: '18' }, { text: '=' }, { text: '27' }],
+          {
+            then: {
+              connector: 'and',
+              tokens: [{ text: '45' }, { text: '+', mark: 'ring' }, { text: '18' }, { text: '=' }, { text: '63' }],
+            },
+            alt:
+              'the two stories written one under the other as 45 minus 18 equals 27 and 45 plus 18 equals 63, ' +
+              'with a ring round the minus sign and round the plus sign',
+          },
+        ),
       },
       {
         say: 'Now a story with two jobs. We left at quarter past 2. This clock says quarter to 3. So the ride took 30 minutes. Then we walk for 12. That is 42 minutes.',
@@ -1254,11 +1275,54 @@ export const buildB24 = makeWeekBuilder({
       },
       {
         say: 'Some stories say a number the question never wants. Four helpers stand behind the counter. The queue does not care how many helpers there are.',
-        visual: 'Three numbers in a row, with a light ring round the one the question leaves alone.',
+        visual:
+          'The queue story\'s three counts written in a row, each with its word, and a ring round the 4 helpers.',
+        // Each count is written WITH the word it counts, so the row explains
+        // itself: a bare "4 28 15" would be three numerals a child has to guess
+        // at. The ring goes on the helpers alone — the say names only that one,
+        // and ringing it is the whole lesson of the segment. The other two
+        // counts sit in the ranges this week's own queue stories draw from
+        // (`msQueueSpare`: 28-46 waiting, 12-24 joining), so the board and the
+        // day pages show the same kind of story.
+        figure: mathSentence(
+          [
+            { text: '4', mark: 'ring' }, { text: 'helpers' },
+            { text: '28' }, { text: 'waiting' },
+            { text: '15' }, { text: 'joined' },
+          ],
+          {
+            alt:
+              'three counts from the queue story written in a row — 4 helpers, 28 waiting and 15 joined — ' +
+              'with a ring drawn round the 4 helpers',
+          },
+        ),
       },
       {
         say: 'One habit before any writing. I ask about how big my answer should be. Splitting makes it smaller, joining makes it bigger. Then I check.',
-        visual: 'Two arrows from one number, one running up and one running down.',
+        visual:
+          'One line with 45 marked on it, and two arrows leaving it: one down to 27, one up to 63.',
+        // The size check drawn on the week's OWN two answers rather than on a
+        // pair of nameless arrows: both moves start from the 45 of the opening
+        // two stories, and where they land is the point. An answer on the wrong
+        // side of the flag was the wrong story read, not a slip in the columns.
+        figure: numberLine(
+          {
+            min: 0,
+            max: 70,
+            step: 10,
+            labels: 'majors',
+            marks: [{ at: 45, label: '45', style: 'flag' }],
+            hops: [
+              { from: 45, to: 27, label: 'splitting' },
+              { from: 45, to: 63, label: 'joining' },
+            ],
+          },
+          {
+            alt:
+              'a line from 0 to 70 with 45 flagged, an arrow running back from 45 to 27 labelled splitting, ' +
+              'and an arrow running on from 45 to 63 labelled joining',
+          },
+        ),
       },
     ],
     summary:

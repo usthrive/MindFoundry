@@ -116,6 +116,56 @@ check(
   'false-positive guard: 47 becomes 47',
 );
 check(
+  'a sentence token past eight characters is caught',
+  checkFigureShape({ type: 'math-sentence', alt, params: { tokens: [{ text: '123456789' }] } }).length > 0,
+  'tokens cap at 8 chars — split long numbers',
+);
+check(
+  'a marked short sentence is not caught',
+  checkFigureShape({ type: 'math-sentence', alt, params: { tokens: [{ text: '3' }, { text: '+' }, { text: '4', mark: 'ring' }, { text: '=' }, { text: '▢', mark: 'box' }] } }).length === 0,
+  'false-positive guard',
+);
+check(
+  'a lesson board may not lie: a false written equation is caught',
+  checkFigureShape({ type: 'math-sentence', alt, params: { tokens: [{ text: '3' }, { text: '+' }, { text: '4' }, { text: '×' }, { text: '2' }, { text: '=' }, { text: '14' }] } }).length > 0,
+  'lesson figures are audited with no answer target, so this is the only gate that sees it',
+);
+check(
+  'a deliberate wrong line passes when it says so',
+  checkFigureShape({ type: 'math-sentence', alt, params: { deliberate: true, tokens: [{ text: '3' }, { text: '+' }, { text: '4' }, { text: '×' }, { text: '2' }, { text: '=' }, { text: '14' }] } }).length === 0,
+  'error-analysis boards declare themselves',
+);
+check(
+  'a U+2212 negative line is audited, not silently skipped',
+  checkFigureShape({ type: 'math-sentence', alt, params: { tokens: [{ text: '−3' }, { text: '×' }, { text: '−2' }, { text: '=' }, { text: '−6' }] } }).length > 0,
+  'the corpus minus is U+2212; −3 × −2 is +6, and the gate must see that',
+);
+check(
+  'a lying column total is caught',
+  checkFigureShape({ type: 'column-method', alt, params: { op: '+', rows: [{ cells: ['4', '7'], role: 'operand' }, { cells: ['2', '6'], role: 'operand' }, { cells: ['6', '3'], role: 'result' }] } }).length > 0,
+  '47 + 26 is 73, not 63',
+);
+check(
+  'a blank result row is not audited',
+  checkFigureShape({ type: 'column-method', alt, params: { op: '+', rows: [{ cells: ['4', '7'], role: 'operand' }, { cells: ['2', '6'], role: 'operand' }, { cells: ['', ''], role: 'result' }] } }).length === 0,
+  'the ruled-line, answer-not-written form is legitimate',
+);
+check(
+  'ragged column rows are caught',
+  checkFigureShape({ type: 'column-method', alt, params: { rows: [{ cells: ['4', '7'], role: 'operand' }, { cells: ['2'], role: 'result' }] } }).length > 0,
+  'row 1 has 1 cell; row 0 has 2 — misaligned columns',
+);
+check(
+  'a multi-digit cell is caught',
+  checkFigureShape({ type: 'column-method', alt, params: { rows: [{ cells: ['47'], role: 'operand' }, { cells: ['2'], role: 'result' }] } }).length > 0,
+  'a column holds a digit, not a number',
+);
+check(
+  'an honest addition column is not caught',
+  checkFigureShape({ type: 'column-method', alt, params: { op: '+', rows: [{ cells: ['1', ''], role: 'carry' }, { cells: ['4', '7'], role: 'operand' }, { cells: ['2', '6'], role: 'operand' }, { cells: ['7', '3'], role: 'result' }] } }).length === 0,
+  'false-positive guard: 47 + 26 = 73 with its carry',
+);
+check(
   'a separator inside place-value digits is caught',
   checkFigureShape({ type: 'place-value-chart', alt, params: { digits: '507,036' } }).length > 0,
   'digits are canonical, the CHART groups them',
@@ -251,6 +301,10 @@ const values: Array<[string, BBFigure, string, string]> = [
   ['ten-frame reads the hidden partner', { type: 'ten-frame', alt, params: { filled: 6, hidden: 4 } }, 'hidden', '4'],
   ['counters total every group', { type: 'counters', alt, params: { groups: [{ count: 3 }, { count: 2 }] } }, '', '5'],
   ['counters read what is LEFT after a take-away', { type: 'counters', alt, params: { groups: [{ count: 7 }], crossedOut: 3 } }, 'remaining', '4'],
+  ['math-sentence audits its own equation', { type: 'math-sentence', alt, params: { tokens: [{ text: '3' }, { text: '+' }, { text: '4' }, { text: '×' }, { text: '2' }, { text: '=' }, { text: '11' }] } }, 'value', '11'],
+  ['math-sentence refuses a false equation', { type: 'math-sentence', alt, params: { tokens: [{ text: '3' }, { text: '+' }, { text: '4' }, { text: '×' }, { text: '2' }, { text: '=' }, { text: '14' }] } }, 'value', '11'],
+  ['column-method re-reads its result row', { type: 'column-method', alt, params: { op: '+', rows: [{ cells: ['4', '7'], role: 'operand' }, { cells: ['2', '6'], role: 'operand' }, { cells: ['7', '3'], role: 'result' }] } }, 'result', '73'],
+  ['column-method reads the drawn point', { type: 'column-method', alt, params: { pointAfterCol: 0, rows: [{ cells: ['8', '6'], role: 'operand' }, { cells: ['4', '2'], role: 'result' }] } }, 'result', '4.2'],
   ['base-ten blocks read as one number', { type: 'base-ten-blocks', alt, params: { state: { rods: 4, ones: 7 } } }, '', '47'],
   ['base-ten blocks read the AFTER state of a regroup', { type: 'base-ten-blocks', alt, params: { state: { rods: 3, ones: 17 }, then: { rods: 4, ones: 7 } } }, '', '47'],
   ['base-ten blocks can be asked for the rods alone', { type: 'base-ten-blocks', alt, params: { state: { rods: 4, ones: 7 } } }, 'rods', '4'],

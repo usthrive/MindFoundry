@@ -140,7 +140,7 @@ import { withCheckBack, withEstimateFirst } from '../lib/metacog';
 import { canonicalSigned } from '../lib/compute';
 import { article, countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsParam, numberLine } from '../lib/figures';
+import { assertsParam, mathSentence, numberLine } from '../lib/figures';
 import {
   absoluteValue,
   countTheSignsTrap,
@@ -982,11 +982,60 @@ export const buildE09 = makeWeekBuilder({
       },
       {
         say: 'Here is the shortcut, and now it is a consequence rather than a rule. Every negative factor turns the answer over to the other side of zero. One of them, and the answer is over the far side. Two, and it has been turned over twice and is back where it began. So I count the minus signs and I do not care what they are attached to. Odd count, below zero. Even count, above it. And if any factor is nothing at all, I stop counting, because the whole product is nothing whatever the other signs are doing.',
-        visual: 'Three factors with their minus signs ringed and the count written under them, beside a product with a zero factor left uncounted.',
+        visual: 'Three ringed negative factors making −12, and under them a line whose ringed nought makes the product nought whatever the signs do.',
+        // Both halves of the say on one still, as two peer lines under `and`:
+        // neither line becomes the other, they are two cases of one rule. Three
+        // rings on the top line is the odd count that put the answer below zero;
+        // the single ring on the nought is the factor that stops the counting.
+        // The numbers are the row's own — the minus six of segments one and two,
+        // and the minus one that carried it past zero.
+        figure: mathSentence(
+          [
+            { text: '−1', mark: 'ring' }, { text: '×' }, { text: '−2', mark: 'ring' },
+            { text: '×' }, { text: '−6', mark: 'ring' }, { text: '=' }, { text: '−12' },
+          ],
+          {
+            then: {
+              connector: 'and',
+              tokens: [
+                { text: '−1' }, { text: '×' }, { text: '0', mark: 'ring' },
+                { text: '×' }, { text: '−6' }, { text: '=' }, { text: '0' },
+              ],
+            },
+            alt:
+              'minus one times minus two times minus six equals minus twelve, with a ring round each of the three ' +
+              'negative factors, and under it minus one times nought times minus six equals nought, with a ring ' +
+              'round the nought',
+          },
+        ),
       },
       {
         say: 'One habit before any arithmetic, and it takes about two seconds. I estimate the SIDE, and only the side: I count the minus signs, say out loud whether the answer is going above zero or below it, and then I work out the digits. Then I check the digits against the call. An answer that comes back on the other side from the one I named has not been unlucky. It tells me I have slipped, and I go and look for it instead of writing it down.',
-        visual: 'A count of minus signs made first, a side of zero named, and the digits worked out afterwards.',
+        visual: 'The two minus signs ringed with the answer still an empty box, and under it the call made first: above zero, then 6.',
+        // The order of the habit is the order of the picture. The top line has
+        // both signs ringed and its answer still a box, because at that moment
+        // the digits genuinely have not been worked out; the line under it names
+        // the SIDE before it writes the number. It is the row's own last step
+        // from segment two, so the child is watching the habit run on a result
+        // they already believe rather than on a fresh sum.
+        figure: mathSentence(
+          [
+            { text: '−1', mark: 'ring' }, { text: '×' }, { text: '−6', mark: 'ring' },
+            { text: '=' }, { text: '▢', mark: 'box' },
+          ],
+          {
+            then: {
+              connector: 'becomes',
+              tokens: [
+                { text: 'above' }, { text: 'zero,' }, { text: 'then' },
+                { text: '6', mark: 'underline' },
+              ],
+            },
+            alt:
+              'minus one times minus six equals an empty box, with a ring round each minus sign, and under it the ' +
+              'call made before the digits: above zero, then six, with the six underlined',
+          },
+        ),
       },
     ],
     summary:

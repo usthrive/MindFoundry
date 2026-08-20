@@ -26,6 +26,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { fracToDec, decToFrac } from '../lib/compute';
 import { money } from '../lib/format';
+import { barModel, numberLine } from '../lib/figures';
 import { ge, makeWeekBuilder } from '../lib/assemble';
 
 const C12 = { level: 'C' as const, week: 12 };
@@ -230,9 +231,50 @@ export const buildD12 = makeWeekBuilder({
     whyBeforeHow:
       'A decimal is only a fraction whose denominator is a power of ten, written in place-value columns to the right of the point, so that 0.8 means eight tenths and 0.35 means thirty-five hundredths; that is why you always compare from the biggest place first and never by counting digits. The money model makes it concrete — a dime is one tenth of a dollar and a penny is one hundredth — so 0.8 of a dollar is 8 dimes while 0.35 is only 3 dimes and a nickel, and 8 dimes plainly outweighs 3. Fractions and decimals are just two spellings of the very same amount.',
     script: [
-      { say: '0.8 is 8 tenths; 0.35 is 3 tenths and 5 hundredths. Reading the biggest place first, 8 tenths beats 3 tenths, so 0.8 is the larger amount.', visual: 'Tenths and hundredths grids side by side; the 0.8 grid fills more.' },
-      { say: 'To turn a fraction into a decimal, re-cut it into tenths or hundredths: 3/10 is 0.3, and 1/2 re-cuts to 5/10, which reads as 0.5.', visual: 'A half re-cuts into five tenths, then reads off as a decimal.' },
-      { say: 'Before you compare or add, estimate: 0.8 sits near a whole dollar while 0.35 is about a third of one, so a quick benchmark check says 0.8 must be the bigger amount.', visual: 'A number line from 0 to 1 with 0.8 near the right end and 0.35 left of the middle.' },
+      {
+        say: '0.8 is 8 tenths; 0.35 is 3 tenths and 5 hundredths. Reading the biggest place first, 8 tenths beats 3 tenths, so 0.8 is the larger amount.',
+        visual: 'Eight tenths and thirty-five hundredths drawn as two bars to one scale, the 0.8 bar plainly the longer.',
+        figure: barModel(
+          [
+            { label: '0.8', segments: [{ value: 0.8 }] },
+            { label: '0.35', segments: [{ value: 0.35 }] },
+          ],
+          { scaleMax: 1, alt: 'two bars measured against the same whole: 0.8 filling most of it, and 0.35 filling only about a third' },
+        ),
+      },
+      {
+        say: 'To turn a fraction into a decimal, re-cut it into tenths or hundredths: 3/10 is 0.3, and 1/2 re-cuts to 5/10, which reads as 0.5.',
+        visual: 'A 0-to-1 line cut into ten equal steps, with the halfway mark flagged and read three ways.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1,
+            step: 1,
+            partition: 10,
+            labels: 'ends',
+            marks: [{ at: 0.5, label: '1/2 = 5/10 = 0.5', style: 'flag' }],
+          },
+          { alt: 'a number line from 0 to 1 cut into ten equal steps, with a flag on the fifth step labelled 1/2 = 5/10 = 0.5' },
+        ),
+      },
+      {
+        say: 'Before you compare or add, estimate: 0.8 sits near a whole dollar while 0.35 is about a third of one, so a quick benchmark check says 0.8 must be the bigger amount.',
+        visual: 'A 0-to-1 line with 0.35 marked left of the middle and 0.8 flagged near the right end.',
+        figure: numberLine(
+          {
+            min: 0,
+            max: 1,
+            step: 1,
+            partition: 10,
+            labels: 'ends',
+            marks: [
+              { at: 0.35, label: '0.35', style: 'point' },
+              { at: 0.8, label: '0.8', style: 'flag' },
+            ],
+          },
+          { alt: 'a number line from 0 to 1 cut into tenths, with a dot for 0.35 left of the middle and a flag for 0.8 near the right end' },
+        ),
+      },
     ],
     summary: 'Decimals are place-value fractions — tenths, then hundredths. Compare by lining up the point and reading the biggest place first, never by how many digits there are. A fraction and its decimal are two names for one amount.',
     vocabulary: [

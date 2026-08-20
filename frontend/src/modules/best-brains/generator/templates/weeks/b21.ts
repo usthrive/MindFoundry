@@ -1020,7 +1020,17 @@ export const buildB21 = makeWeekBuilder({
       },
       {
         say: 'An overlap breaks it the other way. Each cube lies partly over the one before. So every cube adds less than its own length. Now I need more cubes than the true count.',
-        visual: 'A line of cubes riding up over each other along the same glue stick.',
+        visual: 'The same glue stick with eleven squeezed cubes along it — more cubes than the true count of nine.',
+        // Overlap itself cannot be drawn, so the figure shows its CONSEQUENCE:
+        // the same stick length now holds eleven narrower cubes where nine true
+        // ones fit — each cube visibly adds less than its own length.
+        figure: barModel(
+          [
+            { label: 'laid flat: 9 cubes', segments: Array.from({ length: 9 }, () => ({ value: 1 })) },
+            { label: 'overlapping: 11 cubes on the same stick', segments: Array.from({ length: 11 }, () => ({ value: 9 / 11 })) },
+          ],
+          { alt: 'two rows along the same stick length: nine cubes laid flat, and eleven squeezed cubes filling the same length' },
+        ),
       },
       {
         say: 'Here is the part worth keeping. I measure this comb twice. With cubes I count 15. With paperclips I count 5. Nothing moved, so both counts are right.',
