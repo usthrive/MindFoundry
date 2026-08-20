@@ -59,6 +59,10 @@ const CASES: Array<[string, BBFigure]> = [
   ['counters · compare, ASSESSING (no scaffold — the default)', F('counters', 'a row of five above a row of six', { groups: [{ count: 5, label: 'row A' }, { count: 6, label: 'row B' }], relation: 'compare' })],
   ['counters · compare, MODELLING the strategy (opt-in scaffolds)', F('counters', 'a row of five paired one-to-one against a row of six, the extra one ringed', { groups: [{ count: 5, label: 'row A' }, { count: 6, label: 'row B' }], relation: 'compare', showPairs: true, markExtra: true })],
   ['counters · take away three of seven (A16)', F('counters', 'seven ducks with three crossed out', { groups: [{ count: 7, icon: 'duck' }], crossedOut: 3, relation: 'remove' })],
+  // --- base ten blocks -----------------------------------------------------
+  ['base-ten · forty-seven as pieces (B2)', F('base-ten-blocks', 'four fused rods and seven loose cubes', { state: { rods: 4, ones: 7 }, showNumeral: true })],
+  ['base-ten · ten ones magnetize into a rod (B2 lesson)', F('base-ten-blocks', 'ten loose cubes, then the one fused rod they become', { state: { rods: 0, ones: 10 }, then: { rods: 1, ones: 0, label: '10' }, connector: 'becomes', highlight: 'ones' })],
+  ['base-ten · two quantities side by side', F('base-ten-blocks', 'one flat, two rods and three cubes beside four rods and one cube', { state: { flats: 1, rods: 2, ones: 3, label: '123' }, then: { rods: 4, ones: 1, label: '41' }, connector: 'beside', showColumns: true })],
   // --- place value ---------------------------------------------------------
   ['place-value · periods (D1)', F('place-value-chart', 'a place value chart showing 507036 grouped in threes', { digits: '507036', showPeriods: true })],
   ['place-value · face vs value (C1)', F('place-value-chart', 'a chart showing 407 with the hundreds column highlighted', { digits: '407', showValues: true, highlight: 'hundreds' })],
