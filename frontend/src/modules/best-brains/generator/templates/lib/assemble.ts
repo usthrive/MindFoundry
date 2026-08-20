@@ -36,7 +36,7 @@ import type {
 import { FAST_TRACK_PCT, MASTERY_THRESHOLD_PCT, SPRINT_DURATION_SECONDS } from '../../../constants';
 import { streamRng, type Rng } from '../../rng';
 import { contentId, makeDay, makeMasteryItems, TupleGuard } from '../shared';
-import { numericTokens } from '../../surface';
+import { numericTokens, personNames } from '../../surface';
 import type { ItemDraft } from '../shared';
 import type { ItemGen } from './items';
 import type { AuthorMeta } from './meta';
@@ -187,15 +187,63 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
       const t = numericTokens(d.prompt);
       return t.length >= 2 && geTokens.has(t.join(','));
     };
-    const dayDrafts: ItemDraft[][] = bp.days.map((plan, i) =>
-      plan.map(({ gen, diff }) => {
+    /**
+     * NO CHILD IS NAMED TWICE ON ONE DAY-PAGE.
+     *
+     * Every family draws its actors from one twelve-name cast (`PERSON_NAMES`),
+     * independently and with no memory, so two name-drawing generators landing
+     * on one day collided often: 492 of 2,970 day-pages — 16.6%, across 59 of
+     * the 99 built cells — served a page where the same child stars in two
+     * unrelated stories, and some served three. The reported figure was 4.2%;
+     * this is the measured one.
+     *
+     * It is not a correctness fault and no gate fails it. It is a coherence
+     * one: a child who meets "Mia records -9 degrees" and then "Mia measured
+     * 0.33 litre" on the same sheet has been given a reason to look for a
+     * connection that is not there, and the page reads as though nobody
+     * proofread it.
+     *
+     * Fixed here rather than in the seven families because the collision is
+     * BETWEEN generators — no single generator can see it, which is exactly why
+     * every family shipped it. Same redraw shape as the guided-example echo
+     * above and the Form-B core check below: it advances the seeded stream, so
+     * the build stays deterministic, and it fires only on a real collision, so
+     * a page that never had the defect is unchanged.
+     *
+     * Bounded and non-fatal by design. A day whose plan genuinely needs more
+     * distinct actors than the cast can supply keeps its last draw rather than
+     * failing the build — a repeated name is a blemish, and refusing to
+     * generate the week over it would be the worse trade.
+     *
+     * MEASURED AFTER: 15 of 2,970 day-pages, 0.5%, down from 492. The residue
+     * is three known holes, stated so the next reader does not mistake 0.5% for
+     * a rounding error:
+     *
+     *  1. `weeks/b01.ts` and `weeks/b02.ts` do not call `makeWeekBuilder` at
+     *     all — they hand-roll their pack — so this guard, the guided-example
+     *     redraw above, the Form-B core check below and the band-A sprint
+     *     refusal all skip them. Two of the ten residual cells are those weeks.
+     *  2. `applyRetrievalRamp` (packGenerator.ts) moves a Day-1 warm-up onto
+     *     Day 5 AFTER this runs, so that item was checked against Day 1's cast
+     *     and never against Day 5's. Every residual B17/B3-shaped collision is
+     *     a moved warm-up.
+     *  3. Redraw exhaustion, as described above: a day of six name-drawing
+     *     items can hold most of the cast before the last one draws, and a
+     *     two-name generator then has about a 4.6% chance of missing 12 times.
+     */
+    const dayDrafts: ItemDraft[][] = bp.days.map((plan, i) => {
+      const namedToday = new Set<string>();
+      return plan.map(({ gen, diff }) => {
         let draft = gen(dayStreams[i], guard, diff);
-        for (let k = 0; k < 12 && echoesAGuidedExample(draft); k++) {
+        const repeatsAName = (d: ItemDraft): boolean =>
+          [...personNames(d.prompt)].some((n) => namedToday.has(n));
+        for (let k = 0; k < 12 && (echoesAGuidedExample(draft) || repeatsAName(draft)); k++) {
           draft = gen(dayStreams[i], guard, diff);
         }
+        for (const n of personNames(draft.prompt)) namedToday.add(n);
         return draft;
-      }),
-    );
+      });
+    });
     const puzzle = bp.puzzle(streamRng(packSeed, 'pz'), guard);
     const maRng = streamRng(packSeed, 'ma');
     const mbRng = streamRng(packSeed, 'mb');

@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run gate:answerability && tsc && vite build",
+    "gate:answerability": "npx tsx scripts/bb-answerability-gate.ts",
+    "gate:answerability:selftest": "npx tsx scripts/bb-answerability-gate.ts --selftest",
+    "gate:promises": "npx tsx scripts/bb-broken-promise-scan.ts",
+    "gate:packs": "npx tsx scripts/bb-verify-packs.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "qa": "npx tsx src/qa/cli.ts",

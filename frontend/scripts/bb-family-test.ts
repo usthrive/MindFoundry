@@ -24,7 +24,11 @@
  * Run: npx tsx scripts/bb-family-test.ts [seeds]
  */
 
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { streamRng } from '../src/modules/best-brains/generator/rng';
+import { PERSON_NAMES } from '../src/modules/best-brains/generator/surface';
 import { TupleGuard } from '../src/modules/best-brains/generator/templates/shared';
 import { getTemplate } from '../src/modules/best-brains/generator/templates/registry';
 import { checkFigureShape, figureValue } from '../src/modules/best-brains/figures/assert';
@@ -38,6 +42,7 @@ import * as integers from '../src/modules/best-brains/generator/templates/lib/in
 import * as stats from '../src/modules/best-brains/generator/templates/lib/stats';
 import * as earlynumber from '../src/modules/best-brains/generator/templates/lib/earlynumber';
 import * as algebra from '../src/modules/best-brains/generator/templates/lib/algebra';
+import * as itemsLib from '../src/modules/best-brains/generator/templates/lib/items';
 
 const SEEDS = Number(process.argv[2] ?? 60);
 
@@ -90,10 +95,46 @@ const ARGS: Record<string, unknown[][]> = {
   'algebra.oneStepEquation': [['add'], ['sub'], ['mul'], ['div']],
   'algebra.evaluateBothAtX': [['equivalent'], ['distribute-once']],
   'algebra.solveInequality': [['one'], ['two']],
+  // items — the Level-D library. Ranges are the ones the D week builders pass.
+  'items.roundWhole': [[1, 10, 999], [3, 1000, 99999]],
+  'items.addWhole': [[100, 9999]],
+  'items.subWhole': [[100, 9999], [1000, 99999, true]],
+  'items.multiply': [[2, 9, 10, 99]],
+  'items.divideExact': [[2, 9, 10, 99]],
+  'items.divideRemainder': [[3, 9, 20, 99]],
+  'items.fracAddSubLike': [[1], [-1]],
+  'items.fracAddSubUnlike': [[1], [-1]],
+  'items.decRound': [[1], [2]],
+  'items.decAddSub': [[1], [-1]],
+  'items.decMultiply': [[false], [true]],
+  'items.evalExpr': [[false], [true]],
+  'items.angleArith': [['supplementary'], ['triangle']],
+  'items.storyDivideUse': [['round-up'], ['drop'], ['remainder']],
+  'items.storyDecRound': [[2]],
+  'items.storyRound': [[1, 10, 999]],
+  'items.storyDecimalMoney': [[1], [-1]],
+  'items.storyFractionCombine': [[1], [-1, true]],
 };
+
+/**
+ * Factories whose content comes from the WEEK, not from the draw.
+ *
+ * `reasoning` and `classify` take an authored config object and `asWarmup`
+ * decorates another generator, so calling them here would either throw or
+ * measure this file's sample config and report it as a library property. They
+ * are named rather than silently skipped, because an unchecked generator must
+ * not read as a passing one.
+ */
+const AUTHORED_CONTENT = new Set(['items.reasoning', 'items.classify', 'items.asWarmup']);
 const FAMILIES: Array<[string, Record<string, unknown>]> = [
   ['clock', clock], ['money', money], ['ratio', ratio], ['integers', integers],
   ['stats', stats], ['earlynumber', earlynumber], ['algebra', algebra],
+  // ADDED 2026-08-16. This file holds ~50 generators and every Level-D week is
+  // built from it, and it had never been scanned — the FAMILIES list simply did
+  // not name it. Ten of its hint ladders were SEED-VARIANT as a result, one of
+  // them shipping 102 distinct ladders; nothing else in the suite's checks was
+  // failing, so the cost of the omission was exactly that class and no other.
+  ['items', itemsLib],
 ];
 
 let checks = 0;
@@ -132,6 +173,7 @@ for (const [family, mod] of FAMILIES) {
   const unexercised: string[] = [];
 
   for (const name of names) {
+    if (AUTHORED_CONTENT.has(`${family}.${name}`)) continue;
     const factory = (mod as Record<string, (...a: unknown[]) => unknown>)[name];
     // A family exports both ItemGen FACTORIES (zero required args) and plain
     // helpers (meanOf, totalCents…). Only the factories are generators; a
@@ -272,6 +314,41 @@ for (const [family, mod] of FAMILIES) {
     `  ${family.padEnd(12)} ${String(exercised).padStart(2)} generators exercised` +
       (unexercised.length ? `   · not exercised (helpers or needing args): ${unexercised.join(', ')}` : ''),
   );
+}
+
+/**
+ * The same-day name guard's pool must cover every family's cast.
+ *
+ * `makeWeekBuilder` stops two items on one day naming the same child by
+ * scanning for `PERSON_NAMES` (generator/surface.ts). A family that adds an
+ * actor outside that list is simply not guarded — the guard goes blind without
+ * failing, which is the failure mode this suite exists to make impossible. So
+ * the pools are compared here, where every family is already imported.
+ *
+ * Read out of the SOURCE rather than from an export, because the seven copies
+ * are private `const NAMES` declarations; centralising them is a seven-file
+ * change and is not what this check is for.
+ */
+{
+  const here = dirname(fileURLToPath(import.meta.url));
+  const libDir = join(here, '../src/modules/best-brains/generator/templates/lib');
+  const pool = new Set(PERSON_NAMES);
+  let scanned = 0;
+  for (const file of ['items', 'integers', 'ratio', 'stats', 'clock', 'money', 'algebra']) {
+    const src = readFileSync(join(libDir, `${file}.ts`), 'utf8');
+    const m = /^const NAMES = \[([^\]]*)\]/m.exec(src);
+    if (!m) {
+      fail(file, 'NAMES', `no 'const NAMES = [...]' pool found — the same-day name guard cannot be checked against this family`);
+      continue;
+    }
+    scanned++;
+    const names = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+    const missing = names.filter((n) => !pool.has(n));
+    if (missing.length) {
+      fail(file, 'NAMES', `draws ${missing.join(', ')} but generator/surface.ts PERSON_NAMES does not list ${missing.length > 1 ? 'them' : 'it'} — makeWeekBuilder's same-day name guard is BLIND to ${missing.length > 1 ? 'those names' : 'that name'}`);
+    }
+  }
+  console.log(`\n  same-day name guard: ${scanned}/7 family pools ⊆ PERSON_NAMES (${pool.size} names)`);
 }
 
 if (leaks.length) {

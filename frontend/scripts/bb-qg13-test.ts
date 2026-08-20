@@ -101,6 +101,21 @@ check(
   'take 6 from 4',
 );
 check(
+  'more rods than the page can hold is caught',
+  checkFigureShape({ type: 'base-ten-blocks', alt, params: { state: { rods: 13, ones: 2 } } }).length > 0,
+  '13 rods will not fit the figure width',
+);
+check(
+  "a 'becomes' that changes the quantity is caught",
+  checkFigureShape({ type: 'base-ten-blocks', alt, params: { state: { rods: 0, ones: 10 }, then: { rods: 2, ones: 0 } } }).length > 0,
+  'ten ones may not become two tens — a regrouping conserves',
+);
+check(
+  'the honest regroup is not caught',
+  checkFigureShape({ type: 'base-ten-blocks', alt, params: { state: { rods: 3, ones: 17 }, then: { rods: 4, ones: 7 } } }).length === 0,
+  'false-positive guard: 47 becomes 47',
+);
+check(
   'a separator inside place-value digits is caught',
   checkFigureShape({ type: 'place-value-chart', alt, params: { digits: '507,036' } }).length > 0,
   'digits are canonical, the CHART groups them',
@@ -236,6 +251,9 @@ const values: Array<[string, BBFigure, string, string]> = [
   ['ten-frame reads the hidden partner', { type: 'ten-frame', alt, params: { filled: 6, hidden: 4 } }, 'hidden', '4'],
   ['counters total every group', { type: 'counters', alt, params: { groups: [{ count: 3 }, { count: 2 }] } }, '', '5'],
   ['counters read what is LEFT after a take-away', { type: 'counters', alt, params: { groups: [{ count: 7 }], crossedOut: 3 } }, 'remaining', '4'],
+  ['base-ten blocks read as one number', { type: 'base-ten-blocks', alt, params: { state: { rods: 4, ones: 7 } } }, '', '47'],
+  ['base-ten blocks read the AFTER state of a regroup', { type: 'base-ten-blocks', alt, params: { state: { rods: 3, ones: 17 }, then: { rods: 4, ones: 7 } } }, '', '47'],
+  ['base-ten blocks can be asked for the rods alone', { type: 'base-ten-blocks', alt, params: { state: { rods: 4, ones: 7 } } }, 'rods', '4'],
   ['place-value reads the whole number', { type: 'place-value-chart', alt, params: { digits: '507036' } }, '', '507036'],
   ['place-value reads a digit\'s VALUE, not its face', { type: 'place-value-chart', alt, params: { digits: '407' } }, 'place:hundreds', '400'],
   ['clock reads its time', { type: 'clock', alt, params: { h: 2, m: 55 } }, '', '2:55'],

@@ -341,6 +341,45 @@
 .mf-foundry .mf-btn-primary:hover { background: var(--mf-primary-deep); }
 .mf-foundry .mf-btn-primary:disabled { opacity: 0.6; }
 
+/*
+ * The NEW-CONCEPT action — the only apricot button in the module.
+ *
+ * Every other control on the week hub is `--mf-primary` teal: the five day
+ * tiles, the primary "start today's practice" CTA, the corrective "one more
+ * round". A child who had just finished a week could not tell which of the
+ * identical teal shapes opened the NEXT one, and pressed the wrong things
+ * looking for it (reported by the owner's six-year-old). Apricot is already
+ * this theme's accent for "something new"; it simply had nowhere to appear at
+ * size, only as the 7px dot on an active tile.
+ *
+ * Reserved for exactly that action, so the colour keeps meaning: the hub's
+ * reveal button, and the resolve screen's button when it leads to it. Using it
+ * for a second kind of action would undo the point.
+ *
+ * White on `--mf-accent-deep` is 3.65:1, which clears WCAG AA for LARGE text
+ * (3:1) and not for normal text (4.5:1) — hence 20px/700 here, not the 17px of
+ * `mf-btn-primary`. Bigger and bolder is also the right answer to the
+ * affordance problem that prompted it.
+ */
+.mf-foundry .mf-btn-new {
+  min-height: 68px;
+  border: none;
+  border-radius: 16px;
+  background: var(--mf-accent-deep);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--mf-dur-fast) var(--mf-ease);
+}
+.mf-foundry .mf-btn-new:hover { background: #8F5A28; }
+.mf-foundry .mf-btn-new:disabled { opacity: 0.6; }
+.mf-foundry .mf-btn-new:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--mf-accent-soft);
+}
+
 /* Quiet outlined action (Anchor / Chest / Journey map row). */
 .mf-foundry .mf-btn-quiet {
   min-height: 52px;

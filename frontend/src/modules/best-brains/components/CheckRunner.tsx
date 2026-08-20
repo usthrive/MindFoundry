@@ -5,8 +5,14 @@
  * per-item feedback is HELD (every answer gets the same neutral ack), and the
  * AnchorPanel shows the strategy card only (P7 exception, framed honestly).
  * ScratchPad stays. No timer anywhere (P4/P11). Mandatory-navigation feel:
- * one item at a time, no back, answered items stand (resume via
- * sessionStorage — no restart-scumming; each form is served once).
+ * one item at a time, no back, answered items stand (resume via localStorage —
+ * no restart-scumming; each form is served once).
+ *
+ * That resume used to live in `sessionStorage`, which served the rule only
+ * halfway: it held answers across a reload and dropped them at a restart, so a
+ * restart WAS the scum — and, far worse in practice, a child who lost their
+ * tablet mid-check was made to sit the questions again. localStorage is the
+ * honest implementation of the rule this file already claimed to enforce.
  */
 
 import { useMemo, useState } from 'react';
@@ -28,7 +34,7 @@ export interface CheckRunnerProps {
   pack: WeeklyConceptPack;
   items: PackItem[];
   band: InteractionBand;
-  /** sessionStorage resume key — answered items stand across a reload. */
+  /** localStorage resume key — answered items stand across a reload AND a restart. */
   storageKey: string;
   /** Fired once per item as it is answered (attempt telemetry). */
   onItemAnswered: (item: PackItem, answer: string, correct: boolean, errorTag?: ErrorTag) => void;
@@ -42,10 +48,38 @@ function errorTagFor(item: PackItem, answer: string): ErrorTag | undefined {
   return chosen?.errorTag ?? item.errorTags[0];
 }
 
-function loadSaved(key: string): MasteryAnswerInput[] {
+/**
+ * Resume across a RESTART, not just across a navigation.
+ *
+ * Reported from real use: a child finished five questions of the weekly check,
+ * the iPad restarted, and the check began again at question one. The answers
+ * were never lost — `onItemAnswered` banks every one of them server-side as it
+ * happens — but the resume state lived in `sessionStorage`, which the device
+ * clears when the browser session ends. So the record was intact and the child
+ * was made to sit the work again anyway.
+ *
+ * `localStorage` survives the restart. Two guards come with it, because a store
+ * that outlives the session can now be wrong in ways a session store could not:
+ *
+ *  - **Filter to the items actually on the page.** A pack regenerates per child
+ *    and per seed. Stale entries from another pack would otherwise count toward
+ *    `answers.length >= items.length` and could mark a check complete that the
+ *    child never sat.
+ *  - **Key on the child.** The key had no child id in it, so two children
+ *    sharing one iPad shared one resume slot — invisible while a device has one
+ *    user, and silent cross-contamination the moment it has two.
+ */
+function loadSaved(key: string, items: readonly PackItem[]): MasteryAnswerInput[] {
   try {
-    const raw = sessionStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as MasteryAnswerInput[]) : [];
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const saved = JSON.parse(raw) as MasteryAnswerInput[];
+    if (!Array.isArray(saved)) return [];
+    const live = new Set(items.map((i) => i.id));
+    const kept = saved.filter((a) => a && typeof a.itemId === 'string' && live.has(a.itemId));
+    // De-dupe defensively: one answer per item, first write wins.
+    const seen = new Set<string>();
+    return kept.filter((a) => (seen.has(a.itemId) ? false : (seen.add(a.itemId), true)));
   } catch {
     return [];
   }
@@ -60,7 +94,7 @@ export default function CheckRunner({
   onComplete,
   headerLabel,
 }: CheckRunnerProps) {
-  const [answers, setAnswers] = useState<MasteryAnswerInput[]>(() => loadSaved(storageKey));
+  const [answers, setAnswers] = useState<MasteryAnswerInput[]>(() => loadSaved(storageKey, items));
   const [acked, setAcked] = useState(false);
   const [anchorOpen, setAnchorOpen] = useState(false);
 
@@ -86,7 +120,7 @@ export default function CheckRunner({
     const next = [...answers, entry];
     setAnswers(next);
     try {
-      sessionStorage.setItem(storageKey, JSON.stringify(next));
+      localStorage.setItem(storageKey, JSON.stringify(next));
     } catch {
       /* resume is best-effort */
     }
@@ -98,7 +132,7 @@ export default function CheckRunner({
     setAcked(false);
     if (answers.length >= items.length) {
       try {
-        sessionStorage.removeItem(storageKey);
+        localStorage.removeItem(storageKey);
       } catch {
         /* noop */
       }
@@ -147,7 +181,34 @@ export default function CheckRunner({
       )}
 
       <div className="mt-auto">
-        <BBScratchPad itemKey={`check-${item.id}`} band={band} />
+        {/* The check had no full-screen pad at all: `item` was never passed, so
+            the control that opens it never rendered. A weekly check is exactly
+            where a child most needs room to work, and the pinned question adds
+            no scaffolding — it is the same question already on the screen.
+
+            `answerSlot` is withheld once the item is acknowledged: at that point
+            the page shows the ack and a Next button instead of an answer control,
+            and an answer row inside the pad would offer a second chance to
+            answer an item already banked. */}
+        <BBScratchPad
+          itemKey={`check-${item.id}`}
+          band={band}
+          item={item}
+          answerSlot={
+            acked
+              ? undefined
+              : (close) => (
+                  <AnswerEntry
+                    item={item}
+                    band={band}
+                    onSubmit={(answer) => {
+                      close();
+                      handleAnswer(answer);
+                    }}
+                  />
+                )
+          }
+        />
       </div>
 
       {/* P7 exception: strategy card only — worked examples hidden, honestly framed. */}

@@ -1,0 +1,174 @@
+{
+  "videoId": "video-001",
+  "theme": "product-overview",
+  "createdAt": "2026-02-08T15:20:00Z",
+
+  "assets": {
+    "bRollImages": [
+      {
+        "id": "broll-01-homework-struggle",
+        "scene": "hook",
+        "prompt": "A warm-lit cozy living room. A parent and young child (around 8 years old) sit at a wooden kitchen table covered with scattered homework papers and pencils. The child looks down at a math worksheet with a confused expression, pencil in hand. The parent sits beside them looking concerned but loving. Soft warm evening lighting from a nearby lamp. Cinematic, photorealistic, shallow depth of field. No text or watermarks.",
+        "style": "photorealistic, cinematic, warm lighting",
+        "resolution": "1920x1080",
+        "generator": "nano-banana-pro"
+      },
+      {
+        "id": "broll-02-erasing",
+        "scene": "problem-gap",
+        "prompt": "Close-up macro shot of a child's small hand erasing an answer on a math worksheet with a pink eraser. Eraser shavings visible on the paper. A crumpled piece of paper sits nearby. Soft focus background. Warm, slightly melancholic lighting. Photorealistic, shallow depth of field.",
+        "style": "photorealistic, macro, melancholic",
+        "resolution": "1920x1080",
+        "generator": "nano-banana-pro"
+      },
+      {
+        "id": "broll-03-kumon-global",
+        "scene": "solution-method",
+        "prompt": "A stylized world map on a dark navy background with glowing teal and orange dots marking countries. Clean, modern, minimalist design. The dots emit a soft glow. Subtle grid lines overlay the map. Professional infographic style with dark background. No text, no labels.",
+        "style": "infographic, clean, modern, dark background",
+        "resolution": "1920x1080",
+        "generator": "nano-banana-pro"
+      },
+      {
+        "id": "broll-04-happy-family",
+        "scene": "proof-family",
+        "prompt": "A warm, cozy family scene. A smiling parent sits on a comfortable couch with two children (ages approximately 6 and 9). Each child holds a tablet device, looking engaged and happy. The parent looks at their phone with a satisfied expression. Warm, inviting home environment with soft lighting and houseplants in background. Photorealistic, warm color grading.",
+        "style": "photorealistic, warm, family-oriented",
+        "resolution": "1920x1080",
+        "generator": "nano-banana-pro"
+      },
+      {
+        "id": "broll-05-child-celebrating",
+        "scene": "demo-celebrate",
+        "prompt": "A joyful child (around 7-8 years old) raising both fists in the air in celebration, big smile on their face. They are sitting at a desk with a tablet in front of them. Colorful confetti-like light effects around them. Bright, uplifting lighting. Photorealistic, vibrant, warm colors.",
+        "style": "photorealistic, joyful, vibrant",
+        "resolution": "1920x1080",
+        "generator": "nano-banana-pro"
+      }
+    ],
+
+    "appScreenshots": [
+      {
+        "id": "screenshot-01-study-page",
+        "scene": "demo-practice",
+        "description": "Study page showing multi-problem worksheet with number pad. One problem answered correctly (green check), one being attempted.",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/study",
+        "status": "pending"
+      },
+      {
+        "id": "screenshot-02-ms-guide-hint",
+        "scene": "demo-practice",
+        "description": "Ms. Guide character visible with a hint speech bubble showing a Socratic question hint for a wrong answer.",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/study (with hint overlay)",
+        "status": "pending"
+      },
+      {
+        "id": "screenshot-03-celebration",
+        "scene": "demo-celebrate",
+        "description": "Achievement celebration modal with confetti particles, badge, and share button. Showing '100-Day Streak!' achievement.",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/achievements",
+        "status": "pending"
+      },
+      {
+        "id": "screenshot-04-parent-dashboard",
+        "scene": "feature-dashboard",
+        "description": "Parent dashboard showing accuracy trend chart, daily practice bar chart, and key metrics (accuracy %, streak, level progress).",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/parent/dashboard",
+        "status": "pending"
+      },
+      {
+        "id": "screenshot-05-homework-helper",
+        "scene": "feature-homework",
+        "description": "Homework Helper showing extracted problems from a photo with Ms. Guide explanation panel.",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/homework-helper",
+        "status": "pending"
+      },
+      {
+        "id": "screenshot-06-video-library",
+        "scene": "feature-library",
+        "description": "Video library grid view with category cards, some locked and some unlocked, with a recommended carousel.",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/videos",
+        "status": "pending"
+      },
+      {
+        "id": "screenshot-07-share-card",
+        "scene": "demo-celebrate",
+        "description": "Shareable achievement card (1080x1080) with avatar, badge, motivational quote, and MindFoundry branding.",
+        "source": "chrome-devtools-or-mockup",
+        "route": "/achievements/share",
+        "status": "pending"
+      }
+    ],
+
+    "audio": {
+      "voiceover": {
+        "provider": "elevenlabs",
+        "model": "eleven_multilingual_v2",
+        "voice": "Daniel",
+        "settings": {
+          "stability": 0.7,
+          "similarity_boost": 0.5,
+          "style": 0.1,
+          "use_speaker_boost": false
+        },
+        "scenes": 13,
+        "estimatedCharacters": 850,
+        "outputFormat": "mp3",
+        "outputDir": "assets/audio/"
+      },
+      "backgroundMusic": {
+        "style": "Warm, uplifting piano with soft strings",
+        "tempo": "100-120 BPM",
+        "source": "Mixkit free library",
+        "volume": "15-20% mix, duck under voiceover",
+        "outputDir": "assets/music/"
+      }
+    }
+  },
+
+  "remotion": {
+    "templateSource": "/home/usthr/PromotionVideoGenerator/templates/remotion/",
+    "fps": 30,
+    "resolution": { "width": 1920, "height": 1080 },
+    "codec": "h264",
+    "crf": 18,
+    "components": [
+      "HookScene",
+      "ProblemScene",
+      "BrandRevealScene",
+      "SolutionScene",
+      "DemoScene",
+      "FeatureScene",
+      "ProofScene",
+      "CTAScene",
+      "PromoVideo (root composition)"
+    ],
+    "customizations": {
+      "primaryColor": "#F97316",
+      "secondaryColor": "#0D9488",
+      "accentColor": "#8B5CF6",
+      "darkBg": "#0f172a",
+      "lightBg": "#f8fafc",
+      "fontFamily": "Inter, system-ui, sans-serif"
+    }
+  },
+
+  "workflow": [
+    { "step": 1, "action": "Generate B-roll images (5 images via Nano Banana Pro)", "status": "pending" },
+    { "step": 2, "action": "Generate voiceover (13 segments via ElevenLabs)", "status": "pending" },
+    { "step": 3, "action": "Capture/create app screenshots (7 screens)", "status": "pending" },
+    { "step": 4, "action": "Download background music from Mixkit", "status": "pending" },
+    { "step": 5, "action": "Set up Remotion project from template", "status": "pending" },
+    { "step": 6, "action": "Create scene components with real assets", "status": "pending" },
+    { "step": 7, "action": "Sync audio durations to Remotion timing", "status": "pending" },
+    { "step": 8, "action": "Preview in Remotion Studio", "status": "pending" },
+    { "step": 9, "action": "Render final MP4", "status": "pending" },
+    { "step": 10, "action": "Update video-history.json", "status": "pending" }
+  ]
+}

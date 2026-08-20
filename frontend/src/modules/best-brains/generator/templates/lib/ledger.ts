@@ -75,6 +75,15 @@ export function priorLedger(level: BBLevel, week: number): LedgerEntry[] {
  */
 export function conceptFamily(conceptId: string): string {
   return conceptId
+    // "meeting-X" is the week where X is FIRST MET, so it is the same family as
+    // X and every later deepening of it. Without this, `meeting-subtraction`
+    // and `subtraction-within-10` were different families, `priorSameFamily`
+    // returned [], and BB-G1's deepening-delta precondition silently never
+    // fired on the very weeks it exists for — an enablement list reading an
+    // empty set (L50). Found by A17's author, who shipped a delta anyway.
+    // Blast radius when this landed: exactly A15 (a pinned v1 fixture, which
+    // skips the v2 preflight) and A17 (already compliant).
+    .replace(/^meeting-/i, '')
     // drop trailing magnitude ranges: -to-1000, -1-5, -6-10, -11-20, -within-10, -within-100…
     .replace(/-(to|within)-[0-9x]+$/i, '')
     .replace(/-[0-9]+(-[0-9]+)?$/i, '')

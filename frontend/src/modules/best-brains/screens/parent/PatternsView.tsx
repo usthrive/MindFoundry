@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { listMissGroups, type MissGroup } from '../../services/bbParentService';
-import { PATTERNS_FOOTER, TAG_GLOSSES } from '../../parentCopy';
+import { PATTERNS_FOOTER, TAG_GLOSSES, TAG_PARENT_MOVE } from '../../parentCopy';
 import { getCatalogWeek } from '../../content/catalog';
 import { useParentContext } from './FoundryParentLayout';
 import type { BBLevel } from '../../types';
@@ -78,6 +78,25 @@ export default function PatternsView() {
               <span className="mf-label mf-label-apricot">What the program is doing</span>
               <p className="mt-1 text-[14px] leading-relaxed text-text-secondary">{gloss.plan}</p>
             </div>
+            {/* The parent's own move — offered, never assigned. The label says
+                "if you'd like" in as many words because this screen previously
+                told the parent the opposite, and a like-instructor reading it
+                needs to know which of the two the product now means. Nothing
+                anywhere records whether they did it.
+
+                Shown only where the line above calls something a pattern. A
+                one-time slip is already answered with "noted, not worried", and
+                handing a parent a move for it would contradict that in the next
+                breath — the offer has to be as calm as the diagnosis or it
+                reads as an instruction with a softener on it. */}
+            {(g.countThisWeek >= 2 || g.count >= 2) && (
+              <div className="rounded-xl border-2 border-dashed px-4 py-3" style={{ borderColor: 'var(--mf-paper)' }}>
+                <span className="mf-label mf-label-teal">If you'd like to help</span>
+                <p className="mt-1 text-[14px] leading-relaxed text-text-secondary">
+                  {TAG_PARENT_MOVE[g.errorTag]}
+                </p>
+              </div>
+            )}
           </section>
         );
       })}

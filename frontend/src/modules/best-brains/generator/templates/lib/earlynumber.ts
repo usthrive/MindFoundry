@@ -150,14 +150,32 @@ function looksLike(noun: string, arrangement: string): string {
 }
 
 /**
- * The frame named as the manipulative rather than as a number: "a ten-frame",
- * "two ten-frames". The capacity is a fixed structural property a child SEES
- * (and the taught vocabulary word), so naming it discloses nothing; what must
- * never be named is how many counters are sitting in it.
+ * The frame named by SIZE rather than by capacity.
+ *
+ * This replaced a `frameName()` that rendered "a ten-frame" / "a five-frame".
+ * Removing it left NO caller behind, which is the tell: every use of the taught
+ * term inside this library was a spoken figure alt. The term itself is not lost
+ * — each week teaches it in its own script, vocabulary and prompts, where a
+ * child reads or is read it deliberately rather than having it autoplayed over
+ * a question it can answer.
+ *
+ * The old comment on `frameName` argued that naming the capacity "discloses
+ * nothing" because it is a structural property the child sees. That is true of
+ * the frame and false of the WORD. A band-A alt is autoplayed to a pre-reader
+ * BEFORE the question, so "a ten-frame with some counters in it" says "ten"
+ * aloud — and on the draws where the answer IS ten, a child who echoes the last
+ * number word they heard is correct. Measured on the shipped A12: of 400 items
+ * whose alt named the ten-frame, **20.5% keyed 10**. `bb-spoken-answer-test`
+ * does not catch it because it does not split the hyphenated compound, so this
+ * has been live and green.
+ *
+ * The size words carry the same distinction a child needs (the discrimination
+ * in A13 varies capacity and nothing else) without speaking a number. The
+ * taught term survives everywhere it is taught.
  */
-function frameName(size: number, frames = 1): string {
-  const one = size === 5 ? 'five-frame' : 'ten-frame';
-  return frames > 1 ? `${numberWords(frames)} ${one}s` : `a ${one}`;
+function frameAltName(size: number, frames = 1): string {
+  const one = size === 5 ? 'small frame' : 'big frame';
+  return frames > 1 ? `the ${one}s` : `the ${one}`;
 }
 
 /** "ducks, leaves and stars" — the groups by kind, never by count. */
@@ -281,7 +299,13 @@ export function countByTens(opts: { minTens: number; maxTens: number }): ItemGen
           // child skip-counts, so it goes; "of ten blocks" stays, because every
           // tower being a ten is the structure the question itself names
           // ("Count by tens") and is what the picture is built out of.
-          { arrangement: 'towers', alt: 'some towers of ten blocks', asserts: assertsAnswer },
+          // NAMES THE TEN DELIBERATELY. The rule is not "no number in an alt" — it is
+          // "no number an alt speaks may equal the key" (L48). This generator draws
+          // 2–5 towers and keys 20–50, so "ten" can never be its answer, and a child
+          // who cannot see the picture needs to be told the towers ARE tens: that is
+          // the whole content. Stripping it (briefly done, 2026-08-12) bought nothing
+          // and cost the accessible reading of the week.
+          { arrangement: 'towers', alt: 'some towers of ten blocks, standing in a line', asserts: assertsAnswer },
         ),
         answer: { value: String(10 * k), acceptableForms: numForms(10 * k), validation: 'exact-numeric' },
         difficulty,
@@ -463,7 +487,7 @@ export function tenFrameRead(opts: FrameOpts): ItemGen {
         figure: tenFrame(n, {
           size,
           frames,
-          alt: `${frameName(size, frames)} with some counters in ${frames > 1 ? 'them' : 'it'}`,
+          alt: `${frameAltName(size, frames)} with some counters in ${frames > 1 ? 'them' : 'it'}`,
           asserts: assertsAnswer,
         }),
         answer: { value: String(n), acceptableForms: numForms(n), validation: 'exact-numeric' },
@@ -533,7 +557,7 @@ export function tenFrameEmpty(opts: FrameOpts): ItemGen {
         // the question states neither number.
         figure: tenFrame(filled, {
           size,
-          alt: `${frameName(size)} with some counters in it and some boxes empty`,
+          alt: `${frameAltName(size)} with some counters in it and some boxes empty`,
           asserts: assertsAnswerOf('empty'),
         }),
         answer: {
@@ -585,7 +609,7 @@ export function partnersHiding(opts: PartnerOpts): ItemGen {
           size: total,
           hidden,
           coverStyle: 'single',
-          alt: `${frameName(total)} with some counters showing and the rest hidden`,
+          alt: `${frameAltName(total)} with some counters showing and the rest hidden`,
           asserts: assertsAnswerOf('hidden'),
         }),
         answer: { value: String(hidden), acceptableForms: numForms(hidden), validation: 'exact-numeric' },
@@ -611,21 +635,40 @@ export function partnerBox(opts: PartnerOpts): ItemGen {
   const { total } = opts;
   return (rng: Rng, guard: TupleGuard, difficulty: number) =>
     drawUniqueItem(rng, guard, (r) => {
-      const shown = r.int(1, total - 1);
+      // NEVER the halfway bond on THIS form. The question states the shown part
+      // ("5 and ▢ make 10"), so when the two parts are equal the given IS the
+      // answer and a child who echoes the first number they hear is right
+      // without composing anything. Measured on the shipped A20 before this
+      // guard: the frame-of-10 draw keyed its own spoken given on 1 draw in 9.
+      // It is the same coincidence class as A16's "row holds twice what it
+      // loses", and it is guessable for a reader too, not only on audio.
+      // The halfway bond is not lost — `partnersHiding` and `allWaysToMake`
+      // both teach it, and neither states a part in the question.
+      const half = total % 2 === 0 ? total / 2 : -1;
+      let shown = r.int(1, total - 1);
+      if (shown === half) shown = shown === total - 1 ? 1 : shown + 1;
       const hidden = total - shown;
       const scene = `a frame of ${String(total)} with ${countNoun(shown, 'counters')} and a covered box`;
       const draft: ItemDraft = {
         type: 'computation',
-        // GIVENS, kept: the question is the algebra sentence itself ("3 and ▢
-        // make 5"), so both the shown part and the whole are stated to the child
-        // before the picture is described. The alt repeats what the question
-        // already says and discloses nothing the item is asking for.
+        // The SCENE keeps its numbers — it is never spoken and never shown, and
+        // the pack-wide surface guard signs on it (emptying it would leave the
+        // item unguarded, L29). The ALT does not: it is autoplayed to a
+        // pre-reader before the question.
+        //
+        // The old alt reused `scene`, on the argument that its numbers are
+        // givens the question states anyway. True today and fragile tomorrow —
+        // it is one differently-worded question away from speaking an answer,
+        // and two separate authors' draw-time alt checks fired on it while
+        // building against this generator. The house rule is now absolute: no
+        // digit and no number word in any band-A alt, no exceptions to reason
+        // about at the call site.
         prompt: scenePrompt(scene, `Fill the box: ${String(shown)} and ▢ make ${String(total)}.`),
         figure: tenFrame(shown, {
           size: total,
           hidden,
           coverStyle: 'single',
-          alt: scene,
+          alt: 'a frame with some counters in it and a box covered over',
           asserts: assertsAnswerOf('hidden'),
         }),
         answer: { value: String(hidden), acceptableForms: numForms(hidden), validation: 'exact-numeric' },
@@ -937,7 +980,15 @@ export function pictureJoin(opts: { min: number; max: number; maxTotal?: number 
         // only the sum — and at this band the counting IS the item.
         figure: counterGroups(
           [{ count: a, noun }, { count: b, noun }],
-          { relation: 'join', alt: `two groups of ${noun} put together`, asserts: assertsAnswer },
+          // NO NUMBER WORD IN THE ALT (L48: a number word is a number, wherever
+          // it appears). This said "two groups of …", and the alt is autoplayed
+          // to a pre-reader BEFORE the question — so on every 1+1 draw the word
+          // "two" spoke the sum aloud before asking for it. Found by
+          // `bb-spoken-answer-test` failing band A on A16, which warms up with
+          // this generator; A14 escaped only because it wrote its own join
+          // figure. The group count is visible in the drawing and needs no
+          // narration.
+          { relation: 'join', alt: `a group of ${noun} and another group, put together`, asserts: assertsAnswer },
         ),
         answer: {
           value: String(a + b),
@@ -968,16 +1019,22 @@ export function pictureTakeAway(opts: { min: number; max: number }): ItemGen {
       const draft: ItemDraft = {
         type: 'word-problem',
         prompt: scenePrompt(scene, `How many ${noun} are left?`),
-        // ASKS: how many are LEFT. The crossed-out count stays — it is the
-        // removal, it is drawn as crosses on the page, and it is not the answer
-        // — but the starting total goes, because "5 ducks with 3 crossed out"
-        // spoken aloud leaves nothing to count.
+        // ASKS: how many are LEFT. NO COUNT AT ALL in the alt, which is
+        // autoplayed to a pre-reader before the question is asked.
+        //
+        // This used to keep the crossed-out count, reasoning that the removal is
+        // drawn on the page and "is not the answer". It is the answer whenever
+        // the row holds exactly twice what it loses — 4 with 2 crossed out
+        // leaves 2 — and A16 measured that coincidence doing real work: it kept
+        // a blind "always subtract" habit alive at 19% of certifying forms after
+        // the first repair. A digit in a spoken alt buys nothing the drawing does
+        // not already show (L48).
         figure: counterGroups(
           [{ count: a, noun }],
           {
             relation: 'remove',
             crossedOut: b,
-            alt: `some ${noun} with ${String(b)} crossed out`,
+            alt: `some ${noun}, with the ones that went crossed through`,
             asserts: assertsAnswerOf('remaining'),
           },
         ),
@@ -1033,12 +1090,17 @@ export function joinOrTakeAway(opts: { min: number; max: number }): ItemGen {
         figure: isJoin
           ? counterGroups([{ count: a, noun }, { count: b, noun }], {
               relation: 'join',
-              alt: `two groups of ${noun} joined`,
+              // Same L48 repair as `pictureJoin` above. This generator's answer
+              // is the NAME of the move, not a count, so "two" discloses nothing
+              // today — but the phrase is one numeric ask away from being a leak,
+              // and the identical wording in `pictureJoin` was one.
+              alt: `a group of ${noun} and another group, joined`,
             })
           : counterGroups([{ count: a, noun }], {
               relation: 'remove',
               crossedOut: b,
-              alt: `some ${noun} with ${String(b)} crossed out`,
+              // Same L48 repair as `pictureTakeAway`: no count in a spoken alt.
+              alt: `some ${noun}, with the ones that went crossed through`,
             }),
         choices,
         answer: {
@@ -1072,11 +1134,13 @@ export function teenTenAnd(opts: { min?: number; max?: number } = {}): ItemGen {
       const scene = `a full frame of ten and ${countNoun(o, 'counters')} more`;
       const draft: ItemDraft = {
         type: 'computation',
-        // GIVENS, kept: the question is "Ten and 3 more. What number?", so both
-        // the full ten and the extras are stated before the picture is. The
-        // answer (the teen numeral) appears nowhere in the alt.
+        // The scene keeps its numbers (never spoken, never shown, and the
+        // surface guard signs on it); the ALT carries none. The answer here is
+        // the teen numeral, which the alt could not have said anyway — but the
+        // rule is absolute so that no call site has to re-derive that argument,
+        // and a frame a child can see is full needs no number to describe it.
         prompt: scenePrompt(scene, `Ten and ${String(o)} more. What number?`),
-        figure: tenFrame(10 + o, { frames: 2, alt: scene, asserts: assertsAnswer }),
+        figure: tenFrame(10 + o, { frames: 2, alt: 'a full frame and some more counters beside it', asserts: assertsAnswer }),
         answer: { value: String(10 + o), acceptableForms: numForms(10 + o), validation: 'exact-numeric' },
         difficulty,
         strand: 'computational',
@@ -1106,7 +1170,7 @@ export function teenExtra(opts: { min?: number; max?: number } = {}): ItemGen {
         // and one filled frame is what the picture looks like).
         figure: tenFrame(n, {
           frames: 2,
-          alt: 'a full frame of ten and some more counters',
+          alt: 'a full frame and some more counters beside it',
           asserts: assertsParam('n', 'filled'),
         }),
         answer: { value: String(n - 10), acceptableForms: numForms(n - 10), validation: 'exact-numeric' },
@@ -1139,21 +1203,45 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
   const { trap } = opts;
   return (rng: Rng, guard: TupleGuard, difficulty: number) =>
     drawUniqueItem(rng, guard, (r) => {
+      // WHICH OF THE TWO NUMERALS IS THE ANSWER IS DRAWN, NOT CONSTRUCTED.
+      // Both confusable branches used to build the pair one way round only, so
+      // the key had a fixed RANK and a child could score without looking at the
+      // picture at all: the teen branch drew 13–19 against 30–90, so "tap the
+      // smaller number" keyed 3000 of 3000 draws; the swap branch drew its tens
+      // digit from 2–4 against an ones digit from 1–9, so the same reflex keyed
+      // 75.1%. Two cards means chance is 50%, so that is +50 and +25 points of
+      // free score on the item whose entire job is telling the pair apart.
+      // The cure is the standing one (generator-defect signature 2): draw the
+      // OUTCOME first, then build operands to match. Only the SHOWN number needs
+      // a picture a band-A child can count, so its tens stay at 2–5 towers (the
+      // range countByTens already establishes); the confusable numeral is only a
+      // card, so its digits are free.
       let n: number;
       let confused: number;
       if (trap === 'six-nine') {
         n = r.chance(0.5) ? 6 : 9;
         confused = n === 6 ? 9 : 6;
       } else if (trap === 'teen-ty') {
-        const o = r.int(3, 9);
-        n = 10 + o;
-        confused = o * 10;
+        if (r.chance(0.5)) {
+          const o = r.int(3, 9); // show the TEEN: 13–19 against 30–90
+          n = 10 + o;
+          confused = o * 10;
+        } else {
+          const k = r.int(2, 5); // show the TY: 20–50 against 12–15
+          n = 10 * k;
+          confused = 10 + k;
+        }
       } else {
-        const t = r.int(2, 4);
-        // o !== t, or "the same two digits swapped" would BE the same number and
+        // t !== o, or "the same two digits swapped" would BE the same number and
         // the trap would offer the correct answer twice.
-        const opts2 = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((v) => v !== t && 10 * v + t <= 99);
-        const o = r.pick(opts2);
+        const wantSmaller = r.chance(0.5);
+        const pairs: Array<[number, number]> = [];
+        for (let t = 2; t <= 5; t++) {
+          for (let o = 1; o <= 9; o++) {
+            if (o !== t && (wantSmaller ? t < o : t > o)) pairs.push([t, o]);
+          }
+        }
+        const [t, o] = r.pick(pairs);
         n = 10 * t + o;
         confused = 10 * o + t;
       }
@@ -1169,12 +1257,18 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
       // Each trap gets the picture that can actually SAY its number: a row for a
       // single digit, a double frame for a teen, tens-towers-plus-loose-ones for
       // a two-digit swap (which no ten-frame can hold — its cap is twenty).
+      // The teen-ty branch now shows either side of its pair, and a whole ten
+      // above twenty needs the towers picture for the same reason: a pair of
+      // frames holds at most twenty.
+      const asTowers = trap === 'digit-swap' || n >= 20;
       const scene =
         trap === 'six-nine'
           ? `${countNoun(n, 'buttons')} in a row`
-          : trap === 'teen-ty'
+          : !asTowers
             ? `two frames holding ${countNoun(n, 'counters')}`
-            : `${countNoun(Math.floor(n / 10), 'towers')} of ten and ${countNoun(n % 10, 'loose blocks')}`;
+            : n % 10 === 0
+              ? `${countNoun(n / 10, 'towers')} of ten blocks`
+              : `${countNoun(Math.floor(n / 10), 'towers')} of ten and ${countNoun(n % 10, 'loose blocks')}`;
       // ASKS: which numeral the picture shows. Every branch's scene named that
       // numeral outright — and the digit-swap branch named it TWICE over, since
       // "2 towers of ten and 4 loose blocks" reads out twenty-four in the exact
@@ -1182,13 +1276,20 @@ export function numeralTrap(opts: { trap: NumeralTrap }): ItemGen {
       const altOf =
         trap === 'six-nine'
           ? 'some buttons in a row'
-          : trap === 'teen-ty'
-            ? 'two ten-frames with some counters in them'
-            : 'some towers of ten and some loose blocks';
+          : !asTowers
+            ? 'a pair of big frames with some counters in them'
+            : n % 10 === 0
+              // Names the ten deliberately, on countByTens's precedent: the rule
+              // is "no number an alt speaks may equal the key" (L48), and this
+              // branch keys 20–50, so ten can never be its answer — while a
+              // child who cannot see the picture needs to be told the towers ARE
+              // tens, which is the whole content of the teen/ty distinction.
+              ? 'some towers of ten blocks, standing in a line'
+              : 'some equal towers of blocks and some loose ones';
       const figure =
         trap === 'six-nine'
           ? counters(n, 'buttons', { arrangement: 'in a row', alt: altOf, asserts: assertsParam('n') })
-          : trap === 'teen-ty'
+          : !asTowers
             ? tenFrame(n, { frames: 2, size: 10, alt: altOf, asserts: assertsParam('n') })
             : counterGroups(
                 [
@@ -1351,7 +1452,15 @@ export function compareMeasure(opts: { attr: MeasureAttr }): ItemGen {
       question: 'Which one is heavier?',
     },
     capacity: {
-      things: [['jug', 'mug'], ['pot', 'cup'], ['bucket', 'bowl']],
+      // NEVER name a vessel after the unit it is measured in. This pool held
+      // ['pot', 'cup'] against a unit of `cups`, so one draw in three printed
+      // "the pot fills 5 cups, the cup fills 8 cups" — a cup holding eight cups.
+      // The rule is already written into the `length` pool above, after the same
+      // class of defect; it had simply never been applied here. Latent rather
+      // than shipped: A20 overrides this pool with its own, so no live week
+      // served it. Found by A21's author reading generated packs; no gate fires
+      // on it. (2026-08-12)
+      things: [['jug', 'mug'], ['pot', 'bowl'], ['bucket', 'tin']],
       unit: 'cups',
       question: 'Which one holds more?',
     },
@@ -1574,11 +1683,34 @@ interface Solid {
   rolls: boolean;
   stacks: boolean;
 }
+/**
+ * FOUR SOLIDS WERE NOT ENOUGH, in two measurable ways.
+ *
+ * With ball/box/can/cone, exactly ONE object failed the roll test, so "the box"
+ * was offered on 100% of `rolls` draws and could never be the answer — a child
+ * meeting the item a few times learns to strike it on sight, and a two-card item
+ * with one strikeable card is a one-card item. And every stacker was a 3-letter
+ * word while every non-stacker was 4+, so on the `stacks` test "tap the shorter
+ * word" keyed 100% of draws against a 50% baseline.
+ *
+ * Three ordinary objects fix both: a second non-roller (block), a long-named
+ * non-stacker (marble), and a short-named one (egg). Measured after the change:
+ * the length strategies sit at 40–58% against a 50% baseline, and no single
+ * distractor is offered more than about half the time.
+ *
+ * A residual stays and is NOT a defect: on "which one rolls?", no non-roller can
+ * ever be keyed. That is the question having an answer, not an unkeyable card in
+ * the L38 sense — the guessability census flags it, and this is the note that
+ * says why it is being left.
+ */
 const SOLIDS: readonly Solid[] = [
   { name: 'ball', rolls: true, stacks: false },
   { name: 'box', rolls: false, stacks: true },
   { name: 'can', rolls: true, stacks: true },
   { name: 'cone', rolls: true, stacks: false },
+  { name: 'block', rolls: false, stacks: true },
+  { name: 'marble', rolls: true, stacks: false },
+  { name: 'egg', rolls: true, stacks: false },
 ];
 
 /**
@@ -1641,6 +1773,24 @@ export type PuppetSlip = 'double-count' | 'skip-count' | 'count-back-start' | 't
  *   teen-writing      digits swapped (31 written for thirteen)
  */
 export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number }): ItemGen {
+  // A RANK RESIDUAL LIVES HERE AND IS BEING LEFT, DELIBERATELY.
+  //
+  // The guessability census reports, on every branch, that one end of the card
+  // set is never the answer: "never the largest" on double-count, count-back and
+  // teen-writing, "never the smallest" on skip-count. That is +16 over chance
+  // and it is not a construction accident — it is the form. The puppet's number
+  // is stated in the prompt and offered as a card (recognising it as wrong IS
+  // the task), and each slip has ONE direction by definition: a double-count
+  // runs over, a skipped object stops short, a reversed teen is always the
+  // larger numeral. So the truth cannot sit beyond the puppet's number, and the
+  // only ways to move it would be to drop the puppet's own answer from the
+  // options — which removes the error-analysis — or to flip the slip's
+  // direction, which makes it a different slip from the one the week asked for.
+  //
+  // The mitigation is at week level, not here: a day serving double-count
+  // beside skip-count has two exactly opposite residuals. That pairing is NOT
+  // currently verified anywhere, and checking it is a per-week measurement the
+  // census cannot make.
   const { slip } = opts;
   return (rng: Rng, guard: TupleGuard, difficulty: number) =>
     drawUniqueItem(rng, guard, (r) => {
@@ -1750,7 +1900,7 @@ export function puppetSlip(opts: { slip: PuppetSlip; min?: number; max?: number 
           // poses. The full ten stays — it is the picture's fixed structure.
           figure: tenFrame(n, {
             frames: 2,
-            alt: 'a full frame of ten and some more counters',
+            alt: 'a full frame and some more counters beside it',
             asserts: assertsParam('n'),
           }),
           choices,
@@ -1901,12 +2051,19 @@ const SHAPE_BY_CORNERS: Record<number, string> = {
 };
 
 /** Which solids pass which test — the truth `a_solid_v1` re-derives. */
-const SOLID_PROPS: Record<string, { rolls: boolean; stacks: boolean }> = {
-  ball: { rolls: true, stacks: false },
-  box: { rolls: false, stacks: true },
-  can: { rolls: true, stacks: true },
-  cone: { rolls: true, stacks: false },
-};
+/**
+ * DERIVED from `SOLIDS`, not restated beside it.
+ *
+ * This was a second hand-written copy of the same truth table, and adding three
+ * solids to the item generator left the verify template still holding four —
+ * `a_solid_v1` threw "unknown solid marble" on every draw that reached it. The
+ * separation bought nothing it was meant to: what makes this verify honest is
+ * that it LOOKS THE SOLID UP and refuses a key the table does not support,
+ * which one shared table does exactly as well as two divergent ones.
+ */
+const SOLID_PROPS: Record<string, { rolls: boolean; stacks: boolean }> = Object.fromEntries(
+  SOLIDS.map((s) => [s.name, { rolls: s.rolls, stacks: s.stacks }]),
+);
 
 export const EARLYNUMBER_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
   // --- counting ------------------------------------------------------------

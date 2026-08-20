@@ -348,6 +348,18 @@ function verifyFrac(p: Params): VerifyResult {
     case 'num-only': wrong = reduceFrac(op === '-' ? a.n - b.n : a.n + b.n, a.d); break;
     default: throw new Error(`bad frac wrongMode '${mode}'`);
   }
+  // REFUSE PARAMS THAT DO NOT EXHIBIT THE MISCONCEPTION. The four integer
+  // verifies below have always done this; these two decimal/fraction ones never
+  // did, and the comment above them claimed the property for all of them. E5's
+  // author found the consequence on a served page: an error-analysis whose
+  // "student error" WAS the true answer, on about a tenth of draws, because
+  // formatDec trims a trailing zero and right-justifying two equally-placed
+  // decimals changes nothing. QG-11 cannot see it — it checks that the prompt
+  // shows `wrong` and the answer carries `correct`, and when the two coincide
+  // both checks pass on the same number.
+  if (formatFrac(wrong) === formatFrac(correct)) {
+    throw new Error(`frac wrongMode '${mode}' lands on the true answer (${formatFrac(correct)}) — no error would be shown`);
+  }
   return { correct: formatFrac(correct), wrong: formatFrac(wrong) };
 }
 
@@ -391,6 +403,13 @@ function verifyDec(p: Params): VerifyResult {
       break;
     }
     default: throw new Error(`bad dec wrongMode '${mode}'`);
+  }
+  // Same guard as verifyFrac, and this is the one that shipped the defect: on a
+  // drawn hundredths mantissa ending in zero, formatDec prints "0.70" as "0.7",
+  // the two operands become equally placed, and right-justifying them changes
+  // nothing — so "the student wrote 3.2" was offered against a key of 3.2.
+  if (wrong === correct) {
+    throw new Error(`dec wrongMode '${mode}' lands on the true answer (${correct}) — no error would be shown`);
   }
   return { correct, wrong };
 }
@@ -506,13 +525,24 @@ function binop(a: number, b: number, op: string): number {
 // Signed / integer misconception verifies (G5 — E6…E9).
 //
 // WHY THEY LIVE HERE and not in lib/integers.ts with the rest of the family:
-// `erroranalysis.ts` resolves `verifyTemplateId` against LIB_VERIFY_DEFS ONLY
-// (`const VERIFY = new Map(LIB_VERIFY_DEFS…)`), so a verify template registered
-// anywhere else is invisible to the error-analysis primitive. The family's
-// `answerFor` templates stay in integers.ts; only these four truths have to sit
-// on the shared list. Each one REFUSES params that do not actually exhibit its
-// misconception (wrong === correct throws), so an error-analysis item can never
-// show a "student error" that is really the right answer.
+// history, no longer necessity. `erroranalysis.ts` DID resolve `verifyTemplateId`
+// against LIB_VERIFY_DEFS only (`const VERIFY = new Map(LIB_VERIFY_DEFS…)`), so a
+// verify registered anywhere else was invisible to the error-analysis primitive
+// and these four had to sit on the shared list. That is fixed: `verifyTruth()`
+// now consults the REGISTRY first and falls back to LIB_VERIFY_DEFS, so a family
+// may register its own truths beside its generators — `integers.ts` already does
+// for the four choice-item truths at the foot of INTEGER_TEMPLATE_DEFS.
+//
+// These four stay put because moving a registered id is a corpus-wide change for
+// no gain, not because the primitive still requires it. A NEW family's verify
+// belongs with its family.
+//
+// Each one REFUSES params that do not actually exhibit its misconception
+// (wrong === correct throws), so an error-analysis item can never show a
+// "student error" that is really the right answer. That was written of these
+// four and read as a claim about all of them: verifyFrac and verifyDec above
+// had no such guard until 2026-08-16, and verifyDec's absence put a "student
+// error" equal to the true answer on a served E5 page. Both now guard.
 // ---------------------------------------------------------------------------
 
 /** The ordered-pair surface every coordinate template renders: "(-3, 2)". */

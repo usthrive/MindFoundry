@@ -29,6 +29,15 @@ export default function WeekResolve() {
   const postCorrective = (weekState.mastery.attempts ?? []).some((a) => a.form === 'B');
   const nextWeek = getCatalogWeek(enrollment.level, weekState.week + 1);
   const cameFromCheck = !!(location.state as { justResolved?: boolean } | null)?.justResolved;
+  /**
+   * The hub's own reveal rule, read the same way here so the two screens cannot
+   * disagree: a week won TODAY reveals the next one when the calendar turns.
+   * Both compare LOCAL calendar days, so a child who finished at 22:30 on a
+   * Tuesday gets the next week on Wednesday, not 24 hours later.
+   */
+  const opensTomorrow =
+    !!weekState.completedAt &&
+    new Date(weekState.completedAt).toDateString() === new Date().toDateString();
 
   return (
     <div className="flex min-h-[70vh] flex-col justify-center gap-6">
@@ -60,16 +69,45 @@ export default function WeekResolve() {
         />
       )}
 
+      {/* Naming the next concept without saying WHEN it opens is what made this
+          screen a dead end: the child was shown a destination and given two
+          buttons, neither of which went there. The reveal still lives on the
+          hub and still waits for the cycle to turn (P1) — the change is that
+          the child is told that, here, at the moment they ask. */}
       {nextWeek && (
         <p className="text-center text-text-secondary">
           Next on the trail: <span className="font-semibold text-text-primary">{nextWeek.conceptName}</span>
+          {opensTomorrow ? ' — it opens tomorrow.' : ' — ready for you now.'}
         </p>
       )}
 
       <div className="flex flex-col gap-3">
+        {/* PRIMARY: back to the week hub, which is the module's spine and the
+            only screen the next week can be opened from. It used to be absent
+            entirely — `FoundryLayout` carries no persistent nav, so a screen
+            without its own exit is a leaf, and this one's two exits both went
+            sideways (chest, map). Reaching the hub meant entering the chest or
+            the map first and finding their hub links, two screens deep. */}
+        {/* APRICOT when it leads to the new concept, teal when it does not.
+            The hub's reveal button is the module's only other apricot control,
+            so the two form one trail: the colour that means "a new idea starts
+            here" is the same colour on both screens a child passes through to
+            reach it. Teal for "back to my week", which is a return, not a
+            start — the distinction is the whole reason the colour carries
+            meaning. */}
+        <Link
+          to="/foundry/hub"
+          className={
+            opensTomorrow
+              ? 'min-h-[56px] rounded-2xl bg-primary px-6 text-center leading-[56px] text-lg font-semibold text-white shadow-md hover:bg-primary-hover touch-manipulation'
+              : 'mf-btn-new flex items-center justify-center px-6 text-center shadow-md touch-manipulation'
+          }
+        >
+          {opensTomorrow ? 'Back to my week' : 'Go to the next idea'}
+        </Link>
         <Link
           to="/foundry/chest"
-          className="min-h-[56px] rounded-2xl bg-primary px-6 text-center leading-[56px] text-lg font-semibold text-white shadow-md hover:bg-primary-hover touch-manipulation"
+          className="flex min-h-[52px] items-center justify-center rounded-2xl border-2 border-gray-200 bg-white px-4 font-medium text-text-secondary hover:bg-gray-50 touch-manipulation"
         >
           See your collection
         </Link>

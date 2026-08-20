@@ -22,6 +22,7 @@ import {
   TupleGuard,
 } from '../shared';
 import { hundredChart } from '../lib/figures';
+import { unitFor } from '../lib/format';
 
 const NAMES = ['Maya', 'Leo', 'Ava', 'Ben', 'Mia', 'Sam', 'Ria', 'Noor'] as const;
 
@@ -234,7 +235,7 @@ function retrTeen(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
   const o = drawFresh(rng, guard, (r) => r.int(1, 9), (v) => `teen:${v}`);
   return {
     type: 'computation',
-    prompt: `Warm-up! 1 ten and ${o} ones make what number?`,
+    prompt: `Warm-up! 1 ten and ${o} ${unitFor(o, 'one')} make what number?`,
     answer: { value: String(10 + o), acceptableForms: [], validation: 'exact-numeric' },
     difficulty,
     strand: 'computational',

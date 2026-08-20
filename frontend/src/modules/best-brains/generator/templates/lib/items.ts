@@ -13,6 +13,15 @@
  *  4. Choice items compute the correct option from the same params; distractors
  *     carry a DD7 errorTag + rationale (QG-3), all from the closed enum (QG-9).
  *
+ * HINT LADDERS HERE ARE SEED-INVARIANT, and ten of them were not until
+ * 2026-08-16. A rung that interpolates a drawn value ("Think: 7 times WHAT
+ * lands on 63?") gives a different ladder per draw, which breaks the
+ * pack-generation dedup for whichever learner draws the unlucky seed (L19).
+ * bb-family-test has enforced that on every other family since it was written
+ * and never on this one, because its FAMILIES list did not include this file —
+ * so `factorPair` shipped 102 distinct ladders, unseen. The rungs now name
+ * ROLES ("the factor you are given", "the named digit"), never values.
+ *
  * Choice / short-text / manual-review items intentionally have no `answerFor`
  * (audit skipped): their correctness is the code-selected choice key, or they
  * are flagged for keyword / AI-runtime grading (open reasoning).
@@ -113,7 +122,7 @@ export function digitValue(digits = 6): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_pv_digit_value_v1', params: { digit, place }, seed: r.uint() },
-        hintLadder: [`Find which place the ${digit} sits in.`, 'The place multiplies the digit: ones, tens, hundreds, and up.'],
+        hintLadder: ['Find which place the named digit sits in.', 'The place multiplies the digit: ones, tens, hundreds, and up.'],
         errorTags: ['concept-misconception', 'representation-misread'],
       };
     });
@@ -318,7 +327,7 @@ export function factorPair(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_factor_pair_v1', params: { n, f }, seed: r.uint() },
-        hintLadder: [`Think: ${f} times WHAT lands on ${n}?`, 'Skip-count by the factor, or divide to undo the multiply.'],
+        hintLadder: ['Think: the factor you are given times WHAT lands on the target?', 'Skip-count by the factor, or divide to undo the multiply.'],
         errorTags: ['fact-recall', 'concept-misconception'],
       };
     });
@@ -339,7 +348,7 @@ export function multipleFill(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_multiple_v1', params: { base, k }, seed: r.uint() },
-        hintLadder: [`Skip-count by ${base}.`, `The kth multiple is ${base} taken k times.`],
+        hintLadder: ['Skip-count by the number whose multiples are wanted.', 'The kth multiple is that number taken k times.'],
         errorTags: ['fact-recall', 'concept-misconception'],
       };
     });
@@ -369,7 +378,7 @@ export function primeChoice(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_prime_v1', params: { n, isPrime }, seed: r.uint() },
-        hintLadder: [`Try to split ${n} into equal groups bigger than one.`, 'Check 2, 3, 5, 7 as possible factors before deciding.'],
+        hintLadder: ['Try to split the number into equal groups bigger than one.', 'Check 2, 3, 5, 7 as possible factors before deciding.'],
         errorTags: ['concept-misconception', 'fact-recall'],
       };
     });
@@ -383,9 +392,17 @@ export function primeChoice(): ItemGen {
 export function fracEquivFill(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const d1 = r.pick([2, 3, 4, 5, 6]);
-      const n1 = r.int(1, d1 - 1);
-      const k = r.int(2, 4);
+      // THE PAIR IS DRAWN, NOT THE DENOMINATOR AND THEN THE NUMERATOR.
+      // A denominator of 2 leaves exactly ONE legal numerator, so picking the
+      // denominator uniformly forced a fifth of all draws onto n1 = 1 — and 1
+      // scaled by a factor of 2–4 collides with 2 scaled by 2. "4" came out on
+      // 24.5% of draws against a 9.1% uniform share. Drawing uniformly over the
+      // legal (numerator, denominator) PAIRS gives each proper fraction the same
+      // chance, which is what "pick a fraction" was always meant to mean.
+      const pairs: Array<[number, number]> = [];
+      for (const d of [2, 3, 4, 5, 6]) for (let n = 1; n < d; n++) pairs.push([n, d]);
+      const [n1, d1] = r.pick(pairs);
+      const k = r.int(2, 5);
       const d2 = d1 * k;
       return {
         type: 'computation',
@@ -395,7 +412,7 @@ export function fracEquivFill(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_equiv_v1', params: { n1, d1, d2 }, seed: r.uint() },
-        hintLadder: [`What times ${d1} gives ${d2}? Scale the top by the same factor.`, 'Top and bottom both grow together — the amount stays the same.'],
+        hintLadder: ['What does the bottom number multiply by to reach the new bottom? Scale the top by that same factor.', 'Top and bottom both grow together — the amount stays the same.'],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
     });
@@ -405,31 +422,99 @@ export function fracEquivFill(): ItemGen {
 export function fracCompareChoice(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const d1 = r.pick([2, 3, 4, 5, 6, 8]);
-      let d2 = r.pick([2, 3, 4, 5, 6, 8]);
-      if (d2 === d1) d2 = d1 === 8 ? 3 : d1 + 1;
-      const n1 = r.int(1, d1 - 1);
-      const n2 = r.int(1, d2 - 1);
-      const v1 = n1 / d1;
-      const v2 = n2 / d2;
-      if (Math.abs(v1 - v2) < 1e-9) return build(r, n1, d1, n2, d2 === 2 ? 4 : 2); // avoid ties by nudging
+      // ONE DRAW IN FIVE IS AN EQUIVALENT PAIR, so "they are equal" can be the
+      // answer. The generator used to nudge every tie away, so the card was
+      // offered on 2,000/2,000 draws and keyed on none (measured) — a
+      // permanently unkeyable option, the L38 class already repaired twice in
+      // this library (`compareWhole` above, `compareNegativesTrap` in G5). A
+      // child who meets it twice learns to strike it out and answer a two-way
+      // question.
+      //
+      // It is also the better item. "Which is greater: 2/4 or 1/2?" is the D9
+      // skill itself — two fractions that look different and name one amount —
+      // and it is the only draw on which every digit-comparing habit fails at
+      // once. The equal pair is built by SCALING, so the two surfaces always
+      // differ even though the values do not.
+      const equalDraw = r.int(1, 5) === 1;
+      let d1: number;
+      let d2: number;
+      let n1: number;
+      let n2: number;
+      if (equalDraw) {
+        const base = r.pick([2, 3, 4] as const);
+        const k = base === 2 ? r.pick([2, 3, 4] as const) : 2; // base*k stays in 4…8
+        d1 = base;
+        n1 = r.int(1, base - 1);
+        d2 = base * k;
+        n2 = n1 * k;
+        if (r.int(0, 1) === 0) {
+          [d1, d2] = [d2, d1];
+          [n1, n2] = [n2, n1];
+        }
+      } else {
+        // RESAMPLED until the two values genuinely differ.
+        //
+        // Nudging is what the old line did — swap the denominator, clamp the
+        // numerator back into range — and it could land straight back on an
+        // equivalent pair: 1/2 against 2/4 nudges d2 from 4 to 2, clamps n2 to
+        // 1, and hands `build` 1/2 against 1/2. The equal branch then fired and
+        // shipped the same card twice, once keyed and once not. Measured at 35
+        // duplicate card sets in 2,000 draws while this comment's predecessor
+        // was in place — the L38 defect reintroduced by its own repair, which is
+        // why the sweep is re-run after a fix and not only before one.
+        d1 = 2; n1 = 1; d2 = 3; n2 = 1; // fallback: 1/2 vs 1/3, see temperatureSwing
+        for (let i = 0; i < 60; i++) {
+          const b1 = r.pick([2, 3, 4, 5, 6, 8]);
+          let b2 = r.pick([2, 3, 4, 5, 6, 8]);
+          if (b2 === b1) b2 = b1 === 8 ? 3 : b1 + 1;
+          const a1 = r.int(1, b1 - 1);
+          const a2 = r.int(1, b2 - 1);
+          if (Math.abs(a1 / b1 - a2 / b2) < 1e-9) continue;
+          d1 = b1; n1 = a1; d2 = b2; n2 = a2;
+          break;
+        }
+      }
       function build(rr: Rng, a1: number, b1: number, a2: number, b2: number): ItemDraft {
-        const greater = a1 / b1 > a2 / b2 ? fracStr(a1, b1) : fracStr(a2, b2);
+        const equal = Math.abs(a1 / b1 - a2 / b2) < 1e-9;
+        const greater = equal ? 'they are equal' : a1 / b1 > a2 / b2 ? fracStr(a1, b1) : fracStr(a2, b2);
         const lesser = a1 / b1 > a2 / b2 ? fracStr(a2, b2) : fracStr(a1, b1);
-        const { choices, correctKey } = makeChoices(rr, greater, [
-          {
-            text: lesser,
-            errorTag: 'concept-misconception',
-            // Pick the misconception that genuinely yields THIS distractor.
-            rationale:
-              (a1 / b1 > a2 / b2 ? b2 > b1 : b1 > b2)
+        // Distractors DERIVED from the truth, never a fixed list. Hard-coding
+        // "they are equal" as a wrong card was safe only while it could not be
+        // the answer; the moment an equivalent pair became drawable the same
+        // list would have shipped a card set holding it twice, once keyed and
+        // once not — the third defect the G5 repair uncovered.
+        const wrongCards = equal
+          ? [
+            {
+              text: fracStr(a1, b1),
+              errorTag: 'concept-misconception' as const,
+              rationale: b1 > b2
                 ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
-                : (a1 / b1 > a2 / b2 ? a2 > a1 : a1 > a2)
-                  ? 'Judges size by the bigger top number alone, ignoring how big the pieces are.'
-                  : 'Compares the two fractions without first giving them a common piece-size.',
-          },
-          { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Skips finding a common size to compare fairly.' },
-        ]);
+                : 'Judges size by the bigger top number alone, ignoring how big the pieces are.',
+            },
+            {
+              text: fracStr(a2, b2),
+              errorTag: 'concept-misconception' as const,
+              rationale: b2 > b1
+                ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
+                : 'Judges size by the bigger top number alone, ignoring how big the pieces are.',
+            },
+          ]
+          : [
+            {
+              text: lesser,
+              errorTag: 'concept-misconception' as const,
+              // Pick the misconception that genuinely yields THIS distractor.
+              rationale:
+                (a1 / b1 > a2 / b2 ? b2 > b1 : b1 > b2)
+                  ? 'Judges size by the bigger bottom number — smaller pieces, not more amount.'
+                  : (a1 / b1 > a2 / b2 ? a2 > a1 : a1 > a2)
+                    ? 'Judges size by the bigger top number alone, ignoring how big the pieces are.'
+                    : 'Compares the two fractions without first giving them a common piece-size.',
+            },
+            { text: 'they are equal', errorTag: 'representation-misread' as const, rationale: 'Skips finding a common size to compare fairly.' },
+          ];
+        const { choices, correctKey } = makeChoices(rr, greater, wrongCards);
         return {
           type: 'classification',
           prompt: `Which is greater: ${fracStr(a1, b1)} or ${fracStr(a2, b2)}?`,
@@ -440,7 +525,10 @@ export function fracCompareChoice(): ItemGen {
           isRetrieval: false,
           generator: { templateId: 'd_frac_compare_v1', params: { n1: a1, d1: b1, n2: a2, d2: b2 }, seed: rr.uint() },
           hintLadder: ['Compare each to a benchmark like 1/2, or re-cut both into the same size pieces.', 'A bigger bottom means smaller pieces, not a bigger amount.'],
-          errorTags: ['concept-misconception', 'representation-misread'],
+          // Declared from the cards actually shipped: on an equivalent pair both
+          // wrong cards are the same misconception, and claiming a tag no card
+          // carries is the bookkeeping QG-3 exists to check.
+          errorTags: equal ? ['concept-misconception'] : ['concept-misconception', 'representation-misread'],
         };
       }
       return build(r, n1, d1, n2, d2);
@@ -449,6 +537,12 @@ export function fracCompareChoice(): ItemGen {
 
 /** ± fractions with LIKE denominators (D10). op: 1 add, -1 sub. */
 export function fracAddSubLike(op: 1 | -1): ItemGen {
+  // "1" is the answer on 18.0% of addition draws, and that is arithmetic, not a
+  // defect. Two proper fractions over a common denominator d complete a whole
+  // whenever their numerators are complements, which is 1/(d-1) of uniform
+  // draws — and that is precisely the case the week most wants a child to meet.
+  // Widening the denominator pool would dilute it, at the cost of taking the
+  // fractions out of band. Stated rather than engineered around.
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       const d = r.pick([4, 5, 6, 8, 9, 10, 12]);
@@ -511,7 +605,7 @@ export function fracTimesWhole(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_times_whole_v1', params: { k, n, d }, seed: r.uint() },
-        hintLadder: [`Picture ${k} copies of ${fracStr(n, d)} — count the unit-pieces.`, 'Multiply the top by the whole number; the piece-size stays the same.'],
+        hintLadder: ['Picture that many copies of the fraction — count the unit-pieces.', 'Multiply the top by the whole number; the piece-size stays the same.'],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
     });
@@ -570,7 +664,7 @@ export function fracDivide(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_div_v1', params: { n1: a.n, d1: a.d, n2: b.n, d2: b.d }, seed: r.uint() },
-        hintLadder: [wholeFirst ? `How many ${fracStr(1, d)}-pieces fit in one whole? In ${k} wholes?` : 'Splitting a small piece into equal shares makes even smaller pieces.', 'Dividing by a fraction is the same as multiplying by its flip.'],
+        hintLadder: ['Which way round is it — a whole amount measured out in small pieces, or one small piece shared into equal parts?', 'Dividing by a fraction is the same as multiplying by its flip.'],
         errorTags: ['concept-misconception', 'procedure-slip'],
       };
     });
@@ -585,26 +679,51 @@ export function decCompareChoice(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
       // One "short" decimal vs one "long" decimal to trap the longer-is-bigger error.
-      const a = `0.${r.int(1, 9)}`;
-      const b = `0.${String(r.int(11, 89)).padStart(2, '0')}`;
+      //
+      // ONE DRAW IN FIVE MAKES THEM EQUAL — 0.4 against 0.40. The generator used
+      // to redraw every tie away, so "they are equal" was offered on 2,000/2,000
+      // draws and keyed on none (measured): the L38 unkeyable card, the same one
+      // repaired in `compareWhole`, `fracCompareChoice` above and G5's
+      // `compareNegativesTrap`.
+      //
+      // Here the equal draw is not a concession to the card — it is the sharpest
+      // form of the item. "Longer means bigger" is exactly the misconception D12
+      // names, and 0.4 vs 0.40 is the one pair where a child who holds it has to
+      // choose between two identical amounts. The trailing zero is what makes
+      // the two surfaces differ while the values do not.
+      const equalDraw = r.int(1, 5) === 1;
+      const tenths = r.int(1, 9);
+      const a = `0.${tenths}`;
+      const b = equalDraw ? `0.${tenths}0` : `0.${String(r.int(11, 89)).padStart(2, '0')}`;
       const av = Number(a);
       const bv = Number(b);
-      if (Math.abs(av - bv) < 1e-9) return decCompareChoice()(r, guard, difficulty);
-      const greater = av > bv ? a : b;
+      // An unequal draw that lands on a round tenth (0.20 against 0.2) is a tie
+      // the shape did not ask for; it redraws, as before.
+      if (!equalDraw && Math.abs(av - bv) < 1e-9) return decCompareChoice()(r, guard, difficulty);
+      const equal = Math.abs(av - bv) < 1e-9;
+      const greater = equal ? 'they are equal' : av > bv ? a : b;
       const lesser = av > bv ? b : a;
-      const { choices, correctKey } = makeChoices(r, greater, [
-        {
-          text: lesser,
-          errorTag: 'concept-misconception',
-          // "Longer means bigger" only explains this distractor when the SMALLER
-          // decimal is in fact the longer one.
-          rationale:
-            lesser.length > greater.length
-              ? 'Chooses the one with more digits — "longer means bigger" misread of decimals.'
-              : 'Compares the digits after the point without lining up the places first.',
-        },
-        { text: 'they are equal', errorTag: 'representation-misread', rationale: 'Ignores the tenths place, where the comparison is decided.' },
-      ]);
+      // Derived from the truth — a fixed list would ship "they are equal" twice
+      // on the draw where it is the answer.
+      const wrongCards = equal
+        ? [
+          { text: a, errorTag: 'concept-misconception' as const, rationale: 'Reads the shorter decimal as the smaller amount, counting digits instead of places.' },
+          { text: b, errorTag: 'concept-misconception' as const, rationale: 'Chooses the one with more digits — "longer means bigger" misread of decimals.' },
+        ]
+        : [
+          {
+            text: lesser,
+            errorTag: 'concept-misconception' as const,
+            // "Longer means bigger" only explains this distractor when the SMALLER
+            // decimal is in fact the longer one.
+            rationale:
+              lesser.length > greater.length
+                ? 'Chooses the one with more digits — "longer means bigger" misread of decimals.'
+                : 'Compares the digits after the point without lining up the places first.',
+          },
+          { text: 'they are equal', errorTag: 'representation-misread' as const, rationale: 'Ignores the tenths place, where the comparison is decided.' },
+        ];
+      const { choices, correctKey } = makeChoices(r, greater, wrongCards);
       return {
         type: 'classification',
         prompt: `Which is greater: ${a} or ${b}?`,
@@ -615,7 +734,8 @@ export function decCompareChoice(): ItemGen {
         isRetrieval: false,
         generator: { templateId: 'd_dec_compare_v1', params: { a, b }, seed: r.uint() },
         hintLadder: ['Line up the decimal points and compare the tenths first.', 'Add a zero so both have the same number of places, then compare.'],
-        errorTags: ['concept-misconception', 'representation-misread'],
+        // Declared from the cards actually shipped (see `fracCompareChoice`).
+        errorTags: equal ? ['concept-misconception'] : ['concept-misconception', 'representation-misread'],
       };
     });
 }
@@ -624,7 +744,13 @@ export function decCompareChoice(): ItemGen {
 export function fractionToDecimal(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const d = r.pick([2, 4, 5, 10, 20, 25, 50, 100]);
+      // HALVES ARE REACHED THROUGH THEIR EQUIVALENTS, NOT THROUGH d = 2.
+      // A denominator of 2 admits one numerator only, so an eighth of every draw
+      // landed on 1/2 and "0.5" was the answer on 19.3% of draws against a 1.0%
+      // uniform share — a child writing 0.5 every time beat one in five. The
+      // half is still reachable, and better taught, through 2/4, 5/10, 25/50 and
+      // 50/100, which is the re-cutting the hint ladder actually describes.
+      const d = r.pick([4, 5, 10, 20, 25, 50, 100]);
       const n = r.int(1, d - 1);
       return {
         type: 'computation',
@@ -817,21 +943,87 @@ export function writeExprChoice(): ItemGen {
     drawUniqueItem(rng, guard, (r) => {
       const a = r.int(2, 9);
       const b = r.int(2, 9);
-      const correct = `2 × (${a} + ${b})`;
-      const { choices, correctKey } = makeChoices(r, correct, [
-        { text: `2 × ${a} + ${b}`, errorTag: 'concept-misconception', rationale: 'Drops the grouping — doubles only the first number, not the whole sum.' },
-        { text: `${a} + ${b} + 2`, errorTag: 'task-comprehension', rationale: 'Reads "twice" as "add two" instead of "multiply by two".' },
-      ]);
+      // WHICH PHRASE IS ASKED IS DRAWN; the three expressions never change.
+      // Only the grouped form was ever the answer, and brackets make it the
+      // longest string on the page every time — "tap the longest expression"
+      // keyed 3000 of 3000 draws against a 33% baseline, on an item whose whole
+      // subject is that these three expressions are DIFFERENT. Rotating the
+      // phrase teaches the same distinction in all three directions, which is
+      // what the item claimed to do.
+      // AND ALL THREE CARDS LEAD WITH THE SAME TOKEN, which is a second repair
+      // on top of the phrase rotation below, not a restatement of it.
+      //
+      // `PLUS_TWO` used to render `a + b + 2` — the only card of the three
+      // beginning with a DRAWN number, where the other two begin with the
+      // literal 2. So "tap the card that starts with the phrase's first
+      // number" isolated exactly one card, and on the phrasing that leads with
+      // `a` and keys `PLUS_TWO` it isolated the KEY. Measured over 3,000 draws:
+      // 45.9% against a 33.3% baseline overall, and 91.0% on the third of draws
+      // asking "two more than the sum of …". Its mirror paid too — the key
+      // ended with the phrase's last number on only 25.5%, so striking that
+      // card improved a guess.
+      //
+      // The census cannot see this class: it compares cards to CARDS and never
+      // the PROMPT to the cards, so a correspondence between the two is
+      // invisible to every check it runs. This is the same defect, in the same
+      // shape, that `algebra.expressionMeaningTrap` carried — both of them
+      // BEHIND an earlier repair that had correctly closed a card-only tell.
+      // Rotating which phrase is asked fixes card identity and cannot touch a
+      // correspondence.
+      //
+      // `2 + a + b` is the same translation of "two more than the sum" —
+      // addition commutes and D21's subject is which OPERATION the words name,
+      // not which end the constant is written at. Now every card begins with
+      // the same token, so the strategy has nothing to isolate; and every card
+      // also ends with `b`, which retires the mirror at the same time.
+      const GROUPED = `2 × (${a} + ${b})`;
+      const TWICE_FIRST = `2 × ${a} + ${b}`;
+      const PLUS_TWO = `2 + ${a} + ${b}`;
+      const FORMS = [
+        {
+          form: 'grouped',
+          phrase: `twice the sum of ${a} and ${b}`,
+          correct: GROUPED,
+          distractors: [
+            { text: TWICE_FIRST, errorTag: 'concept-misconception' as const, rationale: 'Drops the grouping — doubles only the first number, not the whole sum.' },
+            { text: PLUS_TWO, errorTag: 'task-comprehension' as const, rationale: 'Reads "twice" as "add two" instead of "multiply by two".' },
+          ],
+        },
+        {
+          form: 'twice-first',
+          phrase: `${b} more than twice ${a}`,
+          correct: TWICE_FIRST,
+          distractors: [
+            { text: GROUPED, errorTag: 'concept-misconception' as const, rationale: 'Groups the two numbers first — doubles both of them, not just the one "twice" names.' },
+            { text: PLUS_TWO, errorTag: 'task-comprehension' as const, rationale: 'Reads "twice" as "add two" instead of "multiply by two".' },
+          ],
+        },
+        {
+          form: 'plus-two',
+          phrase: `two more than the sum of ${a} and ${b}`,
+          correct: PLUS_TWO,
+          distractors: [
+            { text: GROUPED, errorTag: 'concept-misconception' as const, rationale: 'Multiplies the sum by two instead of adding two to it.' },
+            { text: TWICE_FIRST, errorTag: 'task-comprehension' as const, rationale: 'Doubles the first number instead of adding two to the whole sum.' },
+          ],
+        },
+      ];
+      const pick = r.pick(FORMS);
+      const { choices, correctKey } = makeChoices(r, pick.correct, pick.distractors);
       return {
         type: 'representation',
-        prompt: `Which expression means: "twice the sum of ${a} and ${b}"?`,
+        prompt: `Which expression means: "${pick.phrase}"?`,
         choices,
-        answer: { value: correctKey, acceptableForms: [correct], validation: 'choice-key' },
+        answer: { value: correctKey, acceptableForms: [pick.correct], validation: 'choice-key' },
         difficulty,
         strand: 'computational',
         isRetrieval: false,
-        generator: { templateId: 'd_write_expr_v1', params: { a, b }, seed: r.uint() },
-        hintLadder: ['"Sum of" must be grouped before anything is done to it.', '"Twice" multiplies the WHOLE sum by two.'],
+        generator: { templateId: 'd_write_expr_v1', params: { a, b, form: pick.form }, seed: r.uint() },
+        // ONE LADDER FOR ALL THREE PHRASINGS. Rungs that named the drawn form
+        // would be seed-variant, which is a hard family-test failure (L19), so
+        // these describe the METHOD — read the phrase in order, build it, then
+        // match — which is the same method whichever phrase was drawn.
+        hintLadder: ['Read the phrase in order: what is grouped, and what acts on that group?', 'Build the phrase one piece at a time, then match it against each expression.'],
         errorTags: ['concept-misconception', 'task-comprehension'],
       };
     });
@@ -841,8 +1033,16 @@ export function writeExprChoice(): ItemGen {
 export function plotChoice(): ItemGen {
   return (rng, guard, difficulty) =>
     drawUniqueItem(rng, guard, (r) => {
-      const x = r.int(1, 9);
-      let y = r.int(1, 9);
+      // BOTH COUNTS START AT 2. At 1 the prompt read "Point P is 1 units
+      // right", on 20.7% of 4,000 draws — a QG-12c violation the gate could not
+      // see, because its stem minimum exempted three-letter plurals until this
+      // session, and `units` was reached through a bare `${…}` rather than
+      // `unitFor`. Latent rather than shipped: D22 is the only week that names
+      // this generator and its header explains it cannot serve the raw form in
+      // v2 core, so 300 served D22 packs contain none of them. It surfaced when
+      // E7 tried to use it and the draw failed E7's own 200-seed sweep.
+      const x = r.int(2, 9);
+      let y = r.int(2, 9);
       if (y === x) y = x === 9 ? 8 : x + 1;
       const correct = `(${x}, ${y})`;
       const { choices, correctKey } = makeChoices(r, correct, [
@@ -879,7 +1079,7 @@ export function patternTerm(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_pattern_term_v1', params: { start, step, k }, seed: r.uint() },
-        hintLadder: [`The 1st number is the start; each later number adds ${step}.`, `Add ${step} a total of one-less-than-${k} times to the start.`],
+        hintLadder: ['The first number is the start; each later number adds the same step.', 'Add the step to the start one time fewer than the term you are asked for.'],
         errorTags: ['procedure-slip', 'concept-misconception'],
       };
     });
@@ -1281,7 +1481,7 @@ export function storyFracTimesWhole(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_times_whole_v1', params: { k, n, d }, seed: r.uint() },
-        hintLadder: [`${k} equal batches — count the fraction that many times.`, 'Multiply the top by the number of batches; the piece-size stays.'],
+        hintLadder: ['Equal batches — count the fraction once for every batch.', 'Multiply the top by the number of batches; the piece-size stays.'],
         errorTags: ['task-comprehension', 'procedure-slip'],
       };
     });
@@ -1332,7 +1532,7 @@ export function storyFracDivide(): ItemGen {
         strand: 'computational',
         isRetrieval: false,
         generator: { templateId: 'd_frac_div_v1', params: { n1: k, d1: 1, n2: 1, d2: d }, seed: r.uint() },
-        hintLadder: [`How many ${fracStr(1, d)}-cup scoops fill ONE cup? Then all ${k} cups.`, 'Dividing by a unit fraction multiplies by its bottom number.'],
+        hintLadder: ['How many scoops fill ONE cup? Then all of the cups.', 'Dividing by a unit fraction multiplies by its bottom number.'],
         errorTags: ['task-comprehension', 'concept-misconception'],
       };
     });

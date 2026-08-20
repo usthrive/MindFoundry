@@ -827,13 +827,37 @@ const MONEY_AMOUNT_G = /\$(\d+)(?:\.(\d+))?\s*(\w+)?/g;
 const DENOMINATION_WORD = /^(bill|note|coin|coins|notes|bills)$/i;
 
 /** A count of exactly one against a plural unit ("1 liters"). */
-const ONE_PLURAL_G = /(?<![\d.])(?<!than )(?<!the )(?<![\d/],\s)\b1 ([a-z]{4,}(?:s|es))\b/g;
+/**
+ * STEM LENGTH 3, not 4 — a deliberate strengthening, blast radius measured.
+ *
+ * The stem minimum was `{4,}`, which requires four letters BEFORE the s. That
+ * silently exempted every three-letter plural in the language, and the two that
+ * matter most at this age are `ones` and `tens`: B1 and B2 shipped "1 ten and
+ * 1 ones make what number?" and "Circle the number that shows 5 tens and 1
+ * ones" to live children for as long as those weeks have existed, on the one
+ * screen where place-value vocabulary is the entire lesson.
+ *
+ * Measured before changing it, across all 120 cells × 10 seeds: dropping to
+ * `{3,}` newly flags exactly ONE word, `ones`, in exactly 15 items across
+ * exactly 2 cells — zero false positives anywhere else in the corpus. The
+ * exemption set below already covers the short verbs that look plural after a
+ * numeral (`goes`, `does` is unreachable at `{3,}` via the `s` arm, `1 times`,
+ * …), which is why the tightening costs nothing.
+ */
+const ONE_PLURAL_G = /(?<![\d.])(?<!than )(?<!the )(?<![\d/],\s)\b1 ([a-z]{3,}(?:s|es))\b/g;
 /** Verbs and comparatives that merely look plural after a bare numeral. */
 const NOT_A_PLURAL_NOUN = new Set([
   'times', 'makes', 'takes', 'gives', 'means', 'stays', 'leaves', 'shares', 'moves',
   'sits', 'goes', 'shows', 'turns', 'always', 'across', 'plus', 'less', 'sixths',
   'fifths', 'fourths', 'thirds', 'tenths', 'halves', 'eighths', 'ninths', 'sevenths',
   'twelfths', 'hundredths', 'thousandths',
+  // Reached only once the stem minimum dropped to 3: D2's lesson script says
+  // "a carried 1 hops to the next column", where the 1 is the noun and `hops`
+  // is the verb. Found by re-running the blast radius over EVERY validated
+  // surface — the first pass scanned item prompts only and missed the lesson
+  // scripts, which is where this lives. 2,525 packs under the tightened gate
+  // produce exactly this one word and nothing else.
+  'hops',
 ]);
 /** "a" before a numeral whose spoken form begins with a vowel ("a 8 cm strip"). */
 const ARTICLE_VOWEL = /\ba (8|11|18|8\d|8\d{2,}|11\d{2,}|18\d{2,})\b/;

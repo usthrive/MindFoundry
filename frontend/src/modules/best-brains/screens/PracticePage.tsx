@@ -530,8 +530,42 @@ export default function PracticePage() {
         {/* `item` enables full-screen mode: the pad pins the question AND the
             figure above the canvas. Without it the pad is a 220px strip at the
             bottom of a scrolling page, and opening it pushes the question off
-            the top — reported from real use by a six-year-old. */}
-        <BBScratchPad itemKey={`practice-${item.id}`} band={band} item={item} />
+            the top — reported from real use by a six-year-old.
+
+            `answerSlot` puts the answer control at the FOOT of that pad, so the
+            child works and answers in one place. Submitting closes the pad on
+            the way past: `close()` runs before `handleAnswer`, so the overlay is
+            already gone when the next item mounts and the child never lands on
+            item n+1 with item n's working space still over the screen. */}
+        <BBScratchPad
+          itemKey={`practice-${item.id}`}
+          band={band}
+          item={item}
+          /* Durable working: kept for the whole level and exportable as a
+             notebook, instead of a module Map a tablet restart empties. */
+          notebook={
+            weekState
+              ? {
+                  childId,
+                  level: weekState.level,
+                  week: weekState.week,
+                  packId: pack.packId,
+                  itemId: item.id,
+                  prompt: item.prompt,
+                }
+              : undefined
+          }
+          answerSlot={(close) => (
+            <AnswerEntry
+              item={item}
+              band={band}
+              onSubmit={(answer) => {
+                close();
+                handleAnswer(answer);
+              }}
+            />
+          )}
+        />
       </div>
 
       <AnchorPanel pack={pack} mode="full" band={band} open={anchorOpen} onClose={() => setAnchorOpen(false)} />

@@ -109,15 +109,22 @@ export default function WeeklyReport() {
         <div>
           <SectionLabel>What we're strengthening</SectionLabel>
           <p className="mt-1.5">{n.strengthening}</p>
-          {report.verdict !== 'passed' && (
-            <Link
-              to={`/foundry/parent/patterns/${report.childId}`}
-              className="mt-1 inline-block text-[13px] font-semibold text-primary"
-              style={{ fontFamily: 'var(--mf-font-parent)' }}
-            >
-              See the pattern
-            </Link>
-          )}
+          {/* Shown on EVERY verdict, including a pass.
+              This used to be hidden whenever the week was passed, which follows
+              only if the parent is an audience: a won week needs no explaining.
+              For a parent acting as a like-instructor it is backwards — the
+              child who most repays a look is the one who passed at 83% after a
+              corrective round, having logged the same slip nineteen times. The
+              patterns screen is calm on a good week (it says so itself: "a
+              quiet stretch — strong weeks look exactly like this"), so there is
+              no cost to leaving the door open. */}
+          <Link
+            to={`/foundry/parent/patterns/${report.childId}`}
+            className="mt-1 inline-block text-[13px] font-semibold text-primary"
+            style={{ fontFamily: 'var(--mf-font-parent)' }}
+          >
+            See the pattern
+          </Link>
         </div>
         <div className="rounded-xl px-4 py-3.5" style={{ background: 'var(--mf-paper)' }}>
           <SectionLabel apricot>At home this week</SectionLabel>

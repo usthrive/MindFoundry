@@ -305,7 +305,12 @@ export default function GuidedPractice() {
       )}
 
       <div className="mt-auto">
-        <BBScratchPad itemKey={`guided-${example.id}`} band={band} />
+        {/* `item` enables the full-screen pad, which this screen never had.
+            No `answerSlot`: a guided example answers through its own step chain,
+            not through `AnswerEntry`, so there is no single control to pin at the
+            foot — the child closes the pad and continues the steps. Worth
+            revisiting if the step chain ever moves behind a shared control. */}
+        <BBScratchPad itemKey={`guided-${example.id}`} band={band} item={example} />
       </div>
     </div>
   );

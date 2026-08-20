@@ -457,12 +457,31 @@ export function elapsedMinutes(g: ClockGranularity = 'five'): ItemGen {
       situationType: 'measurement',
       cognitiveOp: 'elapsed-time',
       draw: (r) => {
+        // THE DURATION IS DRAWN FIRST, then placed on the face.
+        // Drawing the start mark uniformly and then a later mark uniformly is
+        // not the same as drawing a uniform duration: a late start leaves almost
+        // no room, so the shortest gap collects the mass of every cramped draw.
+        // Measured on the five-minute face, "5 minutes" was the answer on 28.0%
+        // of 3,000 draws against a 9.1% uniform share over the eleven durations
+        // the item can reach — a child answering "five" without reading either
+        // clock beat chance threefold. No repair loop was involved; the shape of
+        // the draw did it, which is the quieter half of the nudge-collapse
+        // family and worth naming separately.
         const pool = minutesFor(g);
         const last = pool[pool.length - 1];
-        const m = r.pick(pool.filter((v) => v < last));
-        const m2 = r.pick(pool.filter((v) => v > m));
-        // 12 is excluded so "the hour" never has to roll over in the prose.
-        const h = r.int(1, 11);
+        const step = pool[1] - pool[0];
+        // The longest gap is excluded because it forces a start of :00, and a
+        // start of :00 makes the finish time READ OUT the duration — drawing
+        // durations uniformly without this took the answer-in-prompt rate from
+        // roughly one draw in eleven to more than one in four. Starts of :00,
+        // and starts that equal the duration, go for the same reason.
+        const gap = r.pick(pool.filter((v) => v >= step && v < last));
+        const starts = pool.filter((v) => v !== 0 && v !== gap && v + gap <= last);
+        const m = r.pick(starts.length ? starts : pool.filter((v) => v !== 0 && v + gap <= last));
+        const m2 = m + gap;
+        // 12 is excluded so "the hour" never has to roll over in the prose; the
+        // duration is excluded so the hour cannot print it either.
+        const h = r.pick([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].filter((v) => v !== gap));
         const event = r.pick(EVENTS);
         return {
           prompt: `[image: ${clockAlt(h, m)}] ${opens(event)} begins at the time on the clock — ${spokenTime(h, m)}. It finishes at ${digitalTime(h, m2)}. How many minutes does it last?`,

@@ -148,6 +148,60 @@ export function tenFrame(
   };
 }
 
+/** Say one base-ten state the way a child would describe the pieces. */
+function blocksPhrase(s: { flats?: number; rods: number; ones: number }): string {
+  const bits: string[] = [];
+  if (s.flats) bits.push(countNoun(s.flats, 'hundred square'));
+  if (s.rods) bits.push(countNoun(s.rods, 'ten-rod'));
+  if (s.ones) bits.push(countNoun(s.ones, 'loose cube'));
+  if (!bits.length) return 'no blocks';
+  if (bits.length === 1) return bits[0];
+  return `${bits.slice(0, -1).join(', ')} and ${bits[bits.length - 1]}`;
+}
+
+/**
+ * Base-ten blocks. `then` renders a CHANGE as before → after with an arrow,
+ * which is how a lesson visual written as motion ("ten cubes magnetize into a
+ * rod") gets drawn by a system that has no animation.
+ *
+ * The alt text is the picture's accessible name AND, at band A, part of what is
+ * spoken — so it is written as what a child SEES, never as a direction to an
+ * artist. That distinction is the whole of LEARNINGS L27.
+ */
+export function baseTenBlocks(
+  state: { flats?: number; rods: number; ones: number; label?: string },
+  opts: {
+    then?: { flats?: number; rods: number; ones: number; label?: string };
+    connector?: 'becomes' | 'beside';
+    highlight?: 'ones' | 'rods' | 'none';
+    showColumns?: boolean;
+    showNumeral?: boolean;
+    alt?: string;
+    asserts?: FigureAssertion;
+  } = {},
+): BBFigure {
+  const connector = opts.connector ?? 'becomes';
+  const alt =
+    opts.alt ??
+    (opts.then
+      ? connector === 'becomes'
+        ? `${blocksPhrase(state)} turning into ${blocksPhrase(opts.then)}`
+        : `${blocksPhrase(state)} beside ${blocksPhrase(opts.then)}`
+      : blocksPhrase(state));
+  return {
+    type: 'base-ten-blocks',
+    alt,
+    params: {
+      state,
+      ...(opts.then ? { then: opts.then, connector } : {}),
+      ...(opts.highlight ? { highlight: opts.highlight } : {}),
+      ...(opts.showColumns ? { showColumns: opts.showColumns } : {}),
+      ...(opts.showNumeral ? { showNumeral: opts.showNumeral } : {}),
+    },
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
+  };
+}
+
 /** A number line, optionally partitioned, with marks and hops. */
 export function numberLine(
   params: {
@@ -173,6 +227,48 @@ export function barModel(
     params: { bars, ...(opts.scaleMax ? { scaleMax: opts.scaleMax } : {}), ...(opts.brace ? { brace: opts.brace } : {}) },
     ...(opts.asserts ? { asserts: opts.asserts } : {}),
   };
+}
+
+/**
+ * A coordinate grid — the four-quadrant plane, or any window of it.
+ *
+ * WHY THIS EXISTS. Every other layer of the stack already supported this
+ * figure: `CoordinateGridParams` is typed, `CoordinateGridFig` renders it,
+ * `assert.ts` knows its `point` / `point:k` assertions, and the figure-render
+ * suite has carried a passing case labelled "(E7)" the whole time. The one
+ * missing piece was here — the authoring layer — so a week that wanted a grid
+ * had to hand-build the object and bypass the helpers that supply the alt text
+ * and the assertion. G5's four E7 generators ship no figure at all as a result:
+ * a coordinate-plane week with no coordinate plane on it.
+ *
+ * The `hundredChart` note below records the same shape of bug reaching a real
+ * child. Adding the constructor before E7 is authored is that lesson applied
+ * early rather than late.
+ *
+ * The window is the CALLER's, deliberately — a grid that silently resized to
+ * fit its points would move the axes between two items a child is asked to
+ * compare, which is exactly the comparison the week is for.
+ */
+export function coordinateGrid(
+  params: {
+    xMin: number; xMax: number; yMin: number; yMax: number; step?: number;
+    points?: Array<{ x: number; y: number; label?: string; style?: MarkStyle }>;
+    segments?: Array<{ from: [number, number]; to: [number, number]; label?: string }>;
+    showAxisLabels?: boolean;
+  },
+  opts: { alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  if (params.xMax <= params.xMin || params.yMax <= params.yMin) {
+    throw new Error(
+      `coordinateGrid: empty window x[${params.xMin}, ${params.xMax}] y[${params.yMin}, ${params.yMax}] — checkFigureShape requires max > min on both axes`,
+    );
+  }
+  for (const p of params.points ?? []) {
+    if (p.x < params.xMin || p.x > params.xMax || p.y < params.yMin || p.y > params.yMax) {
+      throw new Error(`coordinateGrid: point (${p.x}, ${p.y}) falls outside the window — it would render off the grid`);
+    }
+  }
+  return { type: 'coordinate-grid', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
 }
 
 /** An area/array grid; `shadedRows`×`shadedCols` produces the double-shaded overlap. */

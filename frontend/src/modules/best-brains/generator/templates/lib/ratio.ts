@@ -104,13 +104,44 @@ function cashList(cents: readonly number[]): string[] {
  * (`bigEach·bigQ ≥ 30·8`) always exceeds the small pack's
  * (`≤ (bigEach+15)·4`), because `8e > 4e + 60` for every `e ≥ 30`.
  */
-function trapPacks(r: { int: (lo: number, hi: number) => number; pick: <T>(xs: readonly T[]) => T }): {
-  bigQ: number; smallQ: number; bigEach: number; smallEach: number; bigTotal: number; smallTotal: number;
-} {
-  const bigEach = r.int(6, 12) * 5;          // 30–60c per item — the better value
-  const smallEach = bigEach + r.int(1, 3) * 5; // dearer per item
+/**
+ * Two pack offers whose better-value side is DRAWN, not fixed.
+ *
+ * This used to be `trapPacks`, and its own comment stated the design: "the BIG
+ * pack is better per item … the small pack is the trap." Measured over 4,000
+ * draws of `betterBuy`, that made three faults at once:
+ *
+ *   · "the pack of three"/"the pack of four" were offered on ~50% of draws
+ *     each and keyed on 0.0% — so ALWAYS PICK THE BIGGER PACK won 100% of
+ *     exposures, with no arithmetic;
+ *   · "they are the same value" was offered on 100% and keyed on 0.0% — the
+ *     L38 permanently unkeyable card, the sixth instance in this library;
+ *   · and the strategy it rewards is false in life. "The big pack is better
+ *     value" is exactly the shopping misconception a better-buy item exists to
+ *     break, and the generator was teaching it.
+ *
+ * The outcome is now drawn first and the prices built to match — the move that
+ * fixed `countTheSignsTrap` and `compareNegativesTrap`. All three cards are
+ * reachable in equal thirds.
+ *
+ * The till-vs-per-item TRAP (the better-value pack costing more at the till) is
+ * only constructible when the larger pack wins — a smaller pack that is better
+ * per item is also cheaper at the till, necessarily. So the trap lives on the
+ * `larger` third, and the other two thirds carry the lesson that makes the trap
+ * safe to teach: you cannot know which side wins without working it out.
+ */
+type PackOutcome = 'larger' | 'smaller' | 'tie';
+
+function packOffers(
+  r: { int: (lo: number, hi: number) => number; pick: <T>(xs: readonly T[]) => T },
+  outcome: PackOutcome,
+): { bigQ: number; smallQ: number; bigEach: number; smallEach: number; bigTotal: number; smallTotal: number } {
+  const cheapEach = r.int(6, 12) * 5;              // 30–60c per item
+  const dearEach = cheapEach + r.int(1, 3) * 5;    // 5–15c dearer per item
   const bigQ = r.int(8, 12);
   const smallQ = r.pick([3, 4]);
+  const bigEach = outcome === 'smaller' ? dearEach : cheapEach;
+  const smallEach = outcome === 'larger' ? dearEach : cheapEach;
   return {
     bigQ, smallQ, bigEach, smallEach,
     bigTotal: bigEach * bigQ,
@@ -283,8 +314,13 @@ export function partToWholeShare(): ItemGen {
     situationType: 'part-whole',
     cognitiveOp: 'part-whole-ratio',
     draw: (r) => {
+      // THE TWO GROUPS ARE NEVER THE SAME SIZE. Drawing them independently made
+      // them equal on 11.7% of draws, which both keyed 1/2 — every single 1/2 in
+      // the census came from here — and printed the pointless "4 shiny cards for
+      // every 4 matt cards". A part-whole share is worth asking about when the
+      // parts differ.
       const p = r.int(2, 7);
-      const q = r.int(2, 9);
+      const q = r.pick([2, 3, 4, 5, 6, 7, 8, 9].filter((v) => v !== p));
       const c = r.pick(COLLECTIONS);
       return {
         prompt: `A box holds ${countNoun(p, c.a)} for every ${countNoun(q, c.b)}. What fraction of all the ${c.thing} are ${c.a.split(' ')[0]}?`,
@@ -365,7 +401,12 @@ export function totalFromUnitPrice(): ItemGen {
     situationType: 'rate',
     cognitiveOp: 'rate-total',
     draw: (r) => {
-      const eachCents = r.int(6, 24) * 10;
+      // $1.00 A KILOGRAM IS EXCLUDED. `r.int(6, 24) * 10` included 100, and at
+      // exactly one dollar the cost of k kilograms IS k — the number the
+      // sentence has already printed — so the item answers itself. One draw in
+      // nineteen by construction; measured at 5.7% of 4,000 draws, and E2's
+      // author kept the generator off both mastery forms because of it.
+      const eachCents = r.pick([6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]) * 10;
       const count = r.int(3, 9);
       const [each] = cashList([eachCents]);
       return {
@@ -395,13 +436,27 @@ export function betterBuy(): ItemGen {
     cognitiveOp: 'compare-rates',
     draw: (r) => {
       const good = r.pick(GOODS);
-      const { bigQ, smallQ, bigTotal, smallTotal } = trapPacks(r);
-      // The BIG pack is better per item and costs MORE at the till; the small
-      // pack is the trap. Which one is named first is drawn, so the correct
-      // answer is not always in the same position.
+      // WHICH SIDE WINS IS DRAWN, in equal thirds — see `packOffers`.
+      const outcome: PackOutcome = r.pick(['larger', 'smaller', 'tie'] as const);
+      const { bigQ, smallQ, bigEach, smallEach, bigTotal, smallTotal } = packOffers(r, outcome);
+      // Which pack is NAMED first is drawn separately, so neither the winning
+      // side nor its position is predictable.
       const bigFirst = r.chance(0.5);
-      const value = `the pack of ${numberWords(bigQ)}`;
-      const trap = `the pack of ${numberWords(smallQ)}`;
+      const bigName = `the pack of ${numberWords(bigQ)}`;
+      const smallName = `the pack of ${numberWords(smallQ)}`;
+      const same = 'they are the same value';
+      // The key and the two cards that are not it, derived from the outcome —
+      // never a fixed list beside a truth that can now equal it (the rule three
+      // generators in this library learned the hard way).
+      const value = outcome === 'tie' ? same : outcome === 'larger' ? bigName : smallName;
+      const wrongCards: Array<{ text: string; why: 'till' | 'bulk' | 'same' }> =
+        outcome === 'tie'
+          ? [{ text: bigName, why: 'bulk' }, { text: smallName, why: 'till' }]
+          : outcome === 'larger'
+            ? [{ text: smallName, why: 'till' }, { text: same, why: 'same' }]
+            : [{ text: bigName, why: 'bulk' }, { text: same, why: 'same' }];
+      void bigEach;
+      void smallEach;
       const [firstQ, firstTotal, secondQ, secondTotal] = bigFirst
         ? [bigQ, bigTotal, smallQ, smallTotal]
         : [smallQ, smallTotal, bigQ, bigTotal];
@@ -409,18 +464,25 @@ export function betterBuy(): ItemGen {
       return {
         prompt: `A shop sells ${good.many} two ways: a pack of ${numberWords(firstQ)} for ${c1}, or a pack of ${numberWords(secondQ)} for ${c2}. Which is the better buy?`,
         correct: value,
-        distractors: [
-          {
-            text: trap,
-            errorTag: 'concept-misconception',
-            rationale: 'Picks the smaller amount at the till, which answers "which costs less", not "which costs less for each item".',
-          },
-          {
-            text: 'they are the same value',
-            errorTag: 'representation-misread',
-            rationale: 'Treats two different prices per item as one deal.',
-          },
-        ],
+        distractors: wrongCards.map((c) => (
+          c.why === 'till'
+            ? {
+              text: c.text,
+              errorTag: 'concept-misconception' as const,
+              rationale: 'Picks the smaller amount at the till, which answers "which costs less", not "which costs less for each item".',
+            }
+            : c.why === 'bulk'
+              ? {
+                text: c.text,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Assumes the bigger pack must be the better value, without bringing either offer down to one item.',
+              }
+              : {
+                text: c.text,
+                errorTag: 'representation-misread' as const,
+                rationale: 'Treats two different prices per item as one deal.',
+              }
+        )),
         hints: [
           'Which question is being asked — which costs less altogether, or which costs less for each one?',
           'Bring both offers down to what a single item costs, then the two are comparable.',
@@ -567,24 +629,120 @@ export function percentOfEquality(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'percent-compare',
     draw: (r) => {
-      const p = r.pick([20, 25, 40, 60, 80]);
-      const q = r.pick([30, 50, 70, 90]);
+      // WHETHER THE TWO SIDES ARE EQUAL IS DRAWN.
+      //
+      // This asked "Which is larger: p% of q, or q% of p?" — and p% of q IS
+      // q% of p, for every p and q, because both are pq/100. The answer was
+      // "they are equal" on 4,000 of 4,000 draws and BOTH other cards were
+      // permanently unkeyable. A child who answers "equal" without reading the
+      // numbers scores 100%, on the week's headline discrimination.
+      //
+      // The identity is worth teaching and is kept — on a third of draws. The
+      // other two thirds put a genuinely larger side on each position, so the
+      // pair has to be READ before the identity can be claimed. That is the
+      // difference between meeting a surprising fact and learning a password.
+      // ONE POOL FOR BOTH SLOTS, AND THE UNEQUAL SIDES ARE BALANCED ON BOTH
+      // SURFACES. Three separate tells lived in this draw, and only the first
+      // had been found before.
+      //
+      //  1. The percents came from [20,25,40,60,80] and the amounts from
+      //     [30,50,70,90] — DISJOINT — and only the equal shape swapped them. So
+      //     "is the second percent one of 30, 50, 70, 90?" answered "they are
+      //     equal" with 100% accuracy on 36.2% of draws, with no arithmetic and
+      //     without even noticing the swap. One shared pool removes it. The swap
+      //     itself stays visible, and that is fine: p% of q = q% of p IS the
+      //     week's lesson, so a child who learns to see it has learnt the thing.
+      //  2. Picking the first pair in a fixed scan order made the built side
+      //     systematically extreme: "tap the side with the bigger amount" scored
+      //     46.6% against a 33.3% baseline.
+      //  3. Fixing (2) by drawing which side carries the bigger amount simply
+      //     moved the tell onto the percent, which rose to 47.8% — a surface
+      //     tell traded for a surface tell, the failure this whole census exists
+      //     to stop. Both have to be balanced at once.
+      //
+      // So an unequal pair is drawn uniformly from every quadruple where the
+      // winner leads on EXACTLY ONE surface — never both, which would be a free
+      // win by dominance — and which surface it leads on is its own coin.
+      const VALUES = [20, 25, 40, 50, 60, 80];
+      const shape = r.pick(['equal', 'first', 'second'] as const);
+      let p: number;
+      let q: number;
+      let rhsP: number;
+      let rhsQ: number;
+      if (shape === 'equal') {
+        // NOT ONLY THE SWAP. If every equal draw were q% of p against p% of q,
+        // then "the two sides use the same two numbers" would be a COMPLETE
+        // strategy: true whenever they are equal, false whenever they are not,
+        // and executable without arithmetic. Recognising the swap is the week's
+        // lesson and is welcome — but it must not be the whole of it. So every
+        // quadruple with a matching product is in the pool, which pulls in the
+        // non-swap coincidences (20% of 50 against 25% of 40, both ten) and
+        // makes "different numbers" stop meaning "not equal".
+        const eq: Array<[number, number, number, number]> = [];
+        for (const pp of VALUES) {
+          for (const qq of VALUES) {
+            for (const a of VALUES) {
+              for (const b of VALUES) {
+                if (a === pp && b === qq) continue; // the same side printed twice
+                if (a * b !== pp * qq) continue;
+                eq.push([pp, qq, a, b]);
+              }
+            }
+          }
+        }
+        [p, q, rhsP, rhsQ] = r.pick(eq);
+      } else {
+        const wantBigger = shape === 'second';
+        const winnerLeadsOnPercent = r.chance(0.5);
+        const quads: Array<[number, number, number, number]> = [];
+        const anyBalanced: Array<[number, number, number, number]> = [];
+        for (const pp of VALUES) {
+          for (const qq of VALUES) {
+            for (const a of VALUES) {
+              for (const b of VALUES) {
+                if (a === pp || b === qq) continue; // no shared surface to read off
+                const cmp = a * b - pp * qq;
+                if (wantBigger ? cmp <= 0 : cmp >= 0) continue;
+                const rhsLeadsPct = a > pp;
+                const rhsLeadsAmt = b > qq;
+                if (rhsLeadsPct === rhsLeadsAmt) continue; // dominance: a free win
+                anyBalanced.push([pp, qq, a, b]);
+                const winnerLeadsPct = wantBigger ? rhsLeadsPct : !rhsLeadsPct;
+                if (winnerLeadsPct === winnerLeadsOnPercent) quads.push([pp, qq, a, b]);
+              }
+            }
+          }
+        }
+        [p, q, rhsP, rhsQ] = r.pick(quads.length ? quads : anyBalanced);
+      }
+      // The truth is READ BACK OFF the two sides, never inherited from `shape` —
+      // so a construction that failed to honour the shape it was asked for keys
+      // the side that is actually larger rather than the side it meant to.
+      const lhs = p * q;
+      const rhs = rhsP * rhsQ;
+      const truth = rhs === lhs ? 'they are equal' : rhs > lhs ? `${rhsP}% of ${rhsQ}` : `${p}% of ${q}`;
       return {
-        prompt: `Which is larger: ${p}% of ${q}, or ${q}% of ${p}?`,
-        correct: 'they are equal',
-        correctForms: ['equal', 'the same'],
-        distractors: [
-          {
-            text: `${p}% of ${q}`,
-            errorTag: 'concept-misconception',
-            rationale: 'Judges by the larger starting amount, as if the percent were an amount added on.',
-          },
-          {
-            text: `${q}% of ${p}`,
-            errorTag: 'representation-misread',
-            rationale: 'Judges by the larger percent alone, ignoring what it is a percent OF.',
-          },
-        ],
+        prompt: `Which is larger: ${p}% of ${q}, or ${rhsP}% of ${rhsQ}?`,
+        correct: truth,
+        correctForms: truth === 'they are equal' ? ['equal', 'the same'] : [],
+        // Derived from the truth — the rule four generators in this library
+        // learned the hard way once a previously-impossible card became
+        // reachable.
+        distractors: ([`${p}% of ${q}`, `${rhsP}% of ${rhsQ}`, 'they are equal'] as const)
+          .filter((opt) => opt !== truth)
+          .map((opt) => (
+            opt === 'they are equal'
+              ? {
+                text: opt,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Reaches for the swap rule without checking that these two really are the same pair swapped over.',
+              }
+              : {
+                text: opt,
+                errorTag: 'representation-misread' as const,
+                rationale: 'Judges by one of the two numbers alone — the bigger percent, or the bigger amount — rather than by what they make together.',
+              }
+          )),
         hints: [
           'Which two numbers are being multiplied in each case?',
           'Write both as a per-hundred share times a whole, then look at the two products.',
@@ -864,21 +1022,56 @@ export function partWholeVsPartPart(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'part-whole-ratio',
     draw: (r) => {
+      // WHICH GROUP IS ASKED ABOUT IS DRAWN.
+      //
+      // The item always asked for the SMALLER group's share, and with p < q the
+      // three cards stand in a fixed order — p/(p+q) is below both q/(p+q) and
+      // p/q, for every draw. "Pick the smallest fraction" keyed 4,000 of 4,000
+      // (measured; an earlier probe of mine said "middle" because it stripped
+      // the slash out of "2/5" and compared 25).
+      //
+      // Asking about the larger group half the time moves the truth off the
+      // bottom without touching the mathematics: the part-part card is then the
+      // improper q/p, which is a real reading of the same misconception.
       const c = r.pick(COLLECTIONS);
       const p = r.int(2, 6);
       const q = p + r.int(1, 4); // p ≠ q, so the two readings cannot coincide
-      const first = c.a.split(' ')[0];
+      // ASKED ABOUT ON A THIRD OF DRAWS, NOT A HALF, and the asymmetry is the
+      // point. When the SMALLER group is asked, p/(p+q) is below both other
+      // cards as a matter of arithmetic — there is no construction that moves
+      // it. When the larger is asked, the truth lands middle or top about
+      // evenly. So a half-and-half draw leaves "pick the smallest fraction"
+      // right 50.7% of the time against a 33.3% baseline; asking the smaller
+      // group a third of the time levels all three ranks without touching the
+      // mathematics or the discrimination the item teaches.
+      const askFirst = r.int(0, 2) === 0;
+      const [askN, otherN] = askFirst ? [p, q] : [q, p];
+      const askedWord = (askFirst ? c.a : c.b).split(' ')[0];
       return {
-        prompt: `A box holds ${countNoun(p, c.a)} for every ${countNoun(q, c.b)}. Which fraction of ALL the ${c.thing} are ${first}?`,
-        correct: formatFrac(reduceFrac(p, p + q)),
+        prompt: `A box holds ${countNoun(p, c.a)} for every ${countNoun(q, c.b)}. Which fraction of ALL the ${c.thing} are ${askedWord}?`,
+        correct: formatFrac(reduceFrac(askN, p + q)),
         distractors: [
           {
-            text: partPartShare(p, q),
+            // ALWAYS THE PROPER part-part reading, smaller over larger.
+            //
+            // Writing it as askN/otherN made it IMPROPER whenever the larger
+            // group was asked about — "2 1/2" offered as a share of a whole box
+            // — which a child strikes on sight without arithmetic, leaving a
+            // two-way guess. That was a tell traded for a tell: it took "pick
+            // the smallest" from 100% down to only 83.6%, and bought a
+            // strikeable card on half the draws.
+            //
+            // Small-over-large is the same misconception (a part-to-part ratio
+            // wearing a fraction's clothes) and stays a plausible share, so the
+            // truth sits at the bottom when the smaller group is asked and at
+            // the top when the larger one is — and neither card can be
+            // eliminated without comparing.
+            text: partPartShare(Math.min(p, q), Math.max(p, q)),
             errorTag: 'concept-misconception',
-            rationale: 'Puts one group over the OTHER group — a part-to-part ratio wearing a fraction\'s clothes, not a share of the whole.',
+            rationale: 'Compares the two groups against each other instead of against the whole box — a part-to-part ratio wearing a fraction\'s clothes.',
           },
           {
-            text: formatFrac(reduceFrac(q, p + q)),
+            text: formatFrac(reduceFrac(otherN, p + q)),
             errorTag: 'task-comprehension',
             rationale: 'Gives the share belonging to the other group.',
           },
@@ -899,23 +1092,45 @@ export function stackedPercentTrap(): ItemGen {
     variant: 'cross-op',
     cognitiveOp: 'percent-off',
     draw: (r) => {
+      // THE DIRECTION IS DRAWN — reduced twice, or raised twice.
+      //
+      // On two reductions the true final price necessarily sits BETWEEN the two
+      // named misconceptions: "add the percents and take them off in one go"
+      // removes too much, and "stop after the first cut" removes too little.
+      // That is the mathematics, not a construction choice — which is why the
+      // truth was the middle card on 4,000 of 4,000 draws and "pick the middle
+      // amount" keyed every one of them.
+      //
+      // Two INCREASES invert it. (1+a)(1+b) exceeds 1+a+b by ab, so stacking
+      // beats adding, and stopping after the first rise is lower still: the
+      // truth becomes the LARGEST. Same two misconceptions, same arithmetic,
+      // rank no longer fixed. Measured after: middle ~50%, largest ~50%.
       const base = String(r.int(2, 9) * 20);
       const p1 = r.pick([20, 25, 30, 40]);
       const p2 = r.pick([10, 20, 25]);
-      const { stacked, added } = stackedVsAdded(base, p1, p2);
+      const isRise = r.int(0, 1) === 0;
+      const afterFirst = isRise ? percentOfValue(base, 100 + p1) : percentOffValue(base, p1);
+      const stackedV = isRise ? percentOfValue(afterFirst, 100 + p2) : percentOffValue(afterFirst, p2);
+      const addedV = isRise ? percentOfValue(base, 100 + p1 + p2) : percentOffValue(base, p1 + p2);
       return {
-        prompt: `A tent priced at ${money(base)} is reduced by ${p1}%, and that new price is then reduced by ${p2}%. Which amount is the final price?`,
-        correct: money(stacked),
+        prompt: isRise
+          ? `A tent priced at ${money(base)} is raised by ${p1}%, and that new price is then raised by ${p2}%. Which amount is the final price?`
+          : `A tent priced at ${money(base)} is reduced by ${p1}%, and that new price is then reduced by ${p2}%. Which amount is the final price?`,
+        correct: money(stackedV),
         distractors: [
           {
-            text: money(added),
+            text: money(addedV),
             errorTag: 'concept-misconception',
-            rationale: 'Adds the two percents and takes them off the first price in one go — but the second reduction acts on a smaller price, so it is worth less.',
+            rationale: isRise
+              ? 'Adds the two percents and puts them on the first price in one go — but the second rise acts on a bigger price, so it is worth more.'
+              : 'Adds the two percents and takes them off the first price in one go — but the second reduction acts on a smaller price, so it is worth less.',
           },
           {
-            text: money(percentOffValue(base, p1)),
+            text: money(afterFirst),
             errorTag: 'task-comprehension',
-            rationale: 'Stops after the first reduction and never applies the second.',
+            rationale: isRise
+              ? 'Stops after the first rise and never applies the second.'
+              : 'Stops after the first reduction and never applies the second.',
           },
         ],
         hints: [
@@ -958,13 +1173,28 @@ export function eaUnitPriceMultiplied(): ItemGen {
     verifyTemplateId: 'd_verify_binop_misconception_v1',
     cognitiveOp: 'unit-rate',
     drawParams: (r) => {
+      // `a` STAYS A WHOLE NUMBER OF DOLLARS, and that is not laziness.
+      //
+      // The realism complaint is correct — "A pack of five sponges costs
+      // $20.00" is $4 a sponge — but the first repair fixed it by drawing the
+      // per-item price in 20c steps as a FLOAT, and `0.2 * 6` is
+      // 1.2000000000000002 in IEEE754. It threw inside `money()` on the third
+      // draw: "57.599999999999994 is finer than one cent". This file's own
+      // header states the law it broke — every value flows through scaled
+      // integers, never floats — so the float version is gone.
+      //
+      // `r.int(2, 9) * count` keeps `a / count` exactly integral, which is what
+      // makes the verify's a/b and a*b safe. The realism is fixed where it
+      // actually went wrong: the noun. $2-$9 each is absurd for a sponge and
+      // ordinary for a notebook, and the noun was hard-coded here while the
+      // rest of the family draws from `GOODS`.
       const count = r.pick([4, 5, 6, 8]);
       return { a: r.int(2, 9) * count, b: count, op: '/', wrongOp: '*' };
     },
     build: (v, p) => ({
       // Both amounts render with cents, so the string obeys the all-or-none rule.
-      prompt: `A pack of ${numberWords(Number(p.b))} sponges costs ${money(String(p.a))}. A student worked out the price of ONE sponge and wrote ${money(v.wrong)}.`,
-      extension: 'Write what a single sponge really costs, then say how the SIZE of that answer could have been predicted before any working.',
+      prompt: `A pack of ${numberWords(Number(p.b))} notebooks costs ${money(String(p.a))}. A student worked out the price of ONE notebook and wrote ${money(v.wrong)}.`,
+      extension: 'Write what a single notebook really costs, then say how the SIZE of that answer could have been predicted before any working.',
       hints: [
         'Should one item out of a pack cost more or less than the whole pack?',
         'Share the pack price out between the items rather than stacking copies of it.',
@@ -980,7 +1210,13 @@ export function eaPercentPointDrop(): ItemGen {
     verifyTemplateId: 'd_verify_dec_v1',
     cognitiveOp: 'percent-of',
     drawParams: (r) => ({
-      a: String(r.int(2, 9) * 20),
+      // NEVER A BASE OF 100. At $100 the reduction IS the percent, so the true
+      // answer is already printed in the question — and the point-drop
+      // misconception lands on $100 too, so the student's shown figure is the
+      // printed price. Measured at 13.0% of draws before this list replaced
+      // `r.int(2, 9) * 20`. Found by E3's author, who could not route around it:
+      // this generator IS the week's mandated error analysis.
+      a: String(r.pick([40, 60, 80, 120, 140, 160, 180])),
       b: fracToDec(r.pick([10, 15, 20, 25, 30, 40]), 100),
       op: '*',
       wrongMode: 'point-drop',
@@ -1033,21 +1269,46 @@ export function additiveVsMultiplicativeGrowth(): ItemGen {
       const a = r.int(2, 5);
       const b = a + r.int(2, 5);
       const k = r.int(3, 5);
+      // WHICH TERM IS MISSING, AND WHERE THE TRUTH SITS, ARE BOTH DRAWN.
+      // The item always scaled the FIRST part and asked for the second, and with
+      // b > a every distractor it could build then landed below b×k: "tap the
+      // biggest number" keyed 3000 of 3000 draws against a 33% baseline, on the
+      // exemplar item of the G4 family. Asking for the first part instead is the
+      // inverse-start posing the band-E contract already requires, and it puts
+      // the truth BELOW both distractors; scaling-then-also-adding puts it in
+      // the middle. Same mathematics, three reachable ranks.
+      const want = r.pick(['largest', 'middle', 'smallest'] as const);
+      const askSecond = want !== 'smallest';
+      const given = askSecond ? countNoun(a * k, mix.first) : countNoun(b * k, mix.second);
+      const asked = askSecond ? mix.second : mix.first;
+      const SCALED_AND_ADDED = {
+        text: String(b * k + a * (k - 1)),
+        errorTag: 'procedure-slip' as const,
+        rationale: 'Scales the second part correctly and then ALSO adds on what the first part gained — the same growth counted twice.',
+      };
+      const ADDITIVE_ON_SECOND = {
+        text: String(additiveScalingTerm(a, b, k)),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Adds to the second part the same number that was added to the first — additive scaling, which changes the mix.',
+      };
+      const ADDITIVE_ON_FIRST = {
+        text: String(additiveScalingTerm(b, a, k)),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Adds to the first part the same number that was added to the second — additive scaling, which changes the mix.',
+      };
+      const COPIES_OTHER_PART = {
+        text: String(askSecond ? a * k : b * k),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Repeats the part that was given, as if both parts of the mix were the same size.',
+      };
       return {
-        prompt: `${mix.what} uses ${countNoun(a, mix.first)} to ${countNoun(b, mix.second)}. Scaled up to ${countNoun(a * k, mix.first)}, which number of ${mix.second} keeps the mix the same?`,
-        correct: String(b * k),
-        distractors: [
-          {
-            text: String(additiveScalingTerm(a, b, k)),
-            errorTag: 'concept-misconception',
-            rationale: 'Adds to the second part the same number that was added to the first — additive scaling, which changes the mix.',
-          },
-          {
-            text: String(a * k),
-            errorTag: 'representation-misread',
-            rationale: 'Repeats the scaled first part, as if both parts of the mix were the same size.',
-          },
-        ],
+        prompt: `${mix.what} uses ${countNoun(a, mix.first)} to ${countNoun(b, mix.second)}. Scaled up to ${given}, which number of ${asked} keeps the mix the same?`,
+        correct: String(askSecond ? b * k : a * k),
+        distractors: want === 'largest'
+          ? [ADDITIVE_ON_SECOND, COPIES_OTHER_PART]
+          : want === 'middle'
+            ? [ADDITIVE_ON_SECOND, SCALED_AND_ADDED]
+            : [ADDITIVE_ON_FIRST, COPIES_OTHER_PART],
         hints: [
           'Which change leaves a mix tasting the same — adding to both parts, or copying both parts?',
           'Count how many copies of the original first part the new amount holds, then build the second part the same way.',

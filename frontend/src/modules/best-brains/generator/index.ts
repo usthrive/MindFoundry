@@ -12,14 +12,16 @@ export {
   AVAILABLE_WEEKS,
   CONTENT_VERSION,
   GENERATED_WEEKS,
+  SHADOWED_WEEKS,
   V2_WEEKS,
+  buildShadowedPack,
   generatePack,
   getPackDay,
   hasPackContent,
 } from './packGenerator';
 export { validatePack } from './validator';
 export type { ValidationResult, Violation } from './validator';
-export { FIXTURE_WEEKS, getFixture } from './fixtures';
+export { FIXTURE_WEEKS, getFixture, getPinnedFixture, ALL_FIXTURES } from './fixtures';
 export { Rng, streamRng } from './rng';
 export { TEMPLATE_REGISTRY, getTemplate } from './templates/registry';
 export type { TemplateDef } from './templates/registry';

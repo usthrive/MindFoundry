@@ -153,6 +153,27 @@ export function checkFigureShape(fig: BBFigure): string[] {
       if (p.highlight && p.places && !p.places.includes(p.highlight)) bad(`highlight "${p.highlight}" is not one of the chart's places`);
       break;
     }
+    case 'base-ten-blocks': {
+      const p = fig.params;
+      for (const [name, s] of [['state', p.state], ['then', p.then]] as const) {
+        if (!s) continue;
+        if (!isInt(s.rods) || s.rods < 0) bad(`${name}.rods must be a whole number ≥ 0`);
+        if (!isInt(s.ones) || s.ones < 0) bad(`${name}.ones must be a whole number ≥ 0`);
+        if (s.flats !== undefined && (!isInt(s.flats) || s.flats < 0)) bad(`${name}.flats must be a whole number ≥ 0`);
+        // A drawing is bounded by the page, not by arithmetic.
+        if (s.rods > 12) bad(`${name}.rods ${s.rods} will not fit the figure width`);
+        if (s.ones > 20) bad(`${name}.ones ${s.ones} will not fit the figure width`);
+      }
+      // 'becomes' asserts a REGROUPING, and a regrouping conserves the quantity.
+      // A picture claiming ten ones become two tens would teach the opposite of
+      // the lesson, so it is a shape error rather than a matter of taste.
+      if (p.then && (p.connector ?? 'becomes') === 'becomes') {
+        const before = (p.state.flats ?? 0) * 100 + p.state.rods * 10 + p.state.ones;
+        const after = (p.then.flats ?? 0) * 100 + p.then.rods * 10 + p.then.ones;
+        if (before !== after) bad(`'becomes' must conserve the quantity: ${before} → ${after}`);
+      }
+      break;
+    }
     case 'clock': {
       const p = fig.params;
       if (!isInt(p.h) || p.h < 0 || p.h > 12) bad('h must be a whole number 0–12');
@@ -317,6 +338,15 @@ export function figureValue(fig: BBFigure, selector?: string): string[] | null {
       }
       return [p.digits, withCommas(p.digits)];
     }
+    case 'base-ten-blocks': {
+      const p = fig.params;
+      const val = (s: typeof p.state) => (s.flats ?? 0) * 100 + s.rods * 10 + s.ones;
+      // Default is what the child ends up with, which is what an item asks for.
+      if (of === 'before') return [String(val(p.state))];
+      if (of === 'rods') return [String((p.then ?? p.state).rods)];
+      if (of === 'ones') return [String((p.then ?? p.state).ones)];
+      return [String(val(p.then ?? p.state))];
+    }
     case 'clock': {
       const p = fig.params;
       const h = p.h === 0 ? 12 : p.h;
@@ -371,6 +401,7 @@ const SELECTORS: Record<BBFigure['type'], RegExp[]> = {
   'ten-frame': [/^filled$/, /^hidden$/, /^empty$/],
   counters: [/^count$/, /^remaining$/, /^group:\d+$/],
   'place-value-chart': [/^value$/, /^place:[a-z-]+$/],
+  'base-ten-blocks': [/^value$/, /^before$/, /^rods$/, /^ones$/],
   clock: [/^time$/, /^minutes-past$/],
   'coin-set': [/^cents$/, /^count$/],
   'coordinate-grid': [/^point$/, /^point:\d+$/],

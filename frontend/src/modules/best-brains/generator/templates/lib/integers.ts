@@ -45,7 +45,7 @@ import type { AnswerDef, VerifyDef, VerifyResult } from './compute';
 import { canonicalSigned, cmpFrac, formatPoint, num, str } from './compute';
 import { discrimination } from './discrimination';
 import { errorAnalysis } from './erroranalysis';
-import { assertsParam, numberLine } from './figures';
+import { assertsParam, coordinateGrid, numberLine } from './figures';
 import { countNoun, fmtInt, unitFor } from './format';
 import { multiStep, type ItemGen } from './multistep';
 import { situation } from './situations';
@@ -201,7 +201,14 @@ function verifyQuadrant(p: Params): VerifyResult {
 /** Sign of a product from the COUNT of negative factors (E9 "count-the-signs"). */
 function verifySignCount(p: Params): VerifyResult {
   const factors = nums(p, 'factors');
-  if (factors.some((f) => f === 0)) throw new Error('e_int_sign_count_v1: a zero factor has no sign');
+  // A ZERO FACTOR IS AN OUTCOME, not an error. This used to throw, which left
+  // the choice item with only two reachable answers and a third card ("it
+  // depends on the sizes of the numbers") that was offered every time and
+  // keyed never — the L38 card, and one that cannot be made keyable because it
+  // is not true. Zero is the honest third case: one zero factor and the whole
+  // product is zero, whatever the signs do, which is exactly the fact a child
+  // counting minus signs forgets.
+  if (factors.some((f) => f === 0)) return { correct: 'zero' };
   const negatives = factors.filter((f) => f < 0).length;
   return { correct: negatives % 2 === 0 ? 'positive' : 'negative' };
 }
@@ -217,10 +224,47 @@ export function orderTemperatures(dir: 'asc' | 'desc' = 'asc'): ItemGen {
       situationType: 'comparison',
       cognitiveOp: 'int-order',
       draw: (r) => {
-        const values: number[] = [];
-        while (values.length < 4) {
+        // ZERO IS DRAWABLE — one set in four contains it.
+        //
+        // The set used to be filled from `signed(r, 1, 14)`, whose magnitude
+        // starts at 1, so zero appeared in 0 of 2,000 draws (measured). Zero is
+        // the mirror line this whole week is built on, and the week's own Day-5
+        // ordering item could not show it. It is also the one reading whose
+        // place in the order no amount of digit-comparing will settle, which is
+        // exactly the discrimination the item is for.
+        //
+        // The set is SHUFFLED before it is listed. Seeding zero into the array
+        // first would have printed it in the leftmost slot every time it was
+        // drawn — a positional tell traded for a coverage gap, which is the
+        // same defect `eaMagnitudeOrder` carries below.
+        const drawn: number[] = [];
+        if (r.int(1, 4) === 1) drawn.push(0);
+        while (drawn.length < 4) {
           const v = signed(r, 1, 14);
-          if (!values.includes(v)) values.push(v);
+          if (!drawn.includes(v)) drawn.push(v);
+        }
+        // `shuffle` returns a new array and leaves its input alone, so the
+        // shuffled one is what both the prose and `params` carry — one order,
+        // one source of truth, and QG-5/QG-13 re-derive from the listed set.
+        //
+        // THE LISTED ORDER IS NEITHER SORTED ORDER. Four values have 24
+        // arrangements, two of which are the answer and the answer backwards,
+        // so 4.4% of draws printed the readings already in the order the item
+        // asks for and another 4.1% printed them in exact reverse (measured,
+        // 4,000 draws per direction). "Four readings: 12, -2, -6, -13. Write
+        // them in order, WARMEST first" was served as a MASTERY slot, where the
+        // work is copying a line that is already done. Found by reading the
+        // pack; no gate sees it, because the answer is right.
+        //
+        // Rejecting both costs 2 of 24 arrangements and removes the one habit
+        // — copy the list, forwards or backwards — that reaches the answer
+        // without reading a single sign.
+        const ascending = [...drawn].sort((x, y) => cmpFrac({ n: x, d: 1 }, { n: y, d: 1 }));
+        const sortedKey = ascending.join(',');
+        const reverseKey = [...ascending].reverse().join(',');
+        let values = r.shuffle(drawn);
+        for (let i = 0; i < 40 && (values.join(',') === sortedKey || values.join(',') === reverseKey); i++) {
+          values = r.shuffle(drawn);
         }
         const day = r.pick(['week', 'cold snap', 'ski trip', 'field week']);
         const listed = values.map((v) => fmtInt(v)).join(', ');
@@ -263,27 +307,70 @@ export function compareNegativesTrap(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'int-compare',
     draw: (r) => {
-      // Both negative, different magnitudes: exactly the shape where "8 > 3"
-      // pulls the wrong way.
-      const big = r.int(5, 15);
-      const small = r.int(1, big - 1);
-      const [a, b] = r.int(0, 1) === 0 ? [-big, -small] : [-small, -big];
+      // PAIR SHAPES, drawn — not always both-negative-and-unequal.
+      //
+      // This used to draw `big = int(5,15)`, `small = int(1, big-1)` and negate
+      // both. Two defects fell out of that, and E6's author refused to serve the
+      // generator because of them (measured, 2,000 draws):
+      //
+      //  1. `small < big` ALWAYS, so the two readings could never coincide and
+      //     the "=" card was offered on 2,000/2,000 draws and keyed on NONE — a
+      //     permanently unkeyable option (L38), which teaches a child to strike
+      //     it out unread. `compareWhole` in items.ts was repaired for exactly
+      //     this and draws a tie one time in five.
+      //  2. Both operands were always negative, so the true symbol was the
+      //     reverse of the magnitude comparison on 100% of draws — "compare the
+      //     digits, then flip" certified every time. A rule that is uniformly
+      //     invertible is not a discrimination.
+      //
+      // Both are fixed by drawing the SHAPE first: below-zero pairs still carry
+      // the week's trap and stay the most common, while cross-zero, on-zero and
+      // tied pairs make the flip-rule wrong and the "=" card reachable.
+      // Shape mix. `across` is the only shape on which "compare the digits, then
+      // flip" is WRONG, so it is weighted equally with `below` rather than left
+      // as a garnish: at 3-below/1-across the flip rule still won 90.9% of draws
+      // (measured), which is a rule a child can carry out of the week intact.
+      const shape = r.pick(['below', 'below', 'across', 'across', 'zero', 'tie'] as const);
+      let a: number;
+      let b: number;
+      if (shape === 'tie') {
+        const v = -r.int(1, 15);
+        [a, b] = [v, v];
+      } else if (shape === 'zero') {
+        const v = -r.int(1, 15);
+        [a, b] = r.int(0, 1) === 0 ? [v, 0] : [0, v];
+      } else if (shape === 'across') {
+        const neg = -r.int(1, 15);
+        const pos = r.int(1, 15);
+        [a, b] = r.int(0, 1) === 0 ? [neg, pos] : [pos, neg];
+      } else {
+        const big = r.int(5, 15);
+        const small = r.int(1, big - 1);
+        [a, b] = r.int(0, 1) === 0 ? [-big, -small] : [-small, -big];
+      }
       const truth = verifyCompareSymbol({ a, b });
       return {
         prompt: `Which symbol makes this true? ${fmtInt(a)} __ ${fmtInt(b)}`,
         correct: truth.correct,
-        distractors: [
-          {
-            text: truth.correct === '<' ? '>' : '<',
-            errorTag: 'concept-misconception',
-            rationale: 'Ranks the two by how far they sit from zero, so the bigger digits look like the bigger number.',
-          },
-          {
-            text: '=',
-            errorTag: 'representation-misread',
-            rationale: 'Reads both as "some amount of cold" without ordering them.',
-          },
-        ],
+        // The two symbols that are NOT the truth — derived, never hard-coded.
+        // Hard-coding '=' as a distractor was safe only while '=' could never be
+        // the answer; the moment a tie became drawable it produced a card set
+        // holding '=' twice, once keyed and once not.
+        distractors: (['<', '>', '='] as const)
+          .filter((sym) => sym !== truth.correct)
+          .map((sym) => (
+            sym === '='
+              ? {
+                text: '=',
+                errorTag: 'representation-misread' as const,
+                rationale: 'Reads both as "some amount of cold" without ordering them.',
+              }
+              : {
+                text: sym,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Ranks the two by how far they sit from zero, so the bigger digits look like the bigger number.',
+              }
+          )),
         hints: [
           'Which of these two would you meet FIRST walking left to right along a number line?',
           'Whatever comes first walking rightwards is the smaller number, however big its digits look.',
@@ -303,9 +390,18 @@ export function oppositeValue(): ItemGen {
       draw: (r) => {
         const n = signed(r, 2, 40);
         const name = r.pick(NAMES);
-        const place = r.pick(['a cliff path', 'a lift shaft', 'a canyon walk', 'a harbour wall']);
+        // The preposition travels WITH the place. A single hard-coded "On"
+        // shipped "On a lift shaft, Zoe marks a height of…" on 24.1% of draws
+        // (measured) — you are in a lift shaft, not on one. There is no gate
+        // for English, so the only place this can be got right is at the draw.
+        const place = r.pick([
+          { prep: 'On', name: 'a cliff path' },
+          { prep: 'In', name: 'a lift shaft' },
+          { prep: 'On', name: 'a canyon walk' },
+          { prep: 'On', name: 'a harbour wall' },
+        ] as const);
         return {
-          prompt: `On ${place}, ${name} marks a height of ${countNoun(n, 'm')} against sea level. Which height is the OPPOSITE of that mark?`,
+          prompt: `${place.prep} ${place.name}, ${name} marks a height of ${countNoun(n, 'm')} against sea level. Which height is the OPPOSITE of that mark?`,
           answerValue: String(canonicalSigned(-n)),
           templateId: 'e_int_opposite_v1',
           params: { n },
@@ -337,7 +433,22 @@ export function absoluteValue(): ItemGen {
       situationType: 'measurement',
       cognitiveOp: 'int-abs',
       draw: (r) => {
-        const n = signed(r, 2, 30);
+        // THE SIGN IS WEIGHTED, three negative readings to one positive.
+        //
+        // `signed()` is an even coin, and on a POSITIVE draw |n| = n: the answer
+        // is the number already printed in the prompt, so "copy it out" is
+        // correct and the misconception this item exists to catch — report the
+        // reading as it stands, sign and all — scores 100%. Measured at 50.4%
+        // of 2,000 draws.
+        //
+        // Weighted rather than banned, deliberately. |+n| = n is a fact about
+        // distance the week has to teach; a child who only ever meets negatives
+        // learns "absolute value means strike out the minus sign", which is the
+        // wrong rule with the right answers. The residual 25% is that fact, not
+        // a defect — the same call `compareNegativesTrap` makes below about the
+        // flip rule being genuinely correct on both-negative pairs.
+        const mag = r.int(2, 30);
+        const n = r.int(1, 4) === 1 ? mag : -mag;
         const thing = r.pick(['a diving platform', 'a mine shaft entry', 'a drone', 'a submarine hatch']);
         return {
           prompt: `${thing[0].toUpperCase()}${thing.slice(1)} logs its position as ${countNoun(n, 'm')} relative to sea level. How FAR from sea level is it?`,
@@ -370,11 +481,48 @@ export function distanceBetween(): ItemGen {
       situationType: 'comparison',
       cognitiveOp: 'int-distance',
       draw: (r) => {
-        const a = signed(r, 2, 18);
-        let b = signed(r, 2, 18);
-        // A gap of 0 has nothing to compare and a gap of 1 would render the
-        // unit-bearing answer as "1 degrees" through some surfaces.
-        if (Math.abs(a - b) < 2) b = a + (a < 0 ? 5 : -5);
+        // THE PAIR SHAPE IS DRAWN, weighted to the readings that cross zero.
+        //
+        // Two independent `signed()` draws land on the same side of zero half
+        // the time (measured: 50.0% of 2,000), and a same-side pair is a plain
+        // whole-number subtraction wearing a minus sign — -14 and -3 are 11
+        // apart by exactly the arithmetic the child had before this week. Half
+        // of a signed-distance generator's draws carried no signed content.
+        //
+        // Shapes: `across` 4 (the week's actual content — the count runs
+        // through zero) and `same` 1, kept because it is a real reading pair
+        // and the one place where "just subtract" is right.
+        //
+        // A `zero` shape was here and has been REMOVED — my own regression,
+        // added in the E6 triage for the pedagogically appealing reason that
+        // the distance from the mirror line is what |n| means. It answers
+        // itself: with one reading on zero the gap IS the other reading, so
+        // the prompt prints its own answer, and it did on 10.0% of 3,000 draws
+        // (the shape leaks whenever the surviving reading is positive). It also
+        // duplicated a job the family already does properly — `absoluteValue`
+        // asks exactly "how far from sea level", with one reading, on purpose.
+        // A two-reading comparison that collapses to a one-reading read-off is
+        // not a comparison. Found by E8's author; the fix is a deletion.
+        //
+        // Every shape holds the old gap rule: a gap of 0 has nothing to compare
+        // and a gap of 1 renders the unit-bearing answer as "1 degrees" through
+        // some surfaces (the ±1 note in the header).
+        const shape = r.pick(['across', 'across', 'across', 'across', 'same'] as const);
+        let a: number;
+        let b: number;
+        if (shape === 'across') {
+          const neg = -r.int(2, 18);
+          const pos = r.int(2, 18);
+          [a, b] = r.int(0, 1) === 0 ? [neg, pos] : [pos, neg];
+        } else {
+          const sign = r.int(0, 1) === 0 ? -1 : 1;
+          const m1 = r.int(2, 18);
+          let m2 = r.int(2, 18);
+          // Nudged AWAY from m1 and always back inside 2…18, so the same-side
+          // shape cannot drift out of the range the story is written for.
+          if (Math.abs(m1 - m2) < 2) m2 = m1 <= 9 ? m1 + 5 : m1 - 5;
+          [a, b] = [sign * m1, sign * m2];
+        }
         const [n1, n2] = two(r);
         return {
           prompt: `${n1} records ${countNoun(a, 'degrees')} and ${n2} records ${countNoun(b, 'degrees')} on the same morning. How many degrees apart are the two readings?`,
@@ -414,14 +562,49 @@ export function temperatureSwing(): ItemGen {
       situationType: 'rate-of-change',
       cognitiveOp: 'int-addsub',
       draw: (r) => {
-        const start = negative(r, 2, 12);
-        const fall = r.int(2, 9);
-        let rise = r.int(2, 12);
-        // A rise equal to the fall makes the two moves cancel, which reads as a
-        // non-problem; and keep the reported answer clear of ±1 and 0, since the
-        // answer carries a unit.
-        if (rise === fall) rise += 3;
-        while (Math.abs(start - fall + rise) < 2) rise += 2;
+        // RESAMPLED, never nudged.
+        //
+        // This used to draw the triple once and then push `rise` until the draw
+        // was legal: +3 on a cancel, then +2 per round while |answer| < 2. Every
+        // one of those steps moves the ANSWER by the same amount, so the three
+        // answers the loop was written to exclude did not disappear — they were
+        // shunted onto their neighbours. -1 needed two rounds and landed on 3;
+        // 0 landed on 2; 1 landed on 3. Measured over 2,000 draws: 25 distinct
+        // answers, 20.8% of the mass on {1, 2, 3} and 12.9% on "3" alone. A
+        // child who notices that "3" is the house favourite has found a better
+        // strategy than adding, which is what the item is for.
+        //
+        // The third condition is new: the story prints `start`, `fall` and
+        // `rise`, so an answer equal to any of them is copied rather than
+        // computed (measured at 4.2% of draws — "It falls 2 degrees … then
+        // rises 10", answer 2).
+        //
+        // Resampling keeps every constraint and leaves the distribution alone.
+        // The seed values below are a documented last resort, not a default:
+        // well over half the 968-triple space is admissible, so 60 consecutive
+        // misses has probability around 1e-13. They are stated rather than left
+        // implicit because a draw loop that can fall off its own end and ship an
+        // inadmissible item is precisely the defect being repaired.
+        let start = -5;
+        let fall = 3;
+        let rise = 4; // answer -4: two moves that do not cancel, and distinct
+        for (let i = 0; i < 60; i++) {
+          const s = negative(r, 2, 12);
+          const f = r.int(2, 9);
+          const u = r.int(2, 12);
+          const answer = s - f + u;
+          // A rise equal to the fall makes the two moves cancel, which reads as
+          // a non-problem; the answer stays clear of ±1 and 0 because it
+          // carries a unit (the ±1 note in the header); and clear of every
+          // number the prompt already prints.
+          if (f === u) continue;
+          if (Math.abs(answer) < 2) continue;
+          if (answer === s || answer === f || answer === u) continue;
+          start = s;
+          fall = f;
+          rise = u;
+          break;
+        }
         const when = r.pick(['dawn', 'first light', 'the early shift', 'sunrise']);
         return {
           prompt: `At ${when} a weather station reads ${countNoun(start, 'degrees')}. It falls ${countNoun(fall, 'degrees')} by mid-morning, then rises ${countNoun(rise, 'degrees')} by noon. What does it read at noon?`,
@@ -456,7 +639,17 @@ export function eaMagnitudeOrder(): ItemGen {
       // output (the verify refuses any pair where it would not).
       const big = r.int(5, 15);
       const small = r.int(2, big - 1);
-      return { a: -big, b: -small };
+      // WHICH READING IS NAMED FIRST IS DRAWN.
+      //
+      // This used to return `{ a: -big, b: -small }` unconditionally, so the
+      // warmer reading — the one the item asks for — was named SECOND on
+      // 500/500 draws (measured). The item is manual-review, so no child is
+      // certified by it and the tell cannot pass anyone through the gate; that
+      // is exactly why it survived. What it can do is teach: "the second one is
+      // the answer" is a rule a child can carry out of Day 5, and it is a rule
+      // about nothing. `verifyIntCompare` reads the pair, not the order, so it
+      // recomputes the same truth either way.
+      return r.int(0, 1) === 0 ? { a: -big, b: -small } : { a: -small, b: -big };
     },
     build: (v, p) => ({
       prompt: `A student was asked which is the WARMER reading, ${countNoun(num(p, 'a'), 'degrees')} or ${countNoun(num(p, 'b'), 'degrees')}, and answered ${v.wrong}, saying the bigger number wins.`,
@@ -480,9 +673,27 @@ export function namePointFromMoves(): ItemGen {
     situationType: 'measurement',
     cognitiveOp: 'int-plot',
     draw: (r) => {
+      // THE SIGN OF y IS DRAWN FIRST, INDEPENDENTLY; only its MAGNITUDE is
+      // redrawn on a collision.
+      //
+      // This began as `if (y === x) y = -x`, which converted every
+      // same-sign-same-magnitude draw into an opposite-sign pair and tilted the
+      // keys to QII/QIV on 57.9% of 2,400 draws. Redrawing y whole was better
+      // (54.8%) but not level, and could not be: x === y is only ever a
+      // SAME-SIGN event, so any rule that rejects it removes same-sign pairs
+      // and nothing else. Deciding the sign before the collision can happen is
+      // what makes the four quadrants equally likely — the magnitude redraw
+      // then keeps x !== y, which the swap misconception downstream needs.
+      //
+      // Four E weeks share this generator; a quadrant drawn less often is one a
+      // child meets less often.
       const x = signed(r, 2, 8);
-      let y = signed(r, 2, 8);
-      if (y === x) y = -x;
+      const ySign = r.int(0, 1) === 0 ? -1 : 1;
+      let yMag = r.int(2, 8);
+      if (ySign === Math.sign(x)) {
+        for (let i = 0; i < 20 && yMag === Math.abs(x); i++) yMag = r.int(2, 8);
+      }
+      const y = ySign * yMag;
       const name = r.pick(NAMES);
       const [xWord, xDir] = x > 0 ? ['right', 'east'] : ['left', 'west'];
       const [yWord, yDir] = y > 0 ? ['up', 'north'] : ['down', 'south'];
@@ -504,9 +715,24 @@ export function namePointFromMoves(): ItemGen {
   });
 }
 
+/**
+ * A square window that certainly contains `points` AND both axes.
+ *
+ * Square and symmetric on purpose: a reflection item whose grid was cropped to
+ * its own points would show the mirror line off-centre, which is the one visual
+ * fact the item depends on. `checkFigureShape` wants max > min on both axes;
+ * the padding guarantees it even for a point sitting on an axis.
+ */
+function gridWindow(points: Array<{ x: number; y: number }>): { xMin: number; xMax: number; yMin: number; yMax: number; step: number } {
+  const reach = Math.max(1, ...points.flatMap((p) => [Math.abs(p.x), Math.abs(p.y)]));
+  const span = reach + 1;
+  return { xMin: -span, xMax: span, yMin: -span, yMax: span, step: span <= 12 ? 1 : 2 };
+}
+
 /** Reflect a point across an axis (E7 plot-then-reflect). */
 export function reflectPoint(axis: 'x' | 'y' | 'origin' = 'x'): ItemGen {
-  return situation({
+  return withFigure(
+  situation({
     situationType: 'measurement',
     cognitiveOp: 'int-reflect',
     draw: (r) => {
@@ -515,7 +741,7 @@ export function reflectPoint(axis: 'x' | 'y' | 'origin' = 'x'): ItemGen {
       const name = r.pick(NAMES);
       const across =
         axis === 'x' ? 'across the x-axis' : axis === 'y' ? 'across the y-axis' : 'through the origin';
-      const thing = r.pick(['a mirrored tile', 'a folded map', 'a symmetric logo', 'a reflected buoy']);
+      const thing = r.pick(['a mirrored tile', 'a folded map', 'a symmetric logo', 'a harbour buoy']);
       return {
         prompt: `${name} is designing ${thing}. The point ${formatPoint(x, y)} is reflected ${across}. Which ordered pair names the reflected point?`,
         answerValue: intReflect({ x, y, axis }),
@@ -541,7 +767,35 @@ export function reflectPoint(axis: 'x' | 'y' | 'origin' = 'x'): ItemGen {
         errorTags: ['representation-misread', 'concept-misconception'],
       };
     },
-  });
+  }),
+    // The GIVEN point only — never the reflection. Plotting the answer would
+    // hand over the move the item asks for, the same rule `oppositeValue`
+    // follows above. What the grid supplies is the mirror line itself, which is
+    // the thing a child cannot reason about from two numbers in a bracket.
+    (p) => {
+      const x = num(p, 'x');
+      const y = num(p, 'y');
+      return coordinateGrid(
+        { ...gridWindow([{ x, y }]), points: [{ x, y, label: formatPoint(x, y), style: 'point' }] },
+        {
+          alt: `a four-quadrant grid with the starting point marked and both axes through zero`,
+          // NO `asserts`, deliberately, and for two independent reasons.
+          //
+          // Mechanically: `point:k` reads back the formatted PAIR, "(-2,-4)",
+          // and this template's params are the scalars x, y and axis. There is
+          // no param for `assertsParam` to compare it against — pairing it with
+          // `x` fails on every draw, which is how this was found.
+          //
+          // And in principle: the assertion binds a figure to the item's
+          // ANSWER, and this figure deliberately shows the point BEFORE the
+          // reflection. Tying it to the answer is exactly what must not happen
+          // here. `withFigure` already gives the QG-13 guarantee structurally —
+          // the picture is built from the same params the answer came from, so
+          // there is no second source of truth to disagree with.
+        },
+      );
+    },
+  );
 }
 
 /** Signs name the quadrant — (−3, 2) vs (2, −3) (E7 discrimination). */
@@ -563,7 +817,18 @@ export function quadrantSignTrap(): ItemGen {
           {
             text: swapped.correct === truth.correct ? mirrored.correct : swapped.correct,
             errorTag: 'representation-misread',
-            rationale: 'Reads the pair up-then-across, so the point lands where the swapped pair would.',
+            // THE RATIONALE FOLLOWS THE CARD, because the card is not always
+            // the swap. When x and y share a sign the point is in QI or QIII,
+            // both of which are swap-invariant — the swap lands back on the
+            // truth, so the code falls through to the y-mirror. That happens on
+            // 49.5% of 4,000 draws, and the fixed wording claimed the child had
+            // read the pair up-then-across on every one of them: a rationale
+            // naming a move that did not produce the option it is attached to,
+            // which is the DD7 bookkeeping QG-3 exists to keep honest.
+            rationale:
+              swapped.correct === truth.correct
+                ? 'Reads the first number\'s sign off the wrong side of the origin, so the point lands in the mirror-image corner.'
+                : 'Reads the pair up-then-across, so the point lands where the swapped pair would.',
           },
           {
             text:
@@ -589,14 +854,27 @@ export function eaCoordinateSwap(): ItemGen {
     verifyTemplateId: 'e_verify_point_v1',
     cognitiveOp: 'int-plot',
     drawParams: (r) => {
+      // Redrawn, not negated — same reason as `namePointFromMoves` above.
       const x = signed(r, 2, 8);
       let y = signed(r, 2, 8);
-      if (y === x) y = -x;
+      for (let i = 0; i < 20 && y === x; i++) y = signed(r, 2, 8);
       return { x, y, mode: 'swap' };
     },
     build: (v, p) => ({
-      prompt: `A student was asked to plot a point ${countNoun(Math.abs(num(p, 'x')), 'units')} along the x-axis and ${countNoun(Math.abs(num(p, 'y')), 'units')} along the y-axis, with the signs shown on the map. They wrote the point as ${v.wrong}.`,
-      extension: 'Plot both pairs on one grid, then write the pair the map really describes and say how the two spots differ.',
+      // THE DIRECTIONS ARE STATED, not referred to.
+      //
+      // This used to read "…along the y-axis, with the signs shown on the map"
+      // on 100% of draws, and the item ships no map — it is an errorAnalysis
+      // draft with no figure, measured at 0% (500 draws). The signs were
+      // technically recoverable from the student's wrong pair, so the item was
+      // answerable and no gate could object; a child who went looking for the
+      // map simply did not find one. Same shape as the hundred-chart items a
+      // six-year-old reported, recorded in figures.ts.
+      //
+      // Naming left/right and above/below states the signs in words, which is
+      // also the vocabulary the week is teaching.
+      prompt: `A student was asked to plot a point ${countNoun(Math.abs(num(p, 'x')), 'units')} to the ${num(p, 'x') < 0 ? 'LEFT' : 'RIGHT'} of the origin and ${countNoun(Math.abs(num(p, 'y')), 'units')} ${num(p, 'y') < 0 ? 'BELOW' : 'ABOVE'} it. They wrote the point as ${v.wrong}.`,
+      extension: 'Plot both pairs on one grid, then write the pair the directions really describe and say how the two spots differ.',
       hints: [
         'Which number in an ordered pair does the grid read first?',
         'Walk each pair out on the grid — across first, then up — and see where the two walks end.',
@@ -617,13 +895,43 @@ export function signedAddSubStory(op: '+' | '-' = '+'): ItemGen {
       situationType: op === '+' ? 'combine' : 'rate-of-change',
       cognitiveOp: 'int-addsub',
       draw: (r) => {
-        const a = negative(r, 2, 15);
-        // Subtracting a negative is the case E8 exists for; adding pairs a
-        // negative start with a positive move.
-        let b = op === '-' ? negative(r, 2, 9) : r.int(2, 12);
-        // Keep the ANSWER clear of ±1: `countNoun` would render it "-1 points",
-        // and QG-12c's "1 <plural>" scan has no boundary for the minus sign.
-        while (Math.abs(op === '+' ? a + b : a - b) < 2) b += op === '+' ? 1 : -1;
+        // RESAMPLED, never nudged — the `temperatureSwing` lesson, applied to
+        // the generator that had it worse.
+        //
+        // This drew the pair once and then walked `b` until the draw was legal
+        // (`b += op === '+' ? 1 : -1`). Each step moves the ANSWER by exactly
+        // one in the same direction, so the three answers the loop excludes did
+        // not vanish — -1, 0 and 1 all slid onto 2. Measured over 3,000 draws
+        // per operator: "2" took 27.2% of the add answers out of 21 distinct
+        // values, and 26.1% of the subtract answers out of 18. Better than a
+        // one-in-four chance that a child who simply writes "2" is right, on
+        // the week whose whole subject is which direction a signed move goes.
+        //
+        // The third condition is new: the story prints `a` and `b`, so an
+        // answer equal to either is copied rather than computed (measured at
+        // 5.6% on the subtract form).
+        //
+        // Fallback values are a documented last resort, not a default — most of
+        // the draw space is admissible, so 60 consecutive misses is
+        // vanishingly unlikely. Stated because a draw loop that can fall off
+        // its own end and ship an inadmissible item is the defect being fixed.
+        let a = -5;
+        let b = op === '-' ? -2 : 2; // answer -3: clear of ±1 and of both operands
+        for (let i = 0; i < 60; i++) {
+          const ca = negative(r, 2, 15);
+          // Subtracting a negative is the case E8 exists for; adding pairs a
+          // negative start with a positive move.
+          const cb = op === '-' ? negative(r, 2, 9) : r.int(2, 12);
+          const ans = op === '+' ? ca + cb : ca - cb;
+          // Keep the ANSWER clear of ±1: `countNoun` would render it "-1
+          // points", and QG-12c's "1 <plural>" scan has no boundary for the
+          // minus sign.
+          if (Math.abs(ans) < 2) continue;
+          if (ans === ca || ans === cb) continue;
+          a = ca;
+          b = cb;
+          break;
+        }
         const name = r.pick(NAMES);
         const value = op === '+' ? a + b : a - b;
         const prompt =
@@ -708,10 +1016,37 @@ export function minusNegativeTrap(): ItemGen {
     draw: (r) => {
       const a = negative(r, 2, 12);
       const b = r.int(3, 12);
-      const truth = verifyAddSubValue({ a, b: -b, op: '-' });
-      const trap = verifyAddSubValue({ a, b, op: '-' });
+      // WHICH CARD IS ASKED ABOUT IS DRAWN.
+      //
+      // This always asked about Card B. With `a` negative and `b` strictly
+      // positive the three options stand in a fixed order for every draw —
+      // a - b  <  a  <  a + b — so Card B's answer was the LARGEST number on
+      // the page on 3,000 of 3,000 draws (measured). "Pick the biggest"
+      // certified 100% of exposures, twenty times the §2(b) bar, on a
+      // discrimination whose entire job is telling two moves apart.
+      //
+      // Asking about either card is the item's own natural symmetry — the
+      // contrast IS minus-a-negative against minus-a-positive — and it makes
+      // the key the largest option half the time and the smallest the other
+      // half. The distractor set is unchanged in kind: whichever card is asked,
+      // the trap is the OTHER card's landing (reading both as the same move)
+      // and the third is the start itself.
+      // THE RANK IS DRAWN, NOT LEFT TO FALL OUT OF TWO INDEPENDENT COINS.
+      //
+      // Drawing `askB` and `doubleUp` independently gives four equally likely
+      // combinations, and TWO of them put the truth in the middle — so "pick the
+      // middle card" was right 49.4% of the time against a 33.3% baseline. That
+      // was measured and accepted last time as structural; it is not. Choosing
+      // the rank first and then the pair of flags that produces it levels all
+      // three, and `askB` still comes out an even coin, so the item's own
+      // symmetry is untouched.
+      const want = r.pick(['largest', 'middle', 'smallest'] as const);
+      const askB = want === 'largest' ? true : want === 'smallest' ? false : r.int(0, 1) === 0;
+      const doubleUp = want === 'largest' ? false : want === 'smallest' ? true : askB;
+      const truth = verifyAddSubValue({ a, b: askB ? -b : b, op: '-' });
+      const trap = verifyAddSubValue({ a, b: askB ? b : -b, op: '-' });
       return {
-        prompt: `Two cards are dealt from the same start of ${fmtInt(a)}. Card A says "subtract ${fmtInt(b)}". Card B says "subtract ${fmtInt(-b)}". Which number does Card B land on?`,
+        prompt: `Two cards are dealt from the same start of ${fmtInt(a)}. Card A says "subtract ${fmtInt(b)}". Card B says "subtract ${fmtInt(-b)}". Which number does Card ${askB ? 'B' : 'A'} land on?`,
         correct: truth.correct,
         distractors: [
           {
@@ -720,9 +1055,33 @@ export function minusNegativeTrap(): ItemGen {
             rationale: 'Treats both cards as the same move, since both say "subtract".',
           },
           {
-            text: String(canonicalSigned(a)),
-            errorTag: 'task-comprehension',
-            rationale: 'Cancels the two signs into no move at all and stays at the start.',
+            // NOT the start value, and NOT at a fixed rank.
+            //
+            // Two constant-rank defects were removed here in one sitting, and
+            // the second was introduced by the fix for the first — recorded
+            // because the lesson is the sequence, not either fix.
+            //
+            //  1. The card used to be `a` itself: printed in the prompt, never
+            //     the landing (the move is non-zero by construction), so a
+            //     child could strike it out on sight and guess between two.
+            //     The L38 card in its most learnable form — not merely
+            //     never-correct, but never-correct AND recognisable.
+            //  2. Replacing it with "applies the move twice" fixed that and
+            //     pinned the truth to the MIDDLE of the three on 100% of 3,000
+            //     draws, because doubling always overshoots past the truth.
+            //     "Pick the middle" replaced "pick the biggest" exactly.
+            //
+            // So the doubled move's DIRECTION is drawn too, independently of
+            // which card is asked. Doubling past the truth leaves it middle;
+            // doubling the other way leaves it at an end. Measured after:
+            // middle ~50%, largest ~25%, smallest ~25% — no rank is the
+            // answer, and every card still names a real slip.
+            text: String(canonicalSigned(doubleUp ? a + 2 * b : a - 2 * b)),
+            errorTag: 'procedure-slip',
+            rationale:
+              doubleUp === askB
+                ? 'Applies the named move a second time, stepping the same distance again the same way.'
+                : 'Doubles the move but reads it in the direction the other card points.',
           },
         ],
         hints: [
@@ -777,8 +1136,20 @@ export function signedMultiplyStory(): ItemGen {
         templateId: 'e_int_mul_v1',
         params: { a: rate, b: k },
         units: 'degrees',
+        // THE HINT IS DIRECTION-NEUTRAL, and it has to be.
+        //
+        // Rung 1 asked "Does repeating a FALL…" on 100% of draws while the
+        // prose said "a rise each time" on 52.5% of them — a hint describing
+        // the opposite of the item beside it. The obvious repair, branching the
+        // wording on `falls`, is itself a defect: hint ladders must be
+        // SEED-INVARIANT (L19), because a ladder that varies with the draw
+        // breaks pack-generation dedup for whichever learner draws the unlucky
+        // seed. `bb-family-test` catches it, and did.
+        //
+        // So the rung is reworded to be true either way — repeating any signed
+        // move carries the total further from zero, whichever side it starts.
         hints: [
-          'Does repeating a fall make the total change bigger or smaller than one fall?',
+          'Does repeating the same move carry a total further from zero, or back towards it?',
           'Count the repeats of the same signed move, and keep the direction the story gave you.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
@@ -793,8 +1164,12 @@ export function signedDivideStory(): ItemGen {
     situationType: 'sharing',
     cognitiveOp: 'int-div',
     draw: (r) => {
+      // The prompt prints `k` and `total`, so a rate equal to either is copied
+      // rather than divided — measured at 5.9% of 3,000 draws (it happens
+      // whenever a positive rate lands on the same value as the period count).
       const k = r.int(2, 9);
-      const rate = signed(r, 2, 9);
+      let rate = signed(r, 2, 9);
+      for (let i = 0; i < 20 && (rate === k || rate === rate * k); i++) rate = signed(r, 2, 9);
       const total = rate * k;
       const name = r.pick(NAMES);
       const unitWord = r.pick(['hour', 'day', 'week', 'round']);
@@ -804,8 +1179,12 @@ export function signedDivideStory(): ItemGen {
         templateId: 'e_int_div_v1',
         params: { a: total, b: k },
         units: 'degrees',
+        // Direction-neutral for the same reason as `signedMultiplyStory` above:
+        // rung 1 opened "If the whole change was downward…" on 100% of draws,
+        // including the ones whose total is a rise, and a ladder that branches
+        // on the draw is seed-variant.
         hints: [
-          'If the whole change was downward, can any single step have been upward?',
+          'If every step was the same, can a single step point the opposite way to the whole change?',
           'Share the total change equally across the periods, direction included.',
         ],
         errorTags: ['procedure-slip', 'concept-misconception'],
@@ -820,32 +1199,77 @@ export function countTheSignsTrap(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'int-sign',
     draw: (r) => {
+      // THE NEGATIVE COUNT IS DRAWN BY PARITY, and one draw in five plants a
+      // zero.
+      //
+      // The old form drew signs freely and then, if fewer than two factors were
+      // negative, SET two of them negative. Two is even, so every one of those
+      // draws became a positive product — and "fewer than two negatives" is
+      // half the sign patterns at size 3. The keyed answer was "positive" on
+      // 68.7% of 3,000 draws, so "always say positive" scored more than twice
+      // the §2(b) bar on the item whose entire subject is counting signs.
+      //
+      // Parity is now a fair coin and the count is drawn from the counts of
+      // that parity that are still >= 2 — which keeps the original intent (the
+      // item is about COUNTING signs, not spotting one) while making the two
+      // answers equally likely.
       const size = r.int(3, 4);
       const factors: number[] = [];
-      for (let i = 0; i < size; i++) factors.push(signed(r, 2, 9));
-      // Guarantee at least two negatives, so the item is about COUNTING signs
-      // rather than spotting a single one.
-      if (factors.filter((f) => f < 0).length < 2) {
-        factors[0] = -Math.abs(factors[0]);
-        factors[1] = -Math.abs(factors[1]);
+      for (let i = 0; i < size; i++) factors.push(Math.abs(signed(r, 2, 9)));
+      // THE OUTCOME IS DRAWN FIRST, uniformly over the three cards.
+      //
+      // Balancing the parity coin and planting a zero one draw in five left the
+      // keys at 40/40/20 (measured 3,000 served) — better than the 68.7%
+      // positive it replaced, but still 7 points of free edge for "always say
+      // negative", which is the exact reflex this week exists to defeat. E9's
+      // author had to filter the generator's output to serve it.
+      //
+      // Drawing which ANSWER the item will have, then building factors to
+      // match, is the same move `compareNegativesTrap` makes with its pair
+      // shape: decide the outcome, then construct a draw that has it. Three
+      // cards, three equally likely keys, no arithmetic-free edge at all.
+      const plantZero = r.int(1, 3) === 1;
+      if (plantZero) {
+        factors[r.int(0, size - 1)] = 0;
+        // The remaining signs are free; they cannot change a zero product, and
+        // leaving them varied stops "the one with a 0 in it looks different".
+        for (let i = 0; i < size; i++) if (factors[i] !== 0 && r.int(0, 1) === 0) factors[i] = -factors[i];
+      } else {
+        const even = r.int(0, 1) === 0;
+        const choices = [2, 3, 4].filter((c) => c <= size && c % 2 === (even ? 0 : 1));
+        const negCount = choices[r.int(0, choices.length - 1)];
+        const idx = r.shuffle(factors.map((_, i) => i)).slice(0, negCount);
+        for (const i of idx) factors[i] = -factors[i];
       }
       const truth = verifySignCount({ factors });
       const shown = factors.map((f) => fmtInt(f)).join(' x ');
       return {
         prompt: `Without multiplying it out: is the product ${shown} positive or negative?`,
         correct: truth.correct,
-        distractors: [
-          {
-            text: truth.correct === 'positive' ? 'negative' : 'positive',
-            errorTag: 'concept-misconception',
-            rationale: 'Carries the sign of the first factor (or of any negative seen) straight to the product.',
-          },
-          {
-            text: 'it depends on the sizes of the numbers',
-            errorTag: 'task-comprehension',
-            rationale: 'Looks at magnitudes, which never affect the sign of a product.',
-          },
-        ],
+        // THE TWO CARDS THAT ARE NOT THE TRUTH, derived from it.
+        //
+        // Hard-coding "the other sign" plus "zero" was safe only while zero
+        // could not be the answer; the moment it could, a zero draw shipped
+        // "zero" twice, once keyed and once not. This is the third time that
+        // exact mistake has been made in this library — `compareNegativesTrap`
+        // and `fracCompareChoice` both hit it when their previously-impossible
+        // card became reachable — so the rule is worth stating plainly:
+        // WHEN A DISTRACTOR BECOMES KEYABLE, THE CARD SET MUST BE DERIVED.
+        distractors: (['positive', 'negative', 'zero'] as const)
+          .filter((opt) => opt !== truth.correct)
+          .map((opt) => (
+            opt === 'zero'
+              ? {
+                text: 'zero',
+                errorTag: 'task-comprehension' as const,
+                rationale: 'A product is zero only when one of the factors is zero — check whether any of them is.',
+              }
+              : {
+                text: opt,
+                errorTag: 'concept-misconception' as const,
+                rationale: 'Carries the sign of the first factor (or of any negative seen) straight to the product.',
+              }
+          )),
         hints: [
           'How many of these factors pull the product to the other side of zero?',
           'Pair the negative factors off; each pair cancels, and what is left decides the sign.',

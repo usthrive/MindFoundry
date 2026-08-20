@@ -288,7 +288,7 @@ user ask.
 |14|± decimals|A8|G|
 |15|Multi-digit × fluency|A3|G|
 |16|Division: 2-digit divisors|A4|G|
-|17|± fractions (unlike)|A7|**G (fixture MFM-D17)**|
+|17|± fractions (unlike)|A7|**G (template `weeks/d17.ts`, 2026-08-11)** — was fixture-served; MFM-D17 stays pinned as the calibration artifact. See `D17-RECIPE-PROPOSAL.md` §6.|
 |18|Multiplying fractions|A7|G|
 |19|Dividing with unit fractions|A7|G|
 |20|× ÷ decimals|A8|G|
@@ -297,7 +297,8 @@ user ask.
 |23|Angles & shape hierarchies|A11|G|
 |24|Volume + Ready for E (exit)|A11|G|
 
-**Level D result: 24/24 (23 template + 1 fixture), all validated × 5 seeds.**
+**Level D result: 24/24 — as of 2026-08-11, 24 template + 0 fixture, all validated × 5 seeds.**
+(Was 23 template + 1 fixture until `weeks/d17.ts` took over the D17 cell.)
 
 ### Level E — Middle-School Readiness — pending (mostly computable)
 | Wk | Concept | Archetype | Status |

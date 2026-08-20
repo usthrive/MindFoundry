@@ -1,0 +1,114 @@
+{
+  "projectName": "MindFoundry",
+  "createdAt": "2026-02-08T15:15:00Z",
+  "themes": [
+    {
+      "id": "product-overview",
+      "name": "Product Overview",
+      "focus": "Full feature tour — what MindFoundry is and why parents should care",
+      "suggestedHook": "Every night, millions of parents watch their child struggle with math...",
+      "targetDuration": 120,
+      "priority": 1,
+      "tone": "warm, parental, reassuring"
+    },
+    {
+      "id": "ai-tutor-deep-dive",
+      "name": "Meet Ms. Guide",
+      "focus": "AI tutor that teaches thinking, not answers — the graduated hint system",
+      "suggestedHook": "What if your child had a math tutor who never lost patience?",
+      "targetDuration": 90,
+      "priority": 2,
+      "tone": "educational, warm, demo-heavy"
+    },
+    {
+      "id": "homework-helper",
+      "name": "Homework Helper",
+      "focus": "Photo → AI explanation flow — instant homework help",
+      "suggestedHook": "Snap a photo. Get expert help in seconds.",
+      "targetDuration": 90,
+      "priority": 3,
+      "tone": "practical, problem-solving, relatable"
+    },
+    {
+      "id": "parent-insights",
+      "name": "Parent Dashboard",
+      "focus": "Analytics and progress visibility for parents",
+      "suggestedHook": "Finally know exactly where your child stands in math.",
+      "targetDuration": 90,
+      "priority": 4,
+      "tone": "informative, empowering, data-driven"
+    },
+    {
+      "id": "achievement-system",
+      "name": "Celebrations & Motivation",
+      "focus": "Achievement system, streaks, shareable cards — making math fun",
+      "suggestedHook": "Watch your child fall in love with math.",
+      "targetDuration": 90,
+      "priority": 5,
+      "tone": "fun, celebratory, motivational"
+    },
+    {
+      "id": "cost-comparison",
+      "name": "Value Proposition",
+      "focus": "MindFoundry vs. private tutoring costs",
+      "suggestedHook": "$7.99 a month vs. $150 an hour. Same results.",
+      "targetDuration": 120,
+      "priority": 6,
+      "tone": "persuasive, factual, value-focused"
+    },
+    {
+      "id": "family-account",
+      "name": "Family Plan",
+      "focus": "Multi-child pricing and family account features",
+      "suggestedHook": "One app. The whole family. Half the price.",
+      "targetDuration": 90,
+      "priority": 7,
+      "tone": "family-oriented, inclusive, warm"
+    },
+    {
+      "id": "kumon-method",
+      "name": "The Kumon Method",
+      "focus": "Educational methodology — mastery, spaced repetition, proven results",
+      "suggestedHook": "50 countries. 4 million students. Now in an app.",
+      "targetDuration": 120,
+      "priority": 8,
+      "tone": "educational, credible, authoritative"
+    },
+    {
+      "id": "video-library",
+      "name": "Learning Videos",
+      "focus": "Curated video content that unlocks with progression",
+      "suggestedHook": "200+ videos that unlock as they grow.",
+      "targetDuration": 90,
+      "priority": 9,
+      "tone": "visual, exploratory, progressive"
+    },
+    {
+      "id": "before-and-after",
+      "name": "Transformation Story",
+      "focus": "Day 1 vs. Day 60 — a child's math journey",
+      "suggestedHook": "Day 1 vs. Day 60: Watch the change.",
+      "targetDuration": 120,
+      "priority": 10,
+      "tone": "narrative, emotional, transformative"
+    },
+    {
+      "id": "speed-fluency",
+      "name": "Speed & Fluency",
+      "focus": "Timed practice and fluency building",
+      "suggestedHook": "From 5 minutes per problem to 30 seconds.",
+      "targetDuration": 90,
+      "priority": 11,
+      "tone": "energetic, competitive, results-driven"
+    },
+    {
+      "id": "seasonal",
+      "name": "Seasonal Campaign",
+      "focus": "Back to school / summer prep / holiday learning",
+      "suggestedHook": "Varies by season",
+      "targetDuration": 75,
+      "priority": 12,
+      "tone": "timely, urgent, seasonal"
+    }
+  ]
+}

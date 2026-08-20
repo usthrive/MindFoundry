@@ -2,7 +2,7 @@
  * TrendsView (PARENT-FLOWS Flow 4) — at most three honest longitudinal
  * graphics, each carried by a one-sentence Ms. Wren interpretation:
  *   1. Untimed weekly-check accuracy (the only % series anywhere), with the
- *      85% gate explained plainly.
+ *      mastery gate explained plainly (threshold from constants).
  *   2. Practice-day accuracy + minutes (effort and steadiness, equal weight).
  *   3. Fluency sprint counts, self-referenced and ungraded — hidden entirely
  *      on sprint opt-out.
@@ -18,6 +18,7 @@ import {
   type SprintWeekCounts,
 } from '../../services/bbParentService';
 import { GATE_EXPLAINER } from '../../parentCopy';
+import { MASTERY_THRESHOLD_PCT } from '../../constants';
 import { useParentContext } from './FoundryParentLayout';
 import TrendsTabs from './TrendsTabs';
 import type { WeekState } from '../../types';
@@ -132,7 +133,7 @@ export default function TrendsView() {
         )}
         <p className="text-[13px] leading-relaxed text-text-secondary">
           First try on each week's check — {GATE_EXPLAINER} A "one more round" week simply shows the
-          first number; the gate did its job. The 85% bar is our own standard.
+          first number; the gate did its job. The {MASTERY_THRESHOLD_PCT}% bar is our own standard.
         </p>
         {checkPoints.length > 0 && checkPoints.length < 3 && (
           <p className="text-[12.5px] text-text-muted">Still gathering the story — a few dots don't make a trend.</p>

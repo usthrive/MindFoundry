@@ -37,8 +37,12 @@ for (const cell of AVAILABLE_WEEKS) {
   const pack = generatePack(cell.level, cell.week, 12345) as any
   const L = cell.level, W = cell.week
 
-  // 1. Lesson script segments
-  for (const seg of pack.explanation?.segments ?? []) {
+  // 1. Lesson script segments.
+  // This read `explanation.segments` until 2026-08-18 — a field that has never
+  // existed on the Explanation type, which is `script`. `?? []` turned it into
+  // silence, so this loop iterated NOTHING and no lesson segment was ever
+  // scanned for a broken promise.
+  for (const seg of pack.explanation?.script ?? []) {
     const p = promises(seg.say) || promises(seg.visual)
     if (!p) continue
     note(L, !!seg.figure)
@@ -60,10 +64,25 @@ for (const cell of AVAILABLE_WEEKS) {
       if (!it.figure) broken.push({ level: L, week: W, surface: `day ${day.day} item`, id: it.id, text: it.prompt.slice(0, 90) })
     }
   }
-  for (const it of pack.masteryCheck?.items ?? []) {
-    if (!promises(it.prompt)) continue
-    note(L, !!it.figure)
-    if (!it.figure) broken.push({ level: L, week: W, surface: 'mastery check', id: it.id, text: it.prompt.slice(0, 90) })
+  // MASTERY. This read `pack.masteryCheck?.items` until 2026-08-17 — a field
+  // that has never existed on the type, which is `formA`/`formB`. The `?? []`
+  // turned the mistake into silence, so the loop iterated NOTHING and the
+  // graded gate deciding whether a child passes the week went unscanned on
+  // every green run. Same shape as the figure census: a check that reports
+  // rather than fails, over a set that is empty for the wrong reason.
+  for (const [form, items] of [['formA', pack.masteryCheck?.formA], ['formB', pack.masteryCheck?.formB]] as const) {
+    for (const it of items ?? []) {
+      if (!promises(it.prompt)) continue
+      note(L, !!it.figure)
+      if (!it.figure) broken.push({ level: L, week: W, surface: `mastery ${form}`, id: it.id, text: it.prompt.slice(0, 90) })
+    }
+  }
+
+  // The puzzle is answered through the same AnswerEntry as any item and was
+  // never walked here either.
+  if (pack.puzzle && promises(pack.puzzle.prompt)) {
+    note(L, !!pack.puzzle.figure)
+    if (!pack.puzzle.figure) broken.push({ level: L, week: W, surface: 'puzzle', id: pack.puzzle.id, text: pack.puzzle.prompt.slice(0, 90) })
   }
 }
 

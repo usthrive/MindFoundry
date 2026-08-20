@@ -4,8 +4,10 @@
  * pack.masteryCheck.formB (index-paired isomorphs; QG-4 guarantees disjoint
  * surfaces upstream — Form A surfaces are never re-served here). Same dress
  * as WeeklyCheck: feedback held, strategy-card-only anchor, ScratchPad on.
- * Re-scored by the RPC on the DD1 machine: ≥95% → fast-track · ≥85% → pass ·
- * <85% → cycle 2 (new angle) or, after cycle 2, escalation. No other routes.
+ * Re-scored by the RPC on the DD1 machine: ≥95% → fast-track · ≥ the DD1 pass
+ * threshold (MASTERY_THRESHOLD_PCT in constants; 85→80 by owner ruling
+ * 2026-08-10) → pass · below it → cycle 2 (new angle) or, after cycle 2,
+ * escalation. No other routes.
  */
 
 import { useState } from 'react';
@@ -101,7 +103,9 @@ export default function FreshProblems() {
       pack={pack}
       items={items}
       band={band}
-      storageKey={`bb-check-B${cycle}-${pack.packId}`}
+      /* Keyed on the child — see the note in WeeklyCheck: the resume store now
+         survives a restart, so it must not be shared across children. */
+      storageKey={`bb-check-B${cycle}-${childId}-${pack.packId}`}
       headerLabel="Brand-new problems"
       onItemAnswered={(item, answer, correct, errorTag) => {
         void recordItemAttempt({

@@ -188,6 +188,47 @@ export interface PlaceValueChartParams {
   showPeriods?: boolean;
 }
 
+/** One base-ten quantity as physical pieces. */
+export interface BaseTenState {
+  /** Hundreds, drawn as 10×10 flats. */
+  flats?: number;
+  /** Tens, drawn as FUSED rods — a rod is one piece, not ten touching cubes. */
+  rods: number;
+  /** Loose ones cubes. */
+  ones: number;
+  /** Optional caption under this state ("before", "47", "Ria's"). */
+  label?: string;
+}
+
+/**
+ * Base-ten blocks — rods and loose cubes (B2 bundling, B14 trading, C1 place
+ * value). The one thing `place-value-chart` cannot say: a chart shows the DIGITS
+ * 4 and 7, this shows the four fused rods and seven loose cubes the digits are a
+ * code FOR. B2's whole lesson is the moment ten ones become one ten, which is a
+ * statement about the pieces and not about the notation.
+ *
+ * `then` exists because the authored lesson visuals are written as MOTION —
+ * "ten cubes magnetize into a single rod", "ten flash and snap into a rod that
+ * slides to the tens column". Nothing in this figure system animates, so the
+ * honest static rendering of a change is the one a teacher draws on a
+ * whiteboard: both states, with an arrow between them. The child sees what went
+ * in and what came out, and can dwell on either for as long as they like —
+ * which a pre-reader cannot do with a moving picture.
+ */
+export interface BaseTenBlocksParams {
+  state: BaseTenState;
+  /** A second state, drawn after the connector. */
+  then?: BaseTenState;
+  /** 'becomes' draws an arrow (a change); 'beside' draws a gap (a comparison). */
+  connector?: 'becomes' | 'beside';
+  /** Ring the pieces the lesson is about to act on. */
+  highlight?: 'ones' | 'rods' | 'none';
+  /** Draw labelled tens|ones columns (the E53 convention, Days 1–2). */
+  showColumns?: boolean;
+  /** Print the numeral each state makes. */
+  showNumeral?: boolean;
+}
+
 /** Analog clock — B12 (hour/half), B17 (quarters), C18 (to the minute). */
 export interface ClockParams {
   /** 1–12 (0 accepted and shown as 12). */
@@ -264,6 +305,7 @@ export type BBFigureType =
   | 'ten-frame'
   | 'counters'
   | 'place-value-chart'
+  | 'base-ten-blocks'
   | 'clock'
   | 'coin-set'
   | 'coordinate-grid'
@@ -271,7 +313,7 @@ export type BBFigureType =
 
 export const FIGURE_TYPES: readonly BBFigureType[] = [
   'number-line', 'bar-model', 'area-grid', 'ten-frame', 'counters',
-  'place-value-chart', 'clock', 'coin-set', 'coordinate-grid', 'angle-figure',
+  'place-value-chart', 'base-ten-blocks', 'clock', 'coin-set', 'coordinate-grid', 'angle-figure',
 ] as const;
 
 /**
@@ -308,6 +350,7 @@ export type BBFigure =
   | (FigureBase & { type: 'ten-frame'; params: TenFrameParams })
   | (FigureBase & { type: 'counters'; params: CountersParams })
   | (FigureBase & { type: 'place-value-chart'; params: PlaceValueChartParams })
+  | (FigureBase & { type: 'base-ten-blocks'; params: BaseTenBlocksParams })
   | (FigureBase & { type: 'clock'; params: ClockParams })
   | (FigureBase & { type: 'coin-set'; params: CoinSetParams })
   | (FigureBase & { type: 'coordinate-grid'; params: CoordinateGridParams })

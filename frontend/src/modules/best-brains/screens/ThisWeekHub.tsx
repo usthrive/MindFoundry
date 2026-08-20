@@ -206,13 +206,38 @@ export default function ThisWeekHub() {
           </p>
         ))}
 
-      {/* Passed: the cycle turns when the calendar does (P1). */}
+      {/* Passed, but the calendar has not turned yet — SAY SO.
+          Without this line the winning path is the only one in the module that
+          ends on a screen with nothing to press and nothing to read: the
+          primary CTA is suppressed by `weekPassed`, every day tile is done and
+          disabled, the corrective thread is not showing, the reveal button is
+          not ready, and the one existing "comes back tomorrow" line below is
+          gated on `!weekPassed`. A child who passed on the day they finished
+          saw a settled Wren bubble and a dead screen. */}
+      {weekPassed && !revealReady && (
+        <p className="text-center text-sm text-text-muted">
+          {enrollment.currentWeek < WEEKS_PER_LEVEL
+            ? MODULE_COPY.nextWeekWaiting[band]
+            : MODULE_COPY.levelComplete[band]}
+        </p>
+      )}
+
+      {/* Passed: the cycle turns when the calendar does (P1).
+          APRICOT, NOT TEAL — the one button on this screen that is not teal.
+          Everything else here is `--mf-primary`: the five day tiles, the
+          primary CTA, the corrective "one more round". A child who had just
+          finished a week could not tell which of the identical teal shapes
+          started the NEXT one, and pressed the wrong things looking for it
+          (reported by the owner's own six-year-old). Apricot is already this
+          theme's accent for "something new" — it just had nowhere to appear at
+          size, only as the 7px dot on an active tile.
+          Contrast and sizing live with the class in theme/tokens.css. */}
       {revealReady && (
         <button
           type="button"
           onClick={() => void revealNextWeek()}
           disabled={revealing}
-          className="min-h-[64px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] disabled:opacity-60 focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+          className="mf-btn-new px-6 shadow-md active:scale-[0.99] touch-manipulation"
         >
           {MODULE_COPY.nextWeekReveal[band]}
           {getCatalogWeek(enrollment.level, enrollment.currentWeek + 1)

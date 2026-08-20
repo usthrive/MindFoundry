@@ -27,7 +27,7 @@
  *    week, and counting 1–5 is the substrate for 6–10, so one warm-up a day on
  *    Days 1–4 replays A·W1 in four different formats (4/19 items = 21.1%).
  *
- * ── FOUR DISCLOSURES (FANOUT kit §E2.3 "document the choice in the header") ──
+ * ── FIVE DISCLOSURES (FANOUT kit §E2.3 "document the choice in the header") ──
  *
  * 1. **THE RECIPE'S OWN DISCRIMINATION CANNOT BE DRAWN, and this is provable
  *    rather than a judgement.** "A longer row of 5 beside a tight row of 6"
@@ -87,6 +87,70 @@
  *    asks for one every day at band A; `validator.ts` S-SCHEMA rejects a strip on
  *    Days 1–4 and `PuzzleGrove.tsx` reads Day 5's, hardcoded. A1 recorded the
  *    same conflict; it blocks all 24 Level-A weeks and needs a renderer first.
+ *
+ * 5. **"FREE-ENTRY NUMERIC" IS NOT A REAL ANSWER MODE AT BAND A, so the three
+ *    counting slots that certify now carry AUTHORED options.** A pre-reader
+ *    cannot type. `AnswerEntry` hands a choice-less numeric band-A item to
+ *    `tapOptionsFor`, which INVENTS four number buttons at render time — the
+ *    answer plus answer±1..3, the rank rotated by a hash of the item id and the
+ *    answer — so those buttons were always the real page, and no per-pack gate
+ *    could see them because they never existed in the pack. The damage is
+ *    arithmetic rather than bad luck: a runtime function cannot know a slot's
+ *    answer RANGE, so every slot here drawing 6-10 was necessarily offered 5, 4
+ *    and 3, numbers it can never key. Measured over 300 packs before the repair:
+ *    the frame read offered "5" on 62.0% of Form B draws and keyed it on none
+ *    (`bb-answer-entropy-test` counted 77 of 120 and called it NEVER_CORRECT),
+ *    the row count offered 5 on 19.0-37.0% and 11 on 20.0-41.7%, and the basket
+ *    story offered 3-5 on 20.7-41.7%. Only the first crossed the gate's
+ *    half-the-draws line; all three are the same defect, and the two quiet ones
+ *    were quiet because of where a hash happened to fall.
+ *
+ *    - **THE OPTIONS ARE COUNTS THE SLOT CAN KEY, WHICH DELETES THE DEAD NUMBER
+ *      RATHER THAN DILUTING IT.** `withTapChoices` (below) offers three numbers
+ *      drawn from 6-10, the range the picture itself is drawn from, so every
+ *      number on the page is the true answer on some other draw of the same slot
+ *      and nothing can be struck out unread. Measured over 500 packs, all three
+ *      repaired slots and both forms: no option is ever never-keyed, and every
+ *      value from six to ten is keyed on 15.2-23.6% of draws.
+ *    - **THE RANK IS DEALT FROM A TABLE, because the range decides most of it.**
+ *      Six has nothing below it and ten nothing above it inside 6-10, so a drawn
+ *      six is always the smallest number on the page and a drawn ten always the
+ *      largest; seven can never be the largest of three and nine never the
+ *      smallest. Left to itself that thins the middle. `RANK_WEIGHTS` pays it
+ *      back through the counts that are free to choose, and the result is
+ *      measured over 500 packs per form: the truth is the smallest number on
+ *      29.0-31.8% of draws, the middle on 32.6-37.0% and the largest on
+ *      31.6-38.4%, against a 33.3% floor. "Tap the ten" — the frame's own size,
+ *      offered on 63.3% of 1,000 frame-read draws — scores 19.6-23.2%.
+ *    - **NO COUNT IS EVER SPOKEN, so "tap the first number you hear" has nothing
+ *      to work on.** At band A `speakablePrompt` reads `figure.alt` before the
+ *      question, and across 3,000 measured draws of these three slots the spoken
+ *      line carries no count at all ("a ten-frame with some counters in it. How
+ *      many counters are in the frame?"). The one number WORD anywhere in them is
+ *      the "ten" inside "ten-frame", which names the manipulative and is this
+ *      week's own vocabulary; a child who taps it every time scores 19.6-23.2%.
+ *    - **FIVE IS GONE FROM THE FRAME READ, and that is the point rather than a
+ *      loss.** "The full row read as the whole answer" is this week's named
+ *      misconception, but a slot drawing 6-10 can never key five, so offering it
+ *      there is exactly the dead option the repair exists to remove. It stays
+ *      where it is honest — `frameShows` on Day 2, a teaching slot — and the
+ *      mistakeBank now says so. Measured there over 500 packs it is offered on
+ *      37.4% of draws, not the 27% this file used to claim: the old figure
+ *      counted only the pairing that offers it deliberately and missed the draws
+ *      where the honest "one counter missed" IS five, at a frame holding six.
+ *    - **THE DAY PAGES THAT SHARE THESE GENERATORS CARRY THE OPTIONS TOO**, and
+ *      the pages that do not certify keep their free-entry numeric — the same
+ *      line A1 drew, and for the same reason: the law is about the slots that
+ *      promote a child. WHAT THAT LEAVES, MEASURED OVER 300 PACKS RATHER THAN
+ *      WAVED AT: three teaching pages here still hand the display layer a bare
+ *      numeral and get an unkeyable button back — the A1 warm-up row of 3-5 is
+ *      offered "1" and "2" on 64.0% of draws, the Day-2 two-row count is offered
+ *      "5" on 59.3%, and the Day-4 frame story on 58.3%. `bb-answer-entropy-test`
+ *      suppresses a NEVER_CORRECT in a day slot on purpose (a gate nobody can
+ *      pass is a gate people switch off), so none of these is a finding, and none
+ *      of them certifies anybody. They are named here because a rate nobody wrote
+ *      down is a rate nobody fixes; `withTapChoices` takes the two non-warm-up
+ *      ones as they stand. Recorded for the orchestrator.
  */
 
 import type { ErrorTag } from '../../../types';
@@ -228,6 +292,204 @@ function warmUp(base: ItemGen): ItemGen {
 }
 
 // ===========================================================================
+// Authored options for the counting slots that CERTIFY
+// ===========================================================================
+
+/**
+ * What a wrong number MEANS on one of this week's pictures, said in that
+ * picture's own terms. `over(k)` is k things given a second number, `under(k)`
+ * is k things never given one, and `box` is the frame answered instead of its
+ * contents. Teacher-facing — the child only ever sees a numeral — so these are
+ * not word-capped.
+ */
+interface CountVoice {
+  over: (k: number) => string;
+  under: (k: number) => string;
+  /** Only a frame has a box to answer instead of what sits in it. */
+  box?: string;
+}
+
+/** A frame: the full row is read, and the slip happens among the loose ones below it. */
+const FRAME_VOICE: CountVoice = {
+  over: (k) =>
+    `${k === 1 ? 'One' : 'Two'} too many - the full row was read as five and then ${k === 1 ? 'a counter below it was' : 'two counters below it were'} met twice, so the count carried past the last one.`,
+  under: (k) =>
+    `${k === 1 ? 'One' : 'Two'} too few - the count carried on from five but ${k === 1 ? 'a counter below the row was' : 'two counters below the row were'} left without a number.`,
+  box: 'What the frame HOLDS, answered instead of what sits in it - the box is ten whether it is full or not.',
+};
+/** A row: there is a line to follow, so a slip is a finger out of step with it. */
+const ROW_VOICE: CountVoice = {
+  over: (k) =>
+    `${k === 1 ? 'One' : 'Two'} too many - the finger doubled back along the line, so ${k === 1 ? 'a thing was' : 'two things were'} given a second number.`,
+  under: (k) =>
+    `${k === 1 ? 'One' : 'Two'} too few - the number words ran out before the line did, which is what hurrying past six does.`,
+};
+/** A loose pile: nothing holds the place, so a slip is a thing met again or never met. */
+const PILE_VOICE: CountVoice = {
+  over: (k) =>
+    `${k === 1 ? 'One' : 'Two'} too many - nothing was set aside while counting, so ${k === 1 ? 'a thing already counted came' : 'two things already counted came'} round again.`,
+  under: (k) =>
+    `${k === 1 ? 'One' : 'Two'} too few - the pile was read off the top and ${k === 1 ? 'one underneath was' : 'two underneath were'} never reached.`,
+};
+
+/**
+ * WHICH RANK THE TRUTH TAKES, PER DRAWN COUNT — and the table is arithmetic
+ * rather than taste (LEARNINGS L43, kit §E2.11).
+ *
+ * Three numbers are offered and every one of them must be a count this slot can
+ * actually key, so they all live in 6-10. That alone decides most of the ranks:
+ * six has nothing below it inside the range and ten has nothing above it, so a
+ * drawn six is ALWAYS the smallest number on the page and a drawn ten is always
+ * the largest. Seven cannot be the largest of three (only six sits below it) and
+ * nine cannot be the smallest (only ten sits above it). Eight is the one count
+ * free to take any rank.
+ *
+ * Left uniform over the ranks each count allows, that lands 36.7/26.7/36.7 —
+ * the middle thinned by the two counts that cannot reach it. The weights below
+ * (out of five) tilt the free choices toward the middle to pay that back, which
+ * is what makes "tap the middle" worth no more than "tap the biggest". Measured
+ * over 500 packs, both repaired slots and both forms: see the header, disclosure
+ * 5. A count with no weight at a rank is a count that cannot honestly hold it.
+ */
+const RANK_WEIGHTS: Record<number, readonly [number, number, number]> = {
+  6: [5, 0, 0],
+  7: [2, 3, 0],
+  8: [1, 3, 1],
+  9: [0, 3, 2],
+  10: [0, 0, 5],
+};
+
+/** The numbers above `n` this slot could key, nearest first; the box is one of them. */
+function optionsAbove(n: number, voice: CountVoice): number[] {
+  const menu = voice.box ? [n + 1, n + 2, FRAME] : [n + 1, n + 2];
+  return [...new Set(menu)].filter((v) => v > n && v <= HI);
+}
+/** The numbers below `n` this slot could key, nearest first. */
+function optionsBelow(n: number): number[] {
+  return [n - 1, n - 2].filter((v) => v >= LO);
+}
+
+// The weight table is checked against the two menus at module load, so an
+// impossible rank throws here rather than at some unlucky seed.
+for (const [key, weights] of Object.entries(RANK_WEIGHTS)) {
+  const n = Number(key);
+  if (weights[0] + weights[1] + weights[2] !== 5) {
+    throw new Error(`A2 RANK_WEIGHTS: the weights for ${key} do not sum to five`);
+  }
+  for (const voice of [FRAME_VOICE, ROW_VOICE, PILE_VOICE]) {
+    const above = optionsAbove(n, voice).length;
+    const below = optionsBelow(n).length;
+    const room = [above >= 2, above >= 1 && below >= 1, below >= 2];
+    weights.forEach((w, rank) => {
+      if (w > 0 && !room[rank]) {
+        throw new Error(`A2 RANK_WEIGHTS: a count of ${key} cannot sit at rank ${String(rank + 1)} of three`);
+      }
+    });
+  }
+}
+
+/**
+ * Give a counting item the three numbers it should have shipped with.
+ *
+ * WHY IT EXISTS. `tenFrameRead`, `countArrangement` and this file's own story
+ * form all return an `exact-numeric` answer and no `choices`, and at band A that
+ * is not a free-entry page: `AnswerEntry` hands a choice-less numeric item to
+ * `tapOptionsFor`, which INVENTS four number buttons at render time — the answer
+ * plus answer±1..3, the rank rotated by a hash of the item id and the answer. A
+ * pre-reader cannot type, so those buttons were always the real page, and no
+ * per-pack gate could see them because they never existed in the pack.
+ *
+ * The consequence is arithmetic rather than bad luck: a runtime function cannot
+ * know a slot's answer RANGE, so a slot drawing 6-10 was necessarily offered 5,
+ * 4 and 3 — numbers no draw of it can ever key. Measured over 300 packs before
+ * this repair, the certifying frame read offered "5" on 62.0% of Form B draws
+ * and keyed it on none.
+ *
+ * WHY EVERY OPTION IS A COUNT THE SLOT CAN KEY. The three numbers are drawn from
+ * 6-10, the same range the picture is drawn from, so each of them is the true
+ * answer on some other draw of the same slot and there is no value left for a
+ * child to strike out unread. That is the defect deleted rather than diluted:
+ * nothing is offered here that has to be argued down to a tolerable rate.
+ *
+ * WHICH numbers appear is decided by the draw, never authored: below the truth
+ * is a thing that never got a number, above it is a thing that got two, and on a
+ * frame the box's own ten is up there too. The rank the truth takes is drawn
+ * first, from the counts that can honestly hold it (see `RANK_WEIGHTS`), and the
+ * meaning of each wrong number is read off the VALUE rather than off the branch
+ * that produced it, so a rationale cannot drift from the number it explains.
+ *
+ * Takes no rng draw before `base` (L19) and leaves the prompt and the figure
+ * alone, so the surface signature the pack guard and QG-1 work from is unchanged
+ * — the same contract `withHints` and `notAlreadyCounted` follow. The figure
+ * keeps its `asserts: answer` clause and still passes QG-13, because the numeral
+ * the picture is drawn from stays in the accepted forms.
+ */
+function withTapChoices(base: ItemGen, voice: CountVoice): ItemGen {
+  return (rng, guard, difficulty) => {
+    const draft = base(rng, guard, difficulty);
+    const params = draft.generator?.params;
+    if (!params) {
+      throw new Error('A2 withTapChoices: the item carries no generator params to re-count from');
+    }
+    // The re-derivation QG-5 no longer performs once the answer is a choice key:
+    // the number keyed must be the number the picture is drawn from.
+    const n = Number(params.n);
+    if (!Number.isInteger(n) || String(n) !== draft.answer.value) {
+      throw new Error(
+        `A2 withTapChoices: ${draft.generator?.templateId ?? 'an item'} keyed "${draft.answer.value}", but its picture is drawn from n = ${String(params.n)}`,
+      );
+    }
+    if (n < LO || n > HI) {
+      throw new Error(
+        `A2 withTapChoices: a count of ${String(n)} fell outside ${String(LO)}-${String(HI)}, so an option would be unreachable`,
+      );
+    }
+
+    const above = optionsAbove(n, voice);
+    const below = optionsBelow(n);
+    const weights = RANK_WEIGHTS[n];
+    const t = rng.int(0, 4);
+    const rank = t < weights[0] ? 0 : t < weights[0] + weights[1] ? 1 : 2;
+    const two = (pool: number[]) => (pool.length <= 2 ? pool : rng.shuffle([...pool]).slice(0, 2));
+    const oneOf = (pool: number[]) => (pool.length === 1 ? pool[0] : rng.pick(pool));
+    const values = rank === 0 ? two(above) : rank === 2 ? two(below) : [oneOf(below), oneOf(above)];
+
+    const whyWrong = (v: number): { text: string; errorTag: ErrorTag; rationale: string } => {
+      if (voice.box && v === FRAME) {
+        return { text: String(v), errorTag: 'representation-misread', rationale: voice.box };
+      }
+      return v > n
+        ? { text: String(v), errorTag: 'procedure-slip', rationale: voice.over(v - n) }
+        : { text: String(v), errorTag: 'procedure-slip', rationale: voice.under(n - v) };
+    };
+    const { choices, correctKey } = makeChoices(rng, String(n), values.map(whyWrong));
+
+    // The rank that was dealt must be the rank the page actually shows.
+    const shown = [n, ...values].sort((a, b) => a - b);
+    if (shown.indexOf(n) !== rank || new Set(shown).size !== 3) {
+      throw new Error(
+        `A2 withTapChoices: dealt rank ${String(rank + 1)} but ${String(n)} came out at rank ${String(shown.indexOf(n) + 1)} of ${shown.join('/')}`,
+      );
+    }
+
+    const withChoices: ItemDraft = {
+      ...draft,
+      choices,
+      // `units` goes with the free-entry form it belonged to: the answer is now
+      // a tapped key, and the numeral it stands for keeps every spoken form the
+      // item already accepted ("eight", "8 shells"), which is what QG-11 and
+      // QG-13 re-derive against.
+      answer: {
+        value: correctKey,
+        acceptableForms: [String(n), ...draft.answer.acceptableForms.filter((f) => f !== String(n))],
+        validation: 'choice-key',
+      },
+    };
+    return withChoices;
+  };
+}
+
+// ===========================================================================
 // Local generator 1 — what the FRAME shows (the drawable discrimination)
 // ===========================================================================
 
@@ -295,11 +557,20 @@ function frameShows(): ItemGen {
       // unseat ("the tidy full row is the answer"). Keying it would teach the
       // very thing the week removes, so it cannot be made live by widening the
       // draw. What CAN go wrong is a child learning to strike it out, so it is
-      // offered by ONE pairing rather than two: measured at 27% of draws, below
-      // the 50% at which `bb-answer-entropy-test` calls an option dead, and below
-      // the rate at which "never the five" is learnable. The both-below pairing
-      // uses the honest miscount instead. Recorded for the orchestrator, which
-      // may prefer to add it to that script's DECLARED_LURES with this argument.
+      // offered by ONE pairing rather than two — and this is now the ONLY item in
+      // the week that offers it at all, because the certifying frame read cannot
+      // (a slot drawing 6-10 can never key five, which is the dead option
+      // disclosure 5 exists to delete rather than to argue down).
+      //
+      // MEASURED AT 37.4% OF 500 DRAWS, not the 27% this comment used to claim.
+      // The old figure counted the deliberate pairing alone — a third of draws,
+      // less the frames holding ten — and missed the draws where five arrives
+      // honestly: at a frame of six, "one counter below the row never touched" IS
+      // five, so the both-below pairing offers it too. Still below the 50% at
+      // which `bb-answer-entropy-test` calls an option dead, and below the rate
+      // at which "never the five" is learnable — but a number in a comment has to
+      // be the number a script prints. Recorded for the orchestrator, which may
+      // prefer to add it to that script's DECLARED_LURES with this argument.
       const wrongs =
         pairing === 0
           ? [missedOne, emptyBoxes] // truth is the LARGEST number offered
@@ -309,7 +580,7 @@ function frameShows(): ItemGen {
       const { choices, correctKey } = makeChoices(r, String(n), wrongs);
       // Disclosure 2: this alt describes the picture the `clockAlt` way — the
       // layout, faithfully, without stating the number being asked for.
-      const scene = `a ten-frame with a full row and ${countNoun(extra, 'counters')} below`;
+      const scene = `the big frame with a full row and ${countNoun(extra, 'counters')} below`;
       const draft: ItemDraft = {
         type: 'representation',
         prompt: scenePrompt(scene, 'Tap the number this frame shows.'),
@@ -369,7 +640,7 @@ const STORY_FRAMES: Record<'shelf' | 'basket' | 'frame', StoryFrame> = {
   frame: {
     line: (name) => `${name} drops some counters into the frame.`,
     scene: (n) => `a frame of ${String(FRAME)} with ${countNoun(n, 'counters')} in it`,
-    alt: () => `a ten-frame with some counters in it`,
+    alt: () => `the big frame with some counters in it`,
     noun: 'counters',
     arrangement: 'in a frame',
     ladder: ['The frame shows its five before it shows more.', 'Start at five and carry on up.'],
@@ -493,8 +764,10 @@ function matchAndTell(): ItemGen {
  * — which is exactly how A1's mastery slot came to key "2" on 77% of draws.
  * Measured here, not assumed: see the report's rank tables.
  */
+// CERTIFYING SLOT (mastery 02) — so it carries authored options, and the Day-1
+// page that shares this generator carries them too. See `withTapChoices`.
 const countRow = withHints(
-  countArrangement({ min: LO, max: HI, arrangement: 'in a row' }),
+  withTapChoices(countArrangement({ min: LO, max: HI, arrangement: 'in a row' }), ROW_VOICE),
   hints('Begin at one end and travel to the other.', 'Say one number for each thing you touch.'),
 );
 const countTwoRows = withHints(
@@ -502,9 +775,13 @@ const countTwoRows = withHints(
   hints('Read the top row all the way across.', 'Now carry on below without going back.'),
 );
 
-/** Read a filled frame — the week's anchor, met on Day 1. */
+/**
+ * Read a filled frame — the week's anchor, met on Day 1, and the slot that
+ * certifies it (mastery 01). Authored options, so the display layer never
+ * invents a "5" this slot cannot key; the Day-1 page carries them too.
+ */
 const frameRead = withHints(
-  tenFrameRead({ min: LO, max: HI, size: FRAME }),
+  withTapChoices(tenFrameRead({ min: LO, max: HI, size: FRAME }), FRAME_VOICE),
   hints('A full row is five, every time.', 'Carry on past five for the ones below it.'),
 );
 
@@ -562,7 +839,10 @@ const puppetSkips = withHints(
 
 const frameChoice = frameShows();
 const storyShelf = countStory('shelf');
-const storyBasket = countStory('basket');
+// CERTIFYING SLOT (mastery 06) — the one story form that certifies, so it is the
+// one that carries options; the shelf and the frame stories are Day-4 teaching
+// pages and stay as they are. The law is about the slots that promote a child.
+const storyBasket = withTapChoices(countStory('basket'), PILE_VOICE);
 const storyFrame = countStory('frame');
 const day5Match = matchAndTell();
 
@@ -669,7 +949,7 @@ export const buildA02 = makeWeekBuilder({
         { childDo: say('Say five, then count the bottom row on.'), expected: '10' },
       ], '10'),
       visual: 'A ten-frame with both rows full.',
-      figure: tenFrame(10, { alt: 'a ten-frame with both rows full', asserts: assertsAnswer }),
+      figure: tenFrame(10, { alt: 'the big frame with both rows full', asserts: assertsAnswer }),
     },
     {
       ...ge(2, 4, 'independent', scenePrompt('eight shells in a loose pile', 'How many shells?'), [
@@ -781,7 +1061,7 @@ export const buildA02 = makeWeekBuilder({
     { gen: storyBasket, diff: 3 },
   ],
   isomorphNotes:
-    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. 01: read a ten-frame holding 6-10. 02: count a row of 6-10. 03: tap the numeral for a loose pile, with the pair of miscounts rotated so the truth is not at a fixed rank. 04: numeral to set across three drawn groups. 05: which row has more, including the one-in-five draw where neither does. 06: a counting story over a tipped-out pile. Every core count draws the same 6-10 range, so the shared one-token surface guard leaves each slot a uniform marginal rather than the leftovers. No count/noun pair reused from Form A or the daily pages.',
+    'Pairs by index; same generator and difficulty per slot, fresh operands off a separate stream. Every slot is a tap: no certifying page is left as a bare numeral for the display layer to invent buttons for. 01: read a ten-frame holding 6-10, offered against three counts the slot can key - one of them the frame\'s own ten, so "the box, not its contents" is on the page as a number and is still true on the draws that fill it. 02: count a row of 6-10, offered the same way. 03: tap the numeral for a loose pile, with the pair of miscounts rotated so the truth is not at a fixed rank. 04: numeral to set across three drawn groups. 05: which row has more, including the one-in-five draw where neither does. 06: a counting story over a tipped-out pile, again offered against countable numbers only. On 01, 02 and 06 the rank the truth will hold is dealt from a weight table before the wrong numbers are chosen, because six can only be the smallest of three numbers drawn from 6-10 and ten can only be the largest. Every core count draws the same 6-10 range, so the shared one-token surface guard leaves each slot a uniform marginal rather than the leftovers. No count/noun pair reused from Form A or the daily pages.',
   mistakeBank: [
     {
       errorTag: 'representation-misread',
@@ -789,7 +1069,8 @@ export const buildA02 = makeWeekBuilder({
       description:
         'Answers a ten-frame with ten because the frame holds ten - reading the size of the box instead of counting what is in it.',
       exampleWrongAnswer: 'a frame holding 7 counters answered as 10',
-      distractorRationale: "Offer the frame's own capacity beside the true count on any frame-reading item.",
+      distractorRationale:
+        "Offer the frame's own capacity beside the true count on the frame items. It is a live number rather than a lure: measured over 1,000 certifying frame-read draws it is offered on 63.3% and is the truth on 19.6-20.6% of them, because the frame really does hold ten on a fifth of draws - so a child who taps it out of habit scores below the 33.3% a guess is worth, and a child who learns to strike it out is wrong just as often.",
       reteachPointer: 'explanation/script[1] (the full row is five, then count the rest on)',
     },
     {
@@ -798,7 +1079,8 @@ export const buildA02 = makeWeekBuilder({
       description:
         'Reads the tidy full top row as the whole answer and stops at five, instead of counting on to the loose counters below it.',
       exampleWrongAnswer: 'a frame holding 8 counters answered as 5',
-      distractorRationale: 'Offer five itself on any frame holding more than five.',
+      distractorRationale:
+        'Offer five itself on the Day-2 frame item, where it is offered on 37.4% of 500 measured draws. It is NOT offered on the frame read that certifies, and that is the honest limit of this distractor: every number on a certifying page has to be a count the page can key, and a frame drawn from 6-10 can never hold five. A number that is wrong under every draw teaches a child to strike it out rather than to count, so it stays on the teaching slot and out of the check.',
       reteachPointer: 'guidedExamples/A2-GE-01 (five, then count the two below on)',
     },
     {
@@ -807,8 +1089,19 @@ export const buildA02 = makeWeekBuilder({
       description:
         'Leaves one object out of the count, so the number lands a step short of the group. Past six the eye can no longer check the answer, so the slip goes unnoticed - which is why the puppet makes it here rather than in A1.',
       exampleWrongAnswer: 'counts 9 shells as 8',
-      distractorRationale: 'Undershoot by one and by two, so the shortfall itself has to be measured rather than spotted.',
+      distractorRationale:
+        'Undershoot by one and by two, so the shortfall itself has to be measured rather than spotted. It is on the page whenever the truth is not the smallest count its slot can draw: the frame read, the row count and the basket story all offer their below-the-truth numbers out of 6-10, so the undershoot is a number the same slot keys on another draw and can never be struck out unread.',
       reteachPointer: 'guidedExamples/A2-GE-04 (one shell first, then push each aside as it is counted)',
+    },
+    {
+      errorTag: 'procedure-slip',
+      subtype: 'counts-one-twice',
+      description:
+        'Gives one object two numbers - the finger doubles back, or nothing is set aside as it is counted, so the count runs past the last thing. Past six there is no way to check it by eye, which is why it survives here and not in A1.',
+      exampleWrongAnswer: 'counts 7 counters as 8',
+      distractorRationale:
+        'Overshoot by one and by two beside the true count, mirrored on the undershoot: offered whenever the truth is not the largest count its slot can draw. Both are drawn from 6-10, so an overshoot is always a number that slot keys on some other draw.',
+      reteachPointer: 'explanation/script[0] (one finger, one number word, all the way along)',
     },
     {
       errorTag: 'concept-misconception',
@@ -826,7 +1119,8 @@ export const buildA02 = makeWeekBuilder({
       description:
         'Counts the empty boxes when the question asks for the counters, or the counters when it asks for the gaps - the picture holds two countable things.',
       exampleWrongAnswer: 'asked how many boxes are empty in a frame of 7, answers 7',
-      distractorRationale: 'Offer the number of empty boxes beside the number of counters on frame items.',
+      distractorRationale:
+        'Offer the number of empty boxes beside the number of counters on the Day-2 frame item, and ask for the gaps outright on Day 3 so the same picture is read both ways. The certifying frame read cannot carry it: a frame holding 6-10 leaves 0-4 empty boxes, none of which that slot can ever key, so the option would be dead on arrival there.',
       reteachPointer: 'Day-3 replay: say out loud which of the two you are about to count',
     },
   ],

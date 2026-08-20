@@ -79,6 +79,7 @@ export function coinCount(coins: readonly CoinEntry[]): number {
   return coins.reduce((sum, c) => sum + c.count, 0);
 }
 
+
 /**
  * A cents amount as band B writes it: `¢` below a dollar, `$` at or above one.
  *
@@ -235,11 +236,28 @@ function verifyCoinTotal(p: Params): VerifyResult {
   return { correct: String(correct), wrong: String(wrong) };
 }
 
-/** Which of two coin piles is worth more — decided by cents, never by count. */
+/**
+ * The third card on the more-value item, named once and shared with the verify
+ * template below — the solids table in `earlynumber.ts` cost a whole battery run
+ * by being written out twice and then changed once.
+ */
+export const MORE_VALUE_SAME = 'they are worth the same';
+
+/**
+ * Which of two coin piles is worth more — decided by cents, never by count.
+ *
+ * Equal piles used to THROW here, on the reasoning that "which is worth MORE"
+ * has no answer when neither is. That was true of the contrast table as it stood
+ * and is no longer: equal pairs are now drawn deliberately, because without them
+ * "they are worth the same" was offered on every draw and could never be the
+ * answer. So the equal case is recomputed rather than refused — and the guard
+ * this replaces is not lost, it is inverted: keying a PILE on an equal pair now
+ * fails to recompute, which is the mistake actually worth catching.
+ */
 function verifyMoreValue(p: Params): VerifyResult {
   const aCents = num(p, 'aCents');
   const bCents = num(p, 'bCents');
-  if (aCents === bCents) throw new Error('money_verify_more_value_v1: the two piles are worth the same — there is no MORE to pick');
+  if (aCents === bCents) return { correct: MORE_VALUE_SAME };
   return { correct: aCents > bCents ? str(p, 'aLabel') : str(p, 'bLabel') };
 }
 
@@ -271,11 +289,20 @@ interface PurseSpec {
   maxCoins?: number;
   /** Denominations that MUST appear (a nickel, for the nickel-as-1 misconception). */
   needs?: readonly CoinCents[];
+  /**
+   * Any further condition the purse must meet. `totalChoice` uses it to demand a
+   * purse holding more nickels than dimes, which is what makes the size-over-
+   * value misconception (the nickel is bigger, so it must be worth more)
+   * OVERSHOOT the true total — the only distractor in this family that lands
+   * above the answer, and therefore the only thing standing between the item and
+   * "just tap the biggest amount".
+   */
+  where?: (coins: CoinEntry[]) => boolean;
 }
 
 /** A purse the child can count at a glance, and the picture can draw honestly. */
 function drawPurse(r: Rng, spec: PurseSpec = {}): CoinEntry[] {
-  const { min = 12, max = 95, maxCoins = 7, needs = [] } = spec;
+  const { min = 12, max = 95, maxCoins = 7, needs = [], where } = spec;
   for (let i = 0; i < 40; i++) {
     const coins = normalizeCoins([
       { cents: 25, count: r.int(0, 2) },
@@ -288,12 +315,16 @@ function drawPurse(r: Rng, spec: PurseSpec = {}): CoinEntry[] {
     if (n < 2 || n > maxCoins) continue;
     if (value < min || value > max) continue;
     if (!needs.every((d) => coins.some((c) => c.cents === d))) continue;
+    if (where && !where(coins)) continue;
     return coins;
   }
-  // Deterministic fallback — 42¢ in five coins, one of every denomination, so it
-  // satisfies every constraint this family asks for at any seed.
+  // Deterministic fallback — 47¢ in six coins, one of every denomination, so it
+  // satisfies every constraint this family asks for at any seed. It carries TWO
+  // nickels against one dime deliberately: `where` is used to demand exactly
+  // that, and a fallback that failed the caller's condition would hand back a
+  // purse whose overshoot distractor collapses onto the true total.
   return normalizeCoins([
-    { cents: 25, count: 1 }, { cents: 10, count: 1 }, { cents: 5, count: 1 }, { cents: 1, count: 2 },
+    { cents: 25, count: 1 }, { cents: 10, count: 1 }, { cents: 5, count: 2 }, { cents: 1, count: 2 },
   ]);
 }
 
@@ -604,6 +635,15 @@ const CONTRASTS: ReadonlyArray<readonly [CoinEntry, CoinEntry]> = [
   [{ cents: 10, count: 3 }, { cents: 25, count: 1 }],  // 30¢ vs 25¢ — wins again
   [{ cents: 5, count: 3 }, { cents: 10, count: 1 }],   // 15¢ vs 10¢
   [{ cents: 5, count: 1 }, { cents: 25, count: 1 }],   // 5¢ vs 25¢
+  // EQUAL PAIRS, and they are why the third card exists. Every contrast above
+  // has a winner, so "they are worth the same" was offered on 100% of draws and
+  // could never be the answer — the L38 unkeyable card, in the item whose whole
+  // lesson is that a pile of coins and a single coin are compared by VALUE. A
+  // child who has learnt to strike it has learnt the opposite of the lesson.
+  // Denominations stay disjoint, as the note above requires.
+  [{ cents: 1, count: 5 }, { cents: 5, count: 1 }],    // 5¢ vs 5¢ — equal
+  [{ cents: 5, count: 2 }, { cents: 10, count: 1 }],   // 10¢ vs 10¢ — equal
+  [{ cents: 5, count: 5 }, { cents: 25, count: 1 }],   // 25¢ vs 25¢ — equal
 ];
 
 /**
@@ -634,10 +674,17 @@ export function moreValueChoice(): ItemGen {
         const bCents = totalCents(b);
         const aLabel = coinSetAlt(a);
         const bLabel = coinSetAlt(b);
+        const SAME = MORE_VALUE_SAME;
+        const equal = aCents === bCents;
         const winner = aCents > bCents ? aLabel : bLabel;
         const loser = aCents > bCents ? bLabel : aLabel;
-        const loserHasMoreCoins = (aCents > bCents ? b : a).reduce((s, c) => s + c.count, 0)
-          > (aCents > bCents ? a : b).reduce((s, c) => s + c.count, 0);
+        const countOfPile = (pile: CoinEntry[]): number => pile.reduce((s, c) => s + c.count, 0);
+        const loserHasMoreCoins = countOfPile(aCents > bCents ? b : a) > countOfPile(aCents > bCents ? a : b);
+        /** On an equal pair, whichever pile a child picks, name why it tempted. */
+        const whyPile = (pile: CoinEntry[], other: CoinEntry[]): string =>
+          countOfPile(pile) > countOfPile(other)
+            ? 'The taller pile of coins — chosen by how many coins there are rather than by what each one is worth.'
+            : 'The single bigger-value coin — chosen without adding up the smaller coins beside it.';
         box.last = {
           coins: [...a, ...b],
           params: { aCents, bCents, aLabel, bLabel },
@@ -645,21 +692,26 @@ export function moreValueChoice(): ItemGen {
         };
         return {
           prompt: `[image: ${coinSetAlt([...a, ...b])}] Which is worth MORE: ${aLabel} or ${bLabel}?`,
-          correct: winner,
-          distractors: [
-            {
-              text: loser,
-              errorTag: 'concept-misconception' as const,
-              rationale: loserHasMoreCoins
-                ? 'The taller pile of coins — chosen by how many coins there are rather than by what each one is worth.'
-                : 'The single bigger-value coin — chosen without adding up the smaller coins beside it.',
-            },
-            {
-              text: 'they are worth the same',
-              errorTag: 'task-comprehension' as const,
-              rationale: 'Treats a pile of coins and a single coin as interchangeable without valuing either.',
-            },
-          ],
+          correct: equal ? SAME : winner,
+          distractors: equal
+            ? [
+              { text: aLabel, errorTag: 'concept-misconception' as const, rationale: whyPile(a, b) },
+              { text: bLabel, errorTag: 'concept-misconception' as const, rationale: whyPile(b, a) },
+            ]
+            : [
+              {
+                text: loser,
+                errorTag: 'concept-misconception' as const,
+                rationale: loserHasMoreCoins
+                  ? 'The taller pile of coins — chosen by how many coins there are rather than by what each one is worth.'
+                  : 'The single bigger-value coin — chosen without adding up the smaller coins beside it.',
+              },
+              {
+                text: SAME,
+                errorTag: 'task-comprehension' as const,
+                rationale: 'Treats a pile of coins and a single coin as interchangeable without valuing either.',
+              },
+            ],
           hints: [
             'Does a pile with more coins in it always hold more money?',
             'Work out what each pile is worth in cents, then compare those two amounts.',
@@ -689,16 +741,48 @@ export function totalChoice(): ItemGen {
       variant: 'structural',
       cognitiveOp: 'count-coins',
       draw: (r) => {
-        const coins = drawPurse(r, { min: 16, max: 95, needs: [5] });
+        // WHERE THE TRUE TOTAL SITS AMONG THE CARDS IS DRAWN, NOT INHERITED.
+        // Both distractors this item shipped with — the coin COUNT, and the
+        // nickel counted as one — are necessarily BELOW the true total, so "tap
+        // the biggest amount" keyed 3000 of 3000 draws against a 33% baseline
+        // and the smallest card was never the answer. The fix is the standing
+        // one: draw the outcome first. On half the draws the item now also
+        // offers the size-over-value misconception (the nickel is physically
+        // bigger than the dime, so a child decides it is worth more and swaps
+        // their values) — which OVERSHOOTS whenever the purse holds more
+        // nickels than dimes, and `where` makes sure it does.
+        const swapNickelDime = (c: readonly CoinEntry[]): number =>
+          c.reduce((sum, e) => sum + (e.cents === 5 ? 10 : e.cents === 10 ? 5 : e.cents) * e.count, 0);
+        const everyCoinATen = (c: readonly CoinEntry[]): number => 10 * coinCount(c);
+        /** Where the truth should land among the three cards. Drawn, then built. */
+        const want = r.pick(['highest', 'middle', 'lowest'] as const);
+        const overshoots = (c: CoinEntry[]): boolean => swapNickelDime(c) > totalCents(c);
+        const coins = drawPurse(r, {
+          min: 16,
+          max: 95,
+          needs: [5],
+          where:
+            want === 'highest'
+              ? undefined
+              : want === 'middle'
+                ? overshoots
+                : (c) => overshoots(c) && everyCoinATen(c) > totalCents(c) && everyCoinATen(c) !== swapNickelDime(c),
+        });
         box.last = { coins, seed: r.uint() };
         const total = totalCents(coins);
         const nickelAsOne = coins.reduce((sum, c) => sum + (c.cents === 5 ? 1 : c.cents) * c.count, 0);
         const seen = new Set<number>([total]);
         const distractors: Array<{ text: string; errorTag: ErrorTag; rationale: string }> = [];
-        for (const [value, errorTag, rationale] of [
-          [coinCount(coins), 'concept-misconception', 'The number of coins in the picture, answered in place of what they are worth.'],
-          [nickelAsOne, 'concept-misconception', 'Every coin given its value except the nickel, which was counted as one.'],
-        ] as const) {
+        const BELOW_COUNT = [coinCount(coins), 'concept-misconception', 'The number of coins in the picture, answered in place of what they are worth.'] as const;
+        const BELOW_NICKEL = [nickelAsOne, 'concept-misconception', 'Every coin given its value except the nickel, which was counted as one.'] as const;
+        const ABOVE_SIZE = [swapNickelDime(coins), 'concept-misconception', 'The nickel and the dime swapped, because the nickel is the bigger coin.'] as const;
+        const ABOVE_ALL_TENS = [everyCoinATen(coins), 'procedure-slip', 'Every coin skip-counted by ten, whatever it actually is.'] as const;
+        const pool = want === 'highest'
+          ? [BELOW_COUNT, BELOW_NICKEL]
+          : want === 'middle'
+            ? [ABOVE_SIZE, BELOW_NICKEL]
+            : [ABOVE_SIZE, ABOVE_ALL_TENS];
+        for (const [value, errorTag, rationale] of pool) {
           if (seen.has(value)) continue;
           seen.add(value);
           distractors.push({ text: centsLabel(value), errorTag, rationale });

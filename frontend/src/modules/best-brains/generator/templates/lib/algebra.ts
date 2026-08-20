@@ -398,11 +398,12 @@ function verifyPowerSwap(p: Params): VerifyResult {
   const exp = num(p, 'exp');
   const here = powerValue(base, exp);
   const swapped = powerValue(exp, base);
-  if (here === swapped) {
-    throw new Error(
-      `e_alg_verify_power_swap_v1: ${power(base, exp)} and ${power(exp, base)} are equal — the swap has nothing to decide`,
-    );
-  }
+  // An equal pair is RECOMPUTED, not refused. It used to throw, on the reasoning
+  // that the swap has nothing to decide — true of the pair list as it then
+  // stood, and no longer: 2^4 against 4^2 is drawn deliberately. The guard is
+  // not lost, it is inverted, which is the useful direction — keying a POWER on
+  // an equal pair now fails to recompute.
+  if (here === swapped) return { correct: POWER_SWAP_SAME };
   return { correct: here > swapped ? power(base, exp) : power(exp, base), wrong: String(Math.min(here, swapped)) };
 }
 
@@ -429,6 +430,41 @@ function verifyDistribute(p: Params): VerifyResult {
   if (correct === wrong) {
     throw new Error(
       `e_alg_verify_distribute_v1: a=${a}, b=${b} leaves the two expressions equal — a multiplier of one distributes to nothing`,
+    );
+  }
+  return { correct: String(correct), wrong: String(wrong) };
+}
+
+/**
+ * `3 more than twice n` written `2(n + 3)` — a bracket the words never asked
+ * for (E11's named slip, and the exact mirror of `verifyDistribute` above).
+ *
+ * BOTH DIRECTIONS HAVE TO EXIST, because they are different children's
+ * mistakes on different weeks. E12's child is handed the FACTORED form and
+ * expands it short. E11's is handed the WORDS and reaches for a grouping
+ * nothing in them spoke. Only E12's direction was registered, so E11's recipe
+ * cell appeared to have no template at all — which is how the previous two
+ * weeks' error-analyses came to be relocated.
+ *
+ * This one the library CAN express, and it is worth being exact about why: the
+ * slip changes how far the multiplication REACHES over a fixed ordered pair,
+ * which is an operation-shaped change. The open gap is narrower than "the
+ * verify library cannot express E11's slip" — it is that no template can swap
+ * the two OPERANDS (E4's inverted fraction, E5's LCM), and that gap is
+ * untouched by this.
+ *
+ * Guard rather than nudge: `a·x + b` and `a·(x + b)` differ by `b(a − 1)`, so
+ * they coincide exactly when `a = 1` (or `b = 0`), and the throw names it.
+ */
+function verifyMisgroup(p: Params): VerifyResult {
+  const a = num(p, 'a');
+  const b = num(p, 'b');
+  const x = num(p, 'x');
+  const correct = linearValue(a, x, b);
+  const wrong = factoredValue(a, x, b);
+  if (correct === wrong) {
+    throw new Error(
+      `e_alg_verify_misgroup_v1: a=${a}, b=${b} leaves the two expressions equal — the bracket only bites when the multiplier is above one and the extra is non-zero`,
     );
   }
   return { correct: String(correct), wrong: String(wrong) };
@@ -545,10 +581,38 @@ const POWER_PAIRS = [
  * absent because 2^4 and 4^2 are both sixteen — the only swap in reach that has
  * no larger side.
  */
-const SWAP_PAIRS = [
-  [2, 3], [3, 2], [2, 5], [5, 2], [2, 6], [6, 2],
-  [3, 4], [4, 3], [3, 5], [5, 3],
-] as const;
+/**
+ * 2^4 = 4^2 = 16 IS IN HERE, and it has to be.
+ *
+ * The list used to hold only pairs where the swap changes the value, and
+ * `verifyPowerSwap` threw on an equal pair — so "they are equal" was offered on
+ * every draw of `powerBaseSwapTrap` and could never be the answer. That is the
+ * L38 unkeyable card, in the item whose lesson is that a power is NOT a product
+ * and its two numbers do NOT trade places freely. A child who learns to strike
+ * that card has learnt the opposite of the point.
+ *
+ * (2,4) is the only non-trivial pair of positive integers with a^b = b^a, which
+ * makes it exactly the right thing to meet as a surprise rather than to be told:
+ * the swap usually changes the value, and here is the one place it does not.
+ */
+/**
+ * THREE POOLS, BECAUSE THE ARITHMETIC HAS THREE CASES AND ONLY ONE WAS COMMON.
+ *
+ * Among distinct whole numbers above one, a^b > b^a for EVERY pair except
+ * {2,3} — so on a flat draw the card with the bigger exponent won almost
+ * always, and "take the one with the bigger exponent" keyed 54.9% of 3,000
+ * draws against a 33.3% baseline (E10's author measured 49.4%; mine is worse).
+ * The exception and the equal pair are what make the item honest, so they are
+ * drawn as often as the ordinary case rather than being rarities.
+ */
+const SWAP_ORDINARY_PAIRS: ReadonlyArray<readonly [number, number]> = [
+  [2, 5], [5, 2], [2, 6], [6, 2], [3, 4], [4, 3], [3, 5], [5, 3],
+];
+/** 2^3 = 8 < 9 = 3^2 — the one pair where the SMALLER exponent wins. */
+const SWAP_EXCEPTION_PAIRS: ReadonlyArray<readonly [number, number]> = [[2, 3], [3, 2]];
+const SWAP_EQUAL_PAIRS: ReadonlyArray<readonly [number, number]> = [[2, 4], [4, 2]];
+/** "they are equal", named once and shared with the verify below. */
+const POWER_SWAP_SAME = 'they are equal';
 
 /** Things that multiply themselves each period — the honest home of a power. */
 const GROWTHS = [
@@ -685,22 +749,54 @@ export function groupingToTarget(): ItemGen {
       const exp = r.pick([2, 2, 3]);
       const a = r.int(2, exp === 2 ? 7 : 4);
       const b = r.int(2, exp === 2 ? 7 : 4);
-      const truth = verifyGrouping({ a, b, exp });
+      // WHICH READING THE TARGET NAMES IS DRAWN. The target used to be the
+      // GROUPED value on every draw, and that handed over the answer twice
+      // without any arithmetic: the key was the only card carrying a bracket on
+      // 100.0% of 3,000 draws, and — because gathering a sum before raising it
+      // always beats raising the parts — it was also the largest-valued card on
+      // 100.0%. Two independent free strategies, on the item that teaches what a
+      // grouping is worth.
+      //
+      // The guessability census called this generator CLEAN, and was right by
+      // its own lights: the key TEXT varies every draw so card-identity is low,
+      // and three expressions are not rankable so no rank check runs. "Carries a
+      // bracket" is a STRUCTURAL surface, and the census does not model those.
+      // Found by E10's author refusing to serve the item.
+      //
+      // The three readings stay exactly as they were; only the target rotates,
+      // so the key lands on each in turn. The three values cannot collide: the
+      // grouped reading exceeds the spread one by 2ab, and the spread exceeds
+      // the second-only one whenever a > 1, which the draw guarantees.
+      verifyGrouping({ a, b, exp });
+      const READINGS = [
+        {
+          text: `(${fmtInt(a)} + ${fmtInt(b)})^${fmtInt(exp)}`,
+          value: powerValue(a + b, exp),
+          errorTag: 'concept-misconception' as const,
+          rationale: 'Gathers the two numbers into one amount before the power acts — which is what a bracket asks for, and what this expression does not.',
+        },
+        {
+          text: `${fmtInt(a)} + ${power(b, exp)}`,
+          value: a + powerValue(b, exp),
+          errorTag: 'procedure-slip' as const,
+          rationale: 'Lets the exponent act on the second number alone, so the sum is never gathered before the power is taken.',
+        },
+        {
+          text: `${power(a, exp)} + ${power(b, exp)}`,
+          value: powerValue(a, exp) + powerValue(b, exp),
+          errorTag: 'concept-misconception' as const,
+          rationale: 'Spreads the exponent across a sum, which a power does not do — only a whole grouped amount can be raised.',
+        },
+      ];
+      const wanted = r.int(0, 2);
       return {
-        prompt: `Which expression has the value ${truth.correct}?`,
-        correct: `(${fmtInt(a)} + ${fmtInt(b)})^${fmtInt(exp)}`,
-        distractors: [
-          {
-            text: `${fmtInt(a)} + ${power(b, exp)}`,
-            errorTag: 'procedure-slip',
-            rationale: 'Lets the exponent act on the second number alone, so the sum is never gathered before the power is taken.',
-          },
-          {
-            text: `${power(a, exp)} + ${power(b, exp)}`,
-            errorTag: 'concept-misconception',
-            rationale: 'Spreads the exponent across a sum, which a power does not do — only a whole grouped amount can be raised.',
-          },
-        ],
+        prompt: `Which expression has the value ${fmtInt(READINGS[wanted].value)}?`,
+        correct: READINGS[wanted].text,
+        distractors: READINGS.filter((_, i) => i !== wanted).map((x) => ({
+          text: x.text,
+          errorTag: x.errorTag,
+          rationale: x.rationale,
+        })),
         hints: [
           'What has to be gathered into one amount before a power can act on it?',
           'Read the brackets as a fence: whatever sits inside is settled into a single number first.',
@@ -717,24 +813,35 @@ export function powerBaseSwapTrap(): ItemGen {
     variant: 'structural',
     cognitiveOp: 'alg-power',
     draw: (r) => {
-      const [base, exp] = r.pick(SWAP_PAIRS);
+      // The OUTCOME is drawn first, then a pair built to match, so all three
+      // cards are reachable in equal thirds rather than two of them in halves.
+      const shape = r.pick(['equal', 'smaller-exponent-wins', 'ordinary'] as const);
+      const [base, exp] = r.pick(
+        shape === 'equal' ? SWAP_EQUAL_PAIRS
+          : shape === 'smaller-exponent-wins' ? SWAP_EXCEPTION_PAIRS
+            : SWAP_ORDINARY_PAIRS,
+      );
       const truth = verifyPowerSwap({ base, exp });
+      const SAME = {
+        text: POWER_SWAP_SAME,
+        errorTag: 'representation-misread' as const,
+        rationale: 'Reads both as "these two numbers combined", which loses the difference between what is repeated and how often.',
+      };
+      const SWAPPED = (text: string) => ({
+        text,
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Treats the two numbers as a pair that can trade places, as if a power behaved like a product.',
+      });
       const other = truth.correct === power(base, exp) ? power(exp, base) : power(base, exp);
       return {
         prompt: `Which is larger, ${power(base, exp)} or ${power(exp, base)}?`,
         correct: truth.correct,
-        distractors: [
-          {
-            text: other,
-            errorTag: 'concept-misconception',
-            rationale: 'Treats the two numbers as a pair that can trade places, as if a power behaved like a product.',
-          },
-          {
-            text: 'they are equal',
-            errorTag: 'representation-misread',
-            rationale: 'Reads both as "these two numbers combined", which loses the difference between what is repeated and how often.',
-          },
-        ],
+        // Derived from the truth, never listed beside it — the rule five
+        // generators in this library learned once a previously-impossible card
+        // became reachable.
+        distractors: truth.correct === POWER_SWAP_SAME
+          ? [SWAPPED(power(base, exp)), SWAPPED(power(exp, base))]
+          : [SWAPPED(other), SAME],
         hints: [
           'Which of the two numbers in a power says WHAT is repeated, and which says HOW OFTEN?',
           'Write each one out as its full line of factors and compare the two lines.',
@@ -798,8 +905,17 @@ export function evaluateAtX(): ItemGen {
 
 /**
  * Which expression means what the words say — `an + b` vs `a(n + b)` vs the
- * swapped roles (E11's "2n vs n² vs n+2" family, and the phrase its named EA
- * mistranslates as `2(n + 3)`).
+ * swapped roles: the phrase E11's named error-analysis mistranslates as
+ * `2(n + 3)`.
+ *
+ * THIS IS NOT E11's RECIPE DISCRIMINATION, and an earlier version of this
+ * comment said it was ("E11's 2n vs n² vs n+2 family"). It is not that: this
+ * item is about GROUPING and ROLE-SWAP over one shape, whereas the recipe's
+ * discrimination is about three shapes that GROW differently. Nothing in `lib/`
+ * builds the latter, so the week builds it locally — and it has to be built
+ * carefully, because for every n ≥ 3 the order n² > 2n > n+2 is fixed, which
+ * makes "pick the squared one" a free 100% on any which-is-biggest page. The
+ * distinction only bites at n ∈ {0, 1, 2}, which is also the whole point.
  */
 export function expressionMeaningTrap(): ItemGen {
   return discrimination({
@@ -809,21 +925,78 @@ export function expressionMeaningTrap(): ItemGen {
       const a = r.int(2, 9);
       // b ≠ a, so the swapped-roles option is a genuinely different expression.
       const b = a + r.int(1, 6);
+      // WHICH PHRASE IS ASKED IS DRAWN. The un-bracketed reading was the answer
+      // on every draw, so `a(n + b)` — the only card carrying a bracket — could
+      // never be keyed: "strike the bracketed one" turned a three-way item into
+      // a coin toss, on 100% of draws, without reading the phrase. Found by the
+      // census's structural-surface check (b5fad96), which exists because
+      // `groupingToTarget` hid the same shape from every other check here.
+      //
+      // The three expressions are unchanged; only the phrase rotates, so each is
+      // the answer in turn and the bracket says nothing. Each rationale
+      // describes what its OWN card does, which stays true whichever is keyed.
+      const AN_PLUS_B = {
+        text: linearExpr(a, b, 'n'),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Scales the number and then adds the extra on, so the extra is never scaled.',
+      };
+      const A_TIMES_SUM = {
+        text: factoredExpr(a, b, 'n'),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Gathers the number and the extra together before scaling, so the multiplier reaches the extra as well.',
+      };
+      const BN_PLUS_A = {
+        text: linearExpr(b, a, 'n'),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Swaps the two numbers, so the one that scales and the one that is added trade places.',
+      };
+      // AND WHICH NUMERAL THE PHRASE SPEAKS FIRST IS DRAWN TOO, INDEPENDENTLY.
+      // Rotating `wanted` alone fixed the bracket surface and left a second one
+      // the census cannot see, because it compares cards to CARDS and never the
+      // PROMPT to the cards. Every card carries the same two numerals, so their
+      // ORDER is a correspondence a child can read without any algebra — and
+      // with one phrasing per reading, two of the three phrases ran (a, b) and
+      // only one ran (b, a). Measured over 3,000 draws: "pick the card whose
+      // numbers run in the opposite order to the phrase" scored 50.6% against a
+      // 33.3% chance, and its mirror sat at 16.5%, so striking that card paid as
+      // well. Both directions are exploitable; see the census's own SURF note.
+      //
+      // Each reading therefore ships BOTH numeral orders, and the order is drawn
+      // independently of which reading is keyed. That makes the phrase's order
+      // carry no information about the key, by construction rather than by
+      // nudge: whichever expression is wanted, the phrase runs (a, b) half the
+      // time and (b, a) half the time, so every correspondence strategy above
+      // settles at exactly 1/3. The bracket rotation from `5314cbe` is untouched
+      // — `wanted` still keys each expression a third of the time.
+      const READINGS = [
+        {
+          // `an + b` — scale first, then add on.
+          ab: `${fmtInt(a)} times a number n, increased by ${fmtInt(b)}`,
+          ba: `${fmtInt(b)} more than ${fmtInt(a)} times a number n`,
+          correct: AN_PLUS_B,
+        },
+        {
+          // `a(n + b)` — gather first, then scale.
+          ab: `${fmtInt(a)} times the sum of a number n and ${fmtInt(b)}`,
+          ba: `the sum of a number n and ${fmtInt(b)}, multiplied by ${fmtInt(a)}`,
+          correct: A_TIMES_SUM,
+        },
+        {
+          // `bn + a` — the same shape as the first, with the roles traded.
+          ab: `${fmtInt(a)} more than ${fmtInt(b)} times a number n`,
+          ba: `${fmtInt(b)} times a number n, increased by ${fmtInt(a)}`,
+          correct: BN_PLUS_A,
+        },
+      ];
+      const wanted = r.int(0, 2);
+      const pick = READINGS[wanted];
+      const phrase = r.int(0, 1) === 0 ? pick.ab : pick.ba;
       return {
-        prompt: `Which expression means "${fmtInt(b)} more than ${fmtInt(a)} times a number n"?`,
-        correct: linearExpr(a, b, 'n'),
-        distractors: [
-          {
-            text: factoredExpr(a, b, 'n'),
-            errorTag: 'concept-misconception',
-            rationale: 'Gathers the number and the extra together before scaling, so the multiplier reaches the extra as well.',
-          },
-          {
-            text: linearExpr(b, a, 'n'),
-            errorTag: 'representation-misread',
-            rationale: 'Swaps the two numbers, so the one that scales and the one that is added trade places.',
-          },
-        ],
+        prompt: `Which expression means "${phrase}"?`,
+        correct: pick.correct.text,
+        distractors: [AN_PLUS_B, A_TIMES_SUM, BN_PLUS_A]
+          .filter((c) => c.text !== pick.correct.text)
+          .map((c) => ({ text: c.text, errorTag: c.errorTag, rationale: c.rationale })),
         hints: [
           'Which happens to the number first — the scaling, or the extra being added on?',
           'Read the phrase from the inside out and build the expression in that same order.',
@@ -1506,6 +1679,8 @@ export const ALGEBRA_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
   { id: 'e_alg_verify_grouping_v1', verifyFor: verifyGrouping },
   /** `2(x + 3) = 2x + 3` — the multiplier reaching only the first term. */
   { id: 'e_alg_verify_distribute_v1', verifyFor: verifyDistribute },
+  /** `3 more than twice n` written `2(n + 3)` — its mirror, and E11's slip. */
+  { id: 'e_alg_verify_misgroup_v1', verifyFor: verifyMisgroup },
   /** Adding to both sides where the equation asks for a subtraction. */
   { id: 'e_alg_verify_inverse_v1', verifyFor: verifyInverse },
   /** The inequality symbol flipped while adding. */
