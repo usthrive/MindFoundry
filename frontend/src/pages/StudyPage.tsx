@@ -30,6 +30,9 @@ import ScratchPadOverlay from '@/components/worksheet/ScratchPadOverlay'
 import type { Stroke } from '@/components/ui/ScratchPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { ConceptIntroModal } from '@/components/concept-intro'
+import { TimesTableCard, recitationFor } from '@/components/tables/TimesTableCard'
+import { AudioButton } from '@/components/homework/AudioButton'
+import { getTimesTableSupport } from '@/services/generators/elementary-advanced/level-c'
 import ConceptRoadmap from '@/components/parent/ConceptRoadmap'
 import FocusModeInstructions from '@/components/parent/FocusModeInstructions'
 import { VideoPlayerModal, VideoSuggestionBanner } from '@/components/video'
@@ -383,6 +386,53 @@ export default function StudyPage() {
   // Which problem the child is on inside the worksheet grid — drives the algebra keys.
   const [activeWorksheetProblem, setActiveWorksheetProblem] = useState<Problem | null>(null)
 
+  // THE TIMES TABLE, WHERE HE CAN LOOK AT IT.
+  //
+  // Until now the only help on a table sheet arrived after two wrong answers, and
+  // all of it taught him to work the fact out rather than to know it. A child who
+  // is stuck and knows he is stuck should be able to look, at once, without
+  // failing twice to earn it — and what he looks up is recorded, so "answered with
+  // the table open" and "knows it" stay different facts.
+  const [showTable, setShowTable] = useState(false)
+  const [tableCheckedThisProblem, setTableCheckedThisProblem] = useState(false)
+
+  /**
+   * Which table this sheet drills and how much of it he may still see, read from
+   * the curriculum itself rather than restated here — a card showing the ×4 row
+   * over a sheet asking ×5 would be worse than no card at all.
+   */
+  const tableSupport = currentLevel === 'C' ? getTimesTableSupport(currentWorksheet) : null
+
+  /** The fact in front of him right now, in either display mode. */
+  const askedFact = (() => {
+    if (!tableSupport) return null
+    const problem = activeWorksheetProblem ?? currentProblem
+    const operands = problem?.operands
+    if (!problem || problem.type !== 'multiplication' || !operands || operands.length < 2) return null
+    const [table, multiplier] = operands
+    return tableSupport.tables.includes(table) ? { table, multiplier } : null
+  })()
+
+  // A new sheet decides for itself how open the table starts: on the sheets where
+  // the table IS the exercise, hiding it would be theatre.
+  useEffect(() => {
+    setShowTable(tableSupport?.support === 'open')
+    setTableCheckedThisProblem(false)
+  }, [currentLevel, currentWorksheet, tableSupport?.support])
+
+  // A new question is a new ask.
+  useEffect(() => {
+    setTableCheckedThisProblem(false)
+  }, [currentProblem?.id, activeWorksheetProblem?.id])
+
+  // On the "recall it" sheets the card steps back out of the way by itself, so
+  // checking one fact does not turn into working the page off the table.
+  useEffect(() => {
+    if (!showTable || tableSupport?.support !== 'tap') return
+    const t = setTimeout(() => setShowTable(false), 12000)
+    return () => clearTimeout(t)
+  }, [showTable, tableSupport?.support, askedFact?.table, askedFact?.multiplier])
+
   const supportsAlgebraKeys = () => {
     // From Level G every answer is an expression ("(3x + 5)(x + 3)", "y = 5x + 2"),
     // which a digits-only pad cannot produce at all.
@@ -520,7 +570,11 @@ export default function StudyPage() {
             } else if (!persistedSession.worksheetPageState) {
               // Only generate new problem if we don't have worksheetPageState
               console.log('📂 No persisted state, generating new problem')
-              setCurrentProblem(generateProblem(persistedSession.level, persistedSession.worksheet))
+              // THE POSITION IS PART OF THE QUESTION. A times table walks 1..10
+              // across its worksheet, so a problem generated without its index is
+              // pinned to the same fact every time — a ×2 sheet asked "2 × 1" ten
+              // times over. Every call here passes where in the worksheet we are.
+              setCurrentProblem(generateProblem(persistedSession.level, persistedSession.worksheet, persistedSession.problemsCompleted))
             }
           } catch (error) {
             console.error('Error restoring/generating problem during restore:', error)
@@ -543,13 +597,13 @@ export default function StudyPage() {
           setCurrentWorksheet(position.worksheet)
 
           try {
-            setCurrentProblem(generateProblem(position.level, position.worksheet))
+            setCurrentProblem(generateProblem(position.level, position.worksheet, 0))
           } catch (error) {
             console.error('Error generating problem for level', position.level, error)
             // Fallback to level 3A if current level fails
             setCurrentLevel('3A')
             setCurrentWorksheet(1)
-            setCurrentProblem(generateProblem('3A', 1))
+            setCurrentProblem(generateProblem('3A', 1, 0))
           }
         } else {
           // Default to child's current_level and current_worksheet
@@ -559,13 +613,13 @@ export default function StudyPage() {
           try {
             setCurrentLevel(level)
             setCurrentWorksheet(worksheet)
-            setCurrentProblem(generateProblem(level, worksheet))
+            setCurrentProblem(generateProblem(level, worksheet, 0))
           } catch (error) {
             console.error('Error generating problem for level', level, error)
             // Fallback to level 3A if current level fails
             setCurrentLevel('3A')
             setCurrentWorksheet(1)
-            setCurrentProblem(generateProblem('3A', 1))
+            setCurrentProblem(generateProblem('3A', 1, 0))
           }
         }
 
@@ -808,7 +862,8 @@ export default function StudyPage() {
       {
         attemptsCount: attemptCount + 1,
         firstAttemptCorrect: attemptCount === 0,
-        hintLevelReached: currentHintLevel
+        hintLevelReached: currentHintLevel,
+        tableChecked: tableCheckedThisProblem
       }
     )
 
@@ -838,7 +893,7 @@ export default function StudyPage() {
 
       // Brief pause before next problem
       setTimeout(() => {
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted))
         setSessionStartTime(Date.now())
         setFeedback({ ...feedback, show: false })
       }, 1000)
@@ -864,7 +919,7 @@ export default function StudyPage() {
 
       // Longer pause for incorrect to learn
       setTimeout(() => {
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted))
         setFeedback({ ...feedback, show: false })
         setSessionStartTime(Date.now())
       }, 2000)
@@ -941,7 +996,8 @@ export default function StudyPage() {
       {
         attemptsCount: attemptCount + 1,
         firstAttemptCorrect: attemptCount === 0,
-        hintLevelReached: currentHintLevel
+        hintLevelReached: currentHintLevel,
+        tableChecked: tableCheckedThisProblem
       }
     )
 
@@ -989,7 +1045,7 @@ export default function StudyPage() {
         setSequenceAnswers({})
         setAttemptCount(0)  // Reset attempt count for new problem
         setCurrentHintLevel(null)
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted))
         setSessionStartTime(Date.now())
         setFeedback({ ...feedback, show: false })
       }, 300)
@@ -1075,7 +1131,7 @@ export default function StudyPage() {
     setTimeout(() => {
       setInputValue('')
       setSequenceAnswers({})
-      setCurrentProblem(generateProblem(currentLevel, currentWorksheet))
+      setCurrentProblem(generateProblem(currentLevel, currentWorksheet, problemsCompleted + 1))
       setSessionStartTime(Date.now())
     }, 500)
   }
@@ -1806,19 +1862,54 @@ export default function StudyPage() {
               worksheetNumber={currentWorksheet}
               label={getWorksheetLabel(currentLevel, currentWorksheet)}
             />
-            {getActiveConceptsForWorksheet(currentLevel, currentWorksheet).length > 0 && (
-              <button
-                type="button"
-                onClick={handleReplayConceptIntro}
-                className="shrink-0 mt-1 px-3 py-2 rounded-xl bg-white border-2 border-primary/30
-                           text-primary text-sm font-semibold shadow-sm active:scale-95
-                           hover:bg-primary-50 touch-manipulation"
-                title="Show me how this works again"
-              >
-                💡 Show me how
-              </button>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Checking the table is studying. It costs one tap, needs no wrong
+                  answer first, and is never framed as needing help. */}
+              {tableSupport && (
+                <button
+                  type="button"
+                  onClick={() => setShowTable((open) => !open)}
+                  className="shrink-0 mt-1 px-3 py-2 rounded-xl bg-white border-2 border-amber-300
+                             text-amber-700 text-sm font-semibold shadow-sm active:scale-95
+                             hover:bg-amber-50 touch-manipulation"
+                  title="Look at the times table"
+                >
+                  {showTable ? '📋 Hide the table' : '📋 Check the table'}
+                </button>
+              )}
+              {getActiveConceptsForWorksheet(currentLevel, currentWorksheet).length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleReplayConceptIntro}
+                  className="shrink-0 mt-1 px-3 py-2 rounded-xl bg-white border-2 border-primary/30
+                             text-primary text-sm font-semibold shadow-sm active:scale-95
+                             hover:bg-primary-50 touch-manipulation"
+                  title="Show me how this works again"
+                >
+                  💡 Show me how
+                </button>
+              )}
+            </div>
           </div>
+
+          {tableSupport && showTable && (
+            <div className="mt-3">
+              <TimesTableCard
+                tables={tableSupport.tables}
+                support={tableSupport.support}
+                current={askedFact}
+                onReveal={() => setTableCheckedThisProblem(true)}
+                onClose={() => setShowTable(false)}
+                audio={
+                  <AudioButton
+                    text={recitationFor(tableSupport.tables)}
+                    size="small"
+                    label="Say it with me"
+                  />
+                }
+              />
+            </div>
+          )}
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <EnhancedTimerDisplay

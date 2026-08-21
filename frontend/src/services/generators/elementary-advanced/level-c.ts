@@ -1,5 +1,5 @@
 import type { Problem, LevelCProblemType } from '../types'
-import { randomInt, generateId } from '../utils'
+import { randomInt, generateId, gcd } from '../utils'
 import { generateAdditionHints, generateSubtractionHints, generateMultiplicationHints, generateDivisionHints, generateMissingFactorHints } from '../hintGenerator'
 
 /**
@@ -92,6 +92,43 @@ function getWorksheetConfig(worksheet: number): {
   return { type: 'division_3digit_by_1digit', maxDivisor: 9, allowRemainder: true }
 }
 
+/**
+ * What a times-table sheet drills, and how much of the table the child may still
+ * see while working it.
+ *
+ * WHY THIS IS DERIVED AND NOT DECLARED: the table card is a second thing that has
+ * to know which table a sheet is about, and a second copy of the sheet map would
+ * eventually disagree with the first — a card showing the ×4 row over a sheet
+ * asking ×5 is worse than no card at all. So it reads the same config the
+ * questions are built from, and the test asserts the two agree sheet by sheet.
+ *
+ * The support level follows the beat, because that IS the instructor's judgement
+ * about withdrawal, and it belongs with the curriculum rather than in a component:
+ *
+ *   ordered  → open    the sheet IS the table; hiding it would be theatre
+ *   random   → tap     one tap to check, then it steps back out of the way
+ *   covered  → covered the row is there for its shape and rhythm, the answers
+ *                      are not; a specific fact costs a deliberate tap
+ */
+export type TableSupportLevel = 'open' | 'tap' | 'covered'
+
+export interface TimesTableSupport {
+  tables: number[]
+  beat: Presentation
+  support: TableSupportLevel
+}
+
+export function getTimesTableSupport(worksheet: number): TimesTableSupport | null {
+  const config = getWorksheetConfig(worksheet)
+  if (!config.tables || !config.presentation) return null
+  const beat = config.presentation
+  return {
+    tables: config.tables,
+    beat,
+    support: beat === 'ordered' ? 'open' : beat === 'random' ? 'tap' : 'covered',
+  }
+}
+
 function generateReviewProblem(): Problem {
   const isAddition = Math.random() < 0.5
   const a = randomInt(100, 999)
@@ -132,6 +169,19 @@ function generateReviewProblem(): Problem {
   }
 }
 
+/**
+ * A step size that visits every fact in a pool of this size exactly once.
+ *
+ * Any number coprime with the pool does that; 7 works for every pool the tables
+ * actually produce (20, 40, 60, 80), and the fallbacks keep the walk honest if a
+ * future table group makes 7 share a factor. Returning 1 would still be a full
+ * walk — just in order — so there is no size at which this quietly repeats.
+ */
+function strideFor(pool: number): number {
+  for (const s of [7, 3, 11, 13, 9]) if (gcd(s, pool) === 1) return s
+  return 1
+}
+
 /** Which of the four table groups a set of tables belongs to. */
 function tableSubtype(tables: number[]): LevelCProblemType {
   const highest = Math.max(...tables)
@@ -165,7 +215,6 @@ function generateTimesTableProblem(
   /** Worksheet number — varies the scramble so consecutive sheets differ. */
   seed = 0
 ): Problem {
-  const table = tables.length === 1 ? tables[0] : tables[randomInt(0, tables.length - 1)]
   // Tables run to ×10 — 7 × 10 is a table fact and was previously never asked.
   //
   // On a single-table sheet the ten questions should be the ten facts, each once.
@@ -174,11 +223,33 @@ function generateTimesTableProblem(
   // shares no factor with 10 — walks all ten in a scrambled order, and starting the
   // walk at a different place on each sheet keeps consecutive sheets from matching.
   const scrambled = (i: number, offset: number) => ((i * 7 + offset) % 10) + 1
-  const multiplier = presentation === 'ordered'
-    ? ((index ?? 0) % 10) + 1
-    : presentation === 'random'
-      ? scrambled(index ?? 0, seed)
-      : randomInt(1, 10)
+  const i = index ?? 0
+
+  let table: number
+  let multiplier: number
+
+  if (presentation === 'mixed') {
+    // A MIXED SHEET WALKS THE WHOLE POOL, for the same reason a single-table sheet
+    // walks its ten facts — and it was left drawing at random with replacement long
+    // after the single-table case was fixed. A child working C29 was shown 3 × 7
+    // three times in one worksheet while other facts went unasked; the sheet whose
+    // whole job is to prove every table has been retained was testing eight of them.
+    //
+    // The pool is every fact of every table learned so far (four tables → forty
+    // facts). Stepping through it by a stride that shares no factor with the pool
+    // visits each exactly once, and starting sheet n at step n × 10 makes
+    // CONSECUTIVE mixed sheets tile the pool rather than overlap: C19 and C20 are
+    // the twenty ×2 and ×3 facts, split in half, no repeats across either.
+    const pool = tables.length * 10
+    const stride = strideFor(pool)
+    const k = (((seed * 10) + i) * stride) % pool
+    table = tables[Math.floor(k / 10)]
+    multiplier = (k % 10) + 1
+  } else {
+    table = tables.length === 1 ? tables[0] : tables[i % tables.length]
+    multiplier = presentation === 'ordered' ? (i % 10) + 1 : scrambled(i, seed)
+  }
+
   const product = table * multiplier
 
   return {

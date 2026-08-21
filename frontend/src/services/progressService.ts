@@ -553,6 +553,16 @@ export interface HintsData {
   attemptsCount: number        // Total attempts before final answer (1 = first try)
   firstAttemptCorrect: boolean // Was the first attempt correct?
   hintLevelReached: string | null  // 'micro', 'visual', 'teaching', or null
+  /**
+   * The child uncovered this fact on the times-table card before answering.
+   *
+   * Checking the table is studying, not cheating, and nothing in the app tells
+   * him otherwise — but an answer read off the table is not yet a fact he knows,
+   * and mastery that cannot tell the difference is not mastery. Recorded here
+   * rather than folded into `firstAttemptCorrect`, whose meaning is already set
+   * in the data we have.
+   */
+  tableChecked?: boolean
 }
 
 /**
@@ -580,7 +590,8 @@ export async function saveProblemAttempt(
       hints_used: hintsData ? {
         attemptsCount: hintsData.attemptsCount,
         firstAttemptCorrect: hintsData.firstAttemptCorrect,
-        hintLevelReached: hintsData.hintLevelReached
+        hintLevelReached: hintsData.hintLevelReached,
+        tableChecked: hintsData.tableChecked ?? false
       } : null
     })
 
