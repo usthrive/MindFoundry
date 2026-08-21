@@ -15,6 +15,8 @@ import { promptImageAlt, promptText } from '../../figures/prompt';
 import type { FigureSize } from './shared';
 import { FIG } from './shared';
 
+import { prefersReducedMotion } from './anim';
+
 import NumberLineFig from './NumberLineFig';
 import BarModelFig from './BarModelFig';
 import AreaGridFig from './AreaGridFig';
@@ -36,21 +38,26 @@ export function sizeForBand(band: InteractionBand): FigureSize {
 
 const MAX_WIDTH: Record<FigureSize, number> = { sm: 220, md: 330, lg: 420 };
 
-function Primitive({ figure, size }: { figure: BBFigure; size: FigureSize }) {
+/**
+ * Five primitives take `animate`; the other eight have no motion designed for
+ * them and are not handed the prop at all, so "which figures can move" is a
+ * fact about this switch rather than a claim in a document.
+ */
+function Primitive({ figure, size, animate }: { figure: BBFigure; size: FigureSize; animate: boolean }) {
   switch (figure.type) {
-    case 'number-line': return <NumberLineFig params={figure.params} size={size} />;
-    case 'bar-model': return <BarModelFig params={figure.params} size={size} />;
+    case 'number-line': return <NumberLineFig params={figure.params} size={size} animate={animate} />;
+    case 'bar-model': return <BarModelFig params={figure.params} size={size} animate={animate} />;
     case 'area-grid': return <AreaGridFig params={figure.params} size={size} />;
     case 'ten-frame': return <TenFrameFig params={figure.params} size={size} />;
     case 'counters': return <CountersFig params={figure.params} size={size} />;
     case 'place-value-chart': return <PlaceValueChartFig params={figure.params} size={size} />;
-    case 'base-ten-blocks': return <BaseTenBlocksFig params={figure.params} size={size} />;
+    case 'base-ten-blocks': return <BaseTenBlocksFig params={figure.params} size={size} animate={animate} />;
     case 'clock': return <ClockFig params={figure.params} size={size} />;
     case 'coin-set': return <CoinSetFig params={figure.params} size={size} />;
     case 'coordinate-grid': return <CoordinateGridFig params={figure.params} size={size} />;
     case 'angle-figure': return <AngleFig params={figure.params} size={size} />;
-    case 'math-sentence': return <MathSentenceFig params={figure.params} size={size} />;
-    case 'column-method': return <ColumnMethodFig params={figure.params} size={size} />;
+    case 'math-sentence': return <MathSentenceFig params={figure.params} size={size} animate={animate} />;
+    case 'column-method': return <ColumnMethodFig params={figure.params} size={size} animate={animate} />;
   }
 }
 
@@ -59,13 +66,25 @@ export default function BBFigureView({
   band,
   size,
   className,
+  animate,
 }: {
   figure: BBFigure;
   band?: InteractionBand;
   size?: FigureSize;
   className?: string;
+  /**
+   * Play the figure's micro-animation once, on mount (MICRO-ANIMATIONS-SPEC).
+   * LESSON SURFACES ONLY, and in practice only LessonRoom, which keys this
+   * component by segment so entering a segment re-mounts and the CSS restarts
+   * (L2). Default false: every other call site draws exactly what it drew
+   * before animation existed.
+   */
+  animate?: boolean;
 }) {
   const s: FigureSize = size ?? sizeForBand(band ?? 'B');
+  // L3, decided ONCE, here — a primitive stays a pure function of its props,
+  // and no surface can accidentally animate for a child who asked not to.
+  const anim = !!animate && !prefersReducedMotion();
   return (
     <figure className={className} style={{ margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div
@@ -73,7 +92,7 @@ export default function BBFigureView({
         aria-label={figure.alt}
         style={{ width: '100%', maxWidth: MAX_WIDTH[s] }}
       >
-        <Primitive figure={figure} size={s} />
+        <Primitive figure={figure} size={s} animate={anim} />
       </div>
       {figure.caption && (
         <figcaption style={{ color: FIG.inkMuted, fontSize: 13, textAlign: 'center' }}>{figure.caption}</figcaption>

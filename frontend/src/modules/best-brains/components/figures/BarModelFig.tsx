@@ -13,8 +13,21 @@
  */
 
 import { FIG, STROKE, TEXT, FONT, W, r2, defId, type FigurePartProps } from './shared';
+import { AnimStyle, anim, type AnimProps } from './anim';
 
 const SCALE = { sm: 1.14, md: 1, lg: 0.94 } as const;
+
+/**
+ * Minimal by design (MICRO-ANIMATIONS-SPEC §2.5): the bars are already there
+ * and the brace that measures them arrives last, which is the one thing the
+ * say ever describes happening here.
+ *
+ * The bars themselves do NOT slide in. A quantity arriving from off-screen is
+ * motion no segment describes, and this primitive's whole argument is that a
+ * unit is the same length everywhere on the page — a length that grows is a
+ * length being asserted twice.
+ */
+const T = { brace: 3 } as const;
 
 /** Width estimate for fit decisions only — never for positioning. */
 function textW(s: string, fs: number): number {
@@ -51,8 +64,9 @@ function clamp(v: number, lo: number, hi: number): number {
 
 type SegBox = { x: number; w: number; fill?: string; txt: string | null; inside: boolean; row: number };
 
-export default function BarModelFig({ params, size }: FigurePartProps<'bar-model'>) {
+export default function BarModelFig({ params, size, animate }: FigurePartProps<'bar-model'> & AnimProps) {
   const k = SCALE[size] ?? 1;
+  const A = !!animate;
   const fsLabel = r2(TEXT.small * k);
   const fsSeg = r2(TEXT.small * k);
   const fsTotal = r2(TEXT.body * k);
@@ -179,6 +193,7 @@ export default function BarModelFig({ params, size }: FigurePartProps<'bar-model
       focusable="false"
       style={{ display: 'block', height: 'auto' }}
     >
+      <AnimStyle on={A} />
       <defs>
         {/* diagonal hatch: the one fill that still separates from 'solid' in
             greyscale or for a colour-blind child (CONTRAST LAW) */}
@@ -284,7 +299,7 @@ export default function BarModelFig({ params, size }: FigurePartProps<'bar-model
             })}
 
             {L.totalTxt && (
-              <g>
+              <g {...anim(A, 'fade', T.brace)}>
                 <path
                   d={`M ${barX0} ${r2(braceY + braceD)} L ${barX0} ${braceY} L ${L.barEnd} ${braceY} L ${L.barEnd} ${r2(braceY + braceD)}`}
                   fill="none"
@@ -323,7 +338,7 @@ export default function BarModelFig({ params, size }: FigurePartProps<'bar-model
         const yb = r2(last.barY + barH);
         const ym = r2((ya + yb) / 2);
         return (
-          <g>
+          <g {...anim(A, 'fade', T.brace)}>
             <path
               d={`M ${r2(bx - braceD)} ${ya} L ${bx} ${ya} L ${bx} ${yb} L ${r2(bx - braceD)} ${yb}`}
               fill="none"
@@ -348,7 +363,7 @@ export default function BarModelFig({ params, size }: FigurePartProps<'bar-model
       })()}
 
       {!sideBrace && overall && (
-        <g>
+        <g {...anim(A, 'fade', T.brace)}>
           <path
             d={`M ${barX0} ${r2(bottomBraceY - braceD)} L ${barX0} ${bottomBraceY} L ${last.barEnd} ${bottomBraceY} L ${last.barEnd} ${r2(bottomBraceY - braceD)}`}
             fill="none"

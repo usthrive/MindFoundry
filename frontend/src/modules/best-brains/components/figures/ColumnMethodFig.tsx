@@ -9,11 +9,25 @@
  */
 
 import { FIG, FONT, STROKE, W, r2, type FigurePartProps } from './shared';
+import { AnimStyle, anim, lineLen, type AnimProps } from './anim';
 
 const SCALE: Record<'sm' | 'md' | 'lg', number> = { sm: 1.08, md: 1, lg: 0.95 };
 
-export default function ColumnMethodFig({ params, size }: FigurePartProps<'column-method'>) {
+/**
+ * The algorithm in the order it is performed (MICRO-ANIMATIONS-SPEC §2.3):
+ * the operands are already written, a borrow strikes through, the carry digit
+ * drops in above its column, the rule is drawn, the answer is written.
+ *
+ * A blank result row simply ends the sequence at the rule — the cells return
+ * null, so nothing is left to fade, and the answer-unwritten form stays
+ * unwritten. That is the L5 shape a lesson uses when the child is about to be
+ * asked; the picture must not fill it in.
+ */
+const T = { strike: 0, carry: 3, rule: 5, result: 7 } as const;
+
+export default function ColumnMethodFig({ params, size, animate }: FigurePartProps<'column-method'> & AnimProps) {
   const ts = SCALE[size];
+  const A = !!animate;
   const rows = params.rows;
   const cols = rows[0]?.cells.length ?? 1;
 
@@ -46,6 +60,7 @@ export default function ColumnMethodFig({ params, size }: FigurePartProps<'colum
 
   return (
     <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="presentation" aria-hidden="true">
+      <AnimStyle on={A} />
       {(params.highlightCols ?? []).map((c) => (
         <rect
           key={`h${c}`} x={r2(left + c * cell)} y={4} width={r2(cell)} height={height - 8}
@@ -57,8 +72,15 @@ export default function ColumnMethodFig({ params, size }: FigurePartProps<'colum
           if (!c) return null;
           const struck = (r.struck ?? []).includes(j);
           const f = r.role === 'carry' ? carryFont : font;
+          const cellAttrs = !A
+            ? {}
+            : r.role === 'carry'
+              ? anim(true, 'drop', T.carry)
+              : r.role === 'result'
+                ? anim(true, 'fade', T.result)
+                : {};
           return (
-            <g key={`${i}.${j}`}>
+            <g key={`${i}.${j}`} {...cellAttrs}>
               <text
                 x={xOf(j)} y={r2(yOf[i])} textAnchor="middle" fontFamily={FONT} fontSize={f}
                 fill={r.role === 'carry' ? FIG.accent : r.role === 'partial' ? FIG.inkMuted : FIG.ink}
@@ -68,6 +90,7 @@ export default function ColumnMethodFig({ params, size }: FigurePartProps<'colum
               </text>
               {struck && (
                 <line
+                  {...anim(A, 'draw', T.strike, lineLen(xOf(j) - f * 0.42, yOf[i] - f * 0.32, xOf(j) + f * 0.42, yOf[i] - f * 0.02))}
                   x1={r2(xOf(j) - f * 0.42)} y1={r2(yOf[i] - f * 0.32)}
                   x2={r2(xOf(j) + f * 0.42)} y2={r2(yOf[i] - f * 0.02)}
                   stroke={FIG.accent} strokeWidth={STROKE.base} strokeLinecap="round"
@@ -87,6 +110,7 @@ export default function ColumnMethodFig({ params, size }: FigurePartProps<'colum
       )}
       {ruleY !== null && (
         <line
+          {...anim(A, 'draw', T.rule, lineLen(left - cell * 0.9, ruleY, left + cols * cell + cell * 0.15, ruleY))}
           x1={r2(left - cell * 0.9)} y1={ruleY} x2={r2(left + cols * cell + cell * 0.15)} y2={ruleY}
           stroke={FIG.ink} strokeWidth={STROKE.bold} strokeLinecap="round"
         />

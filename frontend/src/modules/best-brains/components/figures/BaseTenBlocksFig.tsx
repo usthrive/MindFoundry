@@ -17,10 +17,31 @@ import type { ReactElement } from 'react';
 import {
   FIG, STROKE, TEXT, FONT, W, r2, type FigurePartProps, type FigureSize,
 } from './shared';
+import { AnimStyle, anim, lineLen, type AnimProps } from './anim';
 import type { BaseTenState } from '../../figures/types';
 
 const TS: Record<FigureSize, number> = { sm: 0.94, md: 1, lg: 1.1 };
 const LS: Record<FigureSize, number> = { sm: 0.85, md: 1, lg: 1.2 };
+
+/**
+ * The trade, once, on entry (MICRO-ANIMATIONS-SPEC §2.1). `becomes` pairs only:
+ * a `beside` pair is a COMPARISON, and a comparison is not a change, so it
+ * never moves.
+ *
+ * The ring the lesson is pointing with arrives first, the arrow draws itself,
+ * then the state it becomes fades in — the teacher's hand, once, as the board
+ * settles.
+ *
+ * DROPPED UNDER L1: the spec asked for the highlighted before-pieces to
+ * "fade/slide a few units toward the arrow" as it draws. They cannot: the
+ * verified still draws them at full opacity in their own places, so any motion
+ * that ENDS dimmed or displaced ends at a different picture. Ghosting a moving
+ * copy would mean a second render path, which L1 forbids structurally. The
+ * flagship reading survives without it — ten loose cubes, an arrow, the fused
+ * rod arriving — so the treatment is not gutted and the piece is dropped
+ * rather than bent.
+ */
+const T = { ring: 0, arrow: 2, head: 5, after: 7 } as const;
 
 /** One ones-cube, the unit every other piece is built from. */
 const U = 13;
@@ -37,7 +58,7 @@ function stateWidth(s: BaseTenState): number {
   return flats * (U * 10 + 8) + rodCols * (U + 5) + (oneCols ? oneCols * (U + 3) + 10 : 0) + 4;
 }
 
-export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base-ten-blocks'>) {
+export default function BaseTenBlocksFig({ params, size, animate }: FigurePartProps<'base-ten-blocks'> & AnimProps) {
   const ts = TS[size];
   const ls = LS[size];
   const sw = r2(STROKE.thin * ls);
@@ -62,17 +83,25 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
   const baseY = y0 + U * 10; // pieces sit on a common floor
   let cursor = (W - totalW * scale) / 2;
 
+  /** A trade is the only thing here that changes; a comparison never moves. */
+  const A = !!animate && !!params.then && connector === 'becomes';
+
   const parts: ReactElement[] = [];
 
   states.forEach((s, si) => {
     const sx = cursor;
     let x = sx;
+    // The before-state is the board as the child already sees it; only what the
+    // trade PRODUCES arrives. `ring0` is the pointing hand on the before-state
+    // (null on the after-state, whose own ring simply arrives with it).
+    const arriving = A && si === 1 ? anim(true, 'fade', T.after) : {};
+    const ring0 = A && si === 0 ? anim(true, 'fade', T.ring) : null;
 
     // --- hundreds flats ---
     for (let f = 0; f < (s.flats ?? 0); f++) {
       const fw = U * 10 * scale;
       parts.push(
-        <g key={`f${si}-${f}`}>
+        <g key={`f${si}-${f}`} {...arriving}>
           <rect
             x={r2(x)} y={r2(baseY - U * 10 * scale)} width={r2(fw)} height={r2(fw)}
             fill={FIG.primarySoft} stroke={FIG.primaryDeep} strokeWidth={sw} rx={r2(1.5)}
@@ -102,7 +131,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
       const rw = U * scale;
       const rh = U * 10 * scale;
       parts.push(
-        <g key={`r${si}-${rIdx}`}>
+        <g key={`r${si}-${rIdx}`} {...arriving}>
           <rect
             x={r2(x)} y={r2(baseY - rh)} width={r2(rw)} height={r2(rh)}
             fill={FIG.primary} stroke={FIG.primaryDeep} strokeWidth={r2(STROKE.base * ls)} rx={r2(2)}
@@ -117,6 +146,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
           ))}
           {rodOn && (
             <rect
+              {...(ring0 ?? {})}
               x={r2(x - 2)} y={r2(baseY - rh - 2)} width={r2(rw + 4)} height={r2(rh + 4)}
               fill="none" stroke={FIG.attention} strokeWidth={r2(STROKE.thin * ls)}
               strokeDasharray="4 3" rx={r2(3)}
@@ -140,7 +170,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
         const cy = baseY - (rIn + 1) * (U + 2) * scale;
         parts.push(
           <rect
-            key={`o${si}-${i}`}
+            key={`o${si}-${i}`} {...arriving}
             x={r2(cx)} y={r2(cy)} width={r2(U * scale)} height={r2(U * scale)}
             fill={FIG.accentSoft} stroke={FIG.accentDeep} strokeWidth={sw} rx={r2(2)}
           />,
@@ -150,7 +180,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
         const rows = Math.min(5, s.ones);
         parts.push(
           <rect
-            key={`oh${si}`}
+            key={`oh${si}`} {...(ring0 ?? arriving)}
             x={r2(oxStart - 3)} y={r2(baseY - rows * (U + 2) * scale - 3)}
             width={r2(cols * (U + 3) * scale + 6)} height={r2(rows * (U + 2) * scale + 6)}
             fill="none" stroke={FIG.attention} strokeWidth={r2(STROKE.thin * ls)}
@@ -167,7 +197,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
       const text = s.label ?? String(stateValue(s));
       parts.push(
         <text
-          key={`l${si}`} x={r2(centre)} y={r2(baseY + 18)} textAnchor="middle"
+          key={`l${si}`} {...arriving} x={r2(centre)} y={r2(baseY + 18)} textAnchor="middle"
           fontFamily={FONT} fontSize={r2(TEXT.large * ts)} fontWeight={700} fill={FIG.ink}
         >
           {text}
@@ -179,7 +209,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
     if (showColumns) {
       parts.push(
         <text
-          key={`ch${si}`} x={r2(centre)} y={r2(12)} textAnchor="middle"
+          key={`ch${si}`} {...arriving} x={r2(centre)} y={r2(12)} textAnchor="middle"
           fontFamily={FONT} fontSize={r2(TEXT.small * ts)} fontWeight={600} fill={FIG.inkMuted}
         >
           tens | ones
@@ -197,10 +227,12 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
         parts.push(
           <g key="arrow">
             <line
+              {...anim(A, 'draw', T.arrow, lineLen(ax - 13, ay, ax + 11, ay))}
               x1={r2(ax - 13)} y1={r2(ay)} x2={r2(ax + 11)} y2={r2(ay)}
               stroke={FIG.ink} strokeWidth={r2(STROKE.base * ls)} strokeLinecap="round"
             />
             <polygon
+              {...anim(A, 'fade', T.head)}
               points={`${r2(ax + 15)},${r2(ay)} ${r2(ax + 6)},${r2(ay - 5)} ${r2(ax + 6)},${r2(ay + 5)}`}
               fill={FIG.ink}
             />
@@ -219,6 +251,7 @@ export default function BaseTenBlocksFig({ params, size }: FigurePartProps<'base
       focusable="false"
       style={{ display: 'block', height: 'auto' }}
     >
+      <AnimStyle on={A} />
       {parts}
     </svg>
   );

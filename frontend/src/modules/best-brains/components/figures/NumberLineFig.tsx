@@ -13,6 +13,20 @@
  */
 
 import { FIG, STROKE, TEXT, FONT, W, r2, type FigurePartProps } from './shared';
+import { AnimStyle, MAX_TIER, anim, quadLen, type AnimProps } from './anim';
+
+/**
+ * The hops, in order, once (MICRO-ANIMATIONS-SPEC §2.2). Each arc draws itself
+ * along its own path and its landing mark settles as the arc arrives — which is
+ * the count-on story told in the order a child tells it.
+ *
+ * Three tiers per hop (draw, then land 210ms later), so hop 0 draws at 0ms,
+ * hop 1 at 210ms, hop 2 at 420ms. A fourth hop and beyond share the last tier
+ * rather than run past L4's 900ms ceiling: the budget is the law, the stagger
+ * is the preference.
+ */
+const hopDrawTier = (i: number) => Math.min(MAX_TIER, 3 * i);
+const hopLandTier = (i: number) => Math.min(MAX_TIER, 3 * i + 3);
 
 /**
  * 'sm' draws into a smaller box, so viewBox type must grow to stay legible —
@@ -47,8 +61,9 @@ function clamp(v: number, lo: number, hi: number): number {
 
 type Tick = { v: number; x: number; major: boolean };
 
-export default function NumberLineFig({ params, size }: FigurePartProps<'number-line'>) {
+export default function NumberLineFig({ params, size, animate }: FigurePartProps<'number-line'> & AnimProps) {
   const k = SCALE[size] ?? 1;
+  const A = !!animate;
   const fsTick = r2(TEXT.small * k);
   const fsMark = r2(TEXT.body * k);
   const fsHop = r2(TEXT.small * k);
@@ -170,6 +185,19 @@ export default function NumberLineFig({ params, size }: FigurePartProps<'number-
   const flagW = r2(11 * k);
   const flagH = r2(9 * k);
 
+  /**
+   * A mark sitting where a hop lands settles with that hop. Everything else on
+   * a hop figure is already on the board (the ruler, and the point the child
+   * counts ON from); on a figure with no hops there is no sequence to tell, so
+   * the marks simply arrive.
+   */
+  const markAttrs = (at: number) => {
+    if (!A) return {};
+    const landed = hops.findIndex((h) => Math.abs(h.to - at) < 1e-9);
+    if (landed >= 0) return anim(true, 'land', hopLandTier(landed));
+    return hops.length ? {} : anim(true, 'fade', 0);
+  };
+
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -179,6 +207,7 @@ export default function NumberLineFig({ params, size }: FigurePartProps<'number-
       focusable="false"
       style={{ display: 'block', height: 'auto' }}
     >
+      <AnimStyle on={A} />
       {/* ticks below the axis only — above the axis belongs to marks and hops */}
       {ticks.map((t) => (
         <line
@@ -244,17 +273,19 @@ export default function NumberLineFig({ params, size }: FigurePartProps<'number-
             {hi - lo > 0.5 && (
               <>
                 <path
+                  {...anim(A, 'draw', hopDrawTier(i), quadLen(xa, yFoot, cx, cy, xb, yFoot))}
                   d={`M ${xa} ${yFoot} Q ${cx} ${cy} ${xb} ${yFoot}`}
                   fill="none"
                   stroke={FIG.accentDeep}
                   strokeWidth={STROKE.thin}
                   strokeLinecap="round"
                 />
-                <polygon points={arrow} fill={FIG.accentDeep} />
+                <polygon {...anim(A, 'fade', hopLandTier(i))} points={arrow} fill={FIG.accentDeep} />
               </>
             )}
             {h.label && (
               <text
+                {...anim(A, 'fade', hopLandTier(i))}
                 x={r2(clamp(cx, textW(h.label, fsHop) / 2 + 2, W - textW(h.label, fsHop) / 2 - 2))}
                 y={r2(apex - 4)}
                 textAnchor="middle"
@@ -285,7 +316,7 @@ export default function NumberLineFig({ params, size }: FigurePartProps<'number-
               : r2(lineY - dotR - 5);
         const lw = m.label ? textW(m.label, fsMark) : 0;
         return (
-          <g key={`m${i}`}>
+          <g key={`m${i}`} {...markAttrs(m.at)}>
             {st === 'point' && (
               <circle
                 cx={x}
