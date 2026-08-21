@@ -129,10 +129,21 @@ export default function LessonRoom() {
 
       {/* B1.0: the picture the lesson always described but never drew (L27). A
           segment with no figure falls back to its written direction rather than
-          showing nothing — a visible marker of un-migrated content. */}
+          showing nothing — a visible marker of un-migrated content.
+
+          THE ONLY SURFACE THAT ANIMATES (MICRO-ANIMATIONS-SPEC §3, L5). The
+          motion plays once as the segment settles and ends at exactly this
+          still; an assessed page never gets it, because watching a carry digit
+          appear IS the answer there.
+
+          The key is the trigger. Keyed by segment, entering a segment mounts a
+          new figure and the CSS timeline starts from the beginning — including
+          when the child steps back and forward again, which is the replay being
+          the child's to ask for rather than a loop they cannot stop. No timer,
+          no animation state in React. */}
       {segment.figure ? (
         <div className="rounded-3xl bg-surface p-5 shadow-sm">
-          <BBFigureView figure={segment.figure} band={band} size="lg" />
+          <BBFigureView key={`seg-${clamped}`} figure={segment.figure} band={band} size="lg" animate />
         </div>
       ) : (
         segment.visual && (
