@@ -106,8 +106,19 @@ export function isIOSDevice(): boolean {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
-// Pre-created Audio element for iOS to unlock audio context within user gesture
-let iosAudioElement: HTMLAudioElement | null = null;
+/**
+ * Audio element pre-created inside the user's tap to unlock playback, then
+ * reused as the real player once the network call comes back.
+ *
+ * NOT iOS-only, despite the name it used to carry. Every mobile browser closes
+ * the gesture window at the first `await`, and the first tap on a fresh phrase
+ * always awaits `generateTTS`. Gating the unlock on iOS meant Android lost its
+ * gesture on that await, `play()` threw NotAllowedError, the speechSynthesis
+ * fallback had no gesture either — and the first tap was silent while the
+ * second, hitting the cache, worked. That is the "it doesn't play the first
+ * time" report.
+ */
+let unlockAudioElement: HTMLAudioElement | null = null;
 
 /**
  * Preload browser voices (they may not be available immediately)
@@ -424,22 +435,28 @@ async function speakWithHD(
   allowFallback: boolean = true
 ): Promise<void> {
   const cacheKey = hashText(text, config);
-  const onIOS = isIOSDevice();
+  // `isMobileDevice` matches on the user-agent string alone, so it MISSES an
+  // iPadOS 13+ tablet, which reports a desktop UA and is caught only by
+  // `isIOSDevice`'s MacIntel + touch-points branch. Testing mobile without that
+  // second test would have taken the unlock AWAY from iPads to give it to
+  // Android — a straight trade, not a fix.
+  const onMobile = isMobileDevice() || isIOSDevice();
   const gen = stopGeneration;  // Capture before async work
 
-  // iOS: Pre-create Audio element within user gesture to unlock audio context.
-  // IMPORTANT: Do NOT await play() — that breaks the gesture chain on iOS Safari.
-  // Fire-and-forget: the play() call itself unlocks the audio context.
-  if (onIOS && !audioCache.has(cacheKey)) {
-    iosAudioElement = new Audio();
-    iosAudioElement.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwSHAAAAAAD/+1DEAAAGAAGn9AAAIgAANP8AAABM//tQxBUAAADSAAAAAAAAANIAAAAA';
-    iosAudioElement.muted = true;
+  // Pre-create an Audio element INSIDE the tap, so playback is already unlocked
+  // by the time the network call returns and the gesture window has closed.
+  // IMPORTANT: do NOT await play() — awaiting is itself what breaks the chain.
+  // Fire-and-forget: the play() call alone unlocks the context.
+  if (onMobile && !audioCache.has(cacheKey)) {
+    unlockAudioElement = new Audio();
+    unlockAudioElement.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwSHAAAAAAD/+1DEAAAGAAGn9AAAIgAANP8AAABM//tQxBUAAADSAAAAAAAAANIAAAAA';
+    unlockAudioElement.muted = true;
     // Fire-and-forget — preserves gesture chain by not awaiting
-    iosAudioElement.play().catch(() => {
+    unlockAudioElement.play().catch(() => {
       // Silent fail OK — still unlocks audio context
     });
     // Don't pause — keep playing to maintain unlocked context
-    console.log('[TTS] iOS: Audio context unlock initiated (no await)');
+    console.log('[TTS] Audio context unlock initiated (no await)', isIOSDevice() ? '(iOS)' : '(mobile)');
   }
 
   try {
@@ -482,10 +499,17 @@ async function speakWithHD(
       return;
     }
 
-    // Play the audio - reuse iOS pre-created element if available
-    if (onIOS && iosAudioElement) {
-      currentAudio = iosAudioElement;
-      iosAudioElement = null;
+    // Play the audio — reuse the pre-created unlock element if there is one
+    if (unlockAudioElement) {
+      // The unlock element was MUTED to keep its silent clip silent. Adopting it
+      // as the real player without clearing that flag is why the first tap made
+      // no sound: the audio played, `onended` fired, the button returned to idle
+      // and nothing was ever audible. The second tap sounded because the URL was
+      // cached by then, so this branch was skipped and a fresh, unmuted element
+      // was built instead — which is the whole "works the second time" report.
+      currentAudio = unlockAudioElement;
+      unlockAudioElement = null;
+      currentAudio.muted = false;
       currentAudio.src = audioUrl;
     } else {
       currentAudio = new Audio(audioUrl);
@@ -516,7 +540,7 @@ async function speakWithHD(
 
       // Check if it's an autoplay policy error
       if (playError instanceof Error && playError.name === 'NotAllowedError') {
-        console.warn('[TTS] Autoplay blocked', onIOS ? '(iOS)' : '');
+        console.warn('[TTS] Autoplay blocked', isIOSDevice() ? '(iOS)' : onMobile ? '(mobile)' : '(desktop)');
         lastError = 'Autoplay blocked - tap again to play';
       }
 
