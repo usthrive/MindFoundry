@@ -29,13 +29,19 @@
 
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import ScratchPad from '@/components/ui/ScratchPad';
+import ScratchPad, { type ScratchPadRef } from '@/components/ui/ScratchPad';
 import type { Stroke } from '@/components/ui/ScratchPad';
 import type { InteractionBand } from '../copy';
 import type { BBFigure } from '../figures/types';
 import BBFigureView from './figures/BBFigureView';
 import { promptText } from '../figures/prompt';
 import { decodeStrokes, encodeStrokes, loadPage, pageId, savePage } from '../services/bbNotebookStore';
+
+/** The four pens, matching the shared pad's own palette so nothing changes but the chrome. */
+const INK = ['#000000', '#0066cc', '#cc0000', '#009933'] as const;
+const INK_NAME: Record<string, string> = {
+  '#000000': 'Black', '#0066cc': 'Blue', '#cc0000': 'Red', '#009933': 'Green',
+};
 
 /** Session-scoped per-item stroke store (P3 persistPerItem). */
 const strokeStore = new Map<string, Stroke[]>();
@@ -306,9 +312,92 @@ export default function BBScratchPad({
     if (canFullScreen) setOpen(false);
   }, [canFullScreen]);
 
+  /**
+   * OUR OWN PEN BAR, and the reason is 164 pixels.
+   *
+   * The shared ScratchPad draws a two-row toolbar (a "Color:" label and four
+   * swatches, a "Size:" label and three, then Undo and Clear) plus a caption
+   * underneath. Photographed at 390x740 with a served Level-E prompt, those cost
+   * 122px and 42px — 22% of the phone, none of it the child's work, on a screen
+   * where the writing space had already been squeezed to 40%.
+   *
+   * `showToolbar={false}` is the shared component's own escape hatch for exactly
+   * this ("Set false when parent manages toolbar"), so nothing shared changes.
+   * What replaces it is ONE row of 44px targets and no text labels: a child does
+   * not read the word "Color:" before tapping a red circle, and the label costs
+   * width that the circles need on a 390px screen.
+   *
+   * THE SIZE PICKER IS GONE, deliberately and not by oversight. Nine controls at
+   * a 44px minimum do not fit 390px in one row, and of the three groups the line
+   * width is the one a child never reaches for — colour is chosen constantly,
+   * undo and clear are corrections. It stays available through the ref if it is
+   * ever wanted back.
+   */
+  const padRef = useRef<ScratchPadRef | null>(null);
+  const [inkColor, setInkColor] = useState<string>(INK[0]);
+  const [erasing, setErasing] = useState(false);
+
+  const chooseInk = useCallback((c: string) => {
+    setInkColor(c);
+    setErasing(false);
+    padRef.current?.setColor(c);
+  }, []);
+
+  const toolBar = (
+    <div className="flex shrink-0 items-center gap-1 px-2 pb-1">
+      {INK.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => chooseInk(c)}
+          aria-label={`${INK_NAME[c]} pen`}
+          aria-pressed={!erasing && inkColor === c}
+          className={cn(
+            'h-11 w-11 shrink-0 rounded-full border-2 transition-transform touch-manipulation',
+            !erasing && inkColor === c ? 'scale-110 border-gray-800' : 'border-gray-300',
+          )}
+          style={{ backgroundColor: c }}
+        />
+      ))}
+      <button
+        type="button"
+        onClick={() => {
+          setErasing(true);
+          padRef.current?.setEraser(true);
+        }}
+        aria-label="Rubber"
+        aria-pressed={erasing}
+        className={cn(
+          'h-11 w-11 shrink-0 rounded-xl border-2 text-lg touch-manipulation',
+          erasing ? 'border-gray-800 bg-gray-100' : 'border-gray-300 bg-white',
+        )}
+      >
+        <span aria-hidden="true">◇</span>
+      </button>
+      <div className="ml-auto flex items-center gap-1 pl-1">
+        <button
+          type="button"
+          onClick={() => padRef.current?.undo()}
+          className="h-11 shrink-0 rounded-xl border-2 border-gray-300 bg-white px-2 text-sm font-medium text-text-secondary touch-manipulation"
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          onClick={() => padRef.current?.clear()}
+          className="h-11 shrink-0 rounded-xl border-2 border-red-200 bg-white px-2 text-sm font-medium text-red-500 touch-manipulation"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+
   const pad = (isFull: boolean) => (
     <div className="relative">
       <ScratchPad
+        ref={padRef}
+        showToolbar={false}
         fillWidth
         height={isFull ? fullHeight : height}
         initialStrokes={seed}
@@ -409,6 +498,7 @@ export default function BBScratchPad({
           )}
           {stageChooser}
         </div>
+        {toolBar}
         <div ref={canvasBoxRef} className="min-h-0 flex-1 overflow-hidden p-2">
           <div ref={padWrapRef}>{pad(true)}</div>
         </div>
@@ -482,6 +572,7 @@ export default function BBScratchPad({
               </button>
             )}
           </div>
+          {toolBar}
           {pad(false)}
           {(invitation || offerStages) && (
             <p className="mt-2 px-1 text-sm text-text-secondary">
