@@ -135,8 +135,15 @@ export function TimesTableCard({ tables, support, current, onReveal, onClose, au
 
   return (
     <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/70 p-4 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
+      {/* The heading row carries the CLOSE control only.
+          "Say it with me" used to sit up here beside it, and on a phone the two
+          together were about 190px that would not shrink — against a text block
+          with no `min-w-0`, which in a flex row cannot give way either. On a
+          360px screen that left the title roughly 140px and wrapped "The 4 times
+          table" and its sentence into a column a word or two wide. The speaker
+          now gets its own line, where its label costs nobody any width. */}
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h3 className="text-base font-bold text-gray-800">
             {tables.length === 1 ? `The ${tables[0]} times table` : `Your tables so far`}
           </h3>
@@ -146,20 +153,19 @@ export function TimesTableCard({ tables, support, current, onReveal, onClose, au
               : 'Look as long as you like. The one you were asked is yours to say.'}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {audio}
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close the table"
-              className="rounded-lg px-2 py-1 text-gray-500 hover:bg-amber-100 touch-manipulation"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close the table"
+            className="-mr-1 shrink-0 rounded-lg px-2 py-1 text-gray-500 hover:bg-amber-100 touch-manipulation"
+          >
+            ✕
+          </button>
+        )}
       </div>
+
+      {audio && <div className="mb-3">{audio}</div>}
 
       {rows.map(({ table, facts }) => (
         <div key={table} className="mb-3 last:mb-0">

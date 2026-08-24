@@ -492,6 +492,48 @@ function verifyInverse(p: Params): VerifyResult {
 }
 
 /**
+ * `a·x + b = c` undone in the WRONG ORDER: the scaling taken off while the
+ * loose amount is still attached (E14's named slip — divides before un-adding).
+ *
+ * WHY THIS IS ADDED RATHER THAN RELOCATED. E14 was the only cell in the E10–E15
+ * run whose recipe named a verify-backed error-analysis and whose transform did
+ * not exist, and the kit records the general gap ("no template for a two-step
+ * step-order slip") as the reason two earlier weeks relocated theirs. It is the
+ * same situation `verifyMisgroup` above was written for, and the same answer:
+ * the slip is expressible, exactly, so the week gets the item its recipe asks
+ * for instead of borrowing a sibling's misconception. What remains genuinely
+ * inexpressible is an OPERAND swap — that gap is untouched by this.
+ *
+ * The two orders differ by `b(a − 1)/a`, so they coincide only when the
+ * equation scales by one or joins nothing; both are named in the throw.
+ *
+ * EXACTNESS. `(c − b)/a` is whole by construction (`c = a·x + b`), but
+ * `c/a − b` is whole only when `a` divides `c` — which, given that same
+ * construction, means `a` must divide `b`. The draw site is required to honour
+ * that and says so; here it is simply enforced, because `whole()` throws on a
+ * fraction rather than rounding one into a child's page.
+ */
+function verifyStepOrder(p: Params): VerifyResult {
+  const a = num(p, 'a');
+  const b = num(p, 'b');
+  const c = num(p, 'c');
+  const id = 'e_alg_verify_step_order_v1';
+  if (a === 1 || b === 0) {
+    throw new Error(
+      `${id}: a=${a}, b=${b} — the two orders agree unless the equation both scales the unknown and joins something to it`,
+    );
+  }
+  const correct = whole(evalRatChain(c, 1, [{ op: 'sub', n: b, d: 1 }, { op: 'div', n: a, d: 1 }]), id);
+  // The slip itself: the division taken first, then the loose amount removed
+  // from whatever that left.
+  const wrong = whole(evalRatChain(c, 1, [{ op: 'div', n: a, d: 1 }, { op: 'sub', n: b, d: 1 }]), id);
+  if (correct === wrong) {
+    throw new Error(`${id}: a=${a}, b=${b}, c=${c} leaves both orders on ${correct}`);
+  }
+  return { correct: String(correct), wrong: String(wrong) };
+}
+
+/**
  * The inequality solved correctly and then flipped (E15's named slip). Both
  * values are {symbol, bound} surfaces, so the shown "wrong" is an inequality —
  * the form the child actually wrote — not a bare number.
@@ -1469,6 +1511,46 @@ export function msTwoStepUndo(): ItemGen {
   });
 }
 
+/**
+ * E14's named slip, analysed: the division taken first and allowed to reach only
+ * part of the side it landed on.
+ *
+ * THE DRAW IS CONSTRAINED AND THE CHILD CANNOT SEE IT. `c/a − b` is a whole
+ * number only when the multiplier divides the total, which — since `c = a·x + b`
+ * — means it must divide the joined amount as well. So `b` is drawn as a
+ * multiple of `a`. What reaches the page is an ordinary two-step equation;
+ * nothing in it hints that its numbers were chosen so that a wrong answer would
+ * come out whole rather than as a fraction no child would have written.
+ *
+ * `x` is kept above `k(a − 1)` so the value the slip produces stays positive: a
+ * student's written answer is a number they believed, and a negative count in a
+ * frame with no negative quantities would be a tell rather than a mistake.
+ */
+export function eaStepOrder(): ItemGen {
+  return errorAnalysis({
+    verifyTemplateId: 'e_alg_verify_step_order_v1',
+    cognitiveOp: 'alg-two-step',
+    drawParams: (r) => {
+      const a = r.int(2, 5);
+      const k = r.int(2, 6);
+      const b = a * k;
+      // How far short the slip lands: (c − b)/a − (c/a − b) = k(a − 1).
+      const lift = k * (a - 1);
+      const x = clearOf(r.int(lift + 2, lift + 20), [a, b]);
+      return { a, b, c: a * x + b };
+    },
+    build: (v, p) => ({
+      prompt: `A student solved ${equationText(num(p, 'a'), num(p, 'b'), num(p, 'c'))} by dividing both sides by ${fmtInt(num(p, 'a'))} as the first move, and wrote x = ${v.wrong}.`,
+      extension: 'Put that value into the equation as it was written and work out each side on its own, then give the value that makes the two sides land together.',
+      hints: [
+        'When that first division was carried out, how many separate parts were sitting on the left-hand side for it to reach?',
+        'Take each term on both sides in turn and ask whether the division touched it.',
+      ],
+      errorTags: ['procedure-slip', 'concept-misconception'],
+    }),
+  });
+}
+
 // ===========================================================================
 // E15 — inequalities: the tipping balance and a ray of answers
 // ===========================================================================
@@ -1683,6 +1765,8 @@ export const ALGEBRA_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
   { id: 'e_alg_verify_misgroup_v1', verifyFor: verifyMisgroup },
   /** Adding to both sides where the equation asks for a subtraction. */
   { id: 'e_alg_verify_inverse_v1', verifyFor: verifyInverse },
+  /** `a·x + b = c` divided through before the loose amount comes off (E14). */
+  { id: 'e_alg_verify_step_order_v1', verifyFor: verifyStepOrder },
   /** The inequality symbol flipped while adding. */
   { id: 'e_alg_verify_flip_v1', verifyFor: verifyFlip },
   /** Agreeing at one value vs agreeing at every value (E12). */
