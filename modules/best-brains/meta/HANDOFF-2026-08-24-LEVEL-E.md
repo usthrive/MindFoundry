@@ -1,5 +1,10 @@
 # HANDOFF 2026-08-24 — Level E fill, resuming at E17
 
+> **SUPERSEDED by `HANDOFF-2026-08-25-LEVEL-E.md`.** §1 below is stale twice over: it reads 111/120
+> and E 16/24; the corpus is at 114/120 with E at 19/24 (E12, E17 and E22 have all shipped since).
+> §3's method sections still stand and are still worth reading. Go to the 08-25 file for state, for
+> the library defects found since, and for the three additions to the verification protocol.
+
 Written at the end of the session that shipped **E15** and **E16**. Supersedes
 `HANDOFF-2026-08-21-LEVEL-E.md` (which still reads E at 14/24); that file's method sections stand
 and §4's verification protocol is unchanged and still mandatory.
