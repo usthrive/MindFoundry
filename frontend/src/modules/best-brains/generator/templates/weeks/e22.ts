@@ -300,7 +300,7 @@ import { makeGe, makeWeekBuilder } from '../lib/assemble';
 import { barModel } from '../lib/figures';
 import { drawUniqueItem } from '../lib/guard';
 import { makeChoices, numberWords } from '../shared';
-import { distinctSet, graphRead, medianOfSet, rangeOfSet } from '../lib/stats';
+import { clearOfPage, distinctSet, graphRead, medianOfSet, rangeOfSet } from '../lib/stats';
 import type { ItemDraft } from '../shared';
 import type { ItemGen } from '../lib/multistep';
 import type { ErrorTag } from '../../../types';
@@ -420,39 +420,12 @@ const displayNumerals = (width: number, bands = 4): number[] => {
  * clear — 2 leaks in 3,200 served `sitDisplayGap` items, which is a mastery slot
  * — so every slot is tried in turn. Measured after: 0.0% on every generator.
  */
-function clearOfThePage(
-  counts: readonly number[],
-  slot: number,
-  lo: number,
-  hi: number,
-  answerOf: (c: readonly number[]) => number,
-  /**
-   * Every numeral the prompt prints, for a given set of counts. It is the
-   * CALLER's to supply and not this function's to assume, because the two are
-   * not the same set on every item: `msRecoverBand` hides one band, so that
-   * band's own count is the answer AND is not printed, and a helper that
-   * blanket-forbade all four counts could never satisfy itself.
-   */
-  printedBy: (c: readonly number[]) => readonly number[],
-): number[] {
-  const range = hi - lo + 1;
-  // Each slot in turn, starting at the one named — walking only ONE count left a
-  // residue the whole range could not clear (measured 2 leaks in 3,200 served
-  // `sitDisplayGap` items, which is a mastery slot). Trying the others costs
-  // nothing: this walk consumes no rng at all, so widening it cannot move a
-  // later item in the pack.
-  for (let off = 0; off < counts.length; off++) {
-    const s = (slot + off) % counts.length;
-    const start = counts[s];
-    for (let k = 0; k < range; k++) {
-      const cand = lo + ((start - lo + k) % range);
-      if (counts.some((c, j) => j !== s && c === cand)) continue;
-      const trial = counts.map((c, j) => (j === s ? cand : c));
-      if (!printedBy(trial).includes(answerOf(trial))) return trial;
-    }
-  }
-  return [...counts];
-}
+// HOISTED 2026-08-25: this helper now lives in lib/stats.ts as `clearOfPage`,
+// byte-for-byte (pack-hash verified at the move), because histogramBinRead
+// needed the identical walk and a second copy is how twins drift apart. The
+// design history — why every slot is tried, why the walk is deterministic,
+// why printedBy is the caller's — moved with it.
+const clearOfThePage = clearOfPage;
 
 const COUNT_LO = 4;
 const COUNT_HI = 19;

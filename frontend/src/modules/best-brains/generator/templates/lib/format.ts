@@ -156,15 +156,25 @@ export function unitFor(count: number | string, unit: string): string {
   return isOne ? singular : pluralOf(singular);
 }
 
-/** True only for a value of exactly 1 ("1", 1) — not "1 1/2", not "1/2", not 1.5. */
+/**
+ * True for a value of MAGNITUDE exactly 1 ("1", 1, "-1", -1) — not "1 1/2",
+ * not "1/2", not 1.5.
+ *
+ * The sign-blind version (n === 1) shipped "-1 centimetres" and QG-12c rightly
+ * rejected the pack — 43 of 200 E24 seeds INVALID until that week guarded the
+ * value away (e24.ts, the tank gauge). English gives negative one a singular
+ * noun ("minus one centimetre"), and every caller of unitFor wants that. The
+ * defect was invisible to E6/E8/E9 because their units (cm, m, °) are in
+ * INVARIANT_UNITS and never inflect. Fixed 2026-08-25.
+ */
 function exactlyOne(count: number | string): boolean {
-  if (typeof count === 'number') return count === 1;
+  if (typeof count === 'number') return Math.abs(count) === 1;
   const s = count.trim();
   if (/^-?\d+\s+\d+\/\d+$/.test(s)) return false;         // mixed number
   const frac = /^(-?\d+)\s*\/\s*(\d+)$/.exec(s);
-  if (frac) return Number(frac[2]) !== 0 && Number(frac[1]) / Number(frac[2]) === 1;
+  if (frac) return Number(frac[2]) !== 0 && Math.abs(Number(frac[1]) / Number(frac[2])) === 1;
   const n = Number(s);
-  return Number.isFinite(n) && n === 1;
+  return Number.isFinite(n) && Math.abs(n) === 1;
 }
 
 /**

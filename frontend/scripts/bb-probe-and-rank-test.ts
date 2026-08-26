@@ -117,7 +117,7 @@
  * Run: npx tsx scripts/bb-probe-and-rank-test.ts [--level E] [--seeds 80] [--strict]
  */
 
-import { GENERATED_WEEKS, generatePack, CONTENT_VERSION } from '../src/modules/best-brains/generator/packGenerator';
+import { GENERATED_WEEKS, SHADOWED_WEEKS, buildShadowedPack, generatePack, CONTENT_VERSION } from '../src/modules/best-brains/generator/packGenerator';
 // Imported for the SELF-TEST only (see `--selftest`): two library generators
 // whose defects this gate was built from. Neither is served by any week — both
 // were declined by the weeks whose recipes named them — which is exactly why the
@@ -174,6 +174,25 @@ const numOf = (t: string): number | null => {
 const words = (s: string): Set<string> =>
   new Set((s.toLowerCase().match(/[a-z]{3,}/g) ?? []));
 
+/**
+ * THE COMPARISON EXEMPTION's prompt test (2026-08-25). An item whose question
+ * asks for an extreme BY NAME keys the extreme by definition — "Which count is
+ * the greatest?" cannot key anything but the largest card, and flagging it
+ * trains people to skim real findings (B3 produced four such findings on the
+ * first corpus-wide --strict run). The pattern is deliberately narrow:
+ * interrogative + a linking verb + a superlative, never a bare comparative —
+ * "how many more" contains "more" and must NOT match.
+ *
+ * The prompt test is only a third of the exemption; see the CONDITIONAL_RANK
+ * emitter for the other two (the pinned rank must BE the asked extreme, and it
+ * must hold on 100% of the arm — a "which is greatest" item whose key is not
+ * the option-extreme is DEFECTIVE and still flags). The --selftest control
+ * proves both directions: that the exemption withholds on a clean comparison
+ * item, and that it does NOT withhold on a broken one.
+ */
+const EXTREME_MAX = /which\b[^?]*\b(is|shows|has)\b[^?]*\b(greatest|largest|most|biggest)\b/i;
+const EXTREME_MIN = /which\b[^?]*\b(is|shows|has)\b[^?]*\b(smallest|least|fewest|lowest)\b/i;
+
 interface Draw {
   /** Rank of the keyed option among the numeric options: 0 smallest … n-1 largest. Null when the options are not numbers. */
   rank: number | null;
@@ -182,6 +201,8 @@ interface Draw {
   majorityPicksKey: boolean | null;
   promptWords: Set<string>;
   isMetacog: boolean;
+  /** 'max'/'min' when the prompt asks for an extreme by name; null otherwise. */
+  extremeAsk: 'max' | 'min' | null;
 }
 
 interface Slot { key: string; draws: Draw[]; sample: string }
@@ -255,7 +276,8 @@ function record(id: string, container: string, index: number, it: Item): void {
       majorityPicksKey = majorityVote(choices, keyIdx);
     }
   }
-  slot.draws.push({ rank, optionCount, majorityPicksKey, promptWords: words(prompt), isMetacog });
+  const extremeAsk = EXTREME_MAX.test(prompt) ? 'max' : EXTREME_MIN.test(prompt) ? 'min' : null;
+  slot.draws.push({ rank, optionCount, majorityPicksKey, promptWords: words(prompt), isMetacog, extremeAsk });
 }
 
 // ---------------------------------------------------------------------------
@@ -284,27 +306,61 @@ function record(id: string, container: string, index: number, it: Item): void {
  *   · the dot trap — the key holds the majority value of both the circle and the
  *     direction on every draw, so majority-vote is a complete strategy.
  */
+/**
+ * Synthetic comparison items for the exemption's own two-sided control.
+ * `broken: false` is a CLEAN comparison item — asks for an extreme, keys that
+ * extreme — which the exemption must SUPPRESS (and be seen suppressing).
+ * `broken: true` asks for an extreme and keys the OPPOSITE one — a real defect
+ * wearing a comparison costume — which must still FLAG.
+ */
+function syntheticComparison(broken: boolean, i: number): Item {
+  const base = 20 + (i % 40);
+  const vals = [base, base + 3 + (i % 5), base + 10 + (i % 7)];
+  const askMax = i % 2 === 0;
+  const key = askMax ? (broken ? vals[0] : vals[2]) : (broken ? vals[2] : vals[0]);
+  return {
+    prompt: `Three piles of chestnuts are counted: ${vals.join(', ')}. Which count is the ${askMax ? 'greatest' : 'least'}?`,
+    choices: vals.map((v) => ({ text: String(v), isCorrect: v === key })),
+  };
+}
+
 function selfTest(): boolean {
-  const cases = [
-    { name: 'ratio.stackedPercentTrap', gen: stackedPercentTrap(), expect: 'CONDITIONAL_RANK' },
-    { name: 'algebra.openOrClosedDotTrap', gen: openOrClosedDotTrap(), expect: 'MAJORITY_VOTE' },
+  const cases: Array<{ name: string; make: (i: number) => Item; expect: string | null }> = [
+    { name: 'ratio.stackedPercentTrap', make: (i) => stackedPercentTrap()(streamRng(i * 7919 + 13, 'selftest'), new TupleGuard(), 3) as unknown as Item, expect: 'CONDITIONAL_RANK' },
+    { name: 'algebra.openOrClosedDotTrap', make: (i) => openOrClosedDotTrap()(streamRng(i * 7919 + 13, 'selftest'), new TupleGuard(), 3) as unknown as Item, expect: 'MAJORITY_VOTE' },
+    // The exemption's own liveness pair (2026-08-25): a suppressor that is
+    // never seen to withhold is unproven, and one that cannot tell a clean
+    // comparison from a broken one is a hole. `expect: null` = must be clean
+    // AND must log at least one suppression.
+    { name: 'synthetic CLEAN comparison (exemption must withhold)', make: (i) => syntheticComparison(false, i), expect: null },
+    { name: 'synthetic BROKEN comparison (keys the opposite extreme — must still flag)', make: (i) => syntheticComparison(true, i), expect: 'CONDITIONAL_RANK' },
   ];
   let ok = true;
   console.log('\nNEGATIVE CONTROL — can this gate still see the defects it was built from?');
   for (const c of cases) {
     slots.clear();
-    for (let i = 0; i < 400; i++) {
-      const d = c.gen(streamRng(i * 7919 + 13, 'selftest'), new TupleGuard(), 3) as unknown as Item;
-      record('SELF', 'day1', 0, d);
-    }
+    for (let i = 0; i < 400; i++) record('SELF', 'day1', 0, c.make(i));
     const before = findings.length;
+    const beforeEx = exemptions.length;
     evaluate();
-    const got = findings.slice(before).filter((f) => f.kind === c.expect);
-    const fired = got.length > 0;
-    console.log(`  ${fired ? 'SEES' : 'BLIND'}  ${c.name} → expected ${c.expect}`);
-    if (fired) console.log(`         ${got[0].detail}`);
-    if (!fired) ok = false;
+    if (c.expect === null) {
+      const clean = findings.length === before;
+      const withheld = exemptions.length > beforeEx;
+      const pass = clean && withheld;
+      console.log(`  ${pass ? 'SEES' : 'BLIND'}  ${c.name}`);
+      if (pass) console.log(`         suppressed: ${exemptions[exemptions.length - 1].detail}`);
+      if (!clean) console.log(`         UNEXPECTED FINDING: ${findings[findings.length - 1].detail}`);
+      if (!withheld) console.log(`         the exemption never fired — it is unproven, not passing`);
+      if (!pass) ok = false;
+    } else {
+      const got = findings.slice(before).filter((f) => f.kind === c.expect);
+      const fired = got.length > 0;
+      console.log(`  ${fired ? 'SEES' : 'BLIND'}  ${c.name} → expected ${c.expect}`);
+      if (fired) console.log(`         ${got[0].detail}`);
+      if (!fired) ok = false;
+    }
     findings.length = before;
+    exemptions.length = beforeEx;
   }
   slots.clear();
   console.log(ok ? '  control PASSED — a clean census below is evidence.\n' : '  control FAILED — THIS FILE IS BROKEN; ignore any pass it reports.\n');
@@ -318,6 +374,8 @@ function selfTest(): boolean {
 
 interface Finding { slot: string; kind: string; detail: string; certifying: boolean; sample: string }
 const findings: Finding[] = [];
+/** Suppressed-by-exemption record — printed, never silent (a suppressor that is never seen to withhold is unproven). */
+const exemptions: Array<{ slot: string; detail: string }> = [];
 const pct = (a: number, b: number) => `${((100 * a) / b).toFixed(1)}%`;
 const RANK_NAME = (r: number, n: number) => (r === 0 ? 'smallest' : r === n - 1 ? 'largest' : `rank ${r + 1}`);
 
@@ -326,7 +384,8 @@ const RANK_NAME = (r: number, n: number) => (r === 0 ? 'smallest' : r === n - 1 
 function evaluate(): void {
   for (const slot of slots.values()) {
   const draws = slot.draws;
-  const certifying = CERTIFYING.test(slot.key.split(' ')[1] ?? '');
+  // A shadowed builder's mastery form certifies nobody — the fixture is served.
+  const certifying = CERTIFYING.test(slot.key.split(' ')[1] ?? '') && !slot.key.includes('~builder');
 
   // --- the clauses this slot draws --------------------------------------
   const counts = new Map<string, number>();
@@ -337,16 +396,32 @@ function evaluate(): void {
     .map(([w]) => w);
 
   // --- 1. CONDITIONAL_RANK ----------------------------------------------
+  //
+  // Reworked 2026-08-25 after the first corpus-wide --strict run. Two repairs:
+  //
+  //  · ONE FINDING PER ARM, not one per token. A B24 slot produced SEVEN
+  //    findings — "altogether", "sit", "among", "them", "not", "and", "space" —
+  //    all naming the same two question forms, because every token that
+  //    co-varies with the drawn form defines the same arm. Findings are now
+  //    grouped by (top rank, exact arm membership) and the co-varying tokens
+  //    are listed inside one finding. Distinct arms never merge, so a second
+  //    genuine defect on the same slot still reports separately.
+  //  · THE COMPARISON EXEMPTION (see EXTREME_MAX/MIN above). Suppression is
+  //    logged, never silent: a suppressed finding appears in the exemption
+  //    tally so a triager can see the gate withhold.
   const ranked = draws.filter((d) => d.rank !== null);
   if (ranked.length >= MIN_ARM * 2) {
     const n = ranked[0].optionCount;
     const marginal = new Map<number, number>();
     ranked.forEach((d) => marginal.set(d.rank!, (marginal.get(d.rank!) ?? 0) + 1));
     const marginalTop = Math.max(...marginal.values()) / ranked.length;
+    interface Cand { w: string; topRank: number; topN: number; armLen: number; armSig: string; exempt: boolean }
+    const cands: Cand[] = [];
     for (const w of clauses) {
-      const arm = ranked.filter((d) => d.promptWords.has(w));
-      const off = ranked.filter((d) => !d.promptWords.has(w));
-      if (arm.length < MIN_ARM || off.length < MIN_ARM) continue;
+      const armIdx: number[] = [];
+      ranked.forEach((d, i) => { if (d.promptWords.has(w)) armIdx.push(i); });
+      const arm = armIdx.map((i) => ranked[i]);
+      if (arm.length < MIN_ARM || ranked.length - arm.length < MIN_ARM) continue;
       const tally = new Map<number, number>();
       arm.forEach((d) => tally.set(d.rank!, (tally.get(d.rank!) ?? 0) + 1));
       const [topRank, topN] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
@@ -355,14 +430,35 @@ function evaluate(): void {
       // marginal rank is already pinned is the entropy gate's finding, not this
       // one, and reporting it twice trains people to skim both.
       if (rate >= COND_RANK_FLAG && marginalTop < COND_RANK_FLAG) {
-        findings.push({
-          slot: slot.key,
-          kind: 'CONDITIONAL_RANK',
-          detail: `prompts containing "${w}" (${arm.length} draws) key the ${RANK_NAME(topRank, n)} option ${pct(topN, arm.length)} of the time — while across all ${ranked.length} draws no rank exceeds ${pct(Math.max(...marginal.values()), ranked.length)}`,
-          certifying,
-          sample: slot.sample,
-        });
+        // The exemption, all three legs: the pinned rank IS the asked extreme,
+        // it holds on 100% of the arm (not merely ≥ the flag threshold), and
+        // EVERY prompt in the arm asks for that extreme by name.
+        const dir = topRank === n - 1 ? 'max' : topRank === 0 ? 'min' : null;
+        const exempt = dir !== null && topN === arm.length && arm.every((d) => d.extremeAsk === dir);
+        cands.push({ w, topRank, topN, armLen: arm.length, armSig: armIdx.join(','), exempt });
       }
+    }
+    const groups = new Map<string, Cand[]>();
+    for (const c of cands) {
+      const k = `${c.topRank}|${c.armSig}`;
+      const g = groups.get(k) ?? [];
+      g.push(c);
+      groups.set(k, g);
+    }
+    for (const g of groups.values()) {
+      const c = g[0];
+      const tokens = g.map((x) => `"${x.w}"`).join(' / ');
+      if (c.exempt) {
+        exemptions.push({ slot: slot.key, detail: `asked-extreme arm (${tokens}, ${c.armLen} draws) keys the ${RANK_NAME(c.topRank, n)} — the extreme the question names, on 100% of the arm` });
+        continue;
+      }
+      findings.push({
+        slot: slot.key,
+        kind: 'CONDITIONAL_RANK',
+        detail: `prompts containing ${tokens} (${c.armLen} draws) key the ${RANK_NAME(c.topRank, n)} option ${pct(c.topN, c.armLen)} of the time — while across all ${ranked.length} draws no rank exceeds ${pct(Math.max(...marginal.values()), ranked.length)}`,
+        certifying,
+        sample: slot.sample,
+      });
     }
   }
 
@@ -410,15 +506,25 @@ if (SELFTEST && !selfTest()) process.exit(1);
 // Walk every week exactly as a child receives it
 // ---------------------------------------------------------------------------
 
-const weeks = GENERATED_WEEKS.filter((w) => !ONLY_LEVEL || w.level === ONLY_LEVEL);
+// GENERATED ∪ SHADOWED (2026-08-25): the D17-§3 residual. `bb-verify-packs`
+// already audits fixture-shadowed builders; this gate and bb-answer-entropy
+// walked only GENERATED_WEEKS, so B14's builder was never measured here. A
+// shadowed cell's id carries `~builder` — its findings are census rows, never
+// --strict blockers, because the fixture is what a child is served.
+const weeks: Array<{ level: any; week: number; shadowed?: boolean }> = [
+  ...GENERATED_WEEKS.filter((w) => !ONLY_LEVEL || w.level === ONLY_LEVEL),
+  ...SHADOWED_WEEKS.filter((w) => !ONLY_LEVEL || w.level === ONLY_LEVEL).map((w) => ({ ...w, shadowed: true })),
+];
 const buildFailures: string[] = [];
 let built = 0;
 
-for (const { level, week } of weeks) {
-  const id = `${level}${week}`;
+for (const { level, week, shadowed } of weeks) {
+  const id = `${level}${week}${shadowed ? '~builder' : ''}`;
   for (let i = 0; i < SEEDS; i++) {
     try {
-      const p = generatePack(level, week, i * 7 + 1, CONTENT_VERSION) as unknown as Record<string, any>;
+      const p = (shadowed
+        ? buildShadowedPack(level, week, i * 7 + 1)
+        : generatePack(level, week, i * 7 + 1, CONTENT_VERSION)) as unknown as Record<string, any>;
       built++;
       (p.days ?? []).forEach((d: Record<string, any>, di: number) => {
         (d.items ?? []).forEach((it: Item, ii: number) => record(id, `day${di + 1}`, ii, it));
@@ -455,6 +561,11 @@ for (const kind of order) {
     console.log(`       ${f.detail}`);
     console.log(`       "${f.sample}…"`);
   }
+}
+
+if (exemptions.length) {
+  console.log(`\nCOMPARISON EXEMPTION — ${exemptions.length} suppression(s), shown so the withholding is seen:`);
+  for (const e of exemptions) console.log(`  ·  ${e.slot}\n       ${e.detail}`);
 }
 
 const blocking = findings.filter((f) => f.certifying);

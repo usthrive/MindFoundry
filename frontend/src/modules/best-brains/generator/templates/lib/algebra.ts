@@ -1314,27 +1314,50 @@ export function oneStepEquation(op: OneStepOp = 'add'): ItemGen {
 
 /** Which inverse move undoes the equation (E13's discrimination). */
 export function whichInverseMove(): ItemGen {
+  /**
+   * THE EQUATION'S OWN MOVE IS DRAWN, and the 2026-08-25 sweep is why. The
+   * first version only ever posed x + b = c, so "take b off both sides" was
+   * correct on every draw: a purely LEXICAL rule scored 100.00% over 4,200
+   * draws on two disjoint lattices, and the other two cards were permanently
+   * unkeyable (L38) — all while the item was served by E13. No gate saw it,
+   * because the cards are phrases and every rank detector reads numerals.
+   *
+   * Three forms now draw uniformly — x + b = c, x − b = c, b·x = c — so each
+   * card is the truth about a third of the time. E13 teaches all four one-step
+   * forms (`oneStepEquation('add'|'sub'|'mul'|'div')`), so nothing here is
+   * ahead of the week. The rationales are TRUTH-AGNOSTIC: each states what its
+   * own move undoes and sends the child back to the equation, so no rationale
+   * asserts a falsehood about whichever form was drawn.
+   */
   return discrimination({
     variant: 'cross-op',
     cognitiveOp: 'alg-inverse-choice',
     draw: (r) => {
+      const form = r.pick(['add', 'sub', 'mul'] as const);
       const b = r.int(2, 15);
-      const x = r.int(3, 30);
+      const u = r.int(3, 30);
+      // One rng shape for every form: the solution/result u is drawn once and
+      // the equation is built around it, keeping every stage positive.
+      const eq =
+        form === 'add' ? equationText(1, b, u + b)
+        : form === 'sub' ? equationText(1, -b, u)          // x − b = u, solution u + b
+        : equationText(b, 0, b * u);                        // b·x = b·u, solution u
+      const CARDS = {
+        add: `add ${fmtInt(b)} to both sides`,
+        sub: `take ${fmtInt(b)} off both sides`,
+        mul: `divide both sides by ${fmtInt(b)}`,
+      } as const;
+      const WHY = {
+        add: { tag: 'concept-misconception' as const, why: `Adding puts ${fmtInt(b)} back ON — the undoing move for an equation that TAKES ${fmtInt(b)} away. Look again at what this equation actually does to the unknown.` },
+        sub: { tag: 'concept-misconception' as const, why: `Taking ${fmtInt(b)} off undoes a JOIN — the right move only when the equation adds ${fmtInt(b)} on. Look again at what this equation actually does to the unknown.` },
+        mul: { tag: 'procedure-slip' as const, why: `Dividing undoes a SCALING — the right move only when the unknown is multiplied by ${fmtInt(b)}. Look again at what this equation actually does to the unknown.` },
+      } as const;
+      const correctKey = form === 'add' ? 'sub' : form === 'sub' ? 'add' : 'mul';
+      const others = (['add', 'sub', 'mul'] as const).filter((k) => k !== correctKey);
       return {
-        prompt: `Which single move solves ${equationText(1, b, x + b)} in one step?`,
-        correct: `take ${fmtInt(b)} off both sides`,
-        distractors: [
-          {
-            text: `add ${fmtInt(b)} to both sides`,
-            errorTag: 'concept-misconception',
-            rationale: 'Repeats the move the equation already makes, so the variable ends up further from standing alone.',
-          },
-          {
-            text: `divide both sides by ${fmtInt(b)}`,
-            errorTag: 'procedure-slip',
-            rationale: 'Undoes a scaling, but the equation joins its number by addition, not by multiplication.',
-          },
-        ],
+        prompt: `Which single move solves ${eq} in one step?`,
+        correct: CARDS[correctKey],
+        distractors: others.map((k) => ({ text: CARDS[k], errorTag: WHY[k].tag, rationale: WHY[k].why })),
         hints: [
           'What is being done TO the unknown in this equation?',
           'Name that move, then name the move that cancels it, and apply the second one to both sides.',
@@ -1418,12 +1441,18 @@ export function twoStepEquation(): ItemGen {
     cognitiveOp: 'alg-two-step',
     draw: (r) => {
       const a = r.int(2, 9);
-      // b ≠ a keeps "take b off" and "take a off" distinct moves for the child
-      // reading the equation, which is what E14's order question turns on.
-      const b = a + r.int(1, 20);
-      // …and the solution is kept clear of both constants the equation prints,
-      // so no seed turns "solve it" into "read it off the page".
-      const x = clearOf(r.int(2, 15), [a, b]);
+      // THE LOOSE AMOUNT IS BOUNDED UNDER ONE GROUP (2026-08-25). The old draw
+      // took b = a + int(1, 20) independently of the per-group count, so 81%
+      // of draws (measured, two lattices) described a scene like "2 rows of
+      // seats with the same number in each, and 17 seats stay loose" — sound
+      // arithmetic, impossible storeroom. The solution is drawn first and the
+      // loose amount under it, so the scene always leaves less loose than one
+      // full group holds. b ≠ a still holds (the two "take … off" moves stay
+      // distinct), via a deterministic nudge that never leaves the bound.
+      const x = clearOf(r.int(2, 15), [a]);
+      const bMax = Math.min(20, x - 1);
+      let b = r.int(1, Math.max(1, bMax));
+      if (b === a) b = b + 1 <= bMax ? b + 1 : b - 1; // a ≥ 2 keeps b ≥ 1 and b ≠ a
       const c = a * x + b;
       const grp = r.pick(GROUPINGS);
       const [n1] = two(r);
@@ -1443,24 +1472,62 @@ export function twoStepEquation(): ItemGen {
   });
 }
 
-/** Which move comes FIRST (E14's discrimination — the named divide-too-early slip). */
+/**
+ * Which move comes FIRST (E14's discrimination — the named divide-too-early slip).
+ *
+ * THE FORM IS DRAWN, and the 2026-08-25 sweep is why. Posing only a·x + b = c
+ * makes "take b off" structurally correct on every draw — the divide card was
+ * permanently unkeyable (L38) — and b = a + int(1, 20) made the correct card's
+ * numeral the LARGEST on the page every time: "pick the bigger number" scored
+ * 100.00% over 4,200 draws on two disjoint lattices, on an item E14 serves.
+ *
+ * Now half the draws pose a·(x + b) = c, where the bracket was built FIRST and
+ * scaled LAST — so undoing in reverse order starts with the division, and the
+ * divide card is the truth. Factored linear forms are two weeks old by E14
+ * (E12's distribute work; `verifyDistribute` carries 2(x+3) = 2x+3), and
+ * "undo the last move first" is precisely this week's claim. b is drawn
+ * independently of a (nudged off equality), so no numeral comparison reads
+ * the answer.
+ *
+ * WHAT REMAINS, STATED: "take a off both sides" is still never keyable. It is
+ * kept because it is lexically twinned with the correct subtract card up to
+ * WHICH numeral is named — striking it requires reading which number scales
+ * and which joins, which is the item's own content, so it satisfies L38's
+ * point (nothing is strikeable without engaging the mathematics) rather than
+ * its letter. Measured after the rebuild rather than asserted.
+ */
 export function whichMoveFirst(): ItemGen {
   return discrimination({
     variant: 'structural',
     cognitiveOp: 'alg-two-step',
     draw: (r) => {
+      const grouped = r.int(0, 1) === 1;
       const a = r.int(2, 9);
-      const b = a + r.int(1, 20); // b ≠ a, so the two "take … off" options differ
-      const x = r.int(2, 15);
+      let b = r.int(2, 12);
+      if (b === a) b = b === 12 ? 11 : b + 1;
+      const u = r.int(2, 15);
+      // The grouped branch folds the solution into 2..10 so c = a·(x + b)
+      // stays inside the magnitudes the spread form already prints (≤198).
+      const x = grouped ? 2 + ((u - 2) % 9) : u;
+      const eq = grouped
+        ? `${factoredExpr(a, b)} = ${fmtInt(a * (x + b))}`
+        : equationText(a, b, a * x + b);
+      const subCard = {
+        text: `take ${fmtInt(b)} off both sides`,
+        errorTag: 'procedure-slip' as const,
+        rationale: `Removes ${fmtInt(b)} first — right only when it was joined on OUTSIDE the scaling. Check whether ${fmtInt(b)} sits inside the bracket or outside it.`,
+      };
+      const divCard = {
+        text: `divide both sides by ${fmtInt(a)}`,
+        errorTag: 'procedure-slip' as const,
+        rationale: `Divides first — right only when the WHOLE left side is ${fmtInt(a)} times something. If ${fmtInt(b)} stands outside the scaling, it has to come off before any dividing.`,
+      };
+      const correct = grouped ? divCard.text : subCard.text;
       return {
-        prompt: `Which move comes FIRST when solving ${equationText(a, b, a * x + b)}?`,
-        correct: `take ${fmtInt(b)} off both sides`,
+        prompt: `Which move comes FIRST when solving ${eq}?`,
+        correct,
         distractors: [
-          {
-            text: `divide both sides by ${fmtInt(a)}`,
-            errorTag: 'procedure-slip',
-            rationale: 'Undoes the scaling while the loose amount is still attached, so the division lands on a total that is not all scaled.',
-          },
+          grouped ? subCard : divCard,
           {
             text: `take ${fmtInt(a)} off both sides`,
             errorTag: 'representation-misread',

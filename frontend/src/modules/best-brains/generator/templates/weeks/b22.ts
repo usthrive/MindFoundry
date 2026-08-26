@@ -737,36 +737,92 @@ const discHalfOrQuarterCount = withPin(
     cognitiveOp: 'choose-the-count',
     draw: (r) => {
       const s = r.pick(CUT_WHOLES);
-      const t = 4 * r.int(3, 8);
+      let t = 4 * r.int(3, 8);
       // WHICH part is asked for rotates per draw. Without this the answer is the
       // same share every time, and a child who has met the page twice could pass
-      // it on that alone. Both branches consume one `r.int` and one `r.uint`, so
-      // the stream lands in the same place either way (kit §E2.4).
+      // it on that alone.
       const askHalf = r.int(0, 1) === 0;
+      // WHERE THE KEY SITS AMONG THE CARDS IS ALSO DRAWN (2026-08-25), because
+      // rotating the QUESTION was not enough: with the old fixed pairings the
+      // fraction word pinned the rank outright — "quarter" keyed the smallest
+      // card and "half" the middle one on 100.0% of 3,200 served forms, so a
+      // child who knew only that a quarter is small scored a CERTIFYING slot
+      // without ever counting a share (the E17 conditional-rank class; the
+      // corpus-wide --strict run found it). The distractor PAIRING now rotates
+      // through named misconceptions on both sides of the key — the count of
+      // folds, the count of parts, the stop-after-one-fold share, the
+      // take-the-parts-away misread, the doubled share — so the key lands low,
+      // middle and high in turn under BOTH fraction words.
+      //
+      // THE RANK AND PAIRING ARE DERIVED FROM THE PIN SEED, NOT DRAWN, and a
+      // measurement forced that: drawing them cost two extra rng values, which
+      // shifted every later item in the pack and surfaced QG-1 operand
+      // collisions on 23 of 400 seeds. The pin's own r.uint() was already in
+      // the stream; deriving want/pick from its value keeps this generator's
+      // rng consumption BYTE-IDENTICAL to the shipped week (r.pick, r.int ×2,
+      // r.uint), so every other item in every pack is untouched. The seed is
+      // never printed, so nothing on the page reads the rank.
+      //
+      // Two structural exclusions, stated: at t = 16 the parts-count card (4)
+      // IS the quarter key, and on half-asks it collides with the quarter-share
+      // card — so t folds up by one grade wherever that pairing is drawn; and
+      // key-largest on quarter-asks needs both low cards under the key, so the
+      // whole folds to at least 20 there. Given a small whole the key therefore
+      // cannot land highest — bounded, printed here, and measured at well under
+      // the gate's bar.
+      const pinSeed = r.uint();
+      const want = pinSeed % 3; // 0 smallest · 1 middle · 2 largest
+      const pick = (pinSeed >> 2) % 2;
+      if (!askHalf && want === 2 && t < 20) t += 16;          // 12→28, 16→32
+      if (!askHalf && want === 1 && pick === 1 && t < 20) t += 16; // parts-card must sit UNDER the quarter key
+      if (askHalf && want === 2 && t === 16) t = 20;
       // The pinned truth, recomputed either way: the whole shared into two
       // matching parts, or into four. QG-11 therefore PROVES the keyed count
       // really is one half (or one quarter) of THIS whole.
       countBox.last = {
         params: { a: t, b: askHalf ? 2 : 4, op: '/' },
-        seed: r.uint(),
+        seed: pinSeed,
       };
+      const FOLDS = {
+        text: '2',
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Counts the folds it takes to make quarters, not the pieces sitting in one share.',
+      };
+      const PARTS4 = {
+        text: '4',
+        errorTag: 'concept-misconception' as const,
+        rationale: askHalf
+          ? 'Folds twice out of habit and counts the parts that made, rather than the pieces in one half.'
+          : 'Counts how many equal parts the folding makes, not how many pieces sit in one part.',
+      };
+      const OTHER_SHARE = {
+        text: String(askHalf ? t / 4 : t / 2),
+        errorTag: 'task-comprehension' as const,
+        rationale: askHalf
+          ? 'Folds twice when one fold was asked for, so the share named is a quarter of the whole.'
+          : 'Stops after one fold, so the share named is a half of the whole rather than a quarter.',
+      };
+      const TAKE_AWAY = {
+        text: String(askHalf ? t - 2 : t - 4),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Reads the number of parts as an amount to take away, so the whole comes back almost untouched.',
+      };
+      const DOUBLED = {
+        text: String(2 * t),
+        errorTag: 'procedure-slip' as const,
+        rationale: 'Doubles instead of halving, so the share comes out bigger than the whole thing being shared.',
+      };
+      const pair = askHalf
+        ? want === 0 ? [TAKE_AWAY, DOUBLED]
+          : want === 1 ? [OTHER_SHARE, pick === 0 ? TAKE_AWAY : DOUBLED]
+          : [OTHER_SHARE, PARTS4]
+        : want === 0 ? [OTHER_SHARE, TAKE_AWAY]
+          : want === 1 ? [pick === 0 ? FOLDS : PARTS4, pick === 0 ? OTHER_SHARE : TAKE_AWAY]
+          : [FOLDS, PARTS4];
       return {
         prompt: `A ${s.whole} is cut into ${countNoun(t, s.part)}. Which count is ${askHalf ? 'one half' : 'one quarter'} of the whole ${s.whole}?`,
         correct: String(askHalf ? t / 2 : t / 4),
-        distractors: [
-          {
-            text: String(askHalf ? t / 4 : t / 2),
-            errorTag: 'task-comprehension' as const,
-            rationale: askHalf
-              ? 'Folds twice when one fold was asked for, so the share named is a quarter of the whole.'
-              : 'Stops after one fold, so the share named is a half of the whole rather than a quarter.',
-          },
-          {
-            text: String(askHalf ? t - 2 : t - 4),
-            errorTag: 'representation-misread' as const,
-            rationale: 'Reads the number of parts as an amount to take away, so the whole comes back almost untouched.',
-          },
-        ],
+        distractors: pair,
         hints: [
           'Would this share fill the whole thing, or only part of it?',
           'Picture the equal parts dealt into matching piles, and read off one pile.',
