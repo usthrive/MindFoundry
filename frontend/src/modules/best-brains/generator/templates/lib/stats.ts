@@ -162,6 +162,48 @@ export function balancedSet(r: Rng, n: number, mean: number, spread: number): nu
   return r.shuffle(deltas).map((d) => mean + d);
 }
 
+/**
+ * `balancedSet` at odd n ALWAYS CONTAINS ITS OWN MEAN (the zero delta), and two
+ * consumers want opposite things from that fact. E21's `compareTheTwoCentres`
+ * NEEDS the symmetry — "they come out the same" is genuinely true on a
+ * balanced pool, which is what makes that card keyable at all — so
+ * `balancedSet` keeps it. `meanOfSet` was WOUNDED by it: "which of these five
+ * is the mean" was answerable by inspection on 100.0% of 4,200 draws (two
+ * lattices, 2026-08-25), on the item that teaches the mean as a fair share
+ * that need not be a member of its data.
+ *
+ * This sibling produces the mean-free shape for odd n: the largest chosen
+ * magnitude's pair is skewed by a drawn offset e — {+(dmax+e), −dmax, −e} or
+ * its mirror — so the sum still lands exactly on `mean`·n, no element equals
+ * the mean, and the gap between mean and median VARIES in size and sign (a
+ * constant gap would be a new 100% rule — "sort, take the middle, add one" —
+ * on the level that teaches medians; the first draft had exactly that and a
+ * design challenge caught it). Even n simply delegates: pairs of ±d with
+ * d ≥ 1 never contain the mean.
+ *
+ * Odd n draws magnitudes from 2..spread so the ±e element cannot collide,
+ * which needs spread − 1 ≥ pairs, and the mirrored branch needs
+ * mean > spread·2 at worst; both are asserted, not assumed.
+ */
+export function balancedSetMeanFree(r: Rng, n: number, mean: number, spread: number): number[] {
+  if (n % 2 === 0) return balancedSet(r, n, mean, spread);
+  const pairs = Math.floor(n / 2);
+  if (spread - 1 < pairs) throw new Error(`balancedSetMeanFree: spread ${spread} cannot supply ${pairs} magnitudes from 2..${spread}`);
+  const magnitudes = r.shuffle(Array.from({ length: spread - 1 }, (_, i) => i + 2)).slice(0, pairs);
+  const dmax = Math.max(...magnitudes);
+  const ePool = Array.from({ length: spread }, (_, i) => i + 1).filter((v) => !magnitudes.includes(v));
+  const e = ePool[r.int(0, ePool.length - 1)];
+  const mirror = r.int(0, 1) === 1;
+  if (mean <= dmax + e) throw new Error(`balancedSetMeanFree: mean ${mean} must exceed ${dmax + e} to stay positive`);
+  const deltas: number[] = [];
+  for (const d of magnitudes) {
+    if (d === dmax) continue;
+    deltas.push(d, -d);
+  }
+  deltas.push(...(mirror ? [-(dmax + e), dmax, e] : [dmax + e, -dmax, -e]));
+  return r.shuffle(deltas).map((d) => mean + d);
+}
+
 /** `n` DISTINCT values from [lo, hi] — an odd-length median is then unambiguous. */
 export function distinctSet(r: Rng, n: number, lo: number, hi: number): number[] {
   const span = hi - lo + 1;
@@ -253,9 +295,17 @@ function withFigure(base: ItemGen, build: (params: Record<string, unknown>) => B
  * lands on a half so the week can teach that a mean need not be a member of its
  * own data set.
  */
-export function meanOfSet(opts: { n?: number; clean?: boolean } = {}): ItemGen {
+export function meanOfSet(opts: { n?: number; clean?: boolean; memberMean?: boolean } = {}): ItemGen {
   const n = opts.n ?? 5;
   const clean = opts.clean ?? true;
+  // `memberMean: true` opts back INTO the balanced construction whose mean sits
+  // in its own data — e21's Day-1 item chose that shape deliberately ("a
+  // balanced set really does have mean = median; the coincidence is honest, and
+  // it certifies nothing", e21 header decision 1) and a lib default must not
+  // overrule a week's recorded decision. The DEFAULT is mean-free, because
+  // "which of these is the mean" being answerable by inspection on 100% of
+  // draws is a defect everywhere the choice was NOT deliberate.
+  const memberMean = opts.memberMean ?? false;
   // A deliberately fractional mean must still TERMINATE as a decimal, or the
   // exact-arithmetic contract has nowhere to land. Checked at factory time, so
   // a bad blueprint fails on every seed rather than on one unlucky learner's.
@@ -270,7 +320,11 @@ export function meanOfSet(opts: { n?: number; clean?: boolean } = {}): ItemGen {
         const setting = r.pick(SCORE_SETTINGS);
         const name = r.pick(NAMES);
         const centre = r.int(10, 24);
-        const balanced = balancedSet(r, n, centre, Math.max(3, Math.floor(n / 2) + 2));
+        // Mean-free unless the week opted into the balanced coincidence (see
+        // memberMean above): by default the mean this item asks for must not be
+        // sitting in its own data.
+        const build = memberMean ? balancedSet : balancedSetMeanFree;
+        const balanced = build(r, n, centre, Math.max(3, Math.floor(n / 2) + 2));
         // The blueprint decides the shape: a balanced set means the mean is the
         // centre exactly; nudging one value by 1 puts the mean off it by 1/n —
         // still exact, and the week asked for it.
@@ -555,7 +609,15 @@ export function graphRead(
       // gap across its real range.
       const order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
       const pair = r.shuffle([0, 1, 2]).slice(0, 2);
-      const [hi, lo] = counts[pair[0]] > counts[pair[1]] ? pair : [pair[1], pair[0]];
+      let [hi, lo] = counts[pair[0]] > counts[pair[1]] ? pair : [pair[1], pair[0]];
+      // A ONE-SYMBOL GAP ON A KEYED DISPLAY HANDS OVER THE ANSWER (2026-08-25):
+      // (hi − lo) = 1 makes the answer equal the KEY, which the prompt prints —
+      // measured on 24-26% of difference draws, served by C23. Deterministic
+      // switch to the max-gap pair (three distinct counts guarantee a gap ≥ 2);
+      // no rng consumed, so every later item in the pack is untouched.
+      if (kind === 'difference' && mode === 'pictograph' && counts[hi] - counts[lo] === 1) {
+        [hi, lo] = [order[0], order[2]];
+      }
       if (kind === 'difference') {
         return {
           prompt: `${display} How many more ${subject.thing} does ${labels[hi]} show than ${labels[lo]}?`,
@@ -619,9 +681,19 @@ export function histogramBinRead(): ItemGen {
     situationType: 'part-whole',
     cognitiveOp: 'graph-combine',
     draw: (r) => {
-      const counts = distinctSet(r, 4, 3, 18);
+      const drawn = distinctSet(r, 4, 3, 18);
       const width = r.pick([5, 10]);
       const edges = [0, width, width * 2, width * 3];
+      // THE ANSWER IS WALKED OFF THE PAGE (2026-08-25): c0 + c1 collided with
+      // a printed numeral on 22.6% of draws — the band edges are multiples of
+      // 5 or 10 and the counts run 3-18, so the collision is structural, not
+      // unlucky (E22 measured it, declined to serve this item, and authored
+      // its core locally with exactly this walk).
+      const counts = clearOfPage(
+        drawn, 1, 3, 18,
+        (c) => c[0] + c[1],
+        (c) => [...c, width, width * 2, ...edges, ...edges.map((e) => e + width - 1)],
+      );
       const bins = edges.map((e, i) => `${e}–${e + width - 1} has ${counts[i]}`).join(', ');
       return {
         prompt: `A histogram groups reading times in minutes into equal intervals ${countNoun(width, 'minutes')} wide: ${bins}. How many readers took less than ${countNoun(width * 2, 'minutes')}?`,
@@ -637,6 +709,41 @@ export function histogramBinRead(): ItemGen {
       };
     },
   });
+}
+
+/**
+ * Replace ONE drawn count so an item's answer is not a numeral its prompt
+ * already prints — hoisted verbatim from `weeks/e22.ts`'s `clearOfThePage`
+ * (2026-08-25), where its every design decision is documented against
+ * measurements: each slot is tried in turn because walking only one left a
+ * residue (2 leaks in 3,200 served items, on a mastery slot); the walk is a
+ * bounded DETERMINISTIC step and never a redraw loop (kit §E2.4, L19 — a loop
+ * consumes a variable number of rng values and makes every later item in the
+ * pack depend on this one); `printedBy` is the CALLER's to supply because the
+ * printed set is not the same on every item (a hidden band's own count is the
+ * answer and is NOT printed). If no replacement clears the page the drawn
+ * counts stand rather than the build failing.
+ */
+export function clearOfPage(
+  counts: readonly number[],
+  slot: number,
+  lo: number,
+  hi: number,
+  answerOf: (c: readonly number[]) => number,
+  printedBy: (c: readonly number[]) => readonly number[],
+): number[] {
+  const range = hi - lo + 1;
+  for (let off = 0; off < counts.length; off++) {
+    const s = (slot + off) % counts.length;
+    const start = counts[s];
+    for (let k = 0; k < range; k++) {
+      const cand = lo + ((start - lo + k) % range);
+      if (counts.some((c, j) => j !== s && c === cand)) continue;
+      const trial = counts.map((c, j) => (j === s ? cand : c));
+      if (!printedBy(trial).includes(answerOf(trial))) return trial;
+    }
+  }
+  return [...counts];
 }
 
 /** B23/C23 multi-step: read two entries, combine, then apply the key. */
@@ -753,20 +860,53 @@ export function tallestVsAskedBar(): ItemGen {
       // asked for, the lure becomes the shortest bar: still "you read a bar you
       // were not asked about", which is the whole discrimination, and now a
       // child who has learnt to dodge the tall bar is caught by it.
-      const askedRank = r.int(0, 2);
-      const lureRank = askedRank === 0 ? 2 : 0;
-      const collides = (c: number[], ord: number[]): boolean => {
-        const gap = Math.abs(c[ord[lureRank]] - c[ord[askedRank]]);
-        return gap === c[ord[askedRank]] || gap === c[ord[lureRank]];
-      };
-      let counts = distinctSet(r, 3, 3, 14);
-      let order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
-      for (let i = 0; i < 40 && collides(counts, order); i++) {
-        counts = distinctSet(r, 3, 3, 14);
-        order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
+      // WHERE THE KEY SITS AMONG THE CARDS IS DRAWN FIRST (2026-08-25) — the
+      // construction symbolCountVsValue established in this same file. The
+      // previous draw picked WHICH bar was asked and let the rank fall out,
+      // and the rank fell out crooked: middle 40.9-42.4% over two lattices,
+      // nine points past the corpus bar, because asking the tallest forces
+      // key-largest (both other cards are smaller by construction) while
+      // asking the middle bar against the tallest usually leaves the gap
+      // below it. Ranks are now reachable by construction:
+      //   largest  → ask the tallest (lure = shortest; both cards below key);
+      //   middle   → ask the middle bar with T < 2M (gap lands below key);
+      //   smallest → ask the middle bar with T > 2M (gap lands above key).
+      // The middle bar keeps the tallest as its lure, so the lesson — read the
+      // bar you were asked for, not the one that stands out — is untouched.
+      // Each branch consumes the SAME three int draws and nudges
+      // deterministically, which also retires the 40-iteration redraw loop the
+      // first version used (a variable-rng loop, the exact shape kit §E2.4
+      // forbids — it made every later item in the pack depend on this one).
+      const want = r.int(0, 2); // 0 smallest · 1 middle · 2 largest
+      const d1 = r.int(0, 7);
+      const d2 = r.int(0, 7);
+      const d3 = r.int(0, 7);
+      let T: number, M: number, S: number;
+      if (want === 2) {
+        T = 7 + (d1 % 8);                        // 7..14
+        M = 4 + (d2 % (T - 4));                  // 4..T−1
+        S = 3 + (d3 % (M - 3 || 1));             // 3..M−1 (M ≥ 4 in every branch)
+        if (T === 2 * S) S = S > 3 ? S - 1 : S + 1;   // keep the gap card off S
+        if (S >= M) S = M - 1;                   // only reachable via the nudge above
+      } else if (want === 1) {
+        T = 9 + (d1 % 6);                        // 9..14
+        const mLo = Math.floor(T / 2) + 1;       // T < 2M
+        M = mLo + (d2 % (T - mLo));              // mLo..T−1
+        S = 3 + (d3 % (M - 3 || 1));             // gap ≠ key holds by T < 2M strict
+        if (S >= M) S = M - 1;
+      } else {
+        T = 11 + (d1 % 4);                       // 11..14
+        const mHi = Math.ceil(T / 2) - 1;        // T > 2M
+        M = 4 + (d2 % Math.max(1, mHi - 3));     // 4..mHi
+        S = 3 + (d3 % (M - 3 || 1));
+        if (S >= M) S = M - 1;
       }
-      const tallest = order[lureRank];
-      const asked = order[askedRank];
+      const slots = r.shuffle([0, 1, 2]);
+      const counts: number[] = [];
+      counts[slots[0]] = T; counts[slots[1]] = M; counts[slots[2]] = S;
+      const order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
+      const asked = want === 2 ? order[0] : order[1];
+      const tallest = want === 2 ? order[2] : order[0];
       return {
         prompt: `A bar graph shows ${subject.thing}. ${labels[0]} is at ${counts[0]}, ${labels[1]} at ${counts[1]} and ${labels[2]} at ${counts[2]}. Which number answers "how many for ${labels[asked]}"?`,
         correct: String(counts[asked]),
@@ -774,7 +914,7 @@ export function tallestVsAskedBar(): ItemGen {
           {
             text: String(counts[tallest]),
             errorTag: 'representation-misread',
-            rationale: askedRank === 0
+            rationale: want === 2
               ? 'Reads a different bar from the one the question names.'
               : 'Reads the bar that stands out rather than the bar the question names.',
           },
@@ -847,7 +987,14 @@ export function probabilityOfEvent(): ItemGen {
       draw: (r) => {
         const item = r.pick(CHANCE_ITEMS);
         const favorable = r.int(2, 5);
-        const other = r.int(2, 7);
+        let other = r.int(2, 7);
+        // NEVER EXACTLY A HALF (2026-08-25): equal colour counts key 1/2 on
+        // 15.8% of draws — marking the "either it happens or it doesn't, so
+        // fifty-fifty" misconception CORRECT one time in six, on the item E23
+        // serves. One deterministic step, never a redraw loop (kit §E2.4).
+        // E23's own redrawUntil(notAHalf) filter predates this and becomes a
+        // no-op the moment this lands.
+        if (other === favorable) other = other === 7 ? 6 : other + 1;
         const total = favorable + other;
         return {
           prompt: `${item.holder} holds ${countNoun(favorable, `${item.target} ${item.unit}`)} and ${countNoun(other, `${item.other} ${item.unit}`)}. One is taken out without looking. What is the probability that it is ${item.target}?`,
@@ -881,7 +1028,11 @@ export function complementProbability(): ItemGen {
     cognitiveOp: 'complement',
     draw: (r) => {
       const total = r.pick([6, 8, 9, 10, 12]);
-      const favorable = r.int(2, total - 2);
+      let favorable = r.int(2, total - 2);
+      // Same half-guard as probabilityOfEvent above: the complement of a half
+      // IS a half, so with favorable·2 == total this item keyed the named
+      // misconception's own answer on 16.1% of draws. One deterministic step.
+      if (favorable * 2 === total) favorable = favorable === total - 2 ? favorable - 1 : favorable + 1;
       const item = r.pick(CHANCE_ITEMS);
       return {
         prompt: `A spinner is cut into ${countNoun(total, 'equal parts')}, and ${countNoun(favorable, 'parts')} are ${item.target}. What is the probability that one spin does NOT land on ${item.target}?`,
@@ -900,7 +1051,21 @@ export function complementProbability(): ItemGen {
   });
 }
 
-/** E23 — "either it happens or it does not, so it must be half". */
+/**
+ * E23 — "either it happens or it does not, so it must be half".
+ *
+ * @deprecated MEASURED UNSERVABLE (E23 pre-sweep, 6,000 draws): the "1/2" card
+ * is offered on every draw and keyed on none — and it is ALWAYS the middle
+ * option by algebra, not luck: the other two cards are p and 1 − p, so 1/2
+ * lies strictly between them on every legal draw (p = 1/2 is excluded by this
+ * generator's own guard). "Strike the middle, take the smaller" scores 90.3%.
+ * No draw parameter can fix it — a live 1/2 card and a complement distractor
+ * are mutually exclusive (when p = 1/2 they collapse onto one value), so the
+ * repair is a redesign: see e23.ts `discrimWhichChance`, which enumerates the
+ * card set by key-rank at module load and keys "1/2" on 12.1% of draws. Any
+ * future week wanting this item should port that design; serving this one
+ * ships a page that gets WORSE once a child spots the dead card.
+ */
 export function eitherOrFiftyFifty(): ItemGen {
   return discrimination({
     variant: 'cross-op',
@@ -912,7 +1077,11 @@ export function eitherOrFiftyFifty(): ItemGen {
       // and the complement distractor cannot collide with the correct answer.
       const favorable = drawn * 2 === total ? 2 : drawn;
       return {
-        prompt: `A spinner has ${countNoun(total, 'equal parts')}, and ${countNoun(favorable, 'of them')} are green. Which fraction gives the probability of landing on green?`,
+        // Plain interpolation, not countNoun: countNoun pluralises the LAST
+        // word of its phrase, so countNoun(2, 'of them') printed "2 of thems"
+        // on every draw (found by E23's pre-sweep; the sibling call in
+        // eaPastTrialsChangeNext escapes only because its count is always 1).
+        prompt: `A spinner has ${countNoun(total, 'equal parts')}, and ${favorable} of them are green. Which fraction gives the probability of landing on green?`,
         correct: formatFrac(reduceFrac(favorable, total)),
         distractors: [
           {
@@ -988,7 +1157,13 @@ export function eaTallestBarRead(): ItemGen {
     drawParams: (r) => {
       const counts = distinctSet(r, 3, 3, 14);
       const order = [0, 1, 2].sort((a, b) => counts[b] - counts[a]);
-      return { counts, key: 1, index: order[order.length - 1] };
+      // EITHER NON-TALLEST BAR, drawn — never order[order.length − 1], which
+      // named the SHORTEST every draw, so the true answer was the minimum of
+      // three draws from 3–14 and "write the smallest number printed" scored
+      // 100% (measured 2026-08-25; the same defect the 2026-08-15 sweep
+      // repaired in tallestVsAskedBar, whose error-analysis twin this is —
+      // e22 applied this exact repair locally rather than serve it).
+      return { counts, key: 1, index: order[r.int(1, 2)] };
     },
     build: (v, p, r) => {
       const subject = r.pick(GRAPH_SUBJECTS);
@@ -1099,6 +1274,28 @@ export const STATS_TEMPLATE_DEFS: Array<AnswerDef | VerifyDef> = [
   {
     id: 'stat_prob_complement_v1',
     answerFor: (p) => formatFrac(reduceFrac(num(p, 'total') - num(p, 'favorable'), num(p, 'total'))),
+  },
+
+  /**
+   * HISTOGRAM BAR READ AS ONE VALUE (added 2026-08-25; e22.ts header decision 4
+   * records why it is not derivable from any existing verify — the two
+   * identities that LOOK like solutions, c0 = 2·c1 with +/− and c0 = c1² with
+   * +/÷, are killed by measurement: the first admits seven pairs over counts
+   * 4-19 with correct ÷ wrong taking exactly ONE value, three, so "treble what
+   * the student wrote" scores 100%; the second admits two pairs in the range).
+   * correct = the two-band span, wrong = the single named band. c0 ≠ c1 is
+   * guarded at the def, not the caller, so a future non-distinct caller cannot
+   * enable the double-it tell.
+   */
+  {
+    id: 'stat_verify_bin_span_v1',
+    verifyFor: (p) => {
+      const c0 = num(p, 'c0');
+      const c1 = num(p, 'c1');
+      if (c0 < 1) throw new Error('bin span: the other band must hold at least one reading, or the span IS the named band');
+      if (c0 === c1) throw new Error('bin span: equal bands make the miss exactly half the truth — a doubling tell');
+      return { correct: String(c0 + c1), wrong: String(c1) };
+    },
   },
 
   // --- verify truths (QG-11) ------------------------------------------------

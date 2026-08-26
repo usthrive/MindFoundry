@@ -382,15 +382,13 @@ const sitScaleTheRun = situation({
  * legitimate value and a poor question, since "level with the line" is a state
  * rather than a distance and a child may reasonably write either 0 or "level".
  *
- * A READING OF EXACTLY ONE EITHER SIDE IS ALSO EXCLUDED, AND THAT ONE IS A
- * LIBRARY DEFECT WORN AS A GUARD. `lib/format.ts`'s `exactlyOne` tests `n === 1`
- * rather than `Math.abs(n) === 1`, so `valueForms('-1', 'centimetres')` yields
- * "-1 centimetres" and QG-12c rejects the pack. Measured before the guard: 43 of
- * 200 seeds INVALID, every one of them this. It is a build-blocking defect
- * rather than a silent one — the gate is right and the formatter is wrong — and
- * it is invisible to the signed weeks already shipped because E6/E8/E9 carry
- * `cm`/`m`/`°`, which `INVARIANT_UNITS` never inflects. Reported, not edited:
- * `format.ts` is a shared file and a change to it touches all 116 weeks.
+ * (HISTORY: until 2026-08-25 this walk ALSO excluded readings of exactly ±1,
+ * because `lib/format.ts`'s `exactlyOne` was sign-blind — `valueForms('-1',
+ * 'centimetres')` printed "-1 centimetres" and QG-12c rejected the pack, 43 of
+ * 200 seeds. The formatter is fixed; the workaround came off with it, per the
+ * dead-permit rule — a guard that outlives its defect becomes a false record.
+ * Removing it shifts this generator's draws on the seeds the exclusion used to
+ * touch; the week was re-swept and its slot-03 measurements re-taken.)
  */
 const sitSignedShift = situation({
   situationType: 'measurement',
@@ -403,7 +401,7 @@ const sitSignedShift = situation({
     for (let k = 0; k < 16; k++) {
       const cand = 3 + ((drawnShift - 3 + k) % 16);
       const end = rises ? start + cand : start - cand;
-      if (end !== 0 && Math.abs(end) !== 1 && Math.abs(end) !== Math.abs(start) && Math.abs(end) !== cand) {
+      if (end !== 0 && Math.abs(end) !== Math.abs(start) && Math.abs(end) !== cand) {
         shift = cand;
         break;
       }

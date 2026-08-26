@@ -55,7 +55,7 @@
  * Run: npx tsx scripts/bb-answer-entropy-test.ts [--level B] [--seeds 120] [--all]
  */
 
-import { GENERATED_WEEKS, generatePack, CONTENT_VERSION } from '../src/modules/best-brains/generator/packGenerator';
+import { GENERATED_WEEKS, SHADOWED_WEEKS, buildShadowedPack, generatePack, CONTENT_VERSION } from '../src/modules/best-brains/generator/packGenerator';
 // The band-A tap options are built in the DISPLAY layer, not in content, so the
 // gate has to import the same function the screen calls or it cannot see them.
 import { tapOptionsFor } from '../src/modules/best-brains/answers';
@@ -241,17 +241,27 @@ function record(weekId: string, container: string, index: number, it: Item) {
   }
 }
 
-const weeks = GENERATED_WEEKS.filter((w) => !ONLY_LEVEL || w.level === ONLY_LEVEL);
+// GENERATED ∪ SHADOWED (2026-08-25, the D17-§3 residual): a fixture-shadowed
+// builder (today: B14) was invisible to this gate, so its slots had never been
+// measured. Shadowed cells carry `~builder` in their id and NEVER block — the
+// fixture is what a child is served — but their tells now appear in the census.
+const weeks: Array<{ level: any; week: number; shadowed?: boolean }> = [
+  ...GENERATED_WEEKS.filter((w) => !ONLY_LEVEL || w.level === ONLY_LEVEL),
+  ...SHADOWED_WEEKS.filter((w) => !ONLY_LEVEL || w.level === ONLY_LEVEL).map((w) => ({ ...w, shadowed: true })),
+];
 let built = 0;
 const buildFailures: string[] = [];
 
-for (const { level, week } of weeks) {
-  const id = `${level}${week}`;
+for (const { level, week, shadowed } of weeks) {
+  const id = `${level}${week}${shadowed ? '~builder' : ''}`;
   for (let i = 0; i < SEEDS; i++) {
     try {
       // Through the public entry point, so a slot is measured exactly as the
-      // child receives it (fixture resolution, contract wiring and all).
-      const p = generatePack(level, week, i * 7 + 1, CONTENT_VERSION) as unknown as Record<string, any>;
+      // child receives it (fixture resolution, contract wiring and all) —
+      // except for shadowed builders, which the public entry point would hide.
+      const p = (shadowed
+        ? buildShadowedPack(level, week, i * 7 + 1)
+        : generatePack(level, week, i * 7 + 1, CONTENT_VERSION)) as unknown as Record<string, any>;
       built++;
       /**
        * AT BAND A, MEASURE WHAT THE CHILD IS SHOWN — NOT WHAT WAS AUTHORED.
@@ -309,7 +319,8 @@ const findings: Finding[] = [];
 
 for (const s of slots.values()) {
   if (s.draws < 20) continue;
-  const certifying = CERTIFYING.test(s.key.split(' ')[1] ?? '');
+  // A shadowed builder's mastery certifies nobody — the fixture is served.
+  const certifying = CERTIFYING.test(s.key.split(' ')[1] ?? '') && !s.key.includes('~builder');
   const add = (tell: string, detail: string) =>
     findings.push({ slot: s.key, tell, detail, prompt: s.sample, certifying });
 

@@ -804,32 +804,75 @@ const discWhichNumber = withPin(
       // football > space always, so every option stays a whole count a Level-B
       // child can read, and the "gap between the piles" distractor is positive
       // without a nudge or a redraw (kit §E2.4).
-      const football = r.int(24, 44);
-      const space = r.int(8, 21);
-      const shelf = football + space;
+      let football = r.int(24, 44);
+      let space = r.int(8, 21);
       const asksWhole = r.chance(0.5);
+      // WHERE THE KEY SITS AMONG THE CARDS IS DERIVED FROM THE PIN SEED
+      // (2026-08-25). The old fixed pairings pinned the rank per question form
+      // — whole-asks keyed the MIDDLE card and part-asks the SMALLEST on
+      // 100.0% of 2,400 served forms (measured), so "altogether…not → pick
+      // smallest, else pick middle" scored a certifying slot with no
+      // arithmetic (the E17 conditional-rank class; found by the corpus-wide
+      // --strict run). The pairing now rotates through named misconceptions on
+      // both sides of each key. Deriving want/pick from the pin's own r.uint()
+      // keeps rng consumption byte-identical to the shipped week, so no other
+      // item in any pack moves (the B22 rebuild measured what extra draws do:
+      // QG-1 collisions downstream).
+      //
+      // Bounded and stated: a whole-ask key can sit middle or largest, never
+      // smallest (its honest misconceptions — the double-count above it, the
+      // gap and the bigger pile below — leave no second card above the whole
+      // that is not absurd at this band); a part-ask key can sit smallest or
+      // middle, and its middle branch narrows the ranges so the gap card lands
+      // under the key (football < 2·space demands football ≤ 40).
+      const pinSeed = r.uint();
+      const wantHigh = pinSeed % 2 === 1;      // whole: largest · part: middle
+      const pick = (pinSeed >> 2) % 2 === 1;
+      if (!asksWhole && wantHigh) {
+        football = 24 + ((football - 24) % 17);              // 24..40
+        const sMin = Math.floor(football / 2) + 1;           // gap < key needs f < 2s
+        if (space < sMin) space = sMin + ((space - 8) % (21 - sMin + 1 || 1));
+        if (football - space === space) space = space + 1 <= 21 ? space + 1 : space - 1;
+      }
+      const shelf = football + space;
       whichNumberBox.last = {
         params: asksWhole
           ? { a: football, b: space, op: '+' }
           : { a: shelf, b: football, op: '-' },
-        seed: r.uint(),
+        seed: pinSeed,
+      };
+      const DOUBLE_COUNT = {
+        text: String(shelf + space),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Counts the smaller pile a second time, so one lot of comics is paid for twice.',
+      };
+      const GAP = {
+        text: String(football - space),
+        errorTag: 'task-comprehension' as const,
+        rationale: 'Takes one pile from the other, which measures the gap between them and not the count the question asks for.',
+      };
+      const BIGGER_PILE = {
+        text: String(football),
+        errorTag: 'task-comprehension' as const,
+        rationale: asksWhole
+          ? 'Stops at the bigger pile, as though the shelf held nothing else.'
+          : 'Hands back the pile the sentence has just named, which is not the pile the question asks for.',
+      };
+      const JOIN = {
+        text: String(shelf + football),
+        errorTag: 'concept-misconception' as const,
+        rationale: 'Joins the two stated counts, so the answer comes out larger than the whole shelf.',
+      };
+      const WHOLE_BACK = {
+        text: String(shelf),
+        errorTag: 'representation-misread' as const,
+        rationale: 'Hands back the whole shelf, when the question asks for one part of it.',
       };
       if (asksWhole) {
         return {
           prompt: `The swap shelf holds ${countNoun(football, 'football comics')} and ${countNoun(space, 'space comics')}. Which number tells how many comics are on the shelf?`,
           correct: String(shelf),
-          distractors: [
-            {
-              text: String(shelf + space),
-              errorTag: 'concept-misconception' as const,
-              rationale: 'Counts the smaller pile a second time, so one lot of comics is paid for twice.',
-            },
-            {
-              text: String(football - space),
-              errorTag: 'task-comprehension' as const,
-              rationale: 'Takes one pile from the other, which measures the gap between them and not the shelf.',
-            },
-          ],
+          distractors: wantHigh ? [BIGGER_PILE, GAP] : [DOUBLE_COUNT, pick ? BIGGER_PILE : GAP],
           hints: [
             'Does this question want the whole shelf, or one part of it?',
             'Say the whole and the two parts out loud. Then pick the one that is missing.',
@@ -840,23 +883,12 @@ const discWhichNumber = withPin(
       return {
         prompt: `The swap shelf holds ${countNoun(shelf, 'comics')} altogether. ${countNoun(football, 'football comics')} sit among them. Which number tells how many comics are not football comics?`,
         correct: String(space),
-        distractors: [
-          {
-            text: String(shelf + football),
-            errorTag: 'concept-misconception' as const,
-            rationale: 'Joins the two stated counts, so the answer comes out larger than the whole shelf.',
-          },
-          {
-            text: String(football),
-            errorTag: 'task-comprehension' as const,
-            rationale: 'Hands back the pile the sentence has just named, which is not the pile the question asks for.',
-          },
-        ],
+        distractors: wantHigh ? [GAP, pick ? BIGGER_PILE : WHOLE_BACK] : [BIGGER_PILE, pick ? JOIN : WHOLE_BACK],
         hints: [
           'Does this question want the whole shelf, or one part of it?',
           'Say the whole and the two parts out loud. Then pick the one that is missing.',
         ],
-        errorTags: ['concept-misconception', 'task-comprehension'],
+        errorTags: ['concept-misconception', 'task-comprehension', 'representation-misread'],
       };
     },
   }),

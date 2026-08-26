@@ -289,7 +289,12 @@ const wKeyedDisplay = asWarmup(graphRead('combine', 'pictograph'), C23);
 // ---------------------------------------------------------------------------
 
 /** Day 1 only: a balanced set, a whole fair share, and the two centres agreeing. */
-const sitMeanBalanced = meanOfSet({ n: 5 });
+// `memberMean: true` (2026-08-25): the library's default became MEAN-FREE when
+// the sweep found "which of these is the mean" answerable by inspection on
+// 100% of draws. This Day-1 item keeps the balanced shape ON PURPOSE — the
+// argument is decision 1 above, unchanged — so it opts in explicitly rather
+// than inheriting silently. Same draws as it has served since the week shipped.
+const sitMeanBalanced = meanOfSet({ n: 5, memberMean: true });
 /** The mean that is not a member of its own data — a quarter, exact by construction. */
 const sitMeanFractional = meanOfSet({ n: 4, clean: false });
 /** The odd-length median, with BOTH positional habits measured off it. */

@@ -308,20 +308,10 @@ const wJoin = asWarmup(addWhole(126, 489), D2);
 // The chance itself — the library item, filtered (decision 8)
 // ---------------------------------------------------------------------------
 
-/**
- * `redrawUntil` — a rejection FILTER over a family generator's own draw, the
- * shape E21 established: it re-runs the draw and keeps the first item that
- * satisfies the condition, so nothing is fabricated and the accepted item is one
- * `lib/stats.ts` itself produced. Bounded, so a draw space that cannot satisfy
- * the condition degrades to the family's own behaviour rather than hanging.
- */
-function redrawUntil(base: ItemGen, holds: (d: ItemDraft) => boolean, tries = 12): ItemGen {
-  return (rng, guard, difficulty) => {
-    let d = base(rng, guard, difficulty);
-    for (let i = 0; i < tries && !holds(d); i++) d = base(rng, guard, difficulty);
-    return d;
-  };
-}
+// (`redrawUntil`, the rejection-filter helper this week defined for its
+// never-a-half guarantee, was retired 2026-08-25 with the filter itself —
+// the guarantee moved into lib/stats.ts. E21 keeps its own copy for the
+// missing-value filter that is still live there.)
 
 /**
  * THE CHANCE OF AN EVENT, from the family — and the one item in the week that
@@ -329,21 +319,18 @@ function redrawUntil(base: ItemGen, holds: (d: ItemDraft) => boolean, tries = 12
  * made visible and is the reason this generator is served at all rather than
  * re-authored.
  *
- * FILTERED SO THE ANSWER IS NEVER EXACTLY A HALF. `probabilityOfEvent` draws the
- * two colours independently, so four of its twenty-four cells land on the
- * diagonal where they are equal — measured 15.8% of 6,000 draws keying 1/2. On
- * an ordinary week that would be unremarkable. In THIS week 1/2 is the answer the
- * named misconception produces, so a sixth of the practice would mark a child
- * right for the reasoning the week exists to destroy. The filter reads the
- * item's own params, so the accepted draw is still the family's.
+ * THE NEVER-EXACTLY-A-HALF GUARANTEE NOW LIVES IN THE LIBRARY (2026-08-25).
+ * When this week shipped, `probabilityOfEvent` drew its two colours
+ * independently and keyed 1/2 on 15.8% of draws — in THIS week the answer the
+ * named misconception produces — so a local `redrawUntil(notAHalf)` filter
+ * stood here. The library now nudges off the diagonal itself, which made the
+ * filter a no-op asserting a defect that no longer exists; a wrapper that does
+ * nothing is a decision record telling the next author a falsehood, so it is
+ * retired rather than kept. (The lib fix shifted this week's rng stream on the
+ * ~16% of seeds where the filter used to re-draw; the week was re-swept and
+ * re-measured on the same lattices at the change.)
  */
-const notAHalf = (d: ItemDraft): boolean => {
-  const p = d.generator?.params;
-  if (!p) return true;
-  return Number(p.favorable) * 2 !== Number(p.total);
-};
-
-const sitChanceOfEvent = redrawUntil(probabilityOfEvent(), notAHalf);
+const sitChanceOfEvent = probabilityOfEvent();
 
 // ---------------------------------------------------------------------------
 // The complement — the other piece of the same line
