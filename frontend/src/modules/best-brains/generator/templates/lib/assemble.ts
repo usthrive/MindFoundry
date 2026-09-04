@@ -55,8 +55,17 @@ const DEFAULT_BAND: Record<BBLevel, BBBand> = {
   A: 'beginner', B: 'intermediate', C: 'intermediate', D: 'transition', E: 'advanced',
 };
 
-/** Band A works one operation to a page (E62); the rest carry two. */
-const PAGE_COUNT: Record<BBBand, number> = { beginner: 1, intermediate: 2, transition: 2, advanced: 2 };
+/**
+ * Pages per day. `PackDay.pageCount` is a NUMBER OF PAGES everywhere it is
+ * read (types.ts, QG-6, the A15/B14 fixtures, PracticePage's "page k of N") —
+ * it was written here as items-per-page, which coincides at B–E (two pages of
+ * two) and inverts at band A (one page holding every item: "page 1 of 1").
+ * Band A works one operation to a page (E62), so its page count is the day's
+ * practice-item count — the retrieval items are WarmUp's, not PracticePage's.
+ */
+function pagesPerDay(band: BBBand, practiceItems: number): number {
+  return band === 'beginner' ? Math.max(1, practiceItems) : 2;
+}
 
 const SCAFFOLD_NOTES: Record<BBBand, string> = {
   beginner:
@@ -299,7 +308,7 @@ export function makeWeekBuilder(bp: WeekBlueprint): (packSeed: number, contentVe
 
     // Assemble (makeDay / makeMasteryItems strip authorMeta on emit).
     const days: PackDay[] = dayDrafts.map((drafts, i) =>
-      makeDay(LEVEL, bp.week, i + 1, FOCI[i], PAGE_COUNT[band], drafts, bp.teacherNoteStrips?.[i]),
+      makeDay(LEVEL, bp.week, i + 1, FOCI[i], pagesPerDay(band, drafts.filter((d) => !d.isRetrieval).length), drafts, bp.teacherNoteStrips?.[i]),
     );
     const formA = makeMasteryItems(LEVEL, bp.week, 'MA', formADrafts);
     const formB = makeMasteryItems(LEVEL, bp.week, 'MB', formBDrafts);

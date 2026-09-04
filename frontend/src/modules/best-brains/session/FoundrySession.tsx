@@ -42,7 +42,9 @@ interface FoundrySessionValue {
   ensureWeekStarted: () => Promise<void>;
 }
 
-const FoundrySessionContext = createContext<FoundrySessionValue | undefined>(undefined);
+/** Exported so a screen can be mounted under a stub session (scripts/screen-harness). */
+export const FoundrySessionContext = createContext<FoundrySessionValue | undefined>(undefined);
+export type { FoundrySessionValue };
 
 export function FoundrySessionProvider({ children }: { children: ReactNode }) {
   const { currentChild } = useAuth();

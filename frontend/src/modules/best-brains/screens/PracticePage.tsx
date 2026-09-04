@@ -69,8 +69,13 @@ export default function PracticePage() {
   }, [pack, day]);
 
   const items = useMemo(() => packDay?.items.filter((i) => !i.isRetrieval) ?? [], [packDay]);
-  const pageCount = Math.max(1, packDay?.pageCount ?? 1);
-  const perPage = Math.max(1, Math.ceil(items.length / pageCount));
+  // `pageCount` is the number of PAGES the day is served in (types.ts). Items
+  // are spread evenly, so every page in "page k of N" is reached: ceil-sized
+  // pages left the last page unreachable whenever items % pageCount ≠ 0 (B2/B14
+  // Day 1: 4 items over 3 pages never showed page 3), and one page per item at
+  // band A (E62) reads "page 3 of 3" on the third item, as it should.
+  const pageCount = Math.max(1, Math.min(packDay?.pageCount ?? 1, Math.max(1, items.length)));
+  const pageOf = (i: number) => Math.floor((Math.min(i, items.length - 1) * pageCount) / Math.max(1, items.length)) + 1;
 
   // Resume-at-item: skip what's already completed ("we were right here").
   const [completedIds, setCompletedIds] = useState<string[]>(
@@ -114,7 +119,7 @@ export default function PracticePage() {
   if (!dayAllowed.current) return <Navigate to="/foundry/hub" replace />;
 
   const item = items[Math.min(idx, items.length - 1)];
-  const page = Math.floor(Math.min(idx, items.length - 1) / perPage) + 1;
+  const page = pageOf(idx);
 
   async function persistProgress(ids: string[], done: boolean) {
     if (!weekState) return;
@@ -206,7 +211,7 @@ export default function PracticePage() {
       return;
     }
     // Sprint offer at the page boundary (Flow 5: Days 2–3, ≤2/week, opt-in).
-    const nextPage = Math.floor(nextIdx / perPage) + 1;
+    const nextPage = pageOf(nextIdx);
     if (nextPage > page && enrollment && weekState && pack && sprintEligible(enrollment, weekState, pack, day)) {
       await persistProgress(ids, false);
       await refreshWeekState(); // hand the fresh row back to the session context

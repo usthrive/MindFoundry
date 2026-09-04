@@ -259,7 +259,12 @@ export function validatePack(
     if (DAY_FOCUS_TEMPLATE[di] && day.focus !== DAY_FOCUS_TEMPLATE[di]) {
       add('QG-8', `${p}.focus`, `Day ${di + 1} focus "${day.focus}" violates the DD3 template order (expected "${DAY_FOCUS_TEMPLATE[di]}")`);
     }
-    if (day.pageCount < 1 || day.pageCount > 3) add('QG-6', `${p}.pageCount`, `pageCount ${day.pageCount} outside 1-3`);
+    // Pages per day: 1–3, or up to one page per practice item where the band
+    // works one operation to a page (E62; band A). The exact agreement between
+    // this number and what PracticePage renders is bb-screen-contract-test's.
+    const practiceItems = day.items.filter((i) => !i.isRetrieval).length;
+    const maxPages = Math.max(3, practiceItems);
+    if (day.pageCount < 1 || day.pageCount > maxPages) add('QG-6', `${p}.pageCount`, `pageCount ${day.pageCount} outside 1-${maxPages}`);
     if (day.items.length < 3 || day.items.length > 8) add('QG-6', `${p}.items`, `${day.items.length} items outside 3-8`);
     if (day.teacherNoteStrip !== undefined && day.day !== 5) {
       add('S-SCHEMA', `${p}.teacherNoteStrip`, 'teacherNoteStrip belongs on Day 5 only');
