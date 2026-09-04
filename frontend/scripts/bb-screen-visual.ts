@@ -34,14 +34,27 @@ const server = http.createServer((req, res) => {
 await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${(server.address() as any).port}`;
 
-type Scn = { name: string; screen: 'practice' | 'warmup'; level: string; week: number; day: number; done?: number; fix?: 0 | 1 };
+type Scn = { name: string; screen: 'practice' | 'warmup' | 'puzzle'; level: string; week: number; day: number; done?: number; fix?: 0 | 1 };
 const retr = (L: string, w: number, d: number) => generatePack(L as any, w, 12345).days[d - 1].items.filter((i) => i.isRetrieval).length;
 const firstWeek = (L: string, d: number, pred: (n: number) => boolean) => AVAILABLE_WEEKS.filter((c) => c.level === L && c.source !== 'fixture').map((c) => c.week).find((w) => pred(retr(L, w, d)))!;
 const B1 = firstWeek('B', 2, (n) => n === 1);
 const D2 = firstWeek('D', 2, (n) => n === 2);
 const D_any = AVAILABLE_WEEKS.filter((c) => c.level === 'D' && c.source !== 'fixture')[0].week;
 
-const SCENARIOS: Scn[] = [
+type Scn2 = { name: string; screen: 'practice' | 'warmup' | 'puzzle'; level: string; week: number; day: number; done?: number; fix?: 0 | 1 };
+const D5one = AVAILABLE_WEEKS.filter((c) => c.level === 'D' && c.source !== 'fixture').map((c) => c.week).find((w) => retr('D', w, 5) === 1)!;
+const FLOW: Scn2[] = [
+  { name: 'flow-practice-A2d1-q1', screen: 'practice', level: 'A', week: 2, day: 1, done: 0 },
+  { name: 'flow-practice-A2d2-q1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0 },
+  { name: 'flow-practice-A2d2-q2', screen: 'practice', level: 'A', week: 2, day: 2, done: 1 },
+  { name: 'flow-warmup-A2d2', screen: 'warmup', level: 'A', week: 2, day: 2 },
+  { name: `flow-warmup-B${B1}d2`, screen: 'warmup', level: 'B', week: B1, day: 2 },
+  { name: `flow-practice-B${B1}d2-q1`, screen: 'practice', level: 'B', week: B1, day: 2, done: 0 },
+  { name: `flow-warmup-D${D2}d2-2items`, screen: 'warmup', level: 'D', week: D2, day: 2 },
+  { name: `flow-practice-D${D2}d2-q3`, screen: 'practice', level: 'D', week: D2, day: 2, done: 0 },
+  { name: `flow-puzzle-D${D5one}d5`, screen: 'puzzle', level: 'D', week: D5one, day: 5 },
+];
+const SCENARIOS: Scn[] = process.argv.includes('--flow') ? (FLOW as Scn[]) : [
   { name: 'practice-A2d2-before-item1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, fix: 0 },
   { name: 'practice-A2d2-after-item1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, fix: 1 },
   { name: 'practice-A2d2-before-item3', screen: 'practice', level: 'A', week: 2, day: 2, done: 2, fix: 0 },
@@ -91,6 +104,8 @@ for (const s of SCENARIOS) {
     return {
       redirected: t('[data-harness="redirected"]'),
       header: t('header p'),
+      counter: t('[data-bb-counter]'),
+      dots: document.querySelectorAll('[data-bb-dot]').length,
       prompt: t('section p'),
       buttons,
       minTarget: Math.min(...buttons.map((b) => Math.min(b.w, b.h))),
@@ -104,7 +119,7 @@ for (const s of SCENARIOS) {
   fs.writeFileSync(`${OUT}/${s.name}.png`, buf);
   shots.set(s.name, buf);
   console.log(`\n# ${s.name}`);
-  console.log(`  header="${m.header}"  pageCount=${m.pageCount}  practiceItems=${m.practiceIds?.length}  pageHeight=${m.pageHeight}px  minTapTarget=${m.minTarget}px`);
+  console.log(`  header="${m.header}" counter="${m.counter}" dots=${m.dots}  pageCount=${m.pageCount}  practiceItems=${m.practiceIds?.length}  pageHeight=${m.pageHeight}px  minTapTarget=${m.minTarget}px`);
   console.log(`  prompt="${(m.prompt ?? '').slice(0, 90)}"`);
   console.log(`  buttons: ${m.buttons.map((b) => `${b.label || '?'}[${b.w}×${b.h}]`).join(' ')}`);
   if (m.tts && m.tts.length) console.log(`  speech calls in order: ${m.tts.join(' → ')}`);
@@ -124,8 +139,10 @@ async function diff(a: string, b: string) {
   const ys = [...rows].sort((p, q) => p - q);
   console.log(`  ${a} vs ${b}: ${n} differing pixels${n ? `, rows ${ys[0]}..${ys[ys.length - 1]}` : ''}`);
 }
+if (!process.argv.includes('--flow')) {
 console.log('\n# pixel diffs (before vs after)');
 await diff('practice-A2d2-before-item1', 'practice-A2d2-after-item1');
 await diff('practice-A2d2-before-item3', 'practice-A2d2-after-item3');
 await diff(`practice-D${D_any}d2-before-item1`, `practice-D${D_any}d2-after-item1`);
+}
 console.log(`\nscreenshots → ${OUT}`);
