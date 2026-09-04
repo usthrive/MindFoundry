@@ -274,7 +274,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswerOf, assertsParam, barModel } from '../lib/figures';
+import { assertsAnswerOf, assertsParam, barModel, hundredChart } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -484,9 +484,45 @@ const wTensOnLabel = asWarmup(
   B2,
 );
 
+/**
+ * THE CHART THIS ITEM TALKS ABOUT, DRAWN (2026-08-31).
+ *
+ * The prompt says "a number path written in rows of ten" and asks what one step
+ * straight DOWN lands on. That sentence names a shape, and until now nothing
+ * drew it: a child who does not already picture the grid cannot tell what a
+ * "row" is, let alone step down one. Reported by the owner's son on his own Day
+ * 2, and it is the same class the `hundredChart` primitive was built for — its
+ * docstring records twenty-six such items found by the same child a fortnight
+ * earlier. B1 (where this is taught) and B10 (which retrieves it exactly as this
+ * week does) both draw the chart; this warm-up was the one that was missed.
+ *
+ * Measured across the corpus at the time of the fix: core items carrying a
+ * spatial chart reference were 88% drawn, retrieval warm-ups only 39% — the
+ * unevenness is what says this is drift rather than a decision.
+ *
+ * THE LANDING ROW IS LEFT BLANK, which is the whole difference between a chart
+ * that teaches and one that answers (`hundredChart`'s `blank`, L33). The child
+ * sees ten to a row and a column standing under its neighbour — the structure
+ * the reasoning needs — and still has to know that one row down is one whole ten
+ * on. The start `n` is drawn 23-79 and the landing is `n + 10`, so the two are
+ * always exactly one row apart and blanking the landing's row can never rub out
+ * the number the prompt prints.
+ */
+const CHART_ALT = 'a hundred chart in rows of ten, with the row the step lands in left empty';
+
+function chartRowOf(v: number): number[] {
+  const first = Math.floor((v - 1) / 10) * 10 + 1;
+  return Array.from({ length: 10 }, (_, i) => first + i);
+}
+
+// (`withFigure` is defined above with the pin helpers — it attaches a picture
+// built from the item's own params, takes no rng draw, and so leaves every
+// other item in the pack exactly where it was.)
+
 /** B1 — one step down a path written in rows of ten, which is one whole ten on. */
-const wStepDownARow = asWarmup(
-  situation({
+const wStepDownARow = withFigure(
+  asWarmup(
+    situation({
     situationType: 'rate-of-change',
     cognitiveOp: 'chart-step-down',
     draw: (r) => {
@@ -502,10 +538,12 @@ const wStepDownARow = asWarmup(
           'Keep the last digit still, and count on one whole ten.',
         ],
         errorTags: ['representation-misread', 'procedure-slip'],
-      };
-    },
-  }),
-  B1,
+        };
+      },
+    }),
+    B1,
+  ),
+  (p) => hundredChart({ blank: chartRowOf(Number(p.n) + 10), alt: CHART_ALT }),
 );
 
 /** A22 — counting in tens, the fact that makes one ten outrank nine singles. */

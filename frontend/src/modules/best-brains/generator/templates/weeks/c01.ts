@@ -76,7 +76,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { an, countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam, barModel } from '../lib/figures';
+import { assertsAnswer, assertsParam, barModel, baseTenBlocks } from '../lib/figures';
 import { drawUniqueItem } from '../lib/guard';
 import { drawFresh, numberWords } from '../shared';
 import type { ItemDraft } from '../shared';
@@ -636,6 +636,25 @@ export const buildC01 = makeWeekBuilder({
       'The digit 4 can be worth four, or forty, or four hundred. Nothing about the 4 has changed. Only one thing moved. It is the column the 4 was standing in.',
     whyBeforeHow:
       'Ten ones bundle into one ten. Ten tens bundle into one hundred. Every bundle is worth ten of the bundle on its right. So the hundreds-tens-ones chart gives each size a column. Then the position of a digit does all the work. That is why ten digits can name every number up to a thousand. A digit has a face, which is the mark you see. It also has a worth. The worth is its face times whatever the column holds. It is also why an empty column still needs a zero. The zero is not nothing. It holds every digit to its left in the column it earned. Rub the zero out and those digits slide one column right. A four hundred quietly becomes a forty.',
+    /**
+     * THE WHY, SHOWN (2026-08-31). This blurb opens on "ten ones bundle into
+     * one ten" and every picture in the lesson script is a place-value chart or
+     * a bar model — none of them shows the BUNDLING itself, which is the move
+     * the whole argument rests on. `baseTenBlocks` with a `then` state and the
+     * `becomes` connector draws exactly that, and it animates as the segment
+     * settles, so the child watches ten ones turn into one ten rather than only
+     * hearing that they do.
+     */
+    whyFigure: baseTenBlocks(
+      { rods: 0, ones: 10, label: 'ten ones' },
+      {
+        then: { rods: 1, ones: 0, label: 'one ten' },
+        connector: 'becomes',
+        highlight: 'ones',
+        showColumns: true,
+        alt: 'ten single ones gathered up and traded for one ten-rod, the same amount written a shorter way',
+      },
+    ),
     script: [
       {
         say: 'Watch me build a number one column at a time. Three hundreds go in the left column. Four tens go in the middle. Six ones go on the right. Look at my 3 the moment I put it down. On its own it means three. Standing in that column it means three hundred. I say that out loud every time. It is the only thing this whole week is about.',
