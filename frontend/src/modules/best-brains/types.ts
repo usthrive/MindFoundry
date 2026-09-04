@@ -236,7 +236,11 @@ export interface PackDay {
   day: number;
   /** DD3 template order enforced by QG-8, not schema. */
   focus: DayFocus;
-  /** 1–3 pages. */
+  /**
+   * Number of PAGES the day's practice items are served in (PracticePage's
+   * "page k of N"; the sprint offer sits at a page boundary). 1–3, or one page
+   * per practice item where the band works one operation to a page (E62).
+   */
   pageCount: number;
   /** 3–8 items. */
   items: PackItem[];
