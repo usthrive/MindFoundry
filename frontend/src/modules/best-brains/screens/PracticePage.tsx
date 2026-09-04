@@ -18,6 +18,8 @@ import { recordItemAttempt, updateDayProgress } from '../services/bbProgressServ
 import { useFoundrySession } from '../session/FoundrySession';
 import { isDayActionable } from '../session/weekLogic';
 import { sprintEligible } from '../session/sprintLogic';
+import { dayFlow } from '../session/dayFlow';
+import QuestionCounter from '../components/QuestionCounter';
 import { nearTransferVariant, type NearTransferItem } from '../session/fixit';
 import {
   FATIGUE_ACCURACY_FLOOR,
@@ -68,7 +70,10 @@ export default function PracticePage() {
     return getPackDay(pack, day);
   }, [pack, day]);
 
-  const items = useMemo(() => packDay?.items.filter((i) => !i.isRetrieval) ?? [], [packDay]);
+  // Today's work: the non-retrieval items, plus any retrieval item that has no
+  // warm-up screen of its own (Day 1, or a lone one — session/dayFlow.ts).
+  const flow = useMemo(() => (packDay ? dayFlow(packDay) : null), [packDay]);
+  const items = useMemo(() => flow?.work ?? [], [flow]);
   // `pageCount` is the number of PAGES the day is served in (types.ts). Items
   // are spread evenly, so every page in "page k of N" is reached: ceil-sized
   // pages left the last page unreachable whenever items % pageCount ≠ 0 (B2/B14
@@ -360,9 +365,14 @@ export default function PracticePage() {
   return (
     <div className="flex min-h-[70vh] flex-col gap-5">
       <header className="flex items-center justify-between">
-        <p className="mf-label">
-          Day {day} · page {page} of {pageCount}
-        </p>
+        {/* The child's count is the DAY's ("Question 3 of 5"), never the page —
+            a page is a sprint-offer boundary, not something a child sees. */}
+        <QuestionCounter
+          day={day}
+          k={(flow?.warmup.length ?? 0) + Math.min(idx, items.length - 1) + 1}
+          total={flow?.total ?? items.length}
+          band={band}
+        />
         <div className="flex gap-2">
           <button
             type="button"

@@ -11,8 +11,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { generatePack } from '@/modules/best-brains/generator/packGenerator';
 import { FoundrySessionContext, type FoundrySessionValue } from '@/modules/best-brains/session/FoundrySession';
 import { bandForLevel } from '@/modules/best-brains/copy';
+import { dayFlow } from '@/modules/best-brains/session/dayFlow';
 import PracticePage from '@/modules/best-brains/screens/PracticePage';
 import WarmUp from '@/modules/best-brains/screens/WarmUp';
+import PuzzleGrove from '@/modules/best-brains/screens/PuzzleGrove';
 import type { BBLevel, DayProgress } from '@/modules/best-brains/types';
 import '@/index.css';
 
@@ -29,11 +31,12 @@ const pack = generatePack(level, week, seed);
 if (fix && pack.presentation?.oneOperationPerPage) {
   for (const d of pack.days) d.pageCount = d.items.filter((i) => !i.isRetrieval).length;
 }
-const practice = pack.days[day - 1].items.filter((i) => !i.isRetrieval);
+const practice = dayFlow(pack.days[day - 1]).work;
 const twoDaysAgo = new Date(Date.now() - 2 * 86400e3).toISOString();
 const dayProgress: DayProgress = { lesson: { state: 'done' } };
 for (let d = 1; d < day; d++) dayProgress[String(d)] = { state: 'done', completedAt: twoDaysAgo, completedItemIds: [] };
 dayProgress[String(day)] = { state: 'partial', completedItemIds: practice.slice(0, done).map((i) => i.id) };
+if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds: [] };
 
 const value: FoundrySessionValue = {
   childId: 'harness', childName: 'Harness', childAge: level === 'A' ? 5 : 9, loading: false,
@@ -46,12 +49,13 @@ const value: FoundrySessionValue = {
 
 createRoot(document.getElementById('root')!).render(
   <FoundrySessionContext.Provider value={value}>
-    <MemoryRouter initialEntries={[`/foundry/day/${day}/${screen}`]}>
+    <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : `/foundry/day/${day}/${screen}`]}>
       <div className="mf-foundry min-h-screen bg-background">
         <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
           <Routes>
             <Route path="/foundry/day/:day/practice" element={<PracticePage />} />
             <Route path="/foundry/day/:day/warmup" element={<WarmUp />} />
+            <Route path="/foundry/puzzle" element={<PuzzleGrove />} />
             <Route path="*" element={<p data-harness="redirected">REDIRECTED: {location.pathname}</p>} />
           </Routes>
         </main>
