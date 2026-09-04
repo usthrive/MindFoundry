@@ -12,6 +12,9 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { chunkForSpeech } from './speechChunk';
+
+export { chunkForSpeech };
 
 // Voice configuration optimized for children
 export interface TTSConfig {
@@ -55,6 +58,14 @@ const pendingRequests = new Map<string, Promise<string>>();
 // --- Client-side throttle to prevent burst traffic ---
 const THROTTLE_MIN_GAP_MS = 800;
 let lastEdgeInvocationTime = 0;
+
+/**
+ * How long a browser utterance may go with NO event and NOTHING speaking before
+ * it is treated as a genuine stall. Chunks are ~10s of speech, so this is ample
+ * headroom; it re-arms on progress, so it is a stall detector rather than a
+ * ceiling on how long Ms. Wren may talk.
+ */
+const WATCHDOG_MS = 20000;
 
 // --- Retry configuration for 429 rate-limit recovery ---
 const RETRY_MAX_ATTEMPTS = 3;
@@ -632,24 +643,55 @@ async function speakWithBrowser(
   const availableVoices = window.speechSynthesis.getVoices();
 
   return new Promise((resolve) => {
-    // Timeout protection: ensure promise resolves even if speech events don't fire
-    // This prevents infinite loading state on some mobile browsers
-    const timeoutId = setTimeout(() => {
-      console.warn('[TTS] Speech timeout - events did not fire');
-      if (currentUtterance) {
-        window.speechSynthesis.cancel();
-        currentUtterance = null;
-      }
-      const error = new Error('Speech synthesis timed out');
-      lastError = error.message;
-      onError?.(error);
-      resolve();
-    }, 30000); // 30 second timeout for long text
+    /**
+     * THE WATCHDOG RE-ARMS; IT DOES NOT KILL WORKING SPEECH.
+     *
+     * The previous version armed one 30-second timer and, when it fired,
+     * called `speechSynthesis.cancel()` unconditionally and reported an error.
+     * Its purpose was to catch "events did not fire" — a real mobile failure —
+     * but it never asked whether the voice was still talking, so ANY segment
+     * over thirty seconds was hard-stopped mid-word and logged as a timeout.
+     * Measured against the corpus that was 220 of 823 lesson segments (26.7%),
+     * on every browser, independent of Chrome's own limit.
+     *
+     * It now checks `speechSynthesis.speaking` first: if she is still going,
+     * that IS the liveness the watchdog exists to test, so it re-arms. Only a
+     * genuine stall — silent, no events, nothing speaking — cancels.
+     */
+    let watchdog: number | undefined;
+    let finished = false;
+    const clearWatchdog = () => { if (watchdog !== undefined) { clearTimeout(watchdog); watchdog = undefined; } };
+    const armWatchdog = () => {
+      clearWatchdog();
+      watchdog = setTimeout(() => {
+        if (finished) return;
+        if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+          armWatchdog();   // progress, not a stall
+          return;
+        }
+        console.warn('[TTS] Speech stalled - no events and nothing speaking');
+        if (currentUtterance) { window.speechSynthesis.cancel(); currentUtterance = null; }
+        const error = new Error('Speech synthesis timed out');
+        lastError = error.message;
+        finished = true;
+        onError?.(error);
+        resolve();
+      }, WATCHDOG_MS) as unknown as number;
+    };
 
-    currentUtterance = new SpeechSynthesisUtterance(text);
-    currentUtterance.rate = config.speakingRate ?? DEFAULT_CONFIG.speakingRate;
-    currentUtterance.pitch = 1;  // Neutral pitch
-    currentUtterance.lang = 'en-US';
+    const chunks = chunkForSpeech(text);
+    const rate = config.speakingRate ?? DEFAULT_CONFIG.speakingRate;
+    let spoken = 0;
+
+    const makeUtterance = (chunk: string): SpeechSynthesisUtterance => {
+      const u = new SpeechSynthesisUtterance(chunk);
+      u.rate = rate;
+      u.pitch = 1;  // Neutral pitch
+      u.lang = 'en-US';
+      return u;
+    };
+
+    currentUtterance = makeUtterance(chunks[0]);
 
     // Priority order for voice selection (prefer female voices for Ms. Guide)
     // On iOS first use, voices may be empty — skip voice assignment and let iOS use its default
@@ -671,22 +713,42 @@ async function speakWithBrowser(
       console.log('[TTS] No voices available, using system default', onIOS ? '(iOS)' : '');
     }
 
-    currentUtterance.onend = () => {
-      clearTimeout(timeoutId);
+    const chosenVoice = currentUtterance.voice;
+
+    /**
+     * EVERY CHUNK IS ENQUEUED NOW, SYNCHRONOUSLY. `speechSynthesis` owns the
+     * queue, so this both survives Chrome's per-utterance limit and keeps the
+     * whole sequence inside the caller's gesture — the iOS constraint this
+     * file's header records. `onEnd` fires ONCE, when the last chunk finishes,
+     * so AudioButton's idle/playing/paused states are unchanged.
+     */
+    const finishOk = () => {
+      if (finished) return;
+      finished = true;
+      clearWatchdog();
       currentUtterance = null;
       lastError = null;
       onEnd?.();
       resolve();
     };
-
-    currentUtterance.onerror = (e) => {
-      clearTimeout(timeoutId);
+    const finishErr = (e: SpeechSynthesisErrorEvent) => {
+      // A cancel() from stop() surfaces here as 'canceled'/'interrupted'; that
+      // is the child tapping pause, not a fault, and must not be reported as one.
+      if (finished) return;
+      if (e.error === 'canceled' || e.error === 'interrupted') {
+        finished = true;
+        clearWatchdog();
+        currentUtterance = null;
+        resolve();
+        return;
+      }
+      finished = true;
+      clearWatchdog();
       currentUtterance = null;
       const errorMsg = `Speech synthesis error: ${e.error || 'unknown'}`;
       lastError = errorMsg;
-      const error = new Error(errorMsg);
       console.error('[TTS] Browser synthesis error:', e);
-      onError?.(error);
+      onError?.(new Error(errorMsg));
       resolve();
     };
 
@@ -695,8 +757,23 @@ async function speakWithBrowser(
       window.speechSynthesis.resume();
     }
 
-    window.speechSynthesis.speak(currentUtterance);
-    console.log('[TTS] speechSynthesis.speak() called', onIOS ? '(iOS synchronous path)' : '');
+    chunks.forEach((chunk, i) => {
+      const u = i === 0 ? (currentUtterance as SpeechSynthesisUtterance) : makeUtterance(chunk);
+      if (i > 0 && chosenVoice) u.voice = chosenVoice;
+      u.onend = () => {
+        spoken += 1;
+        if (spoken >= chunks.length) finishOk();
+        else { currentUtterance = u; armWatchdog(); }
+      };
+      u.onerror = finishErr;
+      window.speechSynthesis.speak(u);
+    });
+
+    armWatchdog();
+    console.log(
+      `[TTS] speechSynthesis.speak() called — ${chunks.length} chunk(s)`,
+      onIOS ? '(iOS synchronous path)' : '',
+    );
   });
 }
 

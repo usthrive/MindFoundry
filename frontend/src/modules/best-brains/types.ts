@@ -167,6 +167,25 @@ export interface Explanation {
   hook: string;
   /** The concept's WHY, stated before any procedure (E5). */
   whyBeforeHow: string;
+  /**
+   * THE PICTURE THAT SHOWS THE WHY IN ACTION.
+   *
+   * `LessonRoom` speaks four surfaces to the child — hook, whyBeforeHow, the
+   * script segments, then summary — but only `script` segments could carry a
+   * figure, so the longest and most abstract minute of every lesson was the one
+   * with nothing to look at. Measured 2026-08-31 across 117 served weeks: the
+   * why-segment averages 137 words (about a minute of speech) and 450 of 472
+   * script segments have a picture while all 117 why-segments had none.
+   *
+   * Owner ruling, same day: the length is right and stays — the why is the
+   * point of the lesson — PROVIDED it is shown in action rather than only said.
+   * Hence a figure of its own rather than a shorter argument. It animates on
+   * the way in like any other lesson figure, so "ten ones become one ten" is
+   * something the child watches happen.
+   *
+   * Optional: a week without one keeps the old behaviour exactly.
+   */
+  whyFigure?: BBFigure;
   /** 2–6 segments. */
   script: ExplanationSegment[];
   summary: string;

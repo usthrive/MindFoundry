@@ -46,7 +46,9 @@ export default function LessonRoom() {
     if (!pack) return [];
     return [
       { say: pack.explanation.hook },
-      { say: pack.explanation.whyBeforeHow },
+      // The why now carries its own picture when the week authors one (E5 +
+      // the 2026-08-31 owner ruling); weeks without one are unchanged.
+      { say: pack.explanation.whyBeforeHow, figure: pack.explanation.whyFigure },
       ...pack.explanation.script,
       { say: pack.explanation.summary },
     ];
