@@ -1,7 +1,7 @@
 /**
  * bb-screen-contract-test — the pack↔screen seam, field by field.
  *
- * Run (from frontend/): npx tsx scripts/bb-screen-contract-test.ts [--selftest] [--strict-warmup] [--seeds N]
+ * Run (from frontend/): npx tsx scripts/bb-screen-contract-test.ts [--selftest] [--seeds N]
  *
  * WHY. Every other gate tests the pack. This one asserts that what the pack
  * WRITES and what the screen READS agree — the class of defect a child finds
@@ -14,10 +14,10 @@
  *                 lands ON page pageCount (the label's "of N" is reachable) and,
  *                 where presentation.oneOperationPerPage, that one item sits on
  *                 each page (E62). Before 2026-09-04 band A read "page 1 of 1".
- *   warm-up       WarmUp.tsx:1-3,44-47 — the screen promises "2–4 fast retrieval
- *                 items"; a day with exactly 1 builds the screen for one
- *                 question. REPORT-ONLY until the owner's A.2 ruling (81% of
- *                 Level A days, 70% of Level B days); --strict-warmup fails it.
+ *   warm-up       WarmUp.tsx ↔ session/dayFlow.ts — the screen promises "2–4 fast
+ *                 retrieval items"; dayFlow folds a lone one into the work
+ *                 screen (owner ruling 2026-09-04, option a). Assert the
+ *                 guarantee, conservation of items, and count the folds.
  *   sprint        sprintLogic.ts:54, SprintGate.tsx:34, SprintRun.tsx:54 — a
  *                 timer at band A is a hard fail: every Level A pack must carry
  *                 fluencySprint === null so even a deep link cannot reach a timer.
@@ -32,10 +32,10 @@
  */
 import { AVAILABLE_WEEKS, generatePack } from '../src/modules/best-brains/generator';
 import type { PackDay, WeeklyConceptPack } from '../src/modules/best-brains/types';
+import { dayFlow, WARMUP_MIN_ITEMS } from '../src/modules/best-brains/session/dayFlow';
 
 const argv = process.argv.slice(2);
 const SELFTEST = argv.includes('--selftest');
-const STRICT_WARMUP = argv.includes('--strict-warmup');
 const nSeeds = Number(argv[argv.indexOf('--seeds') + 1]) || 3;
 const SEEDS = [12345, 67890, 424242, 8, 999983].slice(0, nSeeds);
 
@@ -44,9 +44,9 @@ const KNOWN_EXCEPTIONS = new Set(['A15']);
 
 type Finding = { check: string; where: string; msg: string; strict: boolean };
 
-/** PracticePage.tsx `pageCount`/`pageOf`, verbatim: items spread evenly over the declared pages. */
+/** PracticePage.tsx `pageCount`/`pageOf`, verbatim: today's work items (dayFlow) spread evenly over the declared pages. */
 function practiceReading(day: PackDay) {
-  const items = day.items.filter((i) => !i.isRetrieval);
+  const items = dayFlow(day).work;
   const declared = Math.max(1, day.pageCount ?? 1);
   const pageCount = Math.max(1, Math.min(declared, Math.max(1, items.length)));
   const pageOf = (i: number) => Math.floor((Math.min(i, items.length - 1) * pageCount) / Math.max(1, items.length)) + 1;
@@ -68,9 +68,19 @@ function checkPack(pack: WeeklyConceptPack, label: string, out: Finding[]): void
     if (onePerPage && r.perPage !== 1) {
       out.push({ check: 'pageCount/E62', where, msg: `oneOperationPerPage but the screen puts ${r.perPage} items on a page (pageCount ${r.pageCount}, ${r.practice} practice items)`, strict: !exempt });
     }
-    const retrieval = day.items.length - r.practice;
-    if (day.day >= 2 && retrieval === 1) {
-      out.push({ check: 'warmup-contract', where, msg: `WarmUp promises 2–4 retrieval items and is built for 1`, strict: STRICT_WARMUP });
+    // WarmUp's contract (DD8: 2–4 items) is now guaranteed by dayFlow — a lone
+    // retrieval item is folded into the work screen. Assert the guarantee, and
+    // count the folds so the report shows how often it happens.
+    const f = dayFlow(day);
+    if (f.warmup.length > 0 && (f.warmup.length < WARMUP_MIN_ITEMS || f.warmup.length > 4)) {
+      out.push({ check: 'warmup-contract', where, msg: `WarmUp screen built for ${f.warmup.length} items (contract 2–4)`, strict: true });
+    }
+    const lone = day.items.filter((i) => i.isRetrieval).length === 1;
+    if (day.day >= 2 && lone) {
+      out.push({ check: 'warmup-folded', where, msg: `lone retrieval item served as question 1 of ${f.total} on the work screen`, strict: false });
+    }
+    if (f.total !== day.items.length || f.warmup.length + f.work.length !== day.items.length) {
+      out.push({ check: 'dayflow-conservation', where, msg: `dayFlow lost or duplicated items (${f.warmup.length}+${f.work.length} vs ${day.items.length})`, strict: true });
     }
     if (day.teacherNoteStrip !== undefined && day.day !== 5) {
       out.push({ check: 'teacherNoteStrip', where, msg: `strip on Day ${day.day}; PuzzleGrove reads Day 5 only`, strict: true });
@@ -95,8 +105,8 @@ function summarize(findings: Finding[], title: string): number {
   for (const f of strict.slice(0, 40)) console.log(`  FAIL  [${f.check}] ${f.where}: ${f.msg}`);
   if (strict.length > 40) console.log(`  … ${strict.length - 40} more`);
   const warmByLevel = new Map<string, number>();
-  for (const f of soft) if (f.check === 'warmup-contract') warmByLevel.set(f.where[0], (warmByLevel.get(f.where[0]) ?? 0) + 1);
-  if (warmByLevel.size) console.log(`  warm-up built for ONE question (report-only, owner ruling A.2 pending): ${[...warmByLevel].map(([l, n]) => `${l}:${n}`).join(' ')}`);
+  for (const f of soft) if (f.check === 'warmup-folded') warmByLevel.set(f.where[0], (warmByLevel.get(f.where[0]) ?? 0) + 1);
+  if (warmByLevel.size) console.log(`  lone retrieval item folded into the work screen (ruled 2026-09-04, option a): ${[...warmByLevel].map(([l, n]) => `${l}:${n}`).join(' ')}`);
   return strict.length;
 }
 
@@ -121,6 +131,7 @@ if (SELFTEST) {
   const c3 = base(); c3.days[1].teacherNoteStrip = 'x'; controls.push(['teacherNoteStrip on Day 2', c3, 'teacherNoteStrip']);
   const c4 = base(); (c4 as any).fluencySprint = { id: 'x', durationSeconds: 60 }; controls.push(['Level A pack carrying a sprint timer', c4, 'sprint/band-A']);
   const c5 = base(); c5.presentation = { ...(c5.presentation ?? {}), audioFirst: false }; controls.push(['Level A pack with audioFirst=false', c5, 'audioFirst']);
+  const c6 = baseB(); c6.days[1].items = c6.days[1].items.map((i) => ({ ...i, isRetrieval: true })); controls.push(['B day where every item is retrieval (warm-up over its 2–4)', c6, 'warmup-contract']);
   console.log('\nself-test — each control must fire its check:');
   let missed = 0;
   for (const [name, pack, check] of controls) {

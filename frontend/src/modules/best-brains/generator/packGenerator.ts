@@ -150,6 +150,7 @@ import { buildE24 } from './templates/weeks/e24';
  */
 export { CONTENT_VERSION } from '../contentVersion';
 import { CONTENT_VERSION } from '../contentVersion';
+import { restampPageCounts } from '../session/dayFlow';
 
 type WeekBuilder = (packSeed: number, contentVersion: string) => WeeklyConceptPack;
 
@@ -455,6 +456,8 @@ export function buildShadowedPack(
   if (!builder) throw new Error(`No builder registered for ${level} week ${week}`);
   const pack = builder(packSeed, contentVersion);
   if (versionAtLeast(contentVersion, 1, 1)) applyRetrievalRamp(pack);
+  // Pages are counted from the FINAL day contents — after the ramp, never inside a builder.
+  restampPageCounts(pack);
   return pack;
 }
 
@@ -487,6 +490,8 @@ export function generatePack(
   }
   const pack = builder(packSeed, contentVersion);
   if (versionAtLeast(contentVersion, 1, 1)) applyRetrievalRamp(pack);
+  // Pages are counted from the FINAL day contents — after the ramp, never inside a builder.
+  restampPageCounts(pack);
   return pack;
 }
 

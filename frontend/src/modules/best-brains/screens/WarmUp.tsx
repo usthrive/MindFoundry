@@ -16,6 +16,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getPackDay } from '../generator/packGenerator';
+import { dayFlow } from '../session/dayFlow';
+import QuestionCounter from '../components/QuestionCounter';
 import { COPY, CONFIRMS, MISS_OPENER } from '../copy';
 import { checkAnswer } from '../answers';
 import { recordItemAttempt, updateDayProgress } from '../services/bbProgressService';
@@ -41,13 +43,17 @@ export default function WarmUp() {
   const [explainText, setExplainText] = useState('');
   const startedRef = useRef(false);
 
-  const items = useMemo(() => {
-    if (!pack || !Number.isInteger(day) || day < 1 || day > 5) return [];
-    return getPackDay(pack, day).items.filter((i) => i.isRetrieval);
+  // The warm-up screen exists only when it has its 2–4 items (DD8); a lone
+  // retrieval item is the day's first question on the work screen instead
+  // (session/dayFlow.ts — the 2026-09-04 "only 1–2 questions" report).
+  const flow = useMemo(() => {
+    if (!pack || !Number.isInteger(day) || day < 1 || day > 5) return null;
+    return dayFlow(getPackDay(pack, day));
   }, [pack, day]);
+  const items = useMemo(() => flow?.warmup ?? [], [flow]);
 
-  // C1: an empty warm-up slot (early weeks like the A1 origin carry 0 retrieval
-  // items — a01.ts QG-2 note) must never strand the child on a blank screen.
+  // C1: an empty warm-up slot (0 retrieval items, or a lone one folded into the
+  // work screen by dayFlow) must never strand the child on a blank screen.
   // Day 5 forwards to the Grove, which requires the day-5 slot banked first
   // (PuzzleGrove guards on dayProgress['5']); do that write here, from an
   // effect — never navigate() during render. Day ≤4 forwards declaratively in
@@ -187,8 +193,9 @@ export default function WarmUp() {
 
   return (
     <div className="flex min-h-[70vh] flex-col gap-6">
-      <header>
-        <p className="text-sm font-medium uppercase tracking-wide text-text-muted">Day {day} · Warm-up</p>
+      <header className="flex items-start justify-between gap-3">
+        <QuestionCounter day={day} k={idx + 1} total={flow?.total ?? items.length} band={band} />
+        <p className="text-sm font-medium uppercase tracking-wide text-text-muted">Warm-up</p>
       </header>
 
       {idx === 0 && <WrenBubble band={band} autoplay text={COPY.warmupOpen[band]} emotion="warm" />}

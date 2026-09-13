@@ -48,6 +48,7 @@ import {
 import { getTemplate } from './templates/registry';
 import { commutedSignature, surfaceSignature } from './surface';
 import { GROUP_LARGE_NUMBERS } from './templates/lib/format';
+import { dayFlow } from '../session/dayFlow';
 
 export interface Violation {
   /** Gate code: QG-1..QG-10 or S-* for structural/schema checks. */
@@ -262,7 +263,7 @@ export function validatePack(
     // Pages per day: 1–3, or up to one page per practice item where the band
     // works one operation to a page (E62; band A). The exact agreement between
     // this number and what PracticePage renders is bb-screen-contract-test's.
-    const practiceItems = day.items.filter((i) => !i.isRetrieval).length;
+    const practiceItems = dayFlow(day).work.length;
     const maxPages = Math.max(3, practiceItems);
     if (day.pageCount < 1 || day.pageCount > maxPages) add('QG-6', `${p}.pageCount`, `pageCount ${day.pageCount} outside 1-${maxPages}`);
     if (day.items.length < 3 || day.items.length > 8) add('QG-6', `${p}.items`, `${day.items.length} items outside 3-8`);

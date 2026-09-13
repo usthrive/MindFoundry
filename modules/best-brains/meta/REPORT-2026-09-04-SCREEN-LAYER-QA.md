@@ -86,7 +86,7 @@ QG-6 said 1–3 pages; band A's law is one page per item and Level A Day 1–4 o
 The exact agreement (declared pages = pages the screen reaches, and one item per
 page where `oneOperationPerPage`) lives in the new gate, not the validator.
 
-## 3. A.2 — the owner's decision (waiting)
+## 3. A.2 — RULED 2026-09-04: option (a), delegated ("you are the expert"); see §9
 
 Measured across every served day (seed 12345; 3 seeds give the same shape):
 
@@ -315,3 +315,87 @@ re-sits a drifted item. Deploy timing is the owner's.
   exercised — the photographs cover render and resume-at-item, not writes.
 - One Fable review agent read the five gated screens; its findings are marked
   with what I re-checked (§5.3).
+
+## 9. Second change set, 2026-09-04 (after the merge of #15): the day flow and the counter
+
+Owner delegated A.2 and asked for a "which question, out of how many" indicator at
+every level. Ruled: option (a) plus one day-level counter.
+
+### 9.1 What changed
+- `session/dayFlow.ts` (NEW) — ONE rule for which screen serves which items: a
+  warm-up screen exists only when it has its 2–4 items (DD8); otherwise the
+  retrieval items become the day's FIRST questions on the work screen. Day 1 has
+  no warm-up route, so its retrieval items — one to two a week, generated and
+  never shown at every level until now — join the work. Day 5 folds into the
+  Grove. `pagesPerDay` + `restampPageCounts` live beside it.
+- `components/QuestionCounter.tsx` (NEW) — "Day 2 · Question 3 of 5" on WarmUp,
+  PracticePage and PuzzleGrove, counting the DAY; band A adds a dot row
+  (12 px dots, current ringed). Nothing spoken (a second autoplay would race the
+  prompt's, §5.4). "page" is gone from the child's view; it survives only as the
+  sprint-offer boundary.
+- `packGenerator.ts` — `pageCount` is stamped ONCE, after `applyRetrievalRamp`.
+  The gate caught the reason within a minute of the fold: the builder counted
+  pages before the ramp moved a Day-1 warm-up to Day 5, so A24 read four pages
+  on every day. `assemble.ts` now writes a placeholder; the validator's QG-6 bound
+  reads `dayFlow(day).work.length`. Hand-rolled B1/B2 (3 declared pages on Day 1)
+  are restamped to the band rule (2) like every other template cell; fixtures
+  (A15, B14) are untouched.
+- `bb-screen-contract-test.ts` — warm-up contract is now STRICT (built ⇒ 2–4),
+  plus an item-conservation check and a sixth self-test control (every item
+  retrieval ⇒ warm-up over 4 fires). Folds are counted, not flagged.
+
+### 9.2 Measured
+Retrieval items per day, seed 12345 (0 / 1 / 2+): Day 1 — A 1/22/1, B 0/23/1,
+C 0/1/23, D 0/2/22, E 0/1/20 (all previously DROPPED). Days 2–4 — the 1-item days
+now fold (A 225, B 183, C 90, D 138, E 81 across 3 seeds). Day 5 — D 2/22/0 folds
+into the Grove; B/C/E mostly 2 (warm-up stays).
+
+Item content: sha over every served cell × 3 seeds with `pageCount` stripped is
+IDENTICAL before and after (§9.4 line); only page counts and the serving order move.
+
+Photographs (`bb-screen-visual.ts --flow`, `screens-2026-09-04/flow-*`):
+
+| scenario | before | after |
+|---|---|---|
+| A2 Day 1 q1 (band A) | "page 1 of 3", first practice item | "Day 1 · Question 1 of 4", 4 dots, the retrieval item ("Count the ducks") now served |
+| A2 Day 2 warm-up (1 item) | its own screen, opener + 1 question | forwards; practice shows "Question 1 of 4" with that question |
+| A2 Day 2 q2 | "page 2 of 3" | "Question 2 of 4", dot 2 ringed |
+| B1 Day 2 warm-up (1 item) | own screen, keypad | folded: "Question 1 of 6" on practice |
+| D1 Day 2 warm-up (2 items) | "Day 2 · Warm-up" | stays; "Day 2 · Question 1 of 6" |
+| D1 Day 2 practice q1 | "page 1 of 2" | "Question 3 of 6" (995 px differ, rows 41–55: the label only) |
+| D1 Day 5 Grove (1 retrieval) | warm-up screen first | folded into the Grove: "Day 5 · Question 1 of 4" |
+
+Tap targets unchanged (min 48 px; 56 px audio at band A). tsc: run 2 clean, and a
+THIRD run (disclosed — a source edit landed after the second) clean.
+
+### 9.3 Things to know
+- Band B+ retrieval prompts begin with the literal "Warm-up!" (generator copy);
+  folded, that reads as "Warm-up! 1 ten and 3 ones…" as question 1 of practice.
+  Harmless, but the prefix is now decoration; a generator-side trim is a content
+  change for another session.
+- On Days 2–4 at band A the fold also removes the double-autoplay race (§5.4) on
+  the 97% of days that no longer build a warm-up screen; the 3 two-item days and
+  Day 5's warm-ups still have it.
+- Children mid-week: a Day-2 `completedItemIds` list from before this change
+  names only practice ids, so on resume the folded retrieval item is served
+  first (it is "not done") and the count reads correctly. Nothing is re-sat.
+
+### 9.4 Battery and change set
+BATTERY2-PENDING
+
+Files (second commit):
+```
+frontend/src/modules/best-brains/session/dayFlow.ts                    NEW
+frontend/src/modules/best-brains/components/QuestionCounter.tsx        NEW
+frontend/src/modules/best-brains/screens/WarmUp.tsx
+frontend/src/modules/best-brains/screens/PracticePage.tsx
+frontend/src/modules/best-brains/screens/PuzzleGrove.tsx
+frontend/src/modules/best-brains/generator/packGenerator.ts
+frontend/src/modules/best-brains/generator/templates/lib/assemble.ts
+frontend/src/modules/best-brains/generator/validator.ts
+frontend/scripts/bb-screen-contract-test.ts
+frontend/scripts/bb-screen-visual.ts                                    --flow scenarios
+frontend/scripts/screen-harness/main.tsx                               Grove route, dayFlow resume
+modules/best-brains/meta/REPORT-2026-09-04-SCREEN-LAYER-QA.md          this section
+modules/best-brains/meta/screens-2026-09-04/flow-*.png
+```

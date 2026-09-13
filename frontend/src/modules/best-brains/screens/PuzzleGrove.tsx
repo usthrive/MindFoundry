@@ -25,6 +25,8 @@ import AnswerEntry from '../components/AnswerEntry';
 import AnchorPanel from '../components/AnchorPanel';
 import HintLadderView from '../components/HintLadder';
 import BBScratchPad from '../components/BBScratchPad';
+import QuestionCounter from '../components/QuestionCounter';
+import { dayFlow } from '../session/dayFlow';
 import type { PackItem, Puzzle } from '../types';
 
 type Stage = { kind: 'item'; item: PackItem } | { kind: 'puzzle'; puzzle: Puzzle };
@@ -44,9 +46,12 @@ export default function PuzzleGrove() {
     () => weekState?.dayProgress['5']?.completedItemIds ?? [],
   );
 
+  // Day 5's work items: the page items plus a lone retrieval item that has no
+  // warm-up screen of its own (session/dayFlow.ts).
+  const flow = useMemo(() => (pack ? dayFlow(getPackDay(pack, 5)) : null), [pack]);
   const stages = useMemo<Stage[]>(() => {
-    if (!pack) return [];
-    const pageItems = getPackDay(pack, 5).items.filter((i) => !i.isRetrieval);
+    if (!pack || !flow) return [];
+    const pageItems = flow.work;
     return [
       ...pageItems.map((item) => ({ kind: 'item' as const, item })),
       { kind: 'puzzle' as const, puzzle: pack.puzzle },
@@ -154,10 +159,18 @@ export default function PuzzleGrove() {
 
   return (
     <div className="flex min-h-[70vh] flex-col gap-5">
-      <header className="flex items-center justify-between">
-        <p className="text-sm font-medium uppercase tracking-wide text-text-muted">
-          Day 5 · Puzzle Grove
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        {isPuzzle || !flow ? (
+          <p className="text-sm font-medium uppercase tracking-wide text-text-muted">Day 5 · Puzzle Grove</p>
+        ) : (
+          /* Day-level count: warm-up questions + page items already done + this one. */
+          <QuestionCounter
+            day={5}
+            k={flow.warmup.length + flow.work.filter((i) => doneIds.includes(i.id)).length + 1}
+            total={flow.total}
+            band={band}
+          />
+        )}
         <button
           type="button"
           onClick={() => setAnchorOpen(true)}
