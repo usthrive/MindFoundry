@@ -15,6 +15,8 @@ import { CORRECTIVE_STATES, PASSED_STATES, WEEKS_PER_LEVEL } from '../constants'
 import { getCatalogWeek } from '../content/catalog';
 import { advanceToNextWeek, listParkedItems } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
+import { getPackDay } from '../generator/packGenerator';
+import { dayDoneCount, dayFlow } from '../session/dayFlow';
 import WrenBubble from '../components/WrenBubble';
 import WrenMark from '../components/WrenMark';
 import AnchorPanel from '../components/AnchorPanel';
@@ -149,7 +151,10 @@ export default function ThisWeekHub() {
       ? null
       : actionableDay === 1 && !lessonDone
         ? "Start the lesson with Ms. Wren"
-        : `Start Day ${actionableDay}'s practice`;
+        : tiles[actionableDay] === 'partial'
+          ? // Re-entry names where we left off (2026-09-13).
+            `Continue Day ${actionableDay} · ${dayDoneCount(getPackDay(pack, actionableDay), weekState.dayProgress[String(actionableDay)]?.completedItemIds)} of ${dayFlow(getPackDay(pack, actionableDay)).total} done`
+          : `Start Day ${actionableDay}'s practice`;
 
   return (
     <div className="flex flex-col gap-5">

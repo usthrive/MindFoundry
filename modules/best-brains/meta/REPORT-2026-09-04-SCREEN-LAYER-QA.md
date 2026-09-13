@@ -399,3 +399,51 @@ frontend/scripts/screen-harness/main.tsx                               Grove rou
 modules/best-brains/meta/REPORT-2026-09-04-SCREEN-LAYER-QA.md          this section
 modules/best-brains/meta/screens-2026-09-04/flow-*.png
 ```
+
+## 10. 2026-09-13 — the Day 4 incident, and three rulings: questions not minutes · continue where we left off · the count everywhere
+
+### 10.1 What the database showed (Level B week 3, Day 4, one child, 19:16–19:37 UTC)
+Warm-up correct · practice 1 correct · practice 2 (a three-tray word problem):
+wrong, wrong, correct after two hints, eight minutes · then the day ended
+"partial" · then the day was re-opened: warm-up served AGAIN, practice 1 served
+AGAIN, and the record was overwritten — `completedItemIds` went from [02, 03]
+to [02]. Two causes: (1) the band-B 12-minute session target (measured from
+Foundry ENTRY, not from the day's start) soft-stopped the day after two
+practice questions — by design, LS1-R1, but indistinguishable from a short day;
+(2) PracticePage seeded "what is done" from the session's copy of the week
+row, which was refreshed only when a day FINISHED, never after a partial save,
+so re-entry resumed from question 1 and the next save clobbered the true
+record. WarmUp never recorded its answers at all on Days 2–4, so it always
+re-served. (PR #16 — the fold and the counter — was still unmerged at the
+time; merged 2026-09-13 as `27e9c1d`, live and verified.)
+
+### 10.2 Owner rulings (2026-09-13) and what changed
+| ruling | change |
+|---|---|
+| The day's length is its question count, not the clock | The session target is now an OFFER, once, between questions: "You worked hard. Keep going, or rest?" (band A, 7 words) with Keep going / Rest now. It never ends the day by itself. The adaptive fatigue stop (two signals) is unchanged but its done screen now names the count. |
+| Re-entry says "let's continue from where we left off" and never re-serves | `persistProgress` refreshes the session row after EVERY save; PracticePage shows one compact line "Let's carry on from question k!" until the first answer (shown, not spoken — the prompt autoplays); WarmUp banks each answered warm-up at once and resumes at the first undone, forwarding when all are done. |
+| The "k of N" count must show up | Already live via PR #16 on WarmUp/Practice/Grove; added to the partial done screen ("2 of 4 done. The rest waits for you." — the old copy said "tomorrow", which a partial day is not) and to the hub CTA ("Continue Day 2 · 2 of 6 done"). |
+
+### 10.3 Photographed (`bb-screen-visual.ts --flow2`, `screens-2026-09-04/flow2-*`)
+| scenario | what the screen reads |
+|---|---|
+| A2 Day 2 re-entered with 2 done (band A) | "Day 2 · Question 3 of 4", dots 2 filled + 1 ringed, "Let's carry on from question 3!" as a compact line; the answer tiles stay inside the 900 px viewport (a Wren bubble had pushed the third tile to the edge — replaced) |
+| B1 Day 2 re-entered with 3 done | "Question 4 of 6" + "Welcome back — let's carry on from question 4." |
+| A2 Day 2 at 20 session-minutes, after one correct answer + Next | the break offer: counter "Question 2 of 4", Wren "You worked hard. Keep going, or rest?", Keep going / Rest now (56 px) |
+| D1 Day 2 at 20 minutes (band C) | same offer, band-C copy |
+| Partial done screen, A / B | "2 of 4 done. The rest waits for you." / "2 of 6 done — the rest will wait for you." + the count line |
+| Hub with Day 2 partial (B) | CTA "Continue Day 2 · 2 of 6 done" (the harness mounts the hub without the Foundry skin, so only the text is the evidence here) |
+| D1 Day 2 warm-up re-entered with warm-up 1 banked | resumes at warm-up 2: "Question 2 of 6" |
+
+Battery, serial, after all changes: 19 of 19 exit 0 (same lines as §9.4; entropy
+29 tells, guessability 16 flagged, 185 bare segments — all unchanged). tsc: three
+runs on this change set, all clean (disclosed: the third followed the compact
+re-entry line). Seam gate 6/6 controls fire, 0 strict.
+
+Files: `screens/PracticePage.tsx`, `screens/WarmUp.tsx`, `screens/DayDone.tsx`,
+`screens/ThisWeekHub.tsx`, `copy.ts` (resumeLine, partialStopLine, BREAK_OFFER),
+`session/dayFlow.ts` (dayDoneCount), harness + driver (`--flow2`, scripted
+answer/Next steps, done + hub routes, `mins`).
+
+Known limits: the session clock still starts at Foundry entry (informational
+now); the fatigue stop can still end a day early (named on its done screen).

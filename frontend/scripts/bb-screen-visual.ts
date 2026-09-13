@@ -34,7 +34,7 @@ const server = http.createServer((req, res) => {
 await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${(server.address() as any).port}`;
 
-type Scn = { name: string; screen: 'practice' | 'warmup' | 'puzzle'; level: string; week: number; day: number; done?: number; fix?: 0 | 1 };
+type Scn = { name: string; screen: 'practice' | 'warmup' | 'puzzle' | 'done' | 'hub'; mins?: number; steps?: string[]; level: string; week: number; day: number; done?: number; fix?: 0 | 1 };
 const retr = (L: string, w: number, d: number) => generatePack(L as any, w, 12345).days[d - 1].items.filter((i) => i.isRetrieval).length;
 const firstWeek = (L: string, d: number, pred: (n: number) => boolean) => AVAILABLE_WEEKS.filter((c) => c.level === L && c.source !== 'fixture').map((c) => c.week).find((w) => pred(retr(L, w, d)))!;
 const B1 = firstWeek('B', 2, (n) => n === 1);
@@ -54,7 +54,18 @@ const FLOW: Scn2[] = [
   { name: `flow-practice-D${D2}d2-q3`, screen: 'practice', level: 'D', week: D2, day: 2, done: 0 },
   { name: `flow-puzzle-D${D5one}d5`, screen: 'puzzle', level: 'D', week: D5one, day: 5 },
 ];
-const SCENARIOS: Scn[] = process.argv.includes('--flow') ? (FLOW as Scn[]) : [
+// --flow2 (2026-09-13): re-entry, the break offer, the partial done screen, the hub CTA.
+const FLOW2: Scn[] = [
+  { name: 'resume-A2d2-q3', screen: 'practice', level: 'A', week: 2, day: 2, done: 2 },
+  { name: `resume-B${B1}d2-q4`, screen: 'practice', level: 'B', week: B1, day: 2, done: 3 },
+  { name: 'break-A2d2', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, mins: 20, steps: ['answer', 'next'] },
+  { name: `break-D${D2}d2`, screen: 'practice', level: 'D', week: D2, day: 2, done: 0, mins: 20, steps: ['answer', 'next'] },
+  { name: 'done-partial-A2d2', screen: 'done', level: 'A', week: 2, day: 2, done: 2 },
+  { name: `done-partial-B${B1}d2`, screen: 'done', level: 'B', week: B1, day: 2, done: 2 },
+  { name: `hub-partial-B${B1}d2`, screen: 'hub', level: 'B', week: B1, day: 2, done: 2 },
+  { name: `warmup-resume-D${D2}d2`, screen: 'warmup', level: 'D', week: D2, day: 2, done: -1 },
+];
+const SCENARIOS: Scn[] = process.argv.includes('--flow2') ? FLOW2 : process.argv.includes('--flow') ? (FLOW as Scn[]) : [
   { name: 'practice-A2d2-before-item1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, fix: 0 },
   { name: 'practice-A2d2-after-item1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, fix: 1 },
   { name: 'practice-A2d2-before-item3', screen: 'practice', level: 'A', week: 2, day: 2, done: 2, fix: 0 },
@@ -92,9 +103,26 @@ for (const s of SCENARIOS) {
   const errors: string[] = [];
   p.on('pageerror', (e) => errors.push(String(e)));
   p.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  const url = `${base}/?screen=${s.screen}&level=${s.level}&week=${s.week}&day=${s.day}&done=${s.done ?? 0}&fix=${s.fix ?? 0}`;
+  const url = `${base}/?screen=${s.screen}&level=${s.level}&week=${s.week}&day=${s.day}&done=${s.done ?? 0}&fix=${s.fix ?? 0}&mins=${s.mins ?? 0}`;
   await p.goto(url, { waitUntil: 'load' });
   await p.waitForTimeout(600);
+  // Scripted steps: 'answer' taps the correct choice (or types it and checks), 'next' taps Next.
+  for (const step of s.steps ?? []) {
+    await p.evaluate(`(() => {
+      const step = ${JSON.stringify(step)};
+      const btns = [...document.querySelectorAll('button')];
+      const byText = (t) => btns.find((b) => (b.textContent || '').trim() === t || (b.getAttribute('aria-label') || '').trim() === t);
+      if (step === 'next') { const b = byText('Next'); if (b) b.click(); return; }
+      const bb = window.__bb; const item = bb.practice[Number(new URLSearchParams(location.search).get('done')) || 0];
+      const val = String(item.answer.value);
+      const choice = item.choices && item.choices.find((c) => String(c.text ?? c.label ?? '').trim() === val || String(c.key) === val);
+      const b = byText('Answer ' + val) || byText(val) || (choice && btns.find((x) => (x.textContent || '').includes(String(choice.text ?? choice.label))));
+      if (b) { b.click(); return; }
+      const input = document.querySelector('input[type="text"], input:not([type])');
+      if (input) { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(input, val); input.dispatchEvent(new Event('input', { bubbles: true })); const c = byText('Check'); if (c) setTimeout(() => c.click(), 50); }
+    })()`);
+    await p.waitForTimeout(700);
+  }
   // Passed as a string: tsx/esbuild injects a `__name` helper into function
   // bodies, which does not exist inside the page.
   const m = await p.evaluate(`(() => {
@@ -113,6 +141,7 @@ for (const s of SCENARIOS) {
       practiceIds: window.__bb && window.__bb.practice.map((i) => i.id),
       pageCount: window.__bb && window.__bb.pack.days[day - 1].pageCount,
       tts: window.__tts,
+      text: document.body.innerText.replace(/[ \\t\\n\\r]+/g, ' ').slice(0, 260),
     };
   })()`) as any;
   const buf = await p.screenshot({ fullPage: true });
@@ -121,6 +150,7 @@ for (const s of SCENARIOS) {
   console.log(`\n# ${s.name}`);
   console.log(`  header="${m.header}" counter="${m.counter}" dots=${m.dots}  pageCount=${m.pageCount}  practiceItems=${m.practiceIds?.length}  pageHeight=${m.pageHeight}px  minTapTarget=${m.minTarget}px`);
   console.log(`  prompt="${(m.prompt ?? '').slice(0, 90)}"`);
+  console.log(`  text: ${m.text}`);
   console.log(`  buttons: ${m.buttons.map((b) => `${b.label || '?'}[${b.w}×${b.h}]`).join(' ')}`);
   if (m.tts && m.tts.length) console.log(`  speech calls in order: ${m.tts.join(' → ')}`);
   if (m.redirected) console.log(`  !! ${m.redirected}`);

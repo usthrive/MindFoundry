@@ -309,3 +309,33 @@ export const MISS_OPENER: BandCopy = {
   B: 'Good thinking so far — one step got sneaky. Let\'s find it.',
   C: 'Not yet — something in one step. Let\'s locate it.',
 };
+
+/**
+ * Re-entry (owner ruling 2026-09-13): a child who comes back continues from
+ * the next undone question — "let's continue from where we left off" — and is
+ * never re-served a question already done. Shown, not autoplayed: the prompt's
+ * own autoplay would cancel it (REPORT-2026-09-04 §5.4).
+ */
+export function resumeLine(band: InteractionBand, k: number): string {
+  if (band === 'A') return `Let's carry on from question ${k}!`;
+  if (band === 'B') return `Welcome back — let's carry on from question ${k}.`;
+  return `Picking up where you left off: question ${k}.`;
+}
+
+/**
+ * A partial stop names the COUNT, never "tomorrow": a partial day is
+ * actionable again today (deriveTiles), and the day's length is its question
+ * count, not the clock (owner ruling 2026-09-13).
+ */
+export function partialStopLine(band: InteractionBand, done: number, total: number): string {
+  if (band === 'A') return `${done} of ${total} done. The rest waits for you.`;
+  if (band === 'B') return `${done} of ${total} done — the rest will wait for you.`;
+  return `${done} of ${total} done. The remainder holds until you come back.`;
+}
+
+/** The dose target (LS1-R1) is an OFFER between questions, once, never a stop. */
+export const BREAK_OFFER: BandCopy = {
+  A: 'You worked hard. Keep going, or rest?',
+  B: "That's a good stretch of work. Keep going, or rest for now?",
+  C: "You've passed the session target. Keep going, or rest and pick it up later?",
+};
