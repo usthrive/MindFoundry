@@ -15,6 +15,8 @@ import { dayFlow } from '@/modules/best-brains/session/dayFlow';
 import PracticePage from '@/modules/best-brains/screens/PracticePage';
 import WarmUp from '@/modules/best-brains/screens/WarmUp';
 import PuzzleGrove from '@/modules/best-brains/screens/PuzzleGrove';
+import DayDone from '@/modules/best-brains/screens/DayDone';
+import ThisWeekHub from '@/modules/best-brains/screens/ThisWeekHub';
 import type { BBLevel, DayProgress } from '@/modules/best-brains/types';
 import '@/index.css';
 
@@ -26,6 +28,7 @@ const seed = Number(q.get('seed') ?? 12345);
 const done = Number(q.get('done') ?? 0);
 const screen = q.get('screen') ?? 'practice';
 const fix = q.get('fix') === '1';
+const mins = Number(q.get('mins') ?? 0);
 
 const pack = generatePack(level, week, seed);
 if (fix && pack.presentation?.oneOperationPerPage) {
@@ -35,27 +38,30 @@ const practice = dayFlow(pack.days[day - 1]).work;
 const twoDaysAgo = new Date(Date.now() - 2 * 86400e3).toISOString();
 const dayProgress: DayProgress = { lesson: { state: 'done' } };
 for (let d = 1; d < day; d++) dayProgress[String(d)] = { state: 'done', completedAt: twoDaysAgo, completedItemIds: [] };
-dayProgress[String(day)] = { state: 'partial', completedItemIds: practice.slice(0, done).map((i) => i.id) };
+const warm = dayFlow(pack.days[day - 1]).warmup;
+dayProgress[String(day)] = { state: 'partial', completedItemIds: done < 0 ? warm.slice(0, 1).map((i) => i.id) : practice.slice(0, done).map((i) => i.id) };
 if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds: [] };
 
 const value: FoundrySessionValue = {
   childId: 'harness', childName: 'Harness', childAge: level === 'A' ? 5 : 9, loading: false,
   enrollment: { childId: 'harness', level, currentWeek: week as any, settings: { sprintOptOut: false, sessionLength: 'standard' } },
   weekState: { childId: 'harness', level, week: week as any, packSeed: seed, state: 'in_week', dayProgress, mastery: { attempts: [] } },
-  pack, packUnavailable: false, band: bandForLevel(level), capMinutes: 99, sessionMinutes: () => 0,
+  pack, packUnavailable: false, band: bandForLevel(level), capMinutes: 12, sessionMinutes: () => mins,
   refreshEnrollment: async () => {}, refreshWeekState: async () => {}, ensureWeekStarted: async () => {},
 };
 (window as any).__bb = { pack, practice, value };
 
 createRoot(document.getElementById('root')!).render(
   <FoundrySessionContext.Provider value={value}>
-    <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : `/foundry/day/${day}/${screen}`]}>
+    <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
       <div className="mf-foundry min-h-screen bg-background">
         <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
           <Routes>
             <Route path="/foundry/day/:day/practice" element={<PracticePage />} />
             <Route path="/foundry/day/:day/warmup" element={<WarmUp />} />
             <Route path="/foundry/puzzle" element={<PuzzleGrove />} />
+            <Route path="/foundry/day/:day/done" element={<DayDone />} />
+            <Route path="/foundry/hub" element={<ThisWeekHub />} />
             <Route path="*" element={<p data-harness="redirected">REDIRECTED: {location.pathname}</p>} />
           </Routes>
         </main>

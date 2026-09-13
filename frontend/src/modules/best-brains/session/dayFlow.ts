@@ -57,3 +57,10 @@ export function pagesPerDay(band: BBBand, workItems: number): number {
 export function restampPageCounts(pack: WeeklyConceptPack): void {
   for (const day of pack.days) day.pageCount = pagesPerDay(pack.identity.band, dayFlow(day).work.length);
 }
+
+/** How many of the day's questions (warm-up + work) are in `completedIds`. */
+export function dayDoneCount(packDay: PackDay, completedIds: readonly string[] | undefined): number {
+  if (!completedIds?.length) return 0;
+  const done = new Set(completedIds);
+  return packDay.items.filter((i) => done.has(i.id)).length;
+}

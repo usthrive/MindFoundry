@@ -7,8 +7,10 @@
  */
 
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { COPY, MODULE_COPY } from '../copy';
+import { COPY, MODULE_COPY, partialStopLine } from '../copy';
 import { useFoundrySession } from '../session/FoundrySession';
+import { getPackDay } from '../generator/packGenerator';
+import { dayDoneCount, dayFlow } from '../session/dayFlow';
 import WrenBubble from '../components/WrenBubble';
 
 interface DayDoneState {
@@ -16,6 +18,9 @@ interface DayDoneState {
   partial?: boolean;
   /** LS1-R2: the adaptive stop ended the day early — warmer variant line. */
   adaptive?: boolean;
+  /** Questions done / in the day, so a partial stop names the count (2026-09-13). */
+  done?: number;
+  total?: number;
 }
 
 export default function DayDone() {
@@ -23,13 +28,17 @@ export default function DayDone() {
   const location = useLocation();
   const params = useParams<{ day: string }>();
   const day = Number(params.day);
-  const { loading, enrollment, band } = useFoundrySession();
+  const { loading, enrollment, band, pack, weekState } = useFoundrySession();
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !Number.isInteger(day)) return <Navigate to="/foundry" replace />;
 
   const state = (location.state as DayDoneState | null) ?? {};
   const partial = !!state.partial;
+  // The count, from the navigation state or (on a refresh) from the row itself.
+  const packDay = pack && day >= 1 && day <= 5 ? getPackDay(pack, day) : null;
+  const total = state.total ?? (packDay ? dayFlow(packDay).total : 0);
+  const done = state.done ?? (packDay ? dayDoneCount(packDay, weekState?.dayProgress[String(day)]?.completedItemIds) : 0);
 
   return (
     <div className="flex min-h-[70vh] flex-col justify-center gap-8">
@@ -58,11 +67,17 @@ export default function DayDone() {
           partial
             ? state.adaptive
               ? MODULE_COPY.adaptiveStop[band] // LS1-R2 warm early-end variant
-              : COPY.idleTimeout[band]
+              : partialStopLine(band, done, total)
             : COPY.dayComplete[band]
         }
         emotion="settled"
       />
+
+      {partial && total > 0 && (
+        <p className="text-center text-base font-semibold text-text-secondary" data-bb-partial-count>
+          {done} of {total} done today
+        </p>
+      )}
 
       {!partial && state.praise && <WrenBubble band={band} text={state.praise} emotion="warm" />}
 

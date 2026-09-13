@@ -36,7 +36,6 @@ export default function WarmUp() {
   const { loading, enrollment, weekState, pack, band, childId, refreshWeekState, ensureWeekStarted } =
     useFoundrySession();
 
-  const [idx, setIdx] = useState(0);
   const [feedback, setFeedback] = useState<{ kind: 'confirm' | 'correct-path'; text: string } | null>(null);
   /** LS1-R3(b) fix-it follow-up after a bottom-out reveal. */
   const [fixit, setFixit] = useState<'explain' | 'reattempt' | null>(null);
@@ -51,6 +50,14 @@ export default function WarmUp() {
     return dayFlow(getPackDay(pack, day));
   }, [pack, day]);
   const items = useMemo(() => flow?.warmup ?? [], [flow]);
+  // Re-entry (2026-09-13): every answered warm-up is banked at once, so coming
+  // back never re-serves one — resume at the first undone.
+  const doneIds = weekState?.dayProgress[String(day)]?.completedItemIds ?? [];
+  const [idx, setIdx] = useState(() => {
+    const first = items.findIndex((i) => !doneIds.includes(i.id));
+    return first === -1 ? 0 : first;
+  });
+  const allDone = items.length > 0 && items.every((i) => doneIds.includes(i.id));
 
   // C1: an empty warm-up slot (0 retrieval items, or a lone one folded into the
   // work screen by dayFlow) must never strand the child on a blank screen.
@@ -80,8 +87,11 @@ export default function WarmUp() {
   // Route-level day-unlock guard: deep links must not bypass tile gating
   // (increment-3 known bug, fixed). Day-5 re-entry (warm-up already banked)
   // forwards to the Grove instead of replaying the warm-ups.
-  if (day === 5 && weekState.dayProgress['5']) {
+  if (day === 5 && weekState.dayProgress['5'] && (items.length === 0 || allDone)) {
     return <Navigate to="/foundry/puzzle" replace />;
+  }
+  if (day <= 4 && allDone) {
+    return <Navigate to={`/foundry/day/${day}/practice`} replace />;
   }
   if (!isDayActionable(weekState.dayProgress, day)) {
     return <Navigate to="/foundry/hub" replace />;
@@ -181,12 +191,30 @@ export default function WarmUp() {
       });
     }
     setFixit(null);
-    next();
+    void next();
   }
 
-  function next() {
+  /** Bank one answered warm-up into today's entry and hand the fresh row to the session. */
+  async function bank(id: string) {
+    if (!weekState) return;
+    const prev = weekState.dayProgress[String(day)];
+    const ids = Array.from(new Set([...(prev?.completedItemIds ?? []), id]));
+    try {
+      await updateDayProgress(weekState, String(day), {
+        ...(prev ?? {}),
+        state: prev?.state === 'done' ? 'done' : 'partial',
+        completedItemIds: ids,
+      });
+      await refreshWeekState();
+    } catch (e) {
+      console.error('[bb] warm-up progress save failed', e);
+    }
+  }
+
+  async function next() {
     setFeedback(null);
     setFixit(null);
+    await bank(item.id);
     if (idx + 1 < items.length) setIdx((i) => i + 1);
     else void goOnward();
   }
@@ -218,7 +246,7 @@ export default function WarmUp() {
           />
           <button
             type="button"
-            onClick={feedback.kind === 'correct-path' ? afterReveal : next}
+            onClick={feedback.kind === 'correct-path' ? afterReveal : () => void next()}
             className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
           >
             {feedback.kind === 'correct-path'
@@ -267,7 +295,7 @@ export default function WarmUp() {
               type="button"
               onClick={() => {
                 setFixit(null);
-                next();
+                void next();
               }}
               className="min-h-[48px] rounded-2xl border-2 border-gray-200 bg-white px-4 font-medium text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/30 touch-manipulation"
             >

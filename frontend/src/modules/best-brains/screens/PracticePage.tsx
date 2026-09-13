@@ -12,13 +12,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getPackDay } from '../generator/packGenerator';
-import { COPY, CONFIRMS, MISS_OPENER } from '../copy';
+import { BREAK_OFFER, COPY, CONFIRMS, MISS_OPENER, resumeLine } from '../copy';
 import { checkAnswer } from '../answers';
 import { recordItemAttempt, updateDayProgress } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
 import { isDayActionable } from '../session/weekLogic';
 import { sprintEligible } from '../session/sprintLogic';
-import { dayFlow } from '../session/dayFlow';
+import { dayDoneCount, dayFlow } from '../session/dayFlow';
 import QuestionCounter from '../components/QuestionCounter';
 import { nearTransferVariant, type NearTransferItem } from '../session/fixit';
 import {
@@ -91,6 +91,18 @@ export default function PracticePage() {
     const first = items.findIndex((i) => !done.includes(i.id));
     return first === -1 ? 0 : first;
   });
+  // Re-entry (2026-09-13): say "let's carry on from question k" until the
+  // first answer, and never re-serve — `completedIds` seeds from the session
+  // row, which persistProgress now refreshes after EVERY save. A partial stop
+  // used to leave that row stale, so re-opening the day re-served question 1
+  // and overwrote the record: a child lost an eight-minute word problem.
+  const [showResume, setShowResume] = useState(
+    () => (session.weekState?.dayProgress[String(day)]?.completedItemIds ?? []).length > 0,
+  );
+  // Dose target (LS1-R1) as an OFFER between questions, once per session —
+  // never a stop: the day's length is its question count (owner, 2026-09-13).
+  const [breakOffer, setBreakOffer] = useState(false);
+  const breakOffered = useRef(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [fixit, setFixit] = useState<FixIt | null>(null);
   const [explainText, setExplainText] = useState('');
@@ -149,7 +161,9 @@ export default function PracticePage() {
         ...(done ? { completedAt: new Date().toISOString() } : {}),
       });
       setWeekState(next);
-      if (done) await refreshWeekState();
+      // Every save, not only day-done: the next mount of any day screen seeds
+      // its resume point from the session row.
+      await refreshWeekState();
     } catch (e) {
       console.error('[bb] day progress save failed', e);
     }
@@ -202,17 +216,22 @@ export default function PracticePage() {
       navigate(`/foundry/day/${day}/done`, { replace: true, state: { praise: praiseLine() } });
       return;
     }
-    // Band hard-cap law (LS1-R1): soft-stop between items, never mid-item.
-    if (sessionMinutes() > capMinutes) {
+    // Dose target (LS1-R1): offered once, between questions, never a stop.
+    if (!breakOffered.current && sessionMinutes() > capMinutes) {
+      breakOffered.current = true;
       await persistProgress(ids, false);
-      navigate(`/foundry/day/${day}/done`, { replace: true, state: { partial: true } });
+      setIdx(nextIdx);
+      setBreakOffer(true);
       return;
     }
-    // LS1-R2 adaptive stop: two fatigue signals → warm early end; the concept
-    // resurfaces tomorrow (day stays partial).
+    // LS1-R2 adaptive stop: two fatigue signals → warm early end (day stays
+    // partial and is actionable again — the count is named on the done screen).
     if (fatigueSignals() >= 2) {
       await persistProgress(ids, false);
-      navigate(`/foundry/day/${day}/done`, { replace: true, state: { partial: true, adaptive: true } });
+      navigate(`/foundry/day/${day}/done`, {
+        replace: true,
+        state: { partial: true, adaptive: true, done: dayDoneCount(packDay!, ids), total: flow?.total },
+      });
       return;
     }
     // Sprint offer at the page boundary (Flow 5: Days 2–3, ≤2/week, opt-in).
@@ -229,6 +248,7 @@ export default function PracticePage() {
 
   function handleAnswer(answer: string) {
     if (feedback && feedback.kind !== 'miss') return;
+    setShowResume(false);
     setAttemptedSinceRung(true); // LS1-R3(a): this attempt re-opens escalation.
     const { correct, ungraded } = checkAnswer(item.answer, answer);
     const tag = correct ? undefined : errorTagFor(item, answer);
@@ -351,12 +371,44 @@ export default function PracticePage() {
           type="button"
           onClick={() => {
             void persistProgress(completedIds, false).then(() =>
-              navigate(`/foundry/day/${day}/done`, { replace: true, state: { partial: true } }),
+              navigate(`/foundry/day/${day}/done`, {
+                replace: true,
+                state: { partial: true, done: dayDoneCount(packDay!, completedIds), total: flow?.total },
+              }),
             );
           }}
           className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
         >
           See you tomorrow
+        </button>
+      </div>
+    );
+  }
+
+  if (breakOffer) {
+    const doneNow = dayDoneCount(packDay, completedIds);
+    return (
+      <div className="flex min-h-[70vh] flex-col justify-center gap-8" data-bb-break-offer>
+        <QuestionCounter day={day} k={Math.min(doneNow + 1, flow?.total ?? doneNow + 1)} total={flow?.total ?? items.length} band={band} />
+        <WrenBubble band={band} autoplay text={BREAK_OFFER[band]} emotion="warm" />
+        <button
+          type="button"
+          onClick={() => setBreakOffer(false)}
+          className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+        >
+          Keep going
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            navigate(`/foundry/day/${day}/done`, {
+              replace: true,
+              state: { partial: true, done: doneNow, total: flow?.total },
+            })
+          }
+          className="min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white px-6 text-lg font-semibold text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+        >
+          Rest now
         </button>
       </div>
     );
@@ -393,6 +445,15 @@ export default function PracticePage() {
           </button>
         </div>
       </header>
+
+      {showResume && !feedback && !fixit && (
+        /* Re-entry line — one compact line, shown not spoken (the prompt
+           autoplays, and a bubble's height pushed the third band-A answer
+           tile to the viewport edge in the photograph). */
+        <p className="-mt-2 text-base font-medium text-text-secondary" data-bb-resume>
+          {resumeLine(band, (flow?.warmup.length ?? 0) + Math.min(idx, items.length - 1) + 1)}
+        </p>
+      )}
 
       <section aria-label="The problem" className="mf-card-quiet flex flex-col gap-4 p-6">
         <div className="flex items-start gap-3">
