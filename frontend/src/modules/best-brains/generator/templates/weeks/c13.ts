@@ -574,7 +574,19 @@ const eaLeftoverAdded = errorAnalysis({
     const rowLen = FRIENDLY + rest;
     const firstPart = rows * FRIENDLY;
     return {
-      prompt: `A student worked out ${rows} × ${rowLen} by cutting the ${rowLen} into ${FRIENDLY} and ${rest}. For the first part the student wrote ${rows} × ${FRIENDLY} = ${firstPart}. For the second part the student wrote ${rows} + ${rest} = ${v.wrong}. The answer given was ${firstPart + Number(v.wrong)}.`,
+      // THREE WORKED LINES ARE THREE LINES (owner ruling 2026-09-22). This was
+      // one paragraph carrying three equations, which is the same wall of text
+      // as B3-D5-03 and the second-worst prompt in the corpus by that measure.
+      // It is NOT the truth-set form — the child is not judging the lines, they
+      // are analysing one of them — so the fix here is the other half of the
+      // ruling: `promptText` now preserves a single `\n`, and every screen that
+      // prints a prompt carries `whitespace-pre-line`, so the student's working
+      // can be SET OUT as working. The bullet is authored text and renders as
+      // written. The trailing `\n` is load-bearing: `errorAnalysis` appends the
+      // extension with a space, and a space after a newline collapses back to
+      // the newline, so the extension lands on its own line instead of running
+      // on from the last bullet.
+      prompt: `A student worked out ${rows} × ${rowLen} by cutting the ${rowLen} into ${FRIENDLY} and ${rest}. Here is the student's working:\n• ${rows} × ${FRIENDLY} = ${firstPart}\n• ${rows} + ${rest} = ${v.wrong}\n• The answer given was ${firstPart + Number(v.wrong)}.\n`,
       extension: `Draw the array with the cut in it. Write down what the SECOND part is really worth. Add one sentence saying what the student did to the leftover part.`,
       hints: [
         'Which piece of the picture does the second line describe?',

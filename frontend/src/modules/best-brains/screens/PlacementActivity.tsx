@@ -284,10 +284,12 @@ export default function PlacementActivity() {
 
       <section aria-label="The question" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <p className={band === 'A' ? 'flex-1 text-2xl text-text-primary' : 'flex-1 text-xl text-text-primary'}>
+          {/* Authored lines survive `promptText` since 2026-09-22; `whitespace-pre-line`
+              is what puts them on the screen. */}
+          <p className={band === 'A' ? 'flex-1 whitespace-pre-line text-2xl text-text-primary' : 'flex-1 whitespace-pre-line text-xl text-text-primary'}>
             {promptText(item.prompt)}
           </p>
-          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt)} band={band} autoplay={band === 'A'} />
+          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band === 'A'} />
         </div>
         <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>

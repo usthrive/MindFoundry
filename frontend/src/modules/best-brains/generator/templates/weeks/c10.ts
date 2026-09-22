@@ -481,7 +481,11 @@ const discrimCompleteFamily = discrimination({
     const big = keepFactorsApart(small, r.int(3, 9));
     const whole = small * big;
     return {
-      prompt: `Three sentences of one fact family are already on the board. They are ${small} × ${big} = ${whole}, ${big} × ${small} = ${whole} and ${whole} ÷ ${big} = ${small}. Which sentence completes the family?`,
+      // The three sentences already on the board are a LIST, so they are set
+      // out as one line each (ruling 2026-09-22): a child scanning for the
+      // member that is missing has to hold the family side by side, which a
+      // single run-on sentence makes impossible.
+      prompt: `Three sentences of one fact family are already on the board. They are:\n• ${small} × ${big} = ${whole}\n• ${big} × ${small} = ${whole}\n• ${whole} ÷ ${big} = ${small}\nWhich sentence completes the family?`,
       correct: `${whole} ÷ ${small} = ${big}`,
       distractors: [
         {

@@ -780,7 +780,9 @@ const msCanalStretchFigured = withFigure(msCanalStretchEstimate, (p) => {
  */
 const storyForMinusMinus = reasoning({
   prompt:
-    'Somewhere in the world, -(-3) is something that actually happens to somebody. Write that story. It has to name what the -3 is in your setting, say plainly what removing it does to the person it belongs to, and finish with the number sentence your story produces and the value that sentence lands on. A story in which the two minus signs are only a rule about signs does not count.',
+    // The story's three requirements are a checklist, so they are set out as
+    // one line each (ruling 2026-09-22); the disqualifier keeps its own line.
+    'Somewhere in the world, -(-3) is something that actually happens to somebody. Write that story. It has to:\n• name what the -3 is in your setting\n• say plainly what removing it does to the person it belongs to\n• finish with the number sentence your story produces and the value that sentence lands on\nA story in which the two minus signs are only a rule about signs does not count.',
   value:
     'a debt of 3 is written -3, so cancelling that debt is -(-3): a balance of -10 becomes -10 - (-3) = -7, and the person is better off by 3',
   acceptableForms: [

@@ -83,7 +83,8 @@ export default function AnchorPanel({ pack, mode, band, open, onClose }: AnchorP
                 {pack.guidedExamples.map((ex) => (
                   <details key={ex.id} className="group rounded-2xl border border-gray-200 bg-white">
                     <summary className="cursor-pointer list-none px-4 py-3 font-medium text-text-primary min-h-[48px] flex items-center justify-between touch-manipulation">
-                      <span>{promptText(ex.prompt)}</span>
+                      {/* Authored prompt lines survive `promptText` since 2026-09-22. */}
+                      <span className="whitespace-pre-line">{promptText(ex.prompt)}</span>
                       <span className="text-text-muted transition-transform group-open:rotate-90">›</span>
                     </summary>
                     <div className="space-y-2 border-t border-gray-100 px-4 py-3">

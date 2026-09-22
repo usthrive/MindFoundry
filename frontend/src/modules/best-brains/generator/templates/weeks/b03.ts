@@ -265,7 +265,7 @@
  * cards and b16 craft sticks — none of those appears here.
  */
 
-import { asWarmup, classify, reasoning } from '../lib/items';
+import { asWarmup, classify, judge } from '../lib/items';
 import type { ItemGen } from '../lib/items';
 import { situation } from '../lib/situations';
 import { multiStep } from '../lib/multistep';
@@ -1073,15 +1073,33 @@ const eaTenTheWrongWay = withFigure(
 // list made the same call). The three cases are chosen to cover the week's whole
 // rule in one glance: one true `>` where the tens settle it, one false `<` where
 // the tens settle it the other way, and one `=` between two counts that really do
-// match. Ships as `manual-review`: what is being marked is the repair and the
-// reason, and a person reads that.
+// match.
+//
+// WHAT CHANGED 2026-09-22, AND WHY IT IS THE CLASS AND NOT THE ITEM. This shipped
+// as one `manual-review` paragraph — "Three sentences are on the board. 62 > 58.
+// 71 < 68. 45 = 45. Write TRUE beside each sentence that is true. Fix the one that
+// is not true… Then write one sentence…" — three claims and three instructions in
+// a single block, answered into a one-line box under a button marked **Check**
+// that checked nothing. The owner's ruling was to fix the FORM: the claims are now
+// rows a child judges (`truth-set`), which is the demand the catalog cell actually
+// names ("true/false comparison claims"), and it is graded because judging a claim
+// is markable. One T, one F, one T: reading the tens is the only way through, and
+// "say true to everything" scores nothing (the validator refuses an all-one-verdict
+// set for exactly that reason).
+//
+// The REPAIR and the REASON — the two halves this item used to also ask for — are
+// not lost; they were never the markable part, and the week keeps both demands on
+// Day 5 in `eaTenTheWrongWay` (manual-review, which is also what still satisfies
+// BB-G2's justification coupling) and `asnMoreOnes`.
 // ---------------------------------------------------------------------------
 
-const reasoningProveOrFix = reasoning({
-  prompt:
-    'Three sentences are on the board. 62 > 58. 71 < 68. 45 = 45. Write TRUE beside each sentence that is true. Fix the one that is not true by turning its sign round. Then write one sentence about how the tens helped.',
-  value:
-    'the first and third sentences are true, and the middle one is fixed to 71 > 68, with a reason that reads the tens first',
+const reasoningProveOrFix = judge({
+  prompt: 'Which sentences are true?',
+  statements: [
+    { text: '62 > 58', truth: true },
+    { text: '71 < 68', truth: false },
+    { text: '45 = 45', truth: true },
+  ],
   hints: [
     'Which count in each sentence holds more whole tens?',
     'Read each sentence out loud. Then check which way its sign opens.',

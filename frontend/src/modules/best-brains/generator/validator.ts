@@ -83,7 +83,10 @@ const ITEM_TYPES = new Set([
 const VALIDATIONS = new Set([
   'exact-numeric', 'equivalent-numeric', 'equivalent-fraction', 'number-sentence',
   'choice-key', 'short-text-keyword', 'ordered-list', 'set', 'manual-review',
+  'truth-set',
 ]);
+/** Tokens a `truth-set` answer may be built from (see the S-SCHEMA block). */
+const TRUTH_TOKEN_RE = /^[TF]$/;
 const BANDS = new Set(['beginner', 'intermediate', 'transition', 'advanced']);
 const STRAND_TAGS = new Set([
   'number-sense-counting', 'addition-subtraction', 'multiplication-division',
@@ -324,6 +327,44 @@ export function validatePack(
       add('QG-9', `${path}.errorTags`, 'errorTags must be 1-3 unique tags from the closed DD7 enum');
     }
     if (!VALIDATIONS.has(item.answer.validation)) add('S-SCHEMA', `${path}.answer.validation`, `invalid validation "${item.answer.validation}"`);
+
+    /**
+     * TRUTH-SET STRUCTURE (2026-09-22 ruling). Four assertions, each of which a
+     * hand-authored item has already been seen to get wrong in its prose form:
+     *
+     *  · the claims exist and there are at least two — one claim is a yes/no
+     *    question, not a set to judge;
+     *  · there is exactly one T/F token per claim, so the answer cannot key a
+     *    row that is not on the screen (the MARKING defect the answerability
+     *    gate was built for, in a new shape);
+     *  · every token is T or F;
+     *  · the set is NOT all-true or all-false. "They're all true" is a strategy
+     *    that scores 100% without reading anything, and a set with both
+     *    verdicts in it is the cheapest possible defence against it.
+     */
+    if (item.answer.validation === 'truth-set') {
+      const tokens = item.answer.value.split(',').map((t) => t.trim());
+      const claims = item.statements ?? [];
+      if (claims.length < 2) {
+        add('S-SCHEMA', `${path}.statements`, `truth-set needs ≥2 statements, has ${claims.length}`);
+      }
+      if (claims.some((s) => !s.trim())) {
+        add('S-SCHEMA', `${path}.statements`, 'truth-set statement is empty');
+      }
+      if (tokens.length !== claims.length) {
+        add('S-SCHEMA', `${path}.answer.value`, `truth-set answer "${item.answer.value}" has ${tokens.length} verdict(s) for ${claims.length} statement(s)`);
+      }
+      if (!tokens.every((t) => TRUTH_TOKEN_RE.test(t))) {
+        add('S-SCHEMA', `${path}.answer.value`, `truth-set answer "${item.answer.value}" must be T/F tokens joined by commas`);
+      } else if (!tokens.includes('T') || !tokens.includes('F')) {
+        add('S-SCHEMA', `${path}.answer.value`, `truth-set answer "${item.answer.value}" is all-${tokens[0] === 'T' ? 'true' : 'false'} — guessable without reading a claim`);
+      }
+      if (item.answer.acceptableForms.length > 0) {
+        add('S-SCHEMA', `${path}.answer.acceptableForms`, 'truth-set is a closed surface (tap only) — acceptableForms must be empty');
+      }
+    } else if (item.statements !== undefined) {
+      add('S-SCHEMA', `${path}.statements`, `statements are the truth-set form's own field, but this item validates as "${item.answer.validation}"`);
+    }
     if (item.isRetrieval) {
       if (!item.retrievalSource) add('QG-2', `${path}.retrievalSource`, 'isRetrieval=true requires retrievalSource');
       if (item.difficulty > 3) add('S-RAMP', `${path}.difficulty`, `retrieval warm-up at difficulty ${item.difficulty} (must be ≤3, §3.3)`);
@@ -474,6 +515,11 @@ export function validatePack(
       // combinations). All four were hand-audited across three seeds before the
       // fix and agreed, so this closes a latent hole rather than repairing a
       // live defect. (L50 — the fourth reads-an-empty-set instance of the week.)
+      // `truth-set` is deliberately absent from this list, exactly as
+      // `manual-review` and `choice-key` are (2026-09-22): its answer is the
+      // authored truths, derived by `judge` from the same array that ships the
+      // statements, so there is no second derivation for a template to check.
+      // The structural assertions above are what guards it instead.
       if (tpl?.answerFor && ['exact-numeric', 'equivalent-numeric', 'equivalent-fraction', 'ordered-list', 'set'].includes(item.answer.validation)) {
         let expected: string | null = null;
         try {

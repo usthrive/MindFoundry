@@ -291,7 +291,13 @@ for (const { level, week, shadowed } of weeks) {
         // findings. Caught by the A12 author reading this projection against
         // the component. When a gate mirrors a UI, the ORDER of the branches is
         // part of what it has to mirror.
-        if ((it as unknown as { answer?: { validation?: string } }).answer?.validation === 'manual-review') return it;
+        // …and `truth-set` (2026-09-22) is branched on EARLIER still — ahead of
+        // the choices branch — so it is projected even less than manual-review
+        // is. `tapOptionsFor` would refuse it anyway (its value is not a
+        // number), but the rule is that this mirror states the order rather
+        // than relying on a downstream refusal to hold.
+        const val = (it as unknown as { answer?: { validation?: string } }).answer?.validation;
+        if (val === 'manual-review' || val === 'truth-set') return it;
         const opts = tapOptionsFor(it as never);
         if (!opts) return it;
         const answer = String((it as unknown as { answer?: { value?: unknown } }).answer?.value ?? '');

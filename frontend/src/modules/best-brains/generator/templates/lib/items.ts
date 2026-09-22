@@ -22,9 +22,11 @@
  * so `factorPair` shipped 102 distinct ladders, unseen. The rungs now name
  * ROLES ("the factor you are given", "the named digit"), never values.
  *
- * Choice / short-text / manual-review items intentionally have no `answerFor`
- * (audit skipped): their correctness is the code-selected choice key, or they
- * are flagged for keyword / AI-runtime grading (open reasoning).
+ * Choice / short-text / manual-review / truth-set items intentionally have no
+ * `answerFor` (audit skipped): their correctness is the code-selected choice
+ * key, the authored truths (`judge`, 2026-09-22), or they are flagged for
+ * keyword / AI-runtime grading (open reasoning). QG-5's recompute list names
+ * the validations it re-derives, so those are skipped by construction.
  */
 
 import type { Choice, ErrorTag, ItemType, WeekRef } from '../../../types';
@@ -1579,6 +1581,53 @@ export function reasoning(cfg: ReasoningCfg): ItemGen {
       },
       difficulty,
       strand: 'noncomputational',
+      isRetrieval: false,
+      hintLadder: cfg.hints,
+      errorTags: cfg.errorTags,
+    }));
+}
+
+interface JudgeCfg {
+  prompt: string;
+  /** The claims, in order (≥2). Not all true and not all false — see below. */
+  statements: Array<{ text: string; truth: boolean }>;
+  hints: string[];
+  errorTags: ErrorTag[];
+  type?: ItemType;
+}
+
+/**
+ * Authored Day-5 TRUE/FALSE production — the `truth-set` form.
+ *
+ * WHY IT IS A FACTORY AND NOT PROSE (owner ruling 2026-09-22). "Which of these
+ * sentences are true?" was authorable only as `reasoning`, i.e. as one
+ * paragraph carrying every claim and every instruction, answered into a single
+ * free-text box that `checkAnswer` never read. B3-D5-03 is the item that made
+ * the ruling: three claims, three instructions, one blank line, `manual-review`.
+ *
+ * Judging a claim is machine-markable, so this form is GRADED: `statements`
+ * ships the claims as a typed field, `answer.value` is the T/F string derived
+ * FROM THE AUTHORED TRUTHS (never restated by hand — a second source of truth
+ * is how a keyed-wrong answer gets in), and `acceptableForms` is empty because
+ * the surface is closed: the child taps, so there is no other form to accept.
+ *
+ * The validator refuses an all-true or all-false set: "they are all true" is a
+ * one-word strategy that scores 100% without reading a single claim, which is
+ * exactly the guessability class the census exists to catch.
+ */
+export function judge(cfg: JudgeCfg): ItemGen {
+  return (rng, guard, difficulty) =>
+    drawUniqueItem(rng, guard, () => ({
+      type: cfg.type ?? 'reasoning',
+      prompt: cfg.prompt,
+      statements: cfg.statements.map((s) => s.text),
+      answer: {
+        value: cfg.statements.map((s) => (s.truth ? 'T' : 'F')).join(','),
+        acceptableForms: [],
+        validation: 'truth-set' as const,
+      },
+      difficulty,
+      strand: 'noncomputational' as const,
       isRetrieval: false,
       hintLadder: cfg.hints,
       errorTags: cfg.errorTags,

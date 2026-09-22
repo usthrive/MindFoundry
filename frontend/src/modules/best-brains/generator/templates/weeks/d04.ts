@@ -338,7 +338,11 @@ export const buildD04 = makeWeekBuilder({
       { gen: eaAddInsteadOfMultiply, diff: 4 },
       {
         gen: reasoning({
-          prompt: 'Ava has 5 marbles. Write ONE "more than" sentence and ONE "times as many" sentence about Ben, solve both, and explain in writing why the answers differ.',
+          // Three demands, one line each (ruling 2026-09-22): run together they
+          // read as a single instruction and the second sentence is the one a
+          // child drops.
+          prompt:
+            'Ava has 5 marbles.\n• Write ONE "more than" sentence and ONE "times as many" sentence about Ben.\n• Solve both.\n• Explain in writing why the answers differ.',
           value: 'more-than adds a small difference; times-as-many multiplies into whole copies, so the totals differ',
           acceptableForms: ['more than', 'times as many', 'multiply', 'add'],
           keywords: true,

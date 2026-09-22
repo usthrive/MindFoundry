@@ -231,6 +231,17 @@ interface Leak {
 
 function inspect(week: string, band: string, seed: number, raw: Item, autoplayed: boolean, into: Leak[]): void {
   if (typeof raw?.prompt !== 'string') return;
+  /**
+   * A `truth-set` answer (2026-09-22) is a verdict string — "T,F,T" — not a
+   * quantity, and the surface it is checked against is a closed row of buttons.
+   * Its tokens are single letters, so running the disclosure rules on it would
+   * flag any scene containing a word starting with t or f: noise, and the kind
+   * of noise that gets a gate switched off. The claims themselves are SPOKEN on
+   * purpose (`speakablePrompt` reads them), which is disclosure of the
+   * QUESTION, never of the answer — nothing in the scene or the prompt says
+   * which of them is true.
+   */
+  if ((raw as { answer?: { validation?: string } }).answer?.validation === 'truth-set') return;
   const scene = sceneOf(raw);
   if (!scene) return;
   const question = promptText(raw.prompt);

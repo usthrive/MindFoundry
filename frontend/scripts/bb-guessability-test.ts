@@ -188,7 +188,7 @@ const ARGS: Record<string, unknown[][]> = {
  * this file's sample config and report it as a library property, which is a
  * false diagnosis of exactly the kind this suite exists to avoid.
  */
-const AUTHORED_CONTENT = new Set(['items.reasoning', 'items.classify', 'items.asWarmup']);
+const AUTHORED_CONTENT = new Set(['items.reasoning', 'items.classify', 'items.judge', 'items.asWarmup']);
 
 const FAMILIES: Array<[string, Record<string, unknown>]> = [
   ['clock', clock], ['money', money], ['ratio', ratio], ['integers', integers],
@@ -309,6 +309,17 @@ interface Acc {
   noKey: number;
   /** The answer printed in its own prompt (report-only, as in bb-family-test). */
   selfLeak: number;
+  /**
+   * Smallest number of T/F rows seen on a `truth-set` draw, 0 if none.
+   * The guess space of a truth form is not "the answers this generator
+   * reached" but every pattern the child can tap: 2^n, less the all-true and
+   * all-false patterns the validator refuses (2026-09-22). Using the reached-
+   * answer count as the baseline would report a fixed authored claim set as a
+   * 100% nudge-collapse, which is a false diagnosis of the exact kind this
+   * suite exists to avoid. The SMALLEST n is taken because it gives the
+   * LOOSEST baseline, so a flag here is never an artefact of the denominator.
+   */
+  truthRows: number;
   cardCounts: Set<number>;
   /** Cards summed over choice draws — the mean is what every baseline is 1/n of. */
   cardTotal: number;
@@ -325,7 +336,7 @@ function newAcc(label: string, family: string): Acc {
     unparsed: 0, mixedUnit: 0, unparsedSamples: new Set(),
     lenLongest: 0, lenShortest: 0, lenTied: 0,
     positions: new Map(), dupSets: 0, dupSamples: new Set(),
-    noKey: 0, selfLeak: 0, cardCounts: new Set(), cardTotal: 0, surfaceOdd: new Map(),
+    noKey: 0, selfLeak: 0, truthRows: 0, cardCounts: new Set(), cardTotal: 0, surfaceOdd: new Map(),
   };
 }
 
@@ -339,6 +350,10 @@ function observe(acc: Acc, d: ItemDraft): void {
     acc.freeDraws++;
     const v = String(d.answer.value).trim();
     acc.answers.set(v, (acc.answers.get(v) ?? 0) + 1);
+    if (d.answer.validation === 'truth-set') {
+      const n = d.statements?.length ?? v.split(',').filter(Boolean).length;
+      acc.truthRows = acc.truthRows === 0 ? n : Math.min(acc.truthRows, n);
+    }
   } else {
     const cards = d.choices;
     acc.choiceDraws++;
@@ -445,12 +460,18 @@ function flagsFor(a: Acc): Flag[] {
   if (a.freeDraws > 0) {
     const top = [...a.answers.entries()].sort((x, y) => y[1] - x[1])[0];
     const share = top[1] / a.freeDraws;
-    const uniform = 1 / a.answers.size;
+    // The truth form's denominator is its TAPPABLE space, not its reached
+    // answers — see Acc.truthRows.
+    const space = a.truthRows >= 2 ? Math.pow(2, a.truthRows) - 2 : a.answers.size;
+    const uniform = 1 / space;
+    const over = a.truthRows >= 2
+      ? `uniform over the ${space} T/F patterns the validator allows on ${a.truthRows} rows`
+      : `uniform over the ${a.answers.size} it reaches`;
     if (share - uniform > T.freeExcess || share > T.freeAnswerFloor) {
       f.push({
         code: 'CONC',
         rate: share - uniform,
-        detail: `answer "${top[0]}" on ${pct(share)} of ${a.freeDraws} free-entry draws vs ${pct(uniform)} uniform over the ${a.answers.size} it reaches (+${pct(share - uniform)}) — nudge-collapse signature`,
+        detail: `answer "${top[0]}" on ${pct(share)} of ${a.freeDraws} free-entry draws vs ${pct(uniform)} ${over} (+${pct(share - uniform)}) — nudge-collapse signature`,
       });
     }
   }
