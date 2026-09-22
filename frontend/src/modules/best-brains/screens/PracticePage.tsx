@@ -15,6 +15,7 @@ import { getPackDay } from '../generator/packGenerator';
 import { BREAK_OFFER, COPY, CONFIRMS, MISS_OPENER, resumeLine } from '../copy';
 import { checkAnswer } from '../answers';
 import { recordItemAttempt, updateDayProgress } from '../services/bbProgressService';
+import { MAX_REVIEWS_PER_ITEM, reviewExplanation, shouldReview } from '../services/bbReviewService';
 import { useFoundrySession } from '../session/FoundrySession';
 import { isDayActionable } from '../session/weekLogic';
 import { sprintEligible } from '../session/sprintLogic';
@@ -43,7 +44,20 @@ type Feedback =
   | { kind: 'miss'; text: string }
   | { kind: 'parked'; text: string }
   /** LS1-R3(b): bottom-out reveal — the answer with full reasoning, then fix-it. */
-  | { kind: 'reveal'; text: string };
+  | { kind: 'reveal'; text: string }
+  /**
+   * Ms. Wren's reading of a written explanation (owner ruling 2026-09-22,
+   * option (a)). Formative: `checkAnswer` already returned
+   * `{correct: true, ungraded: true}` and nothing here changes that.
+   * `canRetry` is false on `got-it` and on the second reading of an item.
+   */
+  | {
+      kind: 'review';
+      verdict: 'got-it' | 'partly' | 'not-yet';
+      text: string;
+      nudge: string | null;
+      canRetry: boolean;
+    };
 
 /** LS1-R3(b) fix-it step after a bottom-out reveal. */
 type FixIt = { kind: 'variant'; variant: NearTransferItem; forId: string } | { kind: 'explain'; forId: string };
@@ -104,6 +118,12 @@ export default function PracticePage() {
   const [breakOffer, setBreakOffer] = useState(false);
   const breakOffered = useRef(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  /** Ms. Wren is reading — the explain form stays up, with the child's words in it. */
+  const [reviewing, setReviewing] = useState(false);
+  /** The child's previous sentence, handed back to the box by "Try once more". */
+  const [reviewDraft, setReviewDraft] = useState<string | undefined>(undefined);
+  /** Readings spent per item id — the client-side guard against a third one. */
+  const reviewRounds = useRef<Record<string, number>>({});
   const [fixit, setFixit] = useState<FixIt | null>(null);
   const [explainText, setExplainText] = useState('');
   const [rung, setRung] = useState(0);
@@ -203,6 +223,7 @@ export default function PracticePage() {
     deepHintStreak.current = rung >= 3 ? deepHintStreak.current + 1 : 0;
     setCompletedIds(ids);
     setFeedback(null);
+    setReviewDraft(undefined);
     setFixit(null);
     setRung(0);
     setAttemptedSinceRung(true);
@@ -246,7 +267,45 @@ export default function PracticePage() {
     setIdx(nextIdx);
   }
 
+  /**
+   * Ms. Wren reads the sentence (owner ruling 2026-09-22, option (a)).
+   *
+   * The attempt is recorded FIRST and unconditionally by `handleAnswer`,
+   * exactly as it was before: the day's record of what the child did must not
+   * depend on whether a model answered. Only then is the writing read, and
+   * only formatively — nothing below moves a score, the day's accuracy, or
+   * the weekly gate.
+   */
+  async function runReview(answer: string) {
+    const spent = reviewRounds.current[item.id] ?? 0;
+    setReviewing(true);
+    const outcome = await reviewExplanation({
+      childId,
+      pack: pack!,
+      item,
+      band: band as 'B' | 'C',
+      day,
+      childText: answer,
+    });
+    setReviewing(false);
+    reviewRounds.current[item.id] = spent + 1;
+    if (outcome.verdict === 'unavailable') {
+      // Today's acknowledgement line — what the screen showed before this feature.
+      setFeedback({ kind: 'confirm', text: CONFIRMS[band][idx % CONFIRMS[band].length] });
+      return;
+    }
+    setReviewDraft(answer);
+    setFeedback({
+      kind: 'review',
+      verdict: outcome.verdict,
+      text: outcome.line,
+      nudge: outcome.verdict === 'got-it' ? null : outcome.nudge,
+      canRetry: outcome.verdict !== 'got-it' && spent + 1 < MAX_REVIEWS_PER_ITEM,
+    });
+  }
+
   function handleAnswer(answer: string) {
+    if (reviewing) return;
     if (feedback && feedback.kind !== 'miss') return;
     setShowResume(false);
     setAttemptedSinceRung(true); // LS1-R3(a): this attempt re-opens escalation.
@@ -272,6 +331,13 @@ export default function PracticePage() {
       if (!correct && Date.now() - itemShownAt.current < FATIGUE_RAPID_GUESS_MS) {
         rapidWrongCount.current += 1;
       }
+    }
+
+    // A written explanation goes to Ms. Wren before the acknowledgement does
+    // (2026-09-22). `said-aloud`, an empty box and band A never get here.
+    if (shouldReview(item, band, answer) && (reviewRounds.current[item.id] ?? 0) < MAX_REVIEWS_PER_ITEM) {
+      void runReview(answer);
+      return;
     }
 
     if (correct || ungraded) {
@@ -495,6 +561,41 @@ export default function PracticePage() {
         </div>
       )}
 
+      {feedback?.kind === 'review' && (
+        /* Ms. Wren has read it (2026-09-22). The nudge rides IN the bubble —
+           a line plus its question is ONE conversational turn (P2), and a
+           second bubble would be two competing ones. */
+        <div className="flex flex-col gap-5">
+          <WrenBubble
+            band={band}
+            autoplay
+            text={feedback.nudge ? `${feedback.text} ${feedback.nudge}` : feedback.text}
+            emotion={feedback.nudge ? 'curious' : 'warm'}
+          />
+          {feedback.canRetry && (
+            <button
+              type="button"
+              onClick={() => setFeedback(null)}
+              className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+            >
+              Try once more
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void advance(item.id)}
+            className={
+              feedback.canRetry
+                ? 'min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white px-6 text-lg font-semibold text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation'
+                : 'min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation'
+            }
+          >
+            {/* A second verdict is final: after it the only way on is "On we go". */}
+            {feedback.verdict === 'got-it' ? 'Next' : 'On we go'}
+          </button>
+        </div>
+      )}
+
       {feedback?.kind === 'reveal' && (
         /* LS1-R3(b): bottom-out reveal → the fix-it step follows, never a dead end. */
         <div className="flex flex-col gap-5">
@@ -600,7 +701,13 @@ export default function PracticePage() {
               }}
             />
           )}
-          <AnswerEntry item={item} band={band} onSubmit={handleAnswer} />
+          <AnswerEntry
+            item={item}
+            band={band}
+            onSubmit={handleAnswer}
+            reviewing={reviewing}
+            explainDraft={reviewDraft}
+          />
         </>
       )}
 
@@ -641,6 +748,8 @@ export default function PracticePage() {
                 close();
                 handleAnswer(answer);
               }}
+              reviewing={reviewing}
+              explainDraft={reviewDraft}
             />
           )}
         />

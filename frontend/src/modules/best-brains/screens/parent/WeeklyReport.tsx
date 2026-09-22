@@ -10,10 +10,26 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getCatalogWeek } from '../../content/catalog';
-import { acknowledgeReport, getReport } from '../../services/bbParentService';
+import { acknowledgeReport, getReport, listWeekStatesReadOnly } from '../../services/bbParentService';
+import { generatePack } from '../../generator';
+import { promptText } from '../../figures/prompt';
+import { listExplanationReviews, type ReviewRecord } from '../../services/bbReviewService';
 import { VERDICT_LABELS, ackLabel } from '../../parentCopy';
 import { useParentContext } from './FoundryParentLayout';
 import type { BBLevel, BBParentReport } from '../../types';
+
+/**
+ * The child never sees these words; the parent never sees the module's own
+ * (owner ruling 2026-09-22). "not-yet" on a parent page would read as a mark,
+ * which this is explicitly not — the reading is formative and touches no
+ * score, no day's accuracy and no weekly gate. Same law as VERDICT_LABELS,
+ * where "Review" is never rendered.
+ */
+const REVIEW_LABELS: Record<ReviewRecord['verdict'], string> = {
+  'got-it': 'Got it',
+  partly: 'Getting there',
+  'not-yet': 'Not yet',
+};
 
 function SectionLabel({ children, apricot }: { children: string; apricot?: boolean }) {
   return <div className={apricot ? 'mf-label mf-label-apricot' : 'mf-label mf-label-teal'}>{children}</div>;
@@ -30,6 +46,38 @@ export default function WeeklyReport() {
   const [report, setReport] = useState<BBParentReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [acking, setAcking] = useState(false);
+  /** Ms. Wren's readings of this week's written explanations (2026-09-22). */
+  const [reviews, setReviews] = useState<ReviewRecord[]>([]);
+  /**
+   * item id → the task the child was answering. Regenerated, not stored: packs
+   * are never persisted (DD15), so the only honest source for the prompt is
+   * the same (level, week, pack_seed, content_version) the child was served.
+   * If the week state cannot be read the section still renders — with the item
+   * id in place of the prompt, because the child's OWN words are the point of
+   * it and they are never missing.
+   */
+  const [prompts, setPrompts] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    // packId is derived, never stored: MFM-<Level><Week> (types.ts:408).
+    void listExplanationReviews(childId, `MFM-${level}${week}`).then((rows) => {
+      if (!cancelled) setReviews(rows);
+    });
+    void listWeekStatesReadOnly(childId, level)
+      .then((states) => {
+        const ws = states.find((s) => s.week === week);
+        if (cancelled || !ws) return;
+        const pack = generatePack(level, week, ws.packSeed, ws.contentVersion);
+        const map: Record<string, string> = {};
+        for (const d of pack.days) for (const it of d.items) map[it.id] = promptText(it.prompt);
+        setPrompts(map);
+      })
+      .catch((e) => console.error('[bb] prompt lookup failed', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [childId, level, week]);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,6 +184,44 @@ export default function WeeklyReport() {
           </p>
           {n.homeFocus.schoolSyncHook && <p className="mt-2">{n.homeFocus.schoolSyncHook}</p>}
         </div>
+        {/* IN THEIR OWN WORDS (owner ruling 2026-09-22, option (a)).
+            The week's written explanations, as the child wrote them, with what
+            Ms. Wren made of each one. It sits BELOW the four E102 fields and
+            above the teacher narrative because it is evidence, not a fifth
+            field: the narrative is Ms. Wren's account of the week and this is
+            the raw material behind one line of it.
+
+            FORMATIVE ONLY, and the dress says so — no percentage, no colour
+            coding, the same calm serif as the rest. The verdict is a plain
+            word ("Getting there"), never a mark, because nothing here moved
+            the % in the header. Hidden entirely when the week has none, which
+            is most weeks at most levels. */}
+        {reviews.length > 0 && (
+          <div>
+            <SectionLabel>In their own words</SectionLabel>
+            <p className="mt-1.5 text-[13px] text-text-secondary" style={{ fontFamily: 'var(--mf-font-parent)' }}>
+              Explain-it tasks {name} wrote out this week. These are never scored — the weekly check
+              above is unaffected by them.
+            </p>
+            <ul className="mt-2 flex flex-col gap-3">
+              {reviews.map((r, i) => (
+                <li key={`${r.itemId}-${i}`} className="rounded-xl border border-gray-200 px-4 py-3">
+                  <p className="text-[13px] text-text-secondary">
+                    {(prompts[r.itemId] ?? r.itemId).slice(0, 90)}
+                    {(prompts[r.itemId] ?? '').length > 90 ? '…' : ''}
+                  </p>
+                  <p className="mt-1.5">
+                    <em>“{r.childText}”</em>
+                  </p>
+                  <p className="mt-1.5 text-[13px] text-text-secondary">
+                    <span className="font-semibold text-text-primary">{REVIEW_LABELS[r.verdict]}</span>
+                    {r.reason ? ` — ${r.reason}` : ''}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {n.teacherNarrative && <p className="text-[14px] italic text-text-secondary">{n.teacherNarrative}</p>}
       </div>
 

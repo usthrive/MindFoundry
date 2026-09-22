@@ -9,13 +9,14 @@
  * Done or parked → WeeklyCheck framed as "last page of the week".
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { CONFIRMS, MISS_OPENER, MODULE_COPY } from '../copy';
 import { checkAnswer } from '../answers';
 import { getPackDay } from '../generator/packGenerator';
 import { recordItemAttempt, updateDayProgress } from '../services/bbProgressService';
+import { MAX_REVIEWS_PER_ITEM, reviewExplanation, shouldReview } from '../services/bbReviewService';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
@@ -31,6 +32,21 @@ import type { PackItem, Puzzle } from '../types';
 
 type Stage = { kind: 'item'; item: PackItem } | { kind: 'puzzle'; puzzle: Puzzle };
 
+/**
+ * Ms. Wren's reading of an explanation (owner ruling 2026-09-22, option (a)).
+ * `canRetry` is false on the second reading of an item and on `got-it`: the
+ * only way past a second verdict is "On we go" (the move-on rule, §4.2).
+ */
+type Feedback =
+  | { kind: 'confirm' | 'path' | 'close'; text: string }
+  | {
+      kind: 'review';
+      verdict: 'got-it' | 'partly' | 'not-yet';
+      text: string;
+      nudge: string | null;
+      canRetry: boolean;
+    };
+
 export default function PuzzleGrove() {
   const navigate = useNavigate();
   const session = useFoundrySession();
@@ -38,7 +54,13 @@ export default function PuzzleGrove() {
   const weekState = session.weekState;
 
   const [idx, setIdx] = useState(0);
-  const [feedback, setFeedback] = useState<{ kind: 'confirm' | 'path' | 'close'; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  /** Ms. Wren is reading — the explain form stays up, with the child's words in it. */
+  const [reviewing, setReviewing] = useState(false);
+  /** The child's previous sentence, handed back to the box by "Try once more". */
+  const [reviewDraft, setReviewDraft] = useState<string | undefined>(undefined);
+  /** Readings spent per item id — the client-side guard against a third one. */
+  const reviewRounds = useRef<Record<string, number>>({});
   const [rung, setRung] = useState(0);
   const [attemptedSinceRung, setAttemptedSinceRung] = useState(true);
   const [anchorOpen, setAnchorOpen] = useState(false);
@@ -104,9 +126,49 @@ export default function PuzzleGrove() {
   const statements = stage.kind === 'item' ? stage.item.statements : undefined;
   const hintLadder = current.hintLadder;
   const isPuzzle = stage.kind === 'puzzle';
+  /** The item the child's controls are actually built from — the review reads the same one. */
+  const entryItem: PackItem = stage.kind === 'item' ? stage.item : puzzleAsItem(stage.puzzle);
+
+  /**
+   * Ms. Wren reads the sentence (owner ruling 2026-09-22, option (a)).
+   *
+   * The attempt is recorded FIRST and unconditionally, exactly as it was
+   * before: the day's record of what the child did must not depend on whether
+   * a model answered. Only then is the writing read, and only formatively —
+   * `checkAnswer` already returned `{correct: true, ungraded: true}`, and
+   * nothing below can change that.
+   */
+  async function runReview(answer: string) {
+    const spent = reviewRounds.current[entryItem.id] ?? 0;
+    setReviewing(true);
+    const outcome = await reviewExplanation({
+      childId,
+      pack: pack!,
+      item: entryItem,
+      band: band as 'B' | 'C',
+      day: 5,
+      childText: answer,
+    });
+    setReviewing(false);
+    reviewRounds.current[entryItem.id] = spent + 1;
+    if (outcome.verdict === 'unavailable') {
+      // The line the screen showed before this feature existed.
+      setFeedback({ kind: 'close', text: MODULE_COPY.puzzleClose[band] });
+      return;
+    }
+    const canRetry = outcome.verdict !== 'got-it' && spent + 1 < MAX_REVIEWS_PER_ITEM;
+    setReviewDraft(answer);
+    setFeedback({
+      kind: 'review',
+      verdict: outcome.verdict,
+      text: outcome.line,
+      nudge: outcome.verdict === 'got-it' ? null : outcome.nudge,
+      canRetry,
+    });
+  }
 
   function handleAnswer(answer: string) {
-    if (feedback) return;
+    if (feedback || reviewing) return;
     setAttemptedSinceRung(true);
     const answerSpec = stage.kind === 'item' ? stage.item.answer : stage.puzzle.answer;
     const { correct, ungraded } = checkAnswer(answerSpec, answer);
@@ -126,6 +188,13 @@ export default function PuzzleGrove() {
             ? stage.item.errorTags[0]
             : stage.puzzle.errorTags?.[0],
     });
+    if (
+      shouldReview(entryItem, band, answer) &&
+      (reviewRounds.current[entryItem.id] ?? 0) < MAX_REVIEWS_PER_ITEM
+    ) {
+      void runReview(answer);
+      return;
+    }
     if (ungraded || (isPuzzle && correct)) {
       // Qualitative close — strategy talk, never a score (DD12).
       setFeedback({ kind: 'close', text: MODULE_COPY.puzzleClose[band] });
@@ -144,6 +213,7 @@ export default function PuzzleGrove() {
   async function advance() {
     const ids = [current.id];
     setFeedback(null);
+    setReviewDraft(undefined);
     setRung(0);
     setAttemptedSinceRung(true);
     const nextDone = [...doneIds, ...ids];
@@ -218,15 +288,41 @@ export default function PuzzleGrove() {
           <WrenBubble
             band={band}
             autoplay
-            text={feedback.text}
-            emotion={feedback.kind === 'path' ? 'curious' : 'warm'}
+            text={
+              /* The nudge rides IN the bubble rather than beside it: P2 allows
+                 one conversational turn, and a line plus its question is one
+                 turn (2026-09-22). */
+              feedback.kind === 'review' && feedback.nudge
+                ? `${feedback.text} ${feedback.nudge}`
+                : feedback.text
+            }
+            emotion={feedback.kind === 'path' || (feedback.kind === 'review' && !!feedback.nudge) ? 'curious' : 'warm'}
           />
+          {feedback.kind === 'review' && feedback.canRetry && (
+            <button
+              type="button"
+              onClick={() => setFeedback(null)}
+              className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+            >
+              Try once more
+            </button>
+          )}
           <button
             type="button"
             onClick={() => void advance()}
-            className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
+            className={
+              feedback.kind === 'review' && feedback.canRetry
+                ? 'min-h-[56px] rounded-2xl border-2 border-gray-200 bg-white px-6 text-lg font-semibold text-text-secondary hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation'
+                : 'min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation'
+            }
           >
-            {remaining.length <= 1 ? 'Last page of the week' : 'Next'}
+            {/* A second verdict is final: after it the only way on is "On we
+                go" — the item keeps nothing and decides nothing (§4.2). */}
+            {feedback.kind === 'review' && feedback.verdict !== 'got-it'
+              ? 'On we go'
+              : remaining.length <= 1
+                ? 'Last page of the week'
+                : 'Next'}
           </button>
         </div>
       ) : (
@@ -243,7 +339,13 @@ export default function PuzzleGrove() {
               }}
             />
           )}
-          <AnswerEntry item={{ ...(stage.kind === 'item' ? stage.item : puzzleAsItem(stage.puzzle)) }} band={band} onSubmit={handleAnswer} />
+          <AnswerEntry
+            item={{ ...entryItem }}
+            band={band}
+            onSubmit={handleAnswer}
+            reviewing={reviewing}
+            explainDraft={reviewDraft}
+          />
           {isPuzzle && (
             <button
               type="button"
@@ -267,12 +369,14 @@ export default function PuzzleGrove() {
           item={current}
           answerSlot={(close) => (
             <AnswerEntry
-              item={{ ...(stage.kind === 'item' ? stage.item : puzzleAsItem(stage.puzzle)) }}
+              item={{ ...entryItem }}
               band={band}
               onSubmit={(answer) => {
                 close();
                 handleAnswer(answer);
               }}
+              reviewing={reviewing}
+              explainDraft={reviewDraft}
             />
           )}
         />

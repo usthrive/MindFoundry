@@ -68,10 +68,31 @@ export interface AnswerEntryProps {
   onSubmit: (answer: string) => void;
   disabled?: boolean;
   className?: string;
+  /**
+   * The explain form's round-trip (owner ruling 2026-09-22): Ms. Wren is
+   * reading what the child just wrote. The button says so and is disabled; the
+   * textarea stays exactly as it is, with the child's own words still in it,
+   * because a box that empties itself while someone is reading it looks like
+   * the writing went nowhere.
+   */
+  reviewing?: boolean;
+  /**
+   * Seed the explain box — the "Try once more" path hands back the child's
+   * previous sentence, so a second attempt is an EDIT rather than a re-type.
+   */
+  explainDraft?: string;
 }
 
-export default function AnswerEntry({ item, band, onSubmit, disabled, className }: AnswerEntryProps) {
-  const [value, setValue] = useState('');
+export default function AnswerEntry({
+  item,
+  band,
+  onSubmit,
+  disabled,
+  className,
+  reviewing,
+  explainDraft,
+}: AnswerEntryProps) {
+  const [value, setValue] = useState(explainDraft ?? '');
   /** One judgement per `item.statements` row; null until the child chooses. */
   const [truth, setTruth] = useState<Array<'T' | 'F' | null>>([]);
 
@@ -80,6 +101,13 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
     setValue('');
     setTruth((item.statements ?? []).map(() => null));
   }, [item.id, item.statements]);
+
+  // …except on a second look at the SAME item, where the child's own previous
+  // words are the starting point. Ordered after the reset above so it wins on
+  // a remount (the explain form unmounts while the verdict bubble is up).
+  useEffect(() => {
+    if (explainDraft !== undefined) setValue(explainDraft);
+  }, [explainDraft]);
 
   // H2: clear the buffer the moment an answer is submitted, so a miss never
   // leaves stale digits to merge into the next attempt (Maya's phantom "82…").
@@ -291,13 +319,15 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
         className={cn('flex flex-col gap-3', className)}
         onSubmit={(e) => {
           e.preventDefault();
-          if (value.trim()) submit(value);
+          // NOT `submit()`: that clears the buffer, and here the words have to
+          // stay on the screen while they are being read (2026-09-22).
+          if (value.trim() && !reviewing) onSubmit(value);
         }}
       >
         <textarea
           rows={2}
           value={value}
-          disabled={disabled}
+          disabled={disabled || reviewing}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholderFor('manual-review', band)}
           aria-label="Your explanation"
@@ -309,7 +339,8 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
         />
         <button
           type="submit"
-          disabled={disabled || !value.trim()}
+          disabled={disabled || reviewing || !value.trim()}
+          aria-busy={reviewing || undefined}
           className={cn(
             'min-h-[52px] rounded-2xl bg-primary px-6 font-semibold text-white shadow-md',
             'transition-all hover:bg-primary-hover active:scale-[0.99]',
@@ -317,11 +348,14 @@ export default function AnswerEntry({ item, band, onSubmit, disabled, className 
             'disabled:cursor-not-allowed disabled:opacity-50',
           )}
         >
-          Tell Ms. Wren
+          {/* The wait is named, not spun: at band B a small person is told what
+              is happening to their sentence; at C the shorter form, which is
+              the band's whole register (TEACHER-PERSONA C1/C3). */}
+          {reviewing ? (band === 'C' ? 'Reading…' : 'Ms. Wren is reading…') : 'Tell Ms. Wren'}
         </button>
         <button
           type="button"
-          disabled={disabled}
+          disabled={disabled || reviewing}
           onClick={() => submit('said-aloud')}
           className={cn(
             'min-h-[52px] rounded-2xl border-2 border-gray-200 bg-white px-6 font-semibold text-text-primary',

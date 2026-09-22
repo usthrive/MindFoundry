@@ -52,6 +52,20 @@
  *   run-on-prompt       report-only census of long / many-imperative prompts.
  *                       The owner reads it; nothing fails on it.
  *
+ * ── THE RUBRIC CENSUS (owner ruling 2026-09-22, option (a)) ─────────────────
+ *   review-rubric       report-only. Since "Tell Ms. Wren" now sends a band
+ *                       B/C explanation to be READ against the item's own
+ *                       rubric, that rubric became load-bearing: the reader is
+ *                       given `answer.value`, `acceptableForms`, the hint
+ *                       ladder and the DD7 tags, and nothing else. An item
+ *                       with an empty `answer.value` is UNREVIEWABLE — there
+ *                       is nothing to judge the child's sentence against, and
+ *                       the reader would fall back on its own idea of the
+ *                       concept, which is exactly what "in their own words"
+ *                       exists to avoid. The census names those items, and
+ *                       prints the rubric strength of every other one so the
+ *                       thin ones are visible before a child meets them.
+ *
  * --selftest builds control packs with each seam deliberately broken and proves
  * the gate fires on every one (a gate never seen to fail is unproven;
  * bb-probe-and-rank-test --selftest is the pattern). The three checks that read
@@ -171,6 +185,24 @@ function runOnMsg(item: PackItem): string | null {
   return `${visible.length} chars, ${imperatives} imperative(s): "${visible.slice(0, 100)}"`;
 }
 
+/**
+ * review-rubric — how much is there for Ms. Wren to judge against?
+ *
+ * Report-only by design: a thin rubric is a content judgement the owner makes,
+ * not a build failure, and the module ships 147 of these items. The message is
+ * shaped so the census can sort on it — an item with no model answer says so
+ * in capitals and sorts to the top of the printed list.
+ */
+function reviewRubricMsg(item: PackItem, band: InteractionBand): string | null {
+  if (item.answer.validation !== 'manual-review') return null;
+  if (band === 'A') return null;
+  const model = (item.answer.value ?? '').trim();
+  const forms = (item.answer.acceptableForms ?? []).filter((f) => f && f.trim()).length;
+  const hints = (item.hintLadder ?? []).length;
+  if (!model) return `NO MODEL ANSWER — unreviewable (${forms} accepted form(s), ${hints} hint(s))`;
+  return `model answer ${model.length} chars, ${forms} accepted form(s), ${hints} hint(s)`;
+}
+
 /** Every item a child is actually served, with where it sits. */
 function servedItems(pack: WeeklyConceptPack): Array<{ item: PackItem; where: string }> {
   const out: Array<{ item: PackItem; where: string }> = [];
@@ -263,6 +295,11 @@ function checkPack(
 
     const runOn = runOnMsg(item);
     if (runOn) out.push({ check: 'run-on-prompt', where, msg: runOn, strict: false, level, id: item.id });
+
+    // review-rubric: only band B/C manual-review items are ever sent to be
+    // read (band A's are answered away from the screen with a tap).
+    const rubric = reviewRubricMsg(item, band);
+    if (rubric) out.push({ check: 'review-rubric', where, msg: rubric, strict: false, level, id: item.id });
   }
 }
 
@@ -386,6 +423,25 @@ for (const f of runOnById.values()) runOnByLevel.set(f.level!, (runOnByLevel.get
 console.log(`\nrun-on prompts — over ${RUN_ON_CHARS} visible chars OR ≥3 imperatives (report-only; the owner reads this):`);
 console.log(`  per level: ${[...runOnByLevel].sort().map(([l, n]) => `${l}:${n}`).join(' ') || 'none'}  (${runOnById.size} distinct items)`);
 for (const f of [...runOnById.values()].slice(0, 10)) console.log(`  ${f.id!.padEnd(12)} ${f.msg}`);
+
+// --- review-rubric: the census the explanation reader depends on ------------
+const rubric = findings.filter((f) => f.check === 'review-rubric' && f.id && f.level);
+const rubricById = new Map<string, Finding>();
+for (const f of rubric) if (!rubricById.has(f.id!)) rubricById.set(f.id!, f);
+const rubricByLevel = new Map<string, number>();
+for (const f of rubricById.values()) rubricByLevel.set(f.level!, (rubricByLevel.get(f.level!) ?? 0) + 1);
+const unreviewable = [...rubricById.values()].filter((f) => f.msg.startsWith('NO MODEL ANSWER'));
+console.log('\nreview-rubric — band B/C manual-review items sent to Ms. Wren (ruled 2026-09-22; report-only):');
+console.log(
+  `  per level: ${[...rubricByLevel].sort().map(([l, n]) => `${l}:${n}`).join(' ') || 'none'}  (${rubricById.size} distinct items)`,
+);
+if (unreviewable.length === 0) {
+  console.log('  every one of them carries a model answer — none is unreviewable.');
+} else {
+  console.log(`  UNREVIEWABLE (empty modelAnswer — the reader would have nothing to judge against): ${unreviewable.length}`);
+  for (const f of unreviewable) console.log(`    ${f.id!.padEnd(12)} ${f.where}`);
+}
+for (const f of [...rubricById.values()].slice(0, 10)) console.log(`  ${f.id!.padEnd(12)} ${f.msg}`);
 
 // --- self-test: the gate must be seen to fail ---------------------------------
 if (SELFTEST) {
