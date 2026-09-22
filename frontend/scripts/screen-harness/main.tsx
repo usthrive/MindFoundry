@@ -40,7 +40,7 @@ const dayProgress: DayProgress = { lesson: { state: 'done' } };
 for (let d = 1; d < day; d++) dayProgress[String(d)] = { state: 'done', completedAt: twoDaysAgo, completedItemIds: [] };
 const warm = dayFlow(pack.days[day - 1]).warmup;
 dayProgress[String(day)] = { state: 'partial', completedItemIds: done < 0 ? warm.slice(0, 1).map((i) => i.id) : practice.slice(0, done).map((i) => i.id) };
-if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds: [] };
+if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds: [...warm.map((i) => i.id), ...practice.slice(0, Math.max(0, done)).map((i) => i.id)] };
 
 const value: FoundrySessionValue = {
   childId: 'harness', childName: 'Harness', childAge: level === 'A' ? 5 : 9, loading: false,

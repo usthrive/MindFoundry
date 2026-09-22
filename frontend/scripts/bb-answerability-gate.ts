@@ -135,7 +135,12 @@ function composable(s: string, surface: InputSurface): boolean {
       return surface.keys.includes(s);
     case 'tap':
       return surface.options.includes(s);
+    case 'truth':
+      // A CLOSED SET too, and a large one: the child taps one of 2^n patterns
+      // and cannot express anything else. Added 2026-09-22 with the truth form.
+      return /^[TF](,[TF])*$/.test(s) && s.split(',').length === surface.n;
     case 'ack':
+    case 'explain':
     case 'text':
       return true;
     case 'pad': {
@@ -164,6 +169,11 @@ function candidates(spec: AnswerSpec, surface: InputSurface): string[] {
   if (Number.isFinite(n)) out.push(String(n));
   if (surface.kind === 'tap') out.push(...surface.options);
   if (surface.kind === 'choices') out.push(...surface.keys);
+  // The truth form's own surface forms: the stored value is already canonical
+  // `T,F,…`, so nothing is added — but an n-row surface with a zero-row item
+  // (statements missing) must stay unanswerable rather than quietly pass, which
+  // is what an empty options list gives.
+  if (surface.kind === 'truth' && surface.n === 0) return [];
   return [...new Set(out.filter((s) => typeof s === 'string' && s.length > 0))];
 }
 
@@ -172,13 +182,16 @@ function candidates(spec: AnswerSpec, surface: InputSurface): string[] {
  * (b) the real marker accepts. Returns null when answerable.
  */
 function unanswerable(spec: AnswerSpec, surface: InputSurface): { axis: Axis; detail: string } | null {
-  if (surface.kind === 'ack') return null; // ungraded; nothing can be wrong
+  // Ungraded surfaces: nothing the child does here can be wrong, so there is
+  // nothing to prove producible. `explain` joined `ack` on 2026-09-22 — it is
+  // the bands-B/C half of the same ungraded make/show/tell task.
+  if (surface.kind === 'ack' || surface.kind === 'explain') return null;
 
   const cands = candidates(spec, surface);
   const reachable = cands.filter((c) => composable(c, surface));
 
   if (reachable.length === 0) {
-    if (surface.kind === 'choices' || surface.kind === 'tap') {
+    if (surface.kind === 'choices' || surface.kind === 'tap' || surface.kind === 'truth') {
       return { axis: 'MARKING', detail: `stored answer "${spec.value}" is not among the ${describeSurface(surface)} the child can press — nothing on screen is right` };
     }
     const blockers = [...new Set(cands.flatMap((c) => missingChars(c, surface)))];
@@ -312,6 +325,12 @@ if (process.argv.includes('--selftest')) {
       level: 'D', item: mk('T-07', 'Solve.', spec('x < -4.666666666666667', 'short-text-keyword')), expect: 'WELLFORMED' },
     { name: 'scene that exists only as an [image: …] direction',
       level: 'B', item: mk('T-08', '[image: 7 red balloons, 5 blue balloons] Which colour has MORE?', spec('red', 'short-text-keyword')), expect: 'INFO' },
+    // 2026-09-22, with the truth form: the same MARKING shape as the keyless
+    // choice item, in the shape the new surface can fail in. Two verdicts keyed
+    // against three rows means no pattern the child can tap is the right one.
+    { name: 'truth-set keying fewer verdicts than it shows rows',
+      level: 'B', item: mk('T-09', 'Which sentences are true?', spec('T,F', 'truth-set'),
+        { statements: ['7 > 5', '3 > 9', '4 = 4'] }), expect: 'MARKING' },
   ];
 
   let caught = 0;

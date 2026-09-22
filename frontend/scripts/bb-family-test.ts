@@ -125,7 +125,12 @@ const ARGS: Record<string, unknown[][]> = {
  * are named rather than silently skipped, because an unchecked generator must
  * not read as a passing one.
  */
-const AUTHORED_CONTENT = new Set(['items.reasoning', 'items.classify', 'items.asWarmup']);
+// `items.judge` joins this list on 2026-09-22 for the same reason as its
+// neighbours: the truth form takes its claims and their truths from the WEEK
+// module, so a sweep here would measure this file's sample config and report it
+// as a library property. Its answer is derived from the authored truths in one
+// place, so there is no second derivation for a family sweep to disagree with.
+const AUTHORED_CONTENT = new Set(['items.reasoning', 'items.classify', 'items.judge', 'items.asWarmup']);
 const FAMILIES: Array<[string, Record<string, unknown>]> = [
   ['clock', clock], ['money', money], ['ratio', ratio], ['integers', integers],
   ['stats', stats], ['earlynumber', earlynumber], ['algebra', algebra],

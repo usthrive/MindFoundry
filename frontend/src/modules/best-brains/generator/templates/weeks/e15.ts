@@ -836,7 +836,10 @@ export const buildE15 = makeWeekBuilder({
       id: 'E15-PZ-01',
       title: 'Puzzle Grove: Two Rules, One Band',
       puzzleType: 'construction',
-      prompt: `A whole number has to satisfy BOTH of these at once: x + ${fmtInt(joined)} > ${fmtInt(stated)}, and ${fmtInt(scale)}x + ${fmtInt(loose)} ≤ ${fmtInt(total)}. Write three numbers in order: the smallest whole number that satisfies both, the largest whole number that satisfies both, and how many whole numbers there are altogether. Then say in one sentence why the two ends of your band had to be worked out differently.`,
+      // The two rules are the object of study, so they get a line each
+      // (ruling 2026-09-22) — the band only appears once both boundaries can
+      // be read separately.
+      prompt: `A whole number has to satisfy BOTH of these at once:\n• x + ${fmtInt(joined)} > ${fmtInt(stated)}\n• ${fmtInt(scale)}x + ${fmtInt(loose)} ≤ ${fmtInt(total)}\nWrite three numbers in order: the smallest whole number that satisfies both, the largest whole number that satisfies both, and how many whole numbers there are altogether. Then say in one sentence why the two ends of your band had to be worked out differently.`,
       answer: {
         value: `${lo + 1}, ${hi}, ${span}`,
         acceptableForms: [

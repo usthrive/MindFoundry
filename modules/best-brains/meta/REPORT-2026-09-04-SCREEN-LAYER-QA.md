@@ -447,3 +447,57 @@ answer/Next steps, done + hub routes, `mins`).
 
 Known limits: the session clock still starts at Foundry entry (informational
 now); the fatigue stop can still end a day early (named on its done screen).
+
+## 11. 2026-09-22 — the item nobody was going to read: honest controls, prompt lines, a true/false form, and the gate
+
+Trigger: a 7-year-old on Level B week 3, Day 5, question 4 (`B3-D5-03`) met
+"Three sentences are on the board. 62 > 58. 71 < 68. 45 = 45. Write TRUE beside
+each…" as one paragraph, above a bare "Your answer / Check" box. Owner's three
+complaints: no lines, no true/false control, no idea what to type or how it is
+checked. Spec: `SPEC-2026-09-22-HONEST-CONTROLS.md`. Build: one Opus agent per
+piece; every claim below re-verified here.
+
+### 11.1 What was true (measured, 117 weeks × seed 12345, 4,256 items)
+- A prompt is one string; no line or list support anywhere; `promptText` collapsed
+  whitespace runs, so a break beside a space died before render.
+- `manual-review` = graded by nobody: `checkAnswer` returns correct+ungraded; band A
+  gets "I did it!", bands B/C fell to a "Your answer / Check" text box. 147 such
+  items (A 35 · B 28 · C 28 · D 30 · E 26), 0 with choices, 0 in the mastery check.
+  The typed text is stored (`bb_item_attempts.answer`) and READ BY NOTHING — no
+  parent screen selects the column. BB-G2 (`pedagogy.ts:266`) requires one such
+  item per pack, so the corpus is pushed toward a shape the screen could not honour.
+- Run-together claim lists: B3-D5-03 and C13-D5-02 by the spec's count; the gate's
+  wider regex then found 14 more — rows of a times table or a fact family written
+  as prose ("3 x 9 = 27, 2 x 9 = 18, …") in B6, B14 (fixture), C10, D4, E8, E9, E15.
+
+### 11.2 What changed
+| piece | change |
+|---|---|
+| Prompt lines | `promptText` keeps a single `\n` (trims padding, collapses blank lines); every prompt element carries `whitespace-pre-line`; `speakablePrompt` reads a break as a pause. |
+| Honest controls (B/C) | `manual-review` → a 2-row box ("In your own words…" / "Explain in a sentence or two."), **Tell Ms. Wren**, **I said it out loud**; no "Check". Graded typed forms keep Check and say their shape: "A few words", "e.g. 3, 7, 12", "e.g. 4 + 3 = 7". `inputSurface` mirrors it (`explain`). |
+| `truth-set` | New validation + `statements[]`; `judge()` helper; one row per claim with True/False toggles (≥48 px, `aria-pressed`), Check after every row; graded `T,F,T`; validator S-SCHEMA (≥2 claims, mixed verdicts); speech "Sentence one: 62 is greater than 58." B3-D5-03 rewritten as `judge` ("Which sentences are true?"); C13-D5-02 lined with `• `. |
+| 12 claim lists | lined with `\n• ` in their templates (C10 ×2, E9 ×7, E15 puzzle, B6, D4, E8 — 12 items, the earlier 13 double-counted C10 by seed); B14 fixture untouched (pinned). Validator 0 violations × 3 seeds on every edited cell. |
+| Gate | `bb-screen-contract-test`: `control-honesty`, `multi-claim-prompt` (ratchet; ceiling = the B14 fixture line only), `typed-format-hint`, `prompt-lines-render` (source scan + law probe), `run-on-prompt` census (report-only). Each with a self-test control; one control was SILENT on first run (its probe used a lone `\n`, which the OLD law also kept) — fixed to the realistic padded form and seen to fire. |
+
+### 11.3 Photographed (`bb-screen-visual.ts --flow3`, `screens-2026-09-22/`)
+| shot | reads |
+|---|---|
+| B3 D5 q4 BEFORE | one paragraph, "Your answer", "Check" |
+| B3 D5 q4 AFTER | "Which sentences are true?" · three rows 62 > 58 / 71 < 68 / 45 = 45, True/False 74×48 and 82×48 px · Check disabled until all chosen · T/F/T → "That works — you lined the steps up." |
+| B3 D5 q3 (manual-review, band B) | "In your own words…" box · Tell Ms. Wren · I said it out loud |
+| C13 D5 q3 (lined) | intro line, `• 5 × 5 = 25`, `• 5 + 4 = 9`, `• The answer given was 34.`, then the ask |
+| D1 D5 q2 (manual-review, band C) | "Explain in a sentence or two." · same two buttons |
+
+Surfaces after the change (13,119 item×band): ack 135 · choices 3312 · explain 336 ·
+pad 4245 · tap 288 · text 4800 · truth 3. Content bytes move on the edited
+prompts only (served at unchanged content-version — the 2026-08-15 precedent).
+
+### 11.4 Owner reading list (report-only census)
+`run-on-prompt`: prompts over 220 chars or with 3+ imperatives — B 151 · C 459 ·
+D 108 · E 882 surfaces across 3 seeds. Mostly the Level B "make a call first"
+storyline items and the Level E capstones. Not touched; the census prints every run.
+
+Battery, serial, after every change: 19 of 19 exit 0 (verify-packs 30120/0 · entropy
+29 tells · guessability 16 flagged · lesson-audio 185 bare · all unchanged; the
+seam gate 0 strict with every honest-controls control firing). tsc clean on the
+final tree (three runs this change set across the two agents and this verifier).

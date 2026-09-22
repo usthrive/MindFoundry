@@ -62,6 +62,22 @@ function listEqual(a: string, b: string, ordered: boolean): boolean {
   return [...la].sort().every((t, i) => t === sb[i]);
 }
 
+/**
+ * A truth-set answer as tokens: "T,f, TRUE" → ['T','F','T'].
+ *
+ * Forgiving on surface, strict on value, exactly like every other validation
+ * here (2026-09-22 ruling). The UI submits canonical `T`/`F`, so this
+ * generosity is for a stored `acceptableForms` entry, a hand-written key, or a
+ * parent typing "true, false, true" — never a way for a wrong judgement to pass.
+ */
+function truthTokens(s: string): string[] {
+  return s
+    .split(',')
+    .map((t) => t.trim().toUpperCase())
+    .filter(Boolean)
+    .map((t) => (t === 'TRUE' || t === 'YES' ? 'T' : t === 'FALSE' || t === 'NO' ? 'F' : t[0]));
+}
+
 /** Check a raw answer string against an AnswerSpec. */
 export function checkAnswer(spec: AnswerSpec, given: string): AnswerCheck {
   const g = norm(given);
@@ -96,6 +112,16 @@ export function checkAnswer(spec: AnswerSpec, given: string): AnswerCheck {
       return { correct: listEqual(spec.value, given, true), ungraded: false };
     case 'set':
       return { correct: listEqual(spec.value, given, false), ungraded: false };
+    case 'truth-set': {
+      // Every claim must be judged, and judged right: a partially-filled row is
+      // not a partial credit, it is an unfinished answer (AnswerEntry keeps
+      // Check disabled until every row is chosen, so this is the belt to that
+      // brace). Graded — nothing here is manual-review.
+      const want = truthTokens(spec.value);
+      const got = truthTokens(given);
+      const ok = want.length > 0 && want.length === got.length && want.every((t, i) => t === got[i]);
+      return { correct: ok, ungraded: false };
+    }
     case 'manual-review':
       // Acknowledged without grading (Flow 4 / PuzzleGrove law).
       return { correct: true, ungraded: true };

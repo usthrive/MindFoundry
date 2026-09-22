@@ -213,7 +213,10 @@ export default function GuidedPractice() {
 
       <section aria-label="The problem" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
+          {/* Authored lines survive `promptText` since 2026-09-22; `whitespace-pre-line`
+              is what puts them on the screen. A guided example carries no
+              `statements` — the truth form is an ITEM shape. */}
+          <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
             {promptText(example.prompt)}
           </p>
           <AudioButton text={speakablePrompt(example.prompt, example.figure?.alt)} band={band} autoplay={band === 'A'} />

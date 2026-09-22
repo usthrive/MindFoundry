@@ -711,8 +711,8 @@ const eaRunningTotal = errorAnalysis({
       // The quote closes BEFORE the period ("…makes 12".) so the sentence
       // splitter sees the ender: with `."` the period hides inside the quote
       // and the extension's first question welds onto this sentence (22 words).
-      prompt: `${name} had to fill the box in this sentence: ${x} + ${y} = ▢ + ${c}. Into the box went ${v.wrong}. ${name} read it out as "${x} and ${y} makes ${x + y}, and ${c} more makes ${v.wrong}".`,
-      extension: `Is the sentence true now? Say what the equals sign promises about the two sides. Then write the number that keeps that promise.`,
+      prompt: `${name} had to fill the box in this sentence: ${x} + ${y} = ▢ + ${c}.\n• Into the box went ${v.wrong}.\n• ${name} read it out as "${x} and ${y} makes ${x + y}, and ${c} more makes ${v.wrong}".`,
+      extension: `\nIs the sentence true now? Say what the equals sign promises about the two sides. Then write the number that keeps that promise.`,
       hints: [
         'What does an equals sign promise about the two sides of a line?',
         'Weigh the left side alone, then weigh the right side as it now stands.',

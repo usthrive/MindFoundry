@@ -169,10 +169,12 @@ export default function TreasureChest() {
           <div className="flex flex-col gap-5">
             <section aria-label="The problem" className="flex flex-col gap-4 rounded-3xl bg-surface p-6 shadow-sm">
               <div className="flex items-start gap-3">
-                <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
+                {/* Authored lines survive `promptText` since 2026-09-22; `whitespace-pre-line`
+                    is what puts them on the screen. */}
+                <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
                   {promptText(openItem.prompt)}
                 </p>
-                <AudioButton text={speakablePrompt(openItem.prompt, openItem.figure?.alt)} band={band} autoplay={band === 'A'} />
+                <AudioButton text={speakablePrompt(openItem.prompt, openItem.figure?.alt, openItem.statements)} band={band} autoplay={band === 'A'} />
               </div>
               <PromptFigure prompt={openItem.prompt} figure={openItem.figure} band={band} />
             </section>

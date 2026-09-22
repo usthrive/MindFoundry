@@ -373,12 +373,16 @@ const patternRow = (dir: RowDir): ItemGen =>
       const factors: number[] = [];
       for (let n = shownDepth; n >= 0; n--) factors.push(dir === 'down' ? n : -n);
       const asked = dir === 'down' ? -askedDepth : askedDepth;
+      // ONE WORKED LINE PER LINE (ruling 2026-09-22). The item's whole demand
+      // is that the step between consecutive lines is constant, and a step is
+      // only visible when the lines are stacked; run together behind commas
+      // they are a wall of four or five equations inside one sentence.
       const lines = factors
         .map((n) => `${fmtInt(n)} x ${fmtInt(held)} = ${fmtInt(canonicalSigned(n * held))}`)
-        .join(', ');
+        .join('\n• ');
       const step = dir === 'down' ? 'drops the first factor by one' : 'lifts the first factor by one';
       return {
-        prompt: `Here is one row of a multiplication table, with the second factor held at ${fmtInt(held)}. Each line ${step}: ${lines}. Keep the row running the same way and write the product on the line whose first factor is ${fmtInt(asked)}.`,
+        prompt: `Here is one row of a multiplication table, with the second factor held at ${fmtInt(held)}. Each line ${step}:\n• ${lines}\nKeep the row running the same way and write the product on the line whose first factor is ${fmtInt(asked)}.`,
         answerValue: String(canonicalSigned(asked * held)),
         templateId: 'e_int_mul_v1',
         params: { a: asked, b: held },

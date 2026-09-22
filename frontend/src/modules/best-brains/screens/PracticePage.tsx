@@ -457,9 +457,11 @@ export default function PracticePage() {
 
       <section aria-label="The problem" className="mf-card-quiet flex flex-col gap-4 p-6">
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
+          {/* A prompt may carry authored lines since 2026-09-22 — `whitespace-pre-line`
+              is what makes `promptText`'s preserved `\n` reach the child. */}
+          <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
           <AudioButton
-            text={speakablePrompt(item.prompt, item.figure?.alt)}
+            text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)}
             band={band}
             autoplay={band === 'A' || (packDay.focus === 'word-problems' && item.type === 'word-problem')}
           />
@@ -517,7 +519,7 @@ export default function PracticePage() {
             emotion="curious"
           />
           <section aria-label="A fresh one" className="mf-card-quiet p-6">
-            <p className={cn('text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(fixit.variant.prompt)}</p>
+            <p className={cn('whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(fixit.variant.prompt)}</p>
           </section>
           <AnswerEntry
             item={{

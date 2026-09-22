@@ -67,6 +67,16 @@ export type AnswerValidation =
   | 'short-text-keyword'
   | 'ordered-list'
   | 'set'
+  /**
+   * A row of TRUE/FALSE judgements, one per `PackItem.statements` entry, stored
+   * as `T`/`F` joined by commas ("T,F,T"). Added 2026-09-22: "which of these
+   * sentences are true" was being authored as prose with a free-text box, so a
+   * child was asked for three judgements and given one blank line to put them
+   * on. The form now matches the demand — one row per claim, two buttons per
+   * row — and it is GRADED, because judging a claim is a thing a machine can
+   * mark.
+   */
+  | 'truth-set'
   | 'manual-review';
 
 export interface AnswerSpec {
@@ -121,6 +131,17 @@ export interface PackItem {
   prompt: string;
   /** 2–6 choices when the item is multiple-choice. */
   choices?: Choice[];
+  /**
+   * The claims a `truth-set` item asks the child to judge, in order (≥2), one
+   * per T/F token in `answer.value`.
+   *
+   * They are a FIELD rather than sentences inside `prompt` for the same reason
+   * `figure` is (L29): a typed field is checkable — the validator asserts the
+   * count matches the answer and that the set is not all-true or all-false —
+   * and it lets `AnswerEntry` put a control beside each claim instead of one
+   * text box under all of them. Only ever set when validation is 'truth-set'.
+   */
+  statements?: string[];
   answer: AnswerSpec;
   /** 1–5, band-relative (§3.3). */
   difficulty: number;

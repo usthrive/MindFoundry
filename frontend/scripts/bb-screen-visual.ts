@@ -65,7 +65,15 @@ const FLOW2: Scn[] = [
   { name: `hub-partial-B${B1}d2`, screen: 'hub', level: 'B', week: B1, day: 2, done: 2 },
   { name: `warmup-resume-D${D2}d2`, screen: 'warmup', level: 'D', week: D2, day: 2, done: -1 },
 ];
-const SCENARIOS: Scn[] = process.argv.includes('--flow2') ? FLOW2 : process.argv.includes('--flow') ? (FLOW as Scn[]) : [
+// --flow3 (2026-09-22): honest controls — manual-review at B and C, the truth-set form, a lined prompt.
+const FLOW3: Scn[] = [
+  { name: 'grove-B3d5-manualreview-q3', screen: 'puzzle', level: 'B', week: 3, day: 5, done: 0 },
+  { name: 'grove-B3d5-truthset-q4', screen: 'puzzle', level: 'B', week: 3, day: 5, done: 1 },
+  { name: 'grove-B3d5-truthset-q4-chosen', screen: 'puzzle', level: 'B', week: 3, day: 5, done: 1, steps: ['truth:T,F,T'] },
+  { name: 'grove-C13d5-q-lined', screen: 'puzzle', level: 'C', week: 13, day: 5, done: 0 },
+  { name: 'grove-D1d5-manualreview-C', screen: 'puzzle', level: 'D', week: 1, day: 5, done: 1 },
+];
+const SCENARIOS: Scn[] = process.argv.includes('--flow3') ? FLOW3 : process.argv.includes('--flow2') ? FLOW2 : process.argv.includes('--flow') ? (FLOW as Scn[]) : [
   { name: 'practice-A2d2-before-item1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, fix: 0 },
   { name: 'practice-A2d2-after-item1', screen: 'practice', level: 'A', week: 2, day: 2, done: 0, fix: 1 },
   { name: 'practice-A2d2-before-item3', screen: 'practice', level: 'A', week: 2, day: 2, done: 2, fix: 0 },
@@ -113,6 +121,7 @@ for (const s of SCENARIOS) {
       const btns = [...document.querySelectorAll('button')];
       const byText = (t) => btns.find((b) => (b.textContent || '').trim() === t || (b.getAttribute('aria-label') || '').trim() === t);
       if (step === 'next') { const b = byText('Next'); if (b) b.click(); return; }
+      if (step.startsWith('truth:')) { const want = step.slice(6).split(','); const rows = [...document.querySelectorAll('[data-bb-statement]')]; rows.forEach((row, i) => { const b = [...row.querySelectorAll('button')].find((x) => (x.textContent || '').trim() === (want[i] === 'T' ? 'True' : 'False')); if (b) b.click(); }); return; }
       const bb = window.__bb; const item = bb.practice[Number(new URLSearchParams(location.search).get('done')) || 0];
       const val = String(item.answer.value);
       const choice = item.choices && item.choices.find((c) => String(c.text ?? c.label ?? '').trim() === val || String(c.key) === val);
@@ -141,6 +150,7 @@ for (const s of SCENARIOS) {
       practiceIds: window.__bb && window.__bb.practice.map((i) => i.id),
       pageCount: window.__bb && window.__bb.pack.days[day - 1].pageCount,
       tts: window.__tts,
+      statements: document.querySelectorAll('[data-bb-statement]').length,
       text: document.body.innerText.replace(/[ \\t\\n\\r]+/g, ' ').slice(0, 260),
     };
   })()`) as any;
@@ -150,7 +160,7 @@ for (const s of SCENARIOS) {
   console.log(`\n# ${s.name}`);
   console.log(`  header="${m.header}" counter="${m.counter}" dots=${m.dots}  pageCount=${m.pageCount}  practiceItems=${m.practiceIds?.length}  pageHeight=${m.pageHeight}px  minTapTarget=${m.minTarget}px`);
   console.log(`  prompt="${(m.prompt ?? '').slice(0, 90)}"`);
-  console.log(`  text: ${m.text}`);
+  console.log(`  statements=${m.statements} text: ${m.text}`);
   console.log(`  buttons: ${m.buttons.map((b) => `${b.label || '?'}[${b.w}×${b.h}]`).join(' ')}`);
   if (m.tts && m.tts.length) console.log(`  speech calls in order: ${m.tts.join(' → ')}`);
   if (m.redirected) console.log(`  !! ${m.redirected}`);

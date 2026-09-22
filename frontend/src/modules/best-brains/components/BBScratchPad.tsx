@@ -468,7 +468,8 @@ export default function BBScratchPad({
           className="flex max-h-[45vh] shrink-0 flex-col gap-2 overflow-y-auto border-b border-gray-200 bg-gray-50 px-4 py-3"
         >
           <div className="flex items-start justify-between gap-3">
-            <p className={cn('font-medium text-text-primary', band === 'A' ? 'text-xl' : 'text-lg')}>
+            {/* Authored prompt lines survive `promptText` since 2026-09-22. */}
+            <p className={cn('whitespace-pre-line font-medium text-text-primary', band === 'A' ? 'text-xl' : 'text-lg')}>
               {promptText(item.prompt)}
             </p>
             <div className="flex shrink-0 gap-2">

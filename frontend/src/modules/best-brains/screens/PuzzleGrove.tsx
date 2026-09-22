@@ -98,6 +98,10 @@ export default function PuzzleGrove() {
   const current = stage.kind === 'item' ? stage.item : stage.puzzle;
   const prompt = stage.kind === 'item' ? stage.item.prompt : `${stage.puzzle.title} — ${stage.puzzle.prompt}`;
   const figure = stage.kind === 'item' ? stage.item.figure : stage.puzzle.figure;
+  // A `truth-set` item's claims live in `statements`, not in the prompt string,
+  // so the audio channel would otherwise carry the question and none of what it
+  // asks about (2026-09-22 ruling). A Puzzle has no statements field.
+  const statements = stage.kind === 'item' ? stage.item.statements : undefined;
   const hintLadder = current.hintLadder;
   const isPuzzle = stage.kind === 'puzzle';
 
@@ -191,8 +195,10 @@ export default function PuzzleGrove() {
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-secondary-700">🌳 Puzzle Grove</p>
         )}
         <div className="flex items-start gap-3">
-          <p className={cn('flex-1 text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(prompt)}</p>
-          <AudioButton text={speakablePrompt(prompt, figure?.alt)} band={band} autoplay={band === 'A'} />
+          {/* Authored lines survive `promptText` since 2026-09-22; `whitespace-pre-line`
+              is what puts them on the screen. */}
+          <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(prompt)}</p>
+          <AudioButton text={speakablePrompt(prompt, figure?.alt, statements)} band={band} autoplay={band === 'A'} />
         </div>
         <div className="mt-4">
           <PromptFigure prompt={prompt} figure={figure} band={band} />

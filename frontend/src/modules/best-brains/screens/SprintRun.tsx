@@ -98,7 +98,9 @@ export default function SprintRun() {
       </div>
 
       <section aria-label="The fact" className="rounded-3xl bg-surface p-8 text-center shadow-sm">
-        <p className="text-3xl font-bold text-text-primary">{promptText(item.prompt)}</p>
+        {/* Authored prompt lines survive `promptText` since 2026-09-22. A sprint
+            fact is one line today; the class rule holds anyway. */}
+        <p className="whitespace-pre-line text-3xl font-bold text-text-primary">{promptText(item.prompt)}</p>
       </section>
 
       <AnswerEntry item={asItem} band={band} onSubmit={submit} />
