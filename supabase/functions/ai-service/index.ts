@@ -16,10 +16,18 @@
  * - generateSimilar: Generate similar practice problems (Haiku)
  * - generatePracticeTest: Generate practice tests (Haiku)
  * - assessImageQuality: Check image quality (Haiku)
+ * - reviewExplanation: Ms. Wren reads a Foundry manual-review explanation (Sonnet 5)
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 import Anthropic from 'npm:@anthropic-ai/sdk@0.36.3'
+import {
+  buildReviewSystem,
+  buildReviewUser,
+  parseReviewVerdict,
+  type ReviewBand,
+  type ReviewVerdict,
+} from './review-prompt.ts'
 
 // CORS headers for browser requests
 const corsHeaders = {
@@ -31,6 +39,14 @@ const corsHeaders = {
 const MODELS = {
   haiku: 'claude-haiku-4-5-20251001',
   sonnet: 'claude-sonnet-4-5-20250929',
+  /**
+   * Ms. Wren's explanation reader (owner ruling 2026-09-22). A child's
+   * sentence has to be judged against an idea rather than a string, in a
+   * voice with testable sentence rules, inside a child's patience — so the
+   * reasoning model, not the extraction one. Temperature is NEVER passed with
+   * this model (Sonnet 5 rejects it).
+   */
+  sonnet5: 'claude-sonnet-5',
 } as const
 
 // Temperature settings for different tasks
@@ -42,6 +58,17 @@ const TEMPERATURE = {
   generation: 0.5,
   verification: 0.0,
 } as const
+
+/**
+ * `reviewExplanation` budgets (2026-09-22).
+ *
+ * 6 s because the child's screen gives up at 7 s and a reader who arrives
+ * after the child has moved on is worse than no reader. 10 a day because a
+ * week holds at most a handful of `manual-review` items per child — ten is
+ * generous for honest use and cheap as a ceiling on a stuck retry loop.
+ */
+const REVIEW_TIMEOUT_MS = 6000
+const REVIEW_DAILY_QUOTA = 10
 
 // ========== PROMPTS ==========
 
@@ -278,6 +305,18 @@ interface AIResult {
     output_tokens: number
   }
 }
+
+/**
+ * A caller who is authenticated but is not this child's parent (2026-09-22).
+ *
+ * Every operation before `reviewExplanation` took its subject entirely from
+ * the request body, so a valid JWT was a valid request about ANY child. That
+ * is survivable for "explain this arithmetic slip" and it is not survivable
+ * for an operation that reads a child's own writing out of the database and
+ * back to whoever asked. The main handler maps this to 403; nothing else in
+ * the file changes shape.
+ */
+class ForbiddenError extends Error {}
 
 // ========== HANDLERS ==========
 
@@ -1004,6 +1043,171 @@ Return your verification results as JSON.`
   }
 }
 
+/**
+ * Ms. Wren reads a child's explanation of a `manual-review` item.
+ *
+ * WHY THIS OPERATION EXISTS (owner ruling 2026-09-22, option (a) — grade and
+ * coach). "Tell Ms. Wren" was honest about the destination and silent about
+ * the reading: 147 corpus-wide items send a child's own sentences somewhere
+ * and answered every one of them with the same acknowledgement. The ruling was
+ * that the sentence is read against the item's OWN rubric, the child gets a
+ * line back (and a question if something is missing), and the verdict is kept
+ * for the parent. FORMATIVE ONLY: `checkAnswer` still returns
+ * `{correct: true, ungraded: true}` for these items, so nothing here can move
+ * a score, a day's accuracy, or the weekly gate.
+ *
+ * THREE THINGS THIS HANDLER OWES THAT THE OTHERS DO NOT:
+ *   * ownership — the subject is a child's own writing, so the caller must be
+ *     that child's parent (children.user_id, the house pattern every bb_ RLS
+ *     policy uses; `20260719000001_bb_module_schema.sql` §6);
+ *   * a ceiling — 10 reviews per child per day, counted in the table itself,
+ *     because a child tapping a button is not a rate limiter;
+ *   * a clock — 6 s, because a child is waiting. Past it the screen shows the
+ *     acknowledgement line it showed before this feature existed, which is a
+ *     safe place to land, so a slow model degrades to the old behaviour rather
+ *     than to a spinner.
+ *
+ * The child's NAME is never sent. The prompt carries item data and the child's
+ * own words, nothing else.
+ */
+async function handleReviewExplanation(
+  anthropic: Anthropic,
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  params: {
+    childId: string
+    packId: string
+    itemId: string
+    day: number | null
+    band: string
+    level: string
+    conceptName: string
+    prompt: string
+    modelAnswer: string
+    acceptableForms?: string[]
+    hints?: string[]
+    errorTags?: string[]
+    whyBeforeHow?: string
+    childText: string
+  }
+): Promise<AIResult> {
+  const { childId, packId, itemId, band } = params
+
+  if (!childId || !packId || !itemId) {
+    throw new Error('reviewExplanation requires childId, packId and itemId')
+  }
+  if (band !== 'B' && band !== 'C') {
+    // Band A never reaches this branch (make/show/tell tasks are answered away
+    // from the screen and acknowledged with a tap).
+    throw new Error(`reviewExplanation is band B/C only (got ${band})`)
+  }
+
+  // --- ownership: the caller must be this child's parent --------------------
+  const { data: child, error: childError } = await supabase
+    .from('children')
+    .select('id, user_id')
+    .eq('id', childId)
+    .maybeSingle()
+  if (childError) {
+    console.error('[reviewExplanation] child lookup failed:', childError.message)
+    throw new Error('Could not verify child ownership')
+  }
+  if (!child || (child as { user_id: string }).user_id !== userId) {
+    throw new ForbiddenError('Not a parent of this child')
+  }
+
+  // --- the daily ceiling ----------------------------------------------------
+  const since = new Date()
+  since.setUTCHours(0, 0, 0, 0)
+  const { count, error: countError } = await supabase
+    .from('bb_explanation_reviews')
+    .select('id', { count: 'exact', head: true })
+    .eq('child_id', childId)
+    .gte('created_at', since.toISOString())
+  if (countError) {
+    console.error('[reviewExplanation] quota count failed:', countError.message)
+  } else if ((count ?? 0) >= REVIEW_DAILY_QUOTA) {
+    console.log(`[reviewExplanation] quota reached for child ${childId} (${count})`)
+    return { data: { verdict: 'unavailable', reason: 'quota' }, model: MODELS.sonnet5 }
+  }
+
+  const reviewBand = band as ReviewBand
+  const system = buildReviewSystem(reviewBand)
+  const user = buildReviewUser({
+    band: reviewBand,
+    level: params.level ?? '',
+    conceptName: params.conceptName ?? '',
+    prompt: params.prompt ?? '',
+    modelAnswer: params.modelAnswer ?? '',
+    acceptableForms: params.acceptableForms ?? [],
+    hints: params.hints ?? [],
+    errorTags: params.errorTags ?? [],
+    whyBeforeHow: params.whyBeforeHow ?? '',
+    childText: params.childText ?? '',
+  })
+
+  let verdict: ReviewVerdict
+  let usage = { input_tokens: 0, output_tokens: 0 }
+  try {
+    // `RequestOptions.timeout` is milliseconds and is present in the pinned SDK
+    // (0.36.3 core.d.ts:201) — no Promise.race needed. `maxRetries: 0` rides
+    // with it because the SDK retries a timed-out request twice by default,
+    // which would turn this 6 s budget into an 18 s one long after the screen
+    // has given up on it.
+    const response = await anthropic.messages.create(
+      {
+        model: MODELS.sonnet5,
+        max_tokens: 400,
+        // NO temperature: Sonnet 5 rejects the parameter.
+        system,
+        messages: [{ role: 'user', content: user }],
+      },
+      { timeout: REVIEW_TIMEOUT_MS, maxRetries: 0 }
+    )
+    usage = {
+      input_tokens: response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens,
+    }
+    const textContent = response.content.find((c) => c.type === 'text')
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text response from AI')
+    }
+    verdict = parseReviewVerdict(textContent.text, reviewBand)
+  } catch (error) {
+    // Timeout, transport failure, or a verdict that did not validate: the
+    // screen shows today's acknowledgement line, unchanged. HTTP 200 — nothing
+    // went wrong for the CHILD.
+    console.error('[reviewExplanation] unavailable:', error instanceof Error ? error.message : error)
+    return { data: { verdict: 'unavailable' }, model: MODELS.sonnet5 }
+  }
+
+  // The stored record is what the parent report reads. Non-fatal: a child who
+  // got their line should not be told something failed because a row did not
+  // land (the same law `recordItemAttempt` follows on the client).
+  const { error: insertError } = await supabase.from('bb_explanation_reviews').insert({
+    child_id: childId,
+    pack_id: packId,
+    item_id: itemId,
+    day: params.day ?? null,
+    child_text: (params.childText ?? '').slice(0, 500),
+    verdict: verdict.verdict,
+    line: verdict.line,
+    nudge: verdict.nudge,
+    reason: verdict.reason,
+    model: MODELS.sonnet5,
+    input_tokens: usage.input_tokens,
+    output_tokens: usage.output_tokens,
+  })
+  if (insertError) {
+    console.error('[reviewExplanation] review insert failed:', insertError.message)
+  }
+
+  // `ai_usage_log` is written by the main handler's existing fire-and-forget
+  // tail (feature = the operation name, i.e. 'reviewExplanation'), which is why
+  // `usage` is returned here rather than logged a second time.
+  return { data: verdict, model: MODELS.sonnet5, usage }
+}
+
 // ========== UTILITIES ==========
 
 /**
@@ -1245,6 +1449,30 @@ Deno.serve(async (req) => {
         )
         break
 
+      case 'reviewExplanation':
+        result = await handleReviewExplanation(
+          anthropic,
+          supabase,
+          user.id,
+          params as {
+            childId: string
+            packId: string
+            itemId: string
+            day: number | null
+            band: string
+            level: string
+            conceptName: string
+            prompt: string
+            modelAnswer: string
+            acceptableForms?: string[]
+            hints?: string[]
+            errorTags?: string[]
+            whyBeforeHow?: string
+            childText: string
+          }
+        )
+        break
+
       default:
         return new Response(
           JSON.stringify({ error: `Unknown operation: ${operation}` }),
@@ -1277,6 +1505,15 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     console.error('AI service error:', error)
+
+    // A caller who is not this child's parent gets 403, not 500 — the request
+    // was well formed and the service is fine (2026-09-22).
+    if (error instanceof ForbiddenError) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     return new Response(
       JSON.stringify({ error: error.message || 'AI service error' }),

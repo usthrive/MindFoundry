@@ -501,3 +501,47 @@ Battery, serial, after every change: 19 of 19 exit 0 (verify-packs 30120/0 · en
 29 tells · guessability 16 flagged · lesson-audio 185 bare · all unchanged; the
 seam gate 0 strict with every honest-controls control firing). tsc clean on the
 final tree (three runs this change set across the two agents and this verifier).
+
+## 12. 2026-09-22 — Ms. Wren reads the explanation (AI review, owner option (a))
+
+Spec: `SPEC-2026-09-22-EXPLANATION-REVIEW.md`. Built by one Opus agent; verified
+here. Formative only — no verdict touches a score, a day's accuracy or the gate.
+
+### 12.1 What exists and what was wrong with it
+One LLM edge function (`ai-service`, Anthropic SDK, key as a Supabase secret,
+JWT checked in-function). It had NO per-child quota, NO request timeout, and its
+cost ledger `ai_usage_log` was written since launch to a table NO migration ever
+created (every insert failed silently). The homework helper still uses Sonnet 4.5
+/ Haiku 4.5 ids; untouched.
+
+### 12.2 What changed
+| piece | change |
+|---|---|
+| Prompt | `review-prompt.ts` (zero imports; shared by the function and the eval): Ms. Wren persona distilled from TEACHER-PERSONA §3/§4.3 for bands B and C; rubric = the item's own `answer.value`, `acceptableForms`, hints, error tags + the week's `whyBeforeHow`; verdict `got-it / partly / not-yet`, a ≤2-sentence line, one nudge, a ≤120-char parent reason; spelling never counts; never "wrong"; never the answer on a miss; "said-aloud"/empty = not-yet with a gentle line. A line that breaks the band rule is swapped for a canned one. |
+| Function | new operation `reviewExplanation`: `claude-sonnet-5`, `max_tokens` 400, per-request `timeout` 6 s with `maxRetries` 0, parent-of-child check (`children.user_id`), 10 reviews / child / day, writes `bb_explanation_reviews` and the (now real) `ai_usage_log`. Unavailable → HTTP 200 `{verdict:'unavailable'}`. No child name is sent. |
+| Migration | `20260922000001_bb_explanation_reviews.sql`: creates `ai_usage_log` (IF NOT EXISTS, service role only) and `bb_explanation_reviews` (RLS: parent SELECT/DELETE, no client INSERT). |
+| Screens | "Tell Ms. Wren" → "Ms. Wren is reading…" (buttons disabled, words kept) → got-it: her line + Next; partly / not-yet: her line + nudge + "Try once more" (box re-opens with the child's words; a second verdict is final) / "On we go"; unavailable or "said-aloud": today's ack line. Band A never reaches it. Client guard: never a third review per item. |
+| Parent | WeeklyReport "In their own words": prompt, the child's text, Got it / Getting there / Not yet, the reason. |
+| Eval | `scripts/bb-review-eval.ts` (by hand): 5 items × 4 answers (correct-with-slip, partial, the item's own misconception, off-topic) with expected verdicts; fails under 16/20; prints tokens and cost. Guards corpus drift by asserting each item's `answer.value` at seed 12345. |
+| Gate | `review-rubric` census: 336 band B/C manual-review surfaces, every one carries a model answer. |
+
+### 12.3 Photographed (function mocked in the harness; `screens-2026-09-22/review-*`)
+| state | reads |
+|---|---|
+| reading | "Ms. Wren is reading…" (disabled), "I said it out loud" (disabled), the child's words still in the box |
+| got-it | her line ("You counted on ten and kept both trays in view…") + Next (56 px) |
+| partly | her line + nudge + Try once more / On we go (56 px); Try once more re-opens the box holding "it is 74 becuase ten more…" |
+| slow (9 s) | the 7 s client abort → today's ack line + Next; the child never waits |
+
+### 12.4 Cost (price table cached 2026-06-24: Sonnet 5 $2 in / $10 out per MTok)
+≈ 900 input + 120 output tokens per review ≈ $0.003; one to two items a week per
+child ⇒ well under $0.50 per child per year. The eval run costs ≈ $0.06.
+
+Battery, serial, after every change: 19 of 19 exit 0 (all census numbers unchanged; seam gate 0 strict, review-rubric 336/336 with a model answer). tsc clean (two builder runs + one here).
+
+### 12.5 Not verified here
+- The edge function was type-checked only as far as `review-prompt.ts` (tsx +
+  tsc); `index.ts` is Deno and has no local runtime on this host — the deploy log
+  is its first compile.
+- The eval needs `ANTHROPIC_API_KEY` in the shell; no key exists on this machine
+  (it lives only as a Supabase secret). Not run.
