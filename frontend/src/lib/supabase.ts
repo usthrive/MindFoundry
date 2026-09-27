@@ -103,6 +103,8 @@ export type Database = {
           completed_at: string | null
           created_at: string
           updated_at: string
+          sct_seconds: number | null
+          time_vs_sct: number | null
         }
         Insert: {
           id?: string
@@ -118,6 +120,8 @@ export type Database = {
           best_score_total?: number
           last_attempted_at?: string | null
           completed_at?: string | null
+          sct_seconds?: number | null
+          time_vs_sct?: number | null
         }
       }
       practice_sessions: {
@@ -157,7 +161,7 @@ export type Database = {
           problem_data: unknown
           student_answer: string
           is_correct: boolean
-          time_spent: number
+          time_spent: number | null
           created_at: string
         }
         Insert: {
@@ -167,7 +171,7 @@ export type Database = {
           problem_data: unknown
           student_answer: string
           is_correct: boolean
-          time_spent?: number
+          time_spent?: number | null
         }
         Update: never
       }

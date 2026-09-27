@@ -31,6 +31,7 @@ import type { Stroke } from '@/components/ui/ScratchPad'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import { ConceptIntroModal } from '@/components/concept-intro'
 import { TimesTableCard, recitationFor } from '@/components/tables/TimesTableCard'
+import { HelpLadder } from '@/components/tables/HelpLadder'
 import { AudioButton } from '@/components/homework/AudioButton'
 import { getTimesTableSupport } from '@/services/generators/elementary-advanced/level-c'
 import ConceptRoadmap from '@/components/parent/ConceptRoadmap'
@@ -70,6 +71,7 @@ import { celebrationTrigger } from '@/services/achievements'
 import type { KumonLevel, HintLevel, MasteryStatus, SupplementaryPractice } from '@/types'
 import { type Problem, LEVEL_WORKSHEETS } from '@/services/generators/types'
 import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
+import { firstTrySeconds, monotonicNow, type AttemptEvidence } from '@/services/attemptEvidence'
 
 function getNextLevel(current: KumonLevel): KumonLevel | null {
   const idx = LEVEL_ORDER.indexOf(current)
@@ -396,6 +398,14 @@ export default function StudyPage() {
   const [showTable, setShowTable] = useState(false)
   const [tableCheckedThisProblem, setTableCheckedThisProblem] = useState(false)
 
+  // HELP AS A LADDER, NOT A JUMP (owner, 2026-09-26: "I like the table. It should
+  // just not be the only option — a progression of hints that helps him learn").
+  // `helpRung` is the highest rung opened on THIS problem (1 think, 2 use a fact
+  // you know, 3 count it, 4 the table); `helpOpen` is whether the card is up.
+  // Closing it keeps his place, so reopening does not start him over.
+  const [helpRung, setHelpRung] = useState<0 | 1 | 2 | 3 | 4>(0)
+  const [helpOpen, setHelpOpen] = useState(false)
+
   /**
    * Which table this sheet drills and how much of it he may still see, read from
    * the curriculum itself rather than restated here — a card showing the ×4 row
@@ -423,7 +433,53 @@ export default function StudyPage() {
   // A new question is a new ask.
   useEffect(() => {
     setTableCheckedThisProblem(false)
+    setHelpRung(0)
+    setHelpOpen(false)
   }, [currentProblem?.id, activeWorksheetProblem?.id])
+
+  // FIRST-TRY EVIDENCE, one-problem-at-a-time path (P0, 2026-09-26; the grid
+  // keeps its own in WorksheetView). Time from the problem appearing to the first
+  // answer, every answer tried, and whether the table was on screen before the
+  // first answer. Recorded only; nothing on screen changes.
+  const singleEvidenceRef = useRef({
+    id: null as string | null,
+    shownAt: monotonicNow(),
+    firstTryMs: null as number | null,
+    tries: [] as string[],
+    shown: false,
+    revealed: false,
+    helpRung: 0,
+  })
+  useEffect(() => {
+    singleEvidenceRef.current = { id: currentProblem?.id ?? null, shownAt: monotonicNow(), firstTryMs: null, tries: [], shown: false, revealed: false, helpRung: 0 }
+  }, [currentProblem?.id])
+  useEffect(() => {
+    if (showTable && currentProblem && singleEvidenceRef.current.firstTryMs === null) singleEvidenceRef.current.shown = true
+  }, [showTable, currentProblem])
+  const singleEvidence = (answer: string): AttemptEvidence => {
+    const e = singleEvidenceRef.current
+    if (e.firstTryMs === null) e.firstTryMs = monotonicNow() - e.shownAt
+    e.tries = [...e.tries, answer]
+    return {
+      firstTryMs: e.firstTryMs,
+      triedAnswers: e.tries,
+      scaffoldMode: tableSupport?.support ?? null,
+      scaffoldShownBeforeFirstCheck: e.shown,
+      scaffoldRevealedBeforeFirstCheck: e.revealed,
+      helpRungBeforeFirstCheck: e.helpRung,
+    }
+  }
+
+  /** Open rung `rung` of the help ladder: shown, recorded, and at 4 the table itself. */
+  const openHelpRung = (rung: 1 | 2 | 3 | 4) => {
+    setHelpRung((r) => (rung > r ? rung : r))
+    setHelpOpen(true)
+    if (singleEvidenceRef.current.firstTryMs === null) {
+      singleEvidenceRef.current.helpRung = Math.max(singleEvidenceRef.current.helpRung, rung)
+    }
+    worksheetViewRef.current?.markHelpRung(rung)
+    if (rung === 4) setShowTable(true)
+  }
 
   // On the "recall it" sheets the card steps back out of the way by itself, so
   // checking one fact does not turn into working the page off the table.
@@ -863,7 +919,8 @@ export default function StudyPage() {
         attemptsCount: attemptCount + 1,
         firstAttemptCorrect: attemptCount === 0,
         hintLevelReached: currentHintLevel,
-        tableChecked: tableCheckedThisProblem
+        tableChecked: tableCheckedThisProblem,
+        evidence: singleEvidence(String(value)),
       }
     )
 
@@ -997,7 +1054,8 @@ export default function StudyPage() {
         attemptsCount: attemptCount + 1,
         firstAttemptCorrect: attemptCount === 0,
         hintLevelReached: currentHintLevel,
-        tableChecked: tableCheckedThisProblem
+        tableChecked: tableCheckedThisProblem,
+        evidence: singleEvidence(submittedAnswer),
       }
     )
 
@@ -1189,7 +1247,7 @@ export default function StudyPage() {
       // Run independent database operations in parallel for faster completion
       await Promise.all([
         completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id, focusMetrics),
-        updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems),
+        updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems, enhancedTimer.focusedTime),
         updateChildStats(currentChild.id, totalProblems, score),
       ])
 
@@ -1367,11 +1425,18 @@ export default function StudyPage() {
           attempt.problem,
           attempt.answer,
           attempt.isCorrect,
-          0,  // timeSpent per problem not tracked in worksheet mode
+          // First-try seconds (P0, 2026-09-26). This was a literal 0 "not tracked
+          // in worksheet mode" — the mode Level C is worked in — so all 419 of one
+          // child's multiplication answers carried no time at all.
+          firstTrySeconds(attempt.evidence),
           {
             attemptsCount: attempt.attemptsCount,
             firstAttemptCorrect: attempt.firstAttemptCorrect,
-            hintLevelReached: attempt.hintLevelReached
+            hintLevelReached: attempt.hintLevelReached,
+            // The grid never passed the table flag: a tap to uncover a fact on a
+            // grid sheet was never recorded anywhere.
+            tableChecked: attempt.evidence?.scaffoldRevealedBeforeFirstCheck ?? false,
+            evidence: attempt.evidence,
           }
         )
       }
@@ -1863,9 +1928,24 @@ export default function StudyPage() {
               label={getWorksheetLabel(currentLevel, currentWorksheet)}
             />
             <div className="flex shrink-0 items-center gap-2">
-              {/* Checking the table is studying. It costs one tap, needs no wrong
-                  answer first, and is never framed as needing help. */}
-              {tableSupport && (
+              {/* Help is a ladder: think, use a fact you know, count it, then the
+                  table. One tap opens it, no wrong answer needed first. */}
+              {tableSupport && askedFact && (
+                <button
+                  type="button"
+                  onClick={() => (helpOpen ? setHelpOpen(false) : openHelpRung(helpRung === 0 ? 1 : helpRung))}
+                  className="shrink-0 mt-1 px-3 py-2 min-h-[44px] rounded-xl bg-white border-2 border-sky-300
+                             text-sky-700 text-sm font-semibold shadow-sm active:scale-95
+                             hover:bg-sky-50 touch-manipulation"
+                  title="Help, one step at a time"
+                >
+                  {helpOpen ? '🧩 Hide help' : '🧩 Help me'}
+                </button>
+              )}
+              {/* On the ordered sheets the table IS the lesson, so it keeps its own
+                  button there. Elsewhere it is the ladder's last rung — still one
+                  step away, but after the ways to work the fact out. */}
+              {tableSupport && (tableSupport.support === 'open' || !askedFact) && (
                 <button
                   type="button"
                   onClick={() => setShowTable((open) => !open)}
@@ -1892,13 +1972,32 @@ export default function StudyPage() {
             </div>
           </div>
 
+          {tableSupport && askedFact && helpOpen && helpRung !== 0 && (
+            <div className="mt-3">
+              <HelpLadder
+                fact={{ a: askedFact.table, b: askedFact.multiplier }}
+                rung={helpRung}
+                onClimb={openHelpRung}
+                onClose={() => setHelpOpen(false)}
+                audio={(text) => <AudioButton text={text} size="small" />}
+              />
+            </div>
+          )}
+
           {tableSupport && showTable && (
             <div className="mt-3">
               <TimesTableCard
                 tables={tableSupport.tables}
                 support={tableSupport.support}
                 current={askedFact}
-                onReveal={() => setTableCheckedThisProblem(true)}
+                onReveal={() => {
+                  setTableCheckedThisProblem(true)
+                  if (singleEvidenceRef.current.firstTryMs === null) {
+                    singleEvidenceRef.current.revealed = true
+                    singleEvidenceRef.current.shown = true
+                  }
+                  worksheetViewRef.current?.markScaffoldReveal()
+                }}
                 onClose={() => setShowTable(false)}
                 audio={
                   <AudioButton
@@ -1951,6 +2050,8 @@ export default function StudyPage() {
                 onWorksheetComplete={handleWorksheetComplete}
                 onAllAnsweredChange={setCanSubmitWorksheet}
                 onActiveProblemChange={setActiveWorksheetProblem}
+                scaffoldVisible={!!tableSupport && showTable}
+                scaffoldMode={tableSupport?.support ?? null}
                 onPageStateChange={handlePageStateChange}
                 sessionActive={sessionActive}
                 supplementaryPractice={getSupplementaryPractice()}

@@ -16,6 +16,11 @@ import PracticePage from '@/modules/best-brains/screens/PracticePage';
 import WarmUp from '@/modules/best-brains/screens/WarmUp';
 import PuzzleGrove from '@/modules/best-brains/screens/PuzzleGrove';
 import DayDone from '@/modules/best-brains/screens/DayDone';
+import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView';
+import { useRef, useState } from 'react';
+import { HelpLadder } from '@/components/tables/HelpLadder';
+import { TimesTableCard } from '@/components/tables/TimesTableCard';
+import { AudioButton } from '@/components/homework/AudioButton';
 import ThisWeekHub from '@/modules/best-brains/screens/ThisWeekHub';
 import type { BBLevel, DayProgress } from '@/modules/best-brains/types';
 import '@/index.css';
@@ -51,7 +56,73 @@ const value: FoundrySessionValue = {
 };
 (window as any).__bb = { pack, practice, value };
 
-createRoot(document.getElementById('root')!).render(
+/**
+ * screen=kumon — the Kumon worksheet grid on its own (P0, 2026-09-26), so a
+ * driver can answer like a child and read back the evidence the grid records.
+ * Query: level, ws (worksheet), table=1 (the times-table card is on screen),
+ * mode=open|tap|covered.
+ */
+function KumonGridHarness() {
+  const ref = useRef<WorksheetViewRef>(null);
+  const pages = useRef<unknown[]>([]);
+  (window as any).__kumon = { ref, pages: pages.current };
+  return (
+    <div className="min-h-screen bg-white p-4">
+      <WorksheetView
+        ref={ref}
+        level={(q.get('level') ?? 'C') as any}
+        worksheetNumber={Number(q.get('ws') ?? 31)}
+        sessionActive
+        childId="harness"
+        onPageComplete={(r) => { pages.current.push(r); }}
+        onWorksheetComplete={() => {}}
+        scaffoldVisible={q.get('table') === '1'}
+        scaffoldMode={(q.get('mode') as any) ?? null}
+      />
+    </div>
+  );
+}
+
+/**
+ * screen=ladder — the help ladder as the Kumon page shows it (2026-09-26), with
+ * the times-table card appearing at rung 4. Query: a, b (the fact), rung (1..4),
+ * tables (comma list), support (tap|covered).
+ */
+function LadderHarness() {
+  const a = Number(q.get('a') ?? 6);
+  const b = Number(q.get('b') ?? 7);
+  const [rung, setRung] = useState<1 | 2 | 3 | 4>(Number(q.get('rung') ?? 1) as 1 | 2 | 3 | 4);
+  const tables = (q.get('tables') ?? String(a)).split(',').map(Number);
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+      <p className="mb-3 text-center text-3xl font-bold text-gray-800">{a} × {b} = ___</p>
+      <HelpLadder
+        fact={{ a, b }}
+        rung={rung}
+        onClimb={(n) => setRung(n)}
+        onClose={() => {}}
+        audio={(text) => <AudioButton text={text} size="small" />}
+      />
+      {rung === 4 && (
+        <div className="mt-3">
+          <TimesTableCard
+            tables={tables}
+            support={(q.get('support') as any) ?? 'tap'}
+            current={{ table: a, multiplier: b }}
+            onReveal={() => {}}
+            onClose={() => {}}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+if (screen === 'ladder') {
+  createRoot(document.getElementById('root')!).render(<LadderHarness />);
+} else if (screen === 'kumon') {
+  createRoot(document.getElementById('root')!).render(<KumonGridHarness />);
+} else createRoot(document.getElementById('root')!).render(
   <FoundrySessionContext.Provider value={value}>
     <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
       <div className="mf-foundry min-h-screen bg-background">

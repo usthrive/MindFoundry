@@ -545,3 +545,20 @@ Battery, serial, after every change: 19 of 19 exit 0 (all census numbers unchang
   is its first compile.
 - The eval needs `ANTHROPIC_API_KEY` in the shell; no key exists on this machine
   (it lives only as a Supabase secret). Not run.
+
+### 12.6 Shipped 2026-09-22
+- Merged PR #19 → main `14e1087`; branch reset; Netlify builds main.
+- `supabase functions deploy ai-service` → Deployed (index.ts + review-prompt.ts).
+- `supabase db push` REFUSED: the remote migration history (41 versions) and the
+  repo's folder (30 files) have never matched — earlier migrations were applied
+  through the database tool under its own timestamps. A push would have tried to
+  re-run every local file. Applied the one migration's SQL through the Supabase
+  management API instead (the same path that tool uses) and recorded version
+  `20260922000001` in `supabase_migrations.schema_migrations`. Verified:
+  `bb_explanation_reviews` exists with the SELECT and DELETE policies.
+- Correction to §12.1: `ai_usage_log` DID exist on the remote (created outside the
+  repo); the migration's IF NOT EXISTS was a no-op there. The repo's claim that no
+  migration created it is true of the repo only.
+- Eval not run (no local key); owner will test live with the child. Read results
+  with: `select created_at, item_id, verdict, left(child_text,60), line, reason
+  from bb_explanation_reviews order by created_at desc`.
