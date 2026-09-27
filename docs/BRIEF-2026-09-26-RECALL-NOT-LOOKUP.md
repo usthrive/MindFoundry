@@ -238,3 +238,38 @@ shown on these screens.)
 Seen while photographing, owner's call: the Kumon page shows the child a running
 timer and a "focus score" (`EnhancedTimerDisplay`). Our principles say a young
 child should not see a clock; the time is recorded either way.
+
+## 9. Going over the paper (P5) — built 2026-09-27 (owner "go")
+
+The Best Brains half of the report: his two check misses were never shown to him.
+
+- `session/checkReview.ts` (pure): the misses of the LATEST sitting of a form, per
+  item the latest answer that is not a review; which are already reviewed. The
+  `review: ` answer prefix marks a re-answer — attempt_no cannot, because Form B
+  writes attempt_no = its cycle. Plain-word skill names for the strengthening card.
+- `components/CheckReview.tsx`: "Looking back · k of n"; the question read again;
+  his own answer ("On the last page you chose 47."); one guiding step — the item's
+  own first hint (census: none of 1,404 check items' first two hints states the
+  answer); another go; right → confirm, not yet → step 2, then the answer with its
+  reasoning. Score never changes. Re-answers recorded with the steps he had
+  (`hint_rungs_used`), the review prefix, and NO error tag (never feeds the
+  parent's miss patterns as a new error).
+- Wired: WeeklyCheck and FreshProblems show it right after scoring — rendered
+  BEFORE their route guards, because the week leaves the check state the moment it
+  is scored — then hand off with `reviewed: true`. StrengthenPlan reads the last
+  check's misses and reviews any not yet gone over first (this is where HIS check
+  of 26 Sep will come back: verified on his real attempt log — B3-MA-05 "47",
+  B3-MA-06 "5", both unreviewed). The skill card says "Comparing numbers" instead
+  of "compares by the ones digit" (the adult slug named the mistake, not the skill).
+- Gate `bb-check-review-test` (10 checks, broken controls; one control was silent
+  on first run — the hand-off check passed if ANY hand-off was marked, and Form B
+  has two — tightened to every hand-off). Photographed on his real items
+  (`docs/screens-2026-09-26/bb-*`, `bb-check-review-visual.ts`): 20 checks pass on
+  the rendered page, including "73 nowhere on screen until both steps were tried".
+
+Seen, not fixed (next):
+- The final reveal repeats the last hint and states the number; it does not show
+  the working (61 is the middle tray → 63 → 73). No item carries a worked solution;
+  adding one is a content-engine change across templates.
+- B3-MA-05's picture draws only one of the three piles (36) beside "which is the
+  greatest?" — an authored figure that may mislead; to triage in the figure lane.
