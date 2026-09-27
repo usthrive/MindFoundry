@@ -28,6 +28,20 @@ import { getLevelConfig } from '@/data/levelConfig'
 import { randomInt } from '@/services/generators/utils'
 import type { KumonLevel, HintLevel, SupplementaryPractice } from '@/types'
 import type { Stroke } from '@/components/ui/ScratchPad'
+import {
+  dwellStart,
+  dwellSwitch,
+  monotonicNow,
+  dwellFreeze,
+  dwellMs,
+  scaffoldStart,
+  scaffoldObserve,
+  scaffoldReveal,
+  scaffoldHelp,
+  scaffoldFreeze,
+  type AttemptEvidence,
+  type ScaffoldMode,
+} from '@/services/attemptEvidence'
 
 /**
  * Per-problem attempt data for tracking and saving
@@ -39,6 +53,8 @@ export interface ProblemAttemptData {
   attemptsCount: number        // Total attempts (1 = first try)
   firstAttemptCorrect: boolean
   hintLevelReached: HintLevel | null
+  /** First-try time, tried answers and table exposure (P0, 2026-09-26 — see services/attemptEvidence.ts). */
+  evidence?: AttemptEvidence
 }
 
 export interface WorksheetViewProps {
@@ -58,6 +74,10 @@ export interface WorksheetViewProps {
   /** Fires whenever the child moves to a different problem, so the parent can adapt
    *  the keypad (Level G+ shows the variables that appear in THIS question). */
   onActiveProblemChange?: (problem: Problem | null) => void
+  /** The times-table card is on screen right now (recorded per problem, never shown). */
+  scaffoldVisible?: boolean
+  /** The sheet's table support, recorded with each attempt. */
+  scaffoldMode?: ScaffoldMode | null
   onPageStateChange?: (pageState: PageState) => void  // Callback when page state changes (for persistence)
   sessionActive: boolean
   supplementaryPractice?: SupplementaryPractice
@@ -76,6 +96,10 @@ export interface WorksheetViewRef {
   setAnswerFromScratchPad: (answer: string) => void
   navigateToNextProblem: () => { problem: Problem; index: number; pageIndex: number } | null
   navigateToPreviousProblem: () => { problem: Problem; index: number; pageIndex: number } | null
+  /** The child uncovered the asked fact on the table card (records it on the active problem). */
+  markScaffoldReveal: () => void
+  /** The child opened this rung of the help ladder (1 think … 4 the table). */
+  markHelpRung: (rung: number) => void
 }
 
 // Exported so it can be used for session persistence
@@ -505,6 +529,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   onAnswerChange,
   onAllAnsweredChange,
   onActiveProblemChange,
+  scaffoldVisible = false,
+  scaffoldMode = null,
   onPageStateChange,
   sessionActive,
   supplementaryPractice,
@@ -881,6 +907,39 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     ...emptyColumnState(),
   }
 
+  // ── FIRST-TRY EVIDENCE (P0, 2026-09-26 — docs/BRIEF-2026-09-26-RECALL-NOT-LOOKUP.md) ──
+  //
+  // This grid is how a child works a Kumon sheet, and until now it saved every
+  // problem with `time_spent: 0` and no table flag: a sheet read off an open
+  // times table and a sheet recalled from memory were the same row. Each problem
+  // is now timed while it is the ACTIVE problem, up to its page's first check
+  // (first-try time; retries are teaching and are not timed), with the answers
+  // tried and whether the table was on screen meanwhile. Keyed by problem id so
+  // a regenerated or repeated sheet starts clean. Records only: nothing on
+  // screen changes, and no child ever sees a clock.
+  const dwellRef = useRef(dwellStart())
+  const scaffoldRef = useRef(scaffoldStart())
+  const triesRef = useRef<Record<string, string[]>>({})
+  const activeKeyRef = useRef<string | null>(null)
+  const activeProblemKey = currentPageState.problems[activeIndex]?.id ?? null
+
+  useEffect(() => {
+    activeKeyRef.current = activeProblemKey
+    const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden'
+    dwellRef.current = dwellSwitch(dwellRef.current, sessionActive && !hidden ? activeProblemKey : null, monotonicNow())
+    scaffoldRef.current = scaffoldObserve(scaffoldRef.current, activeProblemKey, scaffoldVisible)
+  }, [activeProblemKey, sessionActive, scaffoldVisible])
+
+  // Time away from the app is not time on the problem.
+  useEffect(() => {
+    const onVisibility = () => {
+      const hidden = document.visibilityState === 'hidden'
+      dwellRef.current = dwellSwitch(dwellRef.current, sessionActive && !hidden ? activeKeyRef.current : null, monotonicNow())
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [sessionActive])
+
   // Notify parent when page state changes (for session persistence)
   useEffect(() => {
     if (onPageStateChange && pageStates[currentPage]) {
@@ -1026,6 +1085,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
     let newlyCorrect = 0
     let needsTeaching: number | null = null
+    const firstCheckKeys: string[] = []
 
     currentPageState.problems.forEach((problem, index) => {
       // Skip already correct or locked problems
@@ -1034,9 +1094,14 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       const answer = currentPageState.answers[index] || ''
       const isCorrect = checkAnswer(problem, answer)
 
+      // Every checked answer is kept in order: the first is the first try, and a
+      // run of different answers on one problem is how guessing looks in data.
+      if (problem.id) triesRef.current[problem.id] = [...(triesRef.current[problem.id] ?? []), answer]
+
       // Track first attempt result (lock it in once set)
       if (firstAttemptResults[index] === undefined || firstAttemptResults[index] === null) {
         firstAttemptResults[index] = isCorrect
+        if (problem.id) firstCheckKeys.push(problem.id)
       }
 
       if (isCorrect) {
@@ -1068,6 +1133,14 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }
       }
     })
+
+    // First check done for these problems: their first-try time and table
+    // exposure are now fixed; anything after this is a retry.
+    if (firstCheckKeys.length > 0) {
+      const now = monotonicNow()
+      dwellRef.current = dwellFreeze(dwellRef.current, firstCheckKeys, now)
+      scaffoldRef.current = scaffoldFreeze(scaffoldRef.current, firstCheckKeys)
+    }
 
     // Check if all problems are now resolved (correct or locked)
     const allResolved = currentPageState.problems.every(
@@ -1111,6 +1184,14 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         attemptsCount: (attemptCounts[index] || 0) + 1,  // +1 because first attempt starts at 0
         firstAttemptCorrect: firstAttemptResults[index] === true,
         hintLevelReached: hintLevels[index] || null,
+        evidence: {
+          firstTryMs: problem.id ? dwellMs(dwellRef.current, problem.id) : null,
+          triedAnswers: (problem.id && triesRef.current[problem.id]) || [],
+          scaffoldMode,
+          scaffoldShownBeforeFirstCheck: !!(problem.id && scaffoldRef.current.shown[problem.id]),
+          scaffoldRevealedBeforeFirstCheck: !!(problem.id && scaffoldRef.current.revealed[problem.id]),
+          helpRungBeforeFirstCheck: (problem.id && scaffoldRef.current.rung[problem.id]) || 0,
+        },
       }))
 
       onPageComplete({
@@ -1144,7 +1225,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }, 1200)
       }
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, fireWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId])
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, fireWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId, scaffoldMode])
 
   // Handle completing full teaching (locks the problem and shows answer)
   const handleTeachingComplete = useCallback(() => {
@@ -1652,6 +1733,12 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     },
     getScratchPadStrokes: (problemIndex: number) => {
       return currentPageState.scratchPadStrokes[problemIndex] || []
+    },
+    markScaffoldReveal: () => {
+      scaffoldRef.current = scaffoldReveal(scaffoldRef.current, activeKeyRef.current)
+    },
+    markHelpRung: (rung: number) => {
+      scaffoldRef.current = scaffoldHelp(scaffoldRef.current, activeKeyRef.current, rung)
     },
     setScratchPadStrokes: (problemIndex: number, strokes: Stroke[]) => {
       setPageStates(prev => ({

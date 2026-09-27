@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 import { LEVEL_ORDER } from './generators/types'
+import { evidencePayload, type AttemptEvidence } from './attemptEvidence'
 
 type Child = Database['public']['Tables']['children']['Row']
 
@@ -190,7 +191,14 @@ export async function updateWorksheetProgress(
   level: KumonLevel,
   worksheetNumber: number,
   score: number,
-  total: number
+  total: number,
+  /**
+   * Seconds the child spent on the sheet with the app in view (P0, 2026-09-26).
+   * Written against Kumon's Standard Completion Time so the record carries the
+   * speed half of Kumon's mastery rule; the columns existed and nothing wrote
+   * them. Recorded only — the pass rule is unchanged until the owner rules.
+   */
+  focusedSeconds?: number
 ): Promise<boolean> {
   // Get or create the progress record
   const progress = await getOrCreateWorksheetProgress(childId, level, worksheetNumber)
@@ -208,7 +216,11 @@ export async function updateWorksheetProgress(
     last_attempted_at: new Date().toISOString(),
     ...(isCompleted && !progress.completed_at && {
       completed_at: new Date().toISOString()
-    })
+    }),
+    ...(focusedSeconds !== undefined && focusedSeconds > 0 && {
+      sct_seconds: getSctForLevel(level),
+      time_vs_sct: Math.min(999.99, Math.round((focusedSeconds / getSctForLevel(level)) * 100) / 100),
+    }),
   }
 
   const { error } = await supabase
@@ -563,6 +575,12 @@ export interface HintsData {
    * in the data we have.
    */
   tableChecked?: boolean
+  /**
+   * First-try time, answers tried and table exposure for this problem (P0,
+   * 2026-09-26; services/attemptEvidence.ts). Spread into `hints_used` so no
+   * migration is needed; `firstTryMs: null` means "not measured", never 0.
+   */
+  evidence?: AttemptEvidence
 }
 
 /**
@@ -575,7 +593,8 @@ export async function saveProblemAttempt(
   problem: any,
   studentAnswer: string,
   isCorrect: boolean,
-  timeSpent: number,
+  /** Seconds; null when not measured (the column is nullable — never write a fake 0). */
+  timeSpent: number | null,
   hintsData?: HintsData
 ): Promise<boolean> {
   const { error } = await supabase
@@ -591,7 +610,8 @@ export async function saveProblemAttempt(
         attemptsCount: hintsData.attemptsCount,
         firstAttemptCorrect: hintsData.firstAttemptCorrect,
         hintLevelReached: hintsData.hintLevelReached,
-        tableChecked: hintsData.tableChecked ?? false
+        tableChecked: hintsData.tableChecked ?? false,
+        ...(hintsData.evidence ? evidencePayload(hintsData.evidence) : {}),
       } : null
     })
 

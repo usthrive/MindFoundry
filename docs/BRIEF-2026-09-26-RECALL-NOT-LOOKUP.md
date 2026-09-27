@@ -160,3 +160,81 @@ P0 and P5 are the fastest wins and have no pedagogical risk; start there.
 | R3 | What happens to his 50 "completed" sheets | keep the record; the P2 check-in decides where he really is; the owner approves any move back |
 | R4 | Table on the first sheet of a new table | open on sheet 1 only, then tap-to-look with the look counted |
 | R5 | Best Brains post-check review | show the missed items after hand-in, before the strengthening round |
+
+## 7. Status — P0 built 2026-09-26 (records only; nothing on screen changes)
+
+Owner said "commit and proceed" after the brief; P0 is the one phase that needs
+none of the §6 rulings, so it was built first.
+
+| piece | what it does now |
+|---|---|
+| `services/attemptEvidence.ts` (new) | a dwell clock that times a problem only while it is the ACTIVE problem, pauses while the app is hidden, and stops at the page's first check (retries are teaching, not first-try time); a ledger of whether the times table was on screen before the first check, and whether the child tapped to uncover the fact; the payload keys |
+| `WorksheetView.tsx` (the grid he works in) | keeps the clock, the ledger and every answer tried per problem (keyed by problem id); hands them to the save path; takes the table's visibility and mode as props; the card's reveal reaches it through the ref. **No render change.** |
+| `StudyPage.tsx` | all three save paths pass evidence; the grid path writes first-try SECONDS to `time_spent` (was a literal `0`) and the table flag (was never passed); the single-problem path records the same evidence; the sheet's focused time is written against Kumon's SCT (`worksheet_progress.sct_seconds` / `time_vs_sct`, never written before) |
+| `progressService.ts` | evidence spread into `hints_used` (no migration); an unmeasured time is stored as NULL, never 0 (`time_spent` is nullable) |
+| gate `scripts/kumon-attempt-evidence-test.ts` | 16 checks: clock, ledger, payload, sources (no literal 0, evidence on every save, props and reveal wired, no wall clock); each with a broken control that fires |
+| browser proof `scripts/kumon-evidence-visual.ts` (by hand) | drives the real grid in Chrome like a child — thinking pause, one wrong answer fixed on retry, 4 s away mid-problem — at an open-table sheet and a closed-table sheet. Three consecutive runs PASS: every first-try time within 0.5 s of the page's monotonic clock, away time excluded, retry time excluded, both answers kept on the missed problem, table flag correct per run |
+
+Found by rendering, not by any gate: **the wall clock jumps.** On this host the
+page's `Date.now()` went 10–12 s backwards mid-run, which would have written
+negative or inflated times. All durations now come from `performance.now()`,
+and the gate fails any dwell step timed with the wall clock. The first two
+driver versions also mis-measured (a fixed threshold, then a start time taken
+after the sheet had appeared); the final one checks each time against the
+page's own monotonic clock from the frame the problems appear.
+
+**Not verifiable here:** a real sheet worked by the child on his device. After
+deploy, the first sheet he works should show non-null `time_spent`, the new
+`hints_used` keys, and `scaffoldShownBeforeFirstCheck: true` on ordered sheets.
+Query: `select created_at, problem_data->>'question', time_spent, hints_used
+from problem_attempts where child_id = '<id>' order by created_at desc limit 20`.
+
+Next: the §6 rulings, then P1 (honest sheet pass) and P5 (post-check review).
+
+## 8. The help ladder — built 2026-09-26 (owner direction)
+
+Owner, after the P0 review: *"The problem is not about simplicity. The goal is how
+do we ensure that my son learns and we are grooming critical thinking."* Then:
+*"I like the table. It should just not be the only option. There should be a
+progression of hints / help that helps him learn."*
+
+This supersedes ruling R4 in §6 (the table is kept; it becomes the last rung).
+
+| rung | 6 × 7 | what it builds |
+|---|---|---|
+| 1 Think about it | "6 × 7 means 6 groups of 7." | meaning |
+| 2 Use a fact I know | "5 × 7 = 35. Add one more 7." | deriving the unknown from the known — the critical-thinking move |
+| 3 Count it | "Count by 7s: 7, 14, 21… Count 6 numbers." | a way to finish without the answer |
+| 4 Show me the table | the TimesTableCard, unchanged | the answer, when truly needed |
+
+- `components/tables/helpLadder.ts` generates every rung per fact; the easier
+  factor is used as "groups" (with the turn-around said aloud: "7 × 4 is the same
+  as 4 × 7"). Routes lean only on anchors (×1, ×2, ×5, ×10) or on doubling.
+- `components/tables/HelpLadder.tsx`: one rung at a time, the child chooses to
+  climb, each rung read aloud, "I'll try it now" closes and keeps his place.
+- StudyPage: on every table sheet "🧩 Help me" opens the ladder. On the ORDERED
+  sheets (where the table is the lesson) the table keeps its own button; on the
+  random and mixed sheets the table is rung 4.
+- Recorded: `helpRungBeforeFirstCheck` (0–4) per problem, highest rung before the
+  first check, on the grid and the one-problem path. Over days it should fall.
+- Gate `kumon-help-ladder-test` (all 169 facts 0..12 × 0..12): rungs 1–3 never
+  print the answer, every printed sum is true, counts stop before the answer,
+  sentences ≤ 14 words; plus the page wiring. Six broken controls all fire.
+- Photographed (`docs/screens-2026-09-26/`, `kumon-help-ladder-visual.ts`): 6 × 7,
+  9 × 8, 7 × 4 climbed rung by rung at 430 px; the answer is nowhere on the
+  rendered page before rung 4; buttons 48 px. The first photographs showed the
+  "Read it to me" labels squeezing each sentence into half the card — the
+  read-aloud is now an icon, and the sentences read across.
+
+Not yet built (next, in teaching order): the looked-up or rung-3 fact returning a
+few problems later; opening the ladder automatically after a first miss (the
+grid's own miss hints still run: a generic "how many groups?" prompt, then an
+array prompt, then a worked example of a different fact with a "Skip to Answer"
+button — fold them into the ladder so a miss climbs the same steps); "How did
+you get it?" moments; the facts map. (Checked: the per-problem `hints` field,
+e.g. "Count by 6s: 6, 12, 18, 24" on 6 × 4, does state the answer but is not
+shown on these screens.)
+
+Seen while photographing, owner's call: the Kumon page shows the child a running
+timer and a "focus score" (`EnhancedTimerDisplay`). Our principles say a young
+child should not see a clock; the time is recorded either way.
