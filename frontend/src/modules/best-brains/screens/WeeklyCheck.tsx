@@ -23,6 +23,8 @@ import {
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import CheckRunner from '../components/CheckRunner';
+import CheckReview, { type CheckReviewMiss } from '../components/CheckReview';
+import { REVIEW_PREFIX } from '../session/checkReview';
 
 export default function WeeklyCheck() {
   const navigate = useNavigate();
@@ -30,6 +32,8 @@ export default function WeeklyCheck() {
   const [started, setStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [failedSubmit, setFailedSubmit] = useState(false);
+  /** Going over the paper (2026-09-26): the misses, and where to go afterwards. */
+  const [review, setReview] = useState<{ misses: CheckReviewMiss[]; go: () => void } | null>(null);
   const transitioned = useRef(false);
 
   // Form A is served from the mastery_check state; entering the screen from
@@ -44,6 +48,34 @@ export default function WeeklyCheck() {
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;
+
+  // The review runs AFTER scoring, when the week has already left the check
+  // state — so it must render before the route guard below, or the guard would
+  // redirect the child the moment the score landed.
+  if (review) {
+    const packId = pack.packId;
+    return (
+      <CheckReview
+        misses={review.misses}
+        band={band}
+        when="after-check"
+        onReAnswer={(item, answer, correct, stepsShown) => {
+          void recordItemAttempt({
+            childId,
+            packId,
+            itemId: item.id,
+            answer: `${REVIEW_PREFIX}${answer}`,
+            correct,
+            hintRungsUsed: stepsShown,
+            attemptNo: 2,
+            day: 5,
+          });
+        }}
+        onDone={review.go}
+      />
+    );
+  }
+
   // Route guard: the check only exists while the week is being checked.
   if (weekState.state === 'passed' || weekState.state === 'fast_track') {
     return <Navigate to="/foundry/resolve" replace />;
@@ -69,12 +101,28 @@ export default function WeeklyCheck() {
         completedItemIds: Array.from(new Set([...(day5?.completedItemIds ?? []), ...day5Items])),
         ...(puzzleDone ? { completedAt: new Date().toISOString() } : {}),
       });
-      await refreshWeekState();
-      if (result.state === 'passed') {
-        navigate('/foundry/resolve', { replace: true, state: { justResolved: true } });
-      } else {
-        navigate('/foundry/strengthen', { replace: true, state: { entry: 'cycle1' } });
+      const go = () => {
+        if (result.state === 'passed') {
+          navigate('/foundry/resolve', { replace: true, state: { justResolved: true } });
+        } else {
+          navigate('/foundry/strengthen', { replace: true, state: { entry: 'cycle1', reviewed: true } });
+        }
+      };
+      // Go over the paper before moving on: every miss comes back, once.
+      const misses = answers
+        .filter((a) => !a.correct)
+        .map((a) => ({ item: items.find((i) => i.id === a.itemId), answer: a.answer }))
+        .filter((m): m is CheckReviewMiss => !!m.item);
+      if (misses.length > 0) {
+        // The review renders ahead of the route guard, so refreshing the week
+        // underneath it is safe; it moves on only when the child is done.
+        setReview({ misses, go });
+        setSubmitting(false);
+        await refreshWeekState();
+        return;
       }
+      await refreshWeekState();
+      go();
     } catch (e) {
       console.error('[bb] mastery scoring failed', e);
       // Offline / transient failure: answers stand locally; warm defer (E12 law).

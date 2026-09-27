@@ -13,6 +13,7 @@
 import { supabase } from '@/lib/supabase';
 import { CONTENT_VERSION } from '../contentVersion';
 import { WEEK_STATE_TRANSITIONS } from '../constants';
+import type { AttemptRow } from '../session/checkReview';
 import type {
   BBEnrollment,
   BBEnrollmentSettings,
@@ -403,6 +404,24 @@ export interface ParkedItemRef {
  * never an ever-growing pile), and it isn't stale (>14 days silently retires).
  * Mastery-check and sprint slots (MA/MB/FS/PZ) never park.
  */
+/**
+ * The pack's attempt log, as the post-check review reads it (2026-09-26): each
+ * check answer (attempt_no 1) and each review re-answer (`review: …`). This is
+ * the first reader of the `answer` column — the review shows the child what he
+ * actually answered. RLS scopes it to the child's parent.
+ */
+export async function listCheckAttempts(childId: string, packId: string): Promise<AttemptRow[]> {
+  const { data, error } = await supabase
+    .from('bb_item_attempts')
+    .select('item_id, answer, correct, attempt_no, created_at')
+    .eq('child_id', childId)
+    .eq('pack_id', packId)
+    .like('item_id', '%-M%')
+    .order('created_at');
+  if (error) throw error;
+  return (data ?? []) as AttemptRow[];
+}
+
 export async function listParkedItems(childId: string, packId: string): Promise<ParkedItemRef[]> {
   const { data, error } = await supabase
     .from('bb_item_attempts')

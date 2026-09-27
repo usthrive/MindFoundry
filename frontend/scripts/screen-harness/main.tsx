@@ -16,6 +16,8 @@ import PracticePage from '@/modules/best-brains/screens/PracticePage';
 import WarmUp from '@/modules/best-brains/screens/WarmUp';
 import PuzzleGrove from '@/modules/best-brains/screens/PuzzleGrove';
 import DayDone from '@/modules/best-brains/screens/DayDone';
+import StrengthenPlan from '@/modules/best-brains/screens/StrengthenPlan';
+import CheckReview from '@/modules/best-brains/components/CheckReview';
 import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/WorksheetView';
 import { useRef, useState } from 'react';
 import { HelpLadder } from '@/components/tables/HelpLadder';
@@ -50,7 +52,13 @@ if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds
 const value: FoundrySessionValue = {
   childId: 'harness', childName: 'Harness', childAge: level === 'A' ? 5 : 9, loading: false,
   enrollment: { childId: 'harness', level, currentWeek: week as any, settings: { sprintOptOut: false, sessionLength: 'standard' } },
-  weekState: { childId: 'harness', level, week: week as any, packSeed: seed, state: 'in_week', dayProgress, mastery: { attempts: [] } },
+  weekState: {
+    childId: 'harness', level, week: week as any, packSeed: seed,
+    state: (q.get('wstate') as any) ?? 'in_week', dayProgress,
+    mastery: { attempts: q.get('wstate') === 'near_miss_cycle1'
+      ? [{ form: 'A', cycle: 0, scorePct: 67, attemptedAt: '2026-09-26T16:56:00Z', dominantErrorTags: [(q.get('tag') as any) ?? 'concept-misconception'] }]
+      : [] },
+  },
   pack, packUnavailable: false, band: bandForLevel(level), capMinutes: 12, sessionMinutes: () => mins,
   refreshEnrollment: async () => {}, refreshWeekState: async () => {}, ensureWeekStarted: async () => {},
 };
@@ -118,13 +126,39 @@ function LadderHarness() {
   );
 }
 
-if (screen === 'ladder') {
+/** screen=review — going over the paper, on the pack's real Form A items (?misses=ID:answer,ID:answer). */
+function ReviewHarness() {
+  const misses = (q.get('misses') ?? '').split(',').filter(Boolean).map((pair) => {
+    const [id, answer] = pair.split(':');
+    return { item: pack.masteryCheck.formA.concat(pack.masteryCheck.formB).find((i) => i.id === id)!, answer };
+  }).filter((m) => m.item);
+  (window as any).__review = { recorded: [] as unknown[], done: false };
+  return (
+    <FoundrySessionContext.Provider value={value}>
+      <div className="mf-foundry min-h-screen bg-background">
+        <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
+          <CheckReview
+            misses={misses}
+            band={bandForLevel(level)}
+            when={(q.get('when') as any) ?? 'before-strengthening'}
+            onReAnswer={(item, answer, correct, steps) => (window as any).__review.recorded.push({ id: item.id, answer, correct, steps })}
+            onDone={() => { (window as any).__review.done = true; }}
+          />
+        </main>
+      </div>
+    </FoundrySessionContext.Provider>
+  );
+}
+
+if (screen === 'review') {
+  createRoot(document.getElementById('root')!).render(<ReviewHarness />);
+} else if (screen === 'ladder') {
   createRoot(document.getElementById('root')!).render(<LadderHarness />);
 } else if (screen === 'kumon') {
   createRoot(document.getElementById('root')!).render(<KumonGridHarness />);
 } else createRoot(document.getElementById('root')!).render(
   <FoundrySessionContext.Provider value={value}>
-    <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
+    <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'strengthen' ? { pathname: '/foundry/strengthen', state: { reviewed: true } } : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
       <div className="mf-foundry min-h-screen bg-background">
         <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
           <Routes>
@@ -133,6 +167,7 @@ if (screen === 'ladder') {
             <Route path="/foundry/puzzle" element={<PuzzleGrove />} />
             <Route path="/foundry/day/:day/done" element={<DayDone />} />
             <Route path="/foundry/hub" element={<ThisWeekHub />} />
+            <Route path="/foundry/strengthen" element={<StrengthenPlan />} />
             <Route path="*" element={<p data-harness="redirected">REDIRECTED: {location.pathname}</p>} />
           </Routes>
         </main>

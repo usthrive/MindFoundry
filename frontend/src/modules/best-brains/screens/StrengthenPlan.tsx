@@ -10,20 +10,47 @@
  * report by the scoring RPC, never to the child.
  */
 
-import { Link, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { COPY, MODULE_COPY } from '../copy';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
-import type { ErrorTag, MistakeBankEntry } from '../types';
-
-/** Child-plain names for the wobbly step, from the dominant DD7 tag. */
-function wobblySkillLine(entry: MistakeBankEntry | undefined, conceptName: string): string {
-  if (entry?.subtype) return entry.subtype.replace(/-/g, ' ');
-  return `one step of ${conceptName}`;
-}
+import CheckReview, { type CheckReviewMiss } from '../components/CheckReview';
+import { checkMissesFrom, REVIEW_PREFIX, skillInChildWords } from '../session/checkReview';
+import { listCheckAttempts, recordItemAttempt } from '../services/bbProgressService';
+import type { ErrorTag } from '../types';
 
 export default function StrengthenPlan() {
-  const { loading, enrollment, weekState, pack, band } = useFoundrySession();
+  const { loading, enrollment, weekState, pack, band, childId } = useFoundrySession();
+  const location = useLocation();
+  const cameFromReview = !!(location.state as { reviewed?: boolean } | null)?.reviewed;
+
+  // GO OVER THE PAPER FIRST (2026-09-26). A child whose check predates the
+  // review, or who left before finishing it, meets his own misses here, before
+  // the strengthening plan. `null` while the attempt log loads; any failure
+  // falls through to the plan — the review must never block the round.
+  const attemptsList = weekState?.mastery.attempts ?? [];
+  const lastAttempt = attemptsList[attemptsList.length - 1];
+  const lastForm = lastAttempt?.form ?? 'A';
+  const [pending, setPending] = useState<CheckReviewMiss[] | null>(cameFromReview ? [] : null);
+  const [reviewDone, setReviewDone] = useState(false);
+  useEffect(() => {
+    if (cameFromReview || !pack || !childId) return;
+    let live = true;
+    listCheckAttempts(childId, pack.packId)
+      .then((rows) => {
+        if (!live) return;
+        const items = [...pack.masteryCheck.formA, ...pack.masteryCheck.formB];
+        setPending(
+          checkMissesFrom(rows, lastForm)
+            .filter((m) => !m.reviewed)
+            .map((m) => ({ item: items.find((i) => i.id === m.itemId), answer: m.answer }))
+            .filter((m): m is CheckReviewMiss => !!m.item),
+        );
+      })
+      .catch(() => { if (live) setPending([]); });
+    return () => { live = false; };
+  }, [cameFromReview, pack, childId, lastForm]);
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;
@@ -32,12 +59,38 @@ export default function StrengthenPlan() {
     return <Navigate to="/foundry/hub" replace />;
   }
 
+  if (pending === null) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
+  if (pending.length > 0 && !reviewDone) {
+    const packId = pack.packId;
+    return (
+      <CheckReview
+        misses={pending}
+        band={band}
+        when="before-strengthening"
+        onReAnswer={(item, answer, correct, stepsShown) => {
+          void recordItemAttempt({
+            childId,
+            packId,
+            itemId: item.id,
+            answer: `${REVIEW_PREFIX}${answer}`,
+            correct,
+            hintRungsUsed: stepsShown,
+            attemptNo: lastForm === 'A' ? 2 : (lastAttempt?.cycle ?? 1) + 1,
+            day: lastForm === 'A' ? 5 : null,
+          });
+        }}
+        onDone={() => setReviewDone(true)}
+      />
+    );
+  }
+
   const escalated = weekState.state === 'escalated';
   const cycle2 = weekState.state === 'cycle2';
-  const attempts = weekState.mastery.attempts ?? [];
-  const dominantTag: ErrorTag | undefined = attempts[attempts.length - 1]?.dominantErrorTags?.[0];
-  const bankEntry = pack.mistakeBank.find((m) => m.errorTag === dominantTag) ?? pack.mistakeBank[0];
-  const skill = wobblySkillLine(bankEntry, pack.identity.conceptName);
+  const dominantTag: ErrorTag | undefined = lastAttempt?.dominantErrorTags?.[0];
+  // The skill in the child's words: for a misconception, the week's own idea by
+  // name; otherwise a plain habit. It used the mistake's adult slug
+  // ("compares by the ones digit") — naming the error, not the skill.
+  const skill = dominantTag === 'concept-misconception' ? pack.identity.conceptName : skillInChildWords(dominantTag);
 
   return (
     <div className="flex min-h-[70vh] flex-col justify-center gap-6">

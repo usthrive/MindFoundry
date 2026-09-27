@@ -21,6 +21,8 @@ import {
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import CheckRunner from '../components/CheckRunner';
+import CheckReview, { type CheckReviewMiss } from '../components/CheckReview';
+import { REVIEW_PREFIX } from '../session/checkReview';
 
 export default function FreshProblems() {
   const navigate = useNavigate();
@@ -28,9 +30,36 @@ export default function FreshProblems() {
   const [started, setStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [failedSubmit, setFailedSubmit] = useState(false);
+  /** Going over the paper after Form B too (2026-09-26). */
+  const [review, setReview] = useState<{ misses: CheckReviewMiss[]; go: () => void; cycle: number } | null>(null);
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;
+
+  // Rendered before the route guard: once scored, the week has left the loop state.
+  if (review) {
+    const packId = pack.packId;
+    return (
+      <CheckReview
+        misses={review.misses}
+        band={band}
+        when="after-check"
+        onReAnswer={(item, answer, correct, stepsShown) => {
+          void recordItemAttempt({
+            childId,
+            packId,
+            itemId: item.id,
+            answer: `${REVIEW_PREFIX}${answer}`,
+            correct,
+            hintRungsUsed: stepsShown,
+            attemptNo: review.cycle + 1,
+            day: null,
+          });
+        }}
+        onDone={review.go}
+      />
+    );
+  }
   // Route guard: Form B only exists inside the corrective loop.
   if (weekState.state !== 'near_miss_cycle1' && weekState.state !== 'cycle2') {
     return <Navigate to="/foundry/hub" replace />;
@@ -44,15 +73,30 @@ export default function FreshProblems() {
     setSubmitting(true);
     try {
       const result = await scoreMasteryCheck(weekState, 'B', answers, pack.parentSummarySeed);
-      await refreshWeekState();
-      if (result.state === 'passed' || result.state === 'fast_track') {
-        navigate('/foundry/resolve', { replace: true, state: { justResolved: true } });
-      } else if (result.state === 'cycle2') {
-        navigate('/foundry/strengthen', { replace: true, state: { entry: 'cycle2' } });
-      } else {
-        // escalated — the friendly reinforcements card lives on StrengthenPlan.
-        navigate('/foundry/strengthen', { replace: true, state: { entry: 'escalated' } });
+      const go = () => {
+        if (result.state === 'passed' || result.state === 'fast_track') {
+          navigate('/foundry/resolve', { replace: true, state: { justResolved: true } });
+        } else if (result.state === 'cycle2') {
+          navigate('/foundry/strengthen', { replace: true, state: { entry: 'cycle2', reviewed: true } });
+        } else {
+          // escalated — the friendly reinforcements card lives on StrengthenPlan.
+          navigate('/foundry/strengthen', { replace: true, state: { entry: 'escalated', reviewed: true } });
+        }
+      };
+      const misses = answers
+        .filter((a) => !a.correct)
+        .map((a) => ({ item: items.find((i) => i.id === a.itemId), answer: a.answer }))
+        .filter((m): m is CheckReviewMiss => !!m.item);
+      if (misses.length > 0) {
+        // The review renders ahead of the route guard, so refreshing the week
+        // underneath it is safe; it moves on only when the child is done.
+        setReview({ misses, go, cycle });
+        setSubmitting(false);
+        await refreshWeekState();
+        return;
       }
+      await refreshWeekState();
+      go();
     } catch (e) {
       console.error('[bb] Form B scoring failed', e);
       setFailedSubmit(true);
