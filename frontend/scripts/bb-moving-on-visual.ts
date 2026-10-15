@@ -19,7 +19,8 @@
  *                 aloud by itself (band B), and the log rows are what the ledger
  *                 reads (origin week, attempt 1 unaided, day null, no error tag);
  *   check       — a re-check question reads itself aloud at band B;
- *   parent      — the week line and the comeback list.
+ *   parent      — the week line and the comeback list; the Settings page's
+ *                 "if a week ever gets steep" card (it promised a teacher).
  */
 import fs from 'node:fs'
 import http from 'node:http'
@@ -200,6 +201,13 @@ t = await text(p)
 fs.writeFileSync(`${OUT}/9-parent-home.png`, await p.screenshot({ fullPage: true }))
 say(/Week 4 not finished yet — last try 4\/6; moving on needs 5\/6\. Next: one more practice round, then the last re-check\./.test(t), 'the parent sees where week 4 is at')
 say(/Coming back in warm-ups/.test(t) && /13 missed check questions · up to 2 a day/.test(t), 'and the comeback list (13 from his checks)')
+await p.close()
+
+console.log('\n# parent Settings — what happens if a week gets steep')
+p = await open('?screen=controls&level=B&week=4&seed=645474193')
+t = await text(p)
+fs.writeFileSync(`${OUT}/10-parent-settings.png`, await p.screenshot({ fullPage: true }))
+say(/the week closes and Harness moves on to the next idea the following day/.test(t) && !/teacher/i.test(t), 'the Settings card tells the truth: moves on, comes back, no teacher')
 await p.close()
 
 if (errors.length) { console.log(`  !! page errors: ${errors.slice(0, 3).join(' | ')}`); bad++ }

@@ -34,6 +34,7 @@ import { AudioButton } from '@/components/homework/AudioButton';
 import ThisWeekHub from '@/modules/best-brains/screens/ThisWeekHub';
 import Comebacks from '@/modules/best-brains/screens/Comebacks';
 import ParentHome from '@/modules/best-brains/screens/parent/ParentHome';
+import ParentControls from '@/modules/best-brains/screens/parent/ParentControls';
 import { ParentContext } from '@/modules/best-brains/screens/parent/FoundryParentLayout';
 import type { BBLevel, DayProgress, MasteryAttempt } from '@/modules/best-brains/types';
 import { B4_A, B4_B1, B4_B2, B4_DAYS, hisLog, weekRows } from './his-log';
@@ -64,7 +65,7 @@ if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds
 
 // --- real=b4: his week 4 and his check log (shared with the photo driver) ---
 const wstate = (q.get('wstate') as any) ?? 'in_week';
-if (real || screen === 'comeback' || screen === 'parent') {
+if (real || screen === 'comeback' || screen === 'parent' || screen === 'controls') {
   (window as any).__sbFixture = { bb_item_attempts: hisLog(real && wstate === 'escalated'), bb_week_state: weekRows() };
 }
 const attempts: MasteryAttempt[] = real
@@ -172,7 +173,7 @@ function ReviewHarness() {
   );
 }
 
-/** screen=parent — the parent home on his real log (the week line and the comeback list). */
+/** screen=parent — the parent home on his real log (the week line and the comeback list); screen=controls — the Settings page. */
 function ParentHarness() {
   const enr = { childId: 'harness', level: 'B' as BBLevel, currentWeek: 4 as any, settings: { sprintOptOut: false, sessionLength: 'standard' as const } };
   return (
@@ -186,10 +187,13 @@ function ParentHarness() {
         refresh: async () => {},
       }}
     >
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[screen === 'controls' ? '/foundry/parent/controls/harness' : '/foundry/parent']}>
         <div className="mf-foundry min-h-screen bg-background">
           <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
-            <ParentHome />
+            <Routes>
+              <Route path="/foundry/parent/controls/:childId" element={<ParentControls />} />
+              <Route path="*" element={<ParentHome />} />
+            </Routes>
           </main>
         </div>
       </MemoryRouter>
@@ -197,7 +201,7 @@ function ParentHarness() {
   );
 }
 
-if (screen === 'parent') {
+if (screen === 'parent' || screen === 'controls') {
   // The parent home reads week 4's row for the week line: give it his real state.
   const row = (window as any).__sbFixture.bb_week_state.find((r: any) => r.week === 4);
   Object.assign(row, { state: 'cycle2', day_progress: B4_DAYS, mastery: { attempts: [B4_A, B4_B1] } });
