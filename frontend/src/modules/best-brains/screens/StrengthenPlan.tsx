@@ -18,6 +18,7 @@ import WrenBubble from '../components/WrenBubble';
 import CheckReview, { type CheckReviewMiss } from '../components/CheckReview';
 import { checkMissesFrom, REVIEW_PREFIX, skillInChildWords } from '../session/checkReview';
 import { listCheckAttempts, recordItemAttempt } from '../services/bbProgressService';
+import { formBForCycle } from '../session/freshForm';
 import type { ErrorTag } from '../types';
 
 export default function StrengthenPlan() {
@@ -40,7 +41,9 @@ export default function StrengthenPlan() {
     listCheckAttempts(childId, pack.packId)
       .then((rows) => {
         if (!live) return;
-        const items = [...pack.masteryCheck.formA, ...pack.masteryCheck.formB];
+        // The second re-check's questions carry their own ids (session/freshForm.ts).
+        const cycle2 = weekState ? formBForCycle(pack, weekState.packSeed, weekState.contentVersion, 2).items : [];
+        const items = [...pack.masteryCheck.formA, ...pack.masteryCheck.formB, ...cycle2];
         setPending(
           checkMissesFrom(rows, lastForm)
             .filter((m) => !m.reviewed)
@@ -50,7 +53,8 @@ export default function StrengthenPlan() {
       })
       .catch(() => { if (live) setPending([]); });
     return () => { live = false; };
-  }, [cameFromReview, pack, childId, lastForm]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameFromReview, pack, childId, lastForm, weekState?.packSeed, weekState?.contentVersion]);
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;

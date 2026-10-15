@@ -10,7 +10,7 @@
  * escalation. No other routes.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { COPY, MODULE_COPY } from '../copy';
 import {
@@ -23,6 +23,7 @@ import WrenBubble from '../components/WrenBubble';
 import CheckRunner from '../components/CheckRunner';
 import CheckReview, { type CheckReviewMiss } from '../components/CheckReview';
 import { REVIEW_PREFIX } from '../session/checkReview';
+import { formBForCycle } from '../session/freshForm';
 
 export default function FreshProblems() {
   const navigate = useNavigate();
@@ -32,6 +33,16 @@ export default function FreshProblems() {
   const [failedSubmit, setFailedSubmit] = useState(false);
   /** Going over the paper after Form B too (2026-09-26). */
   const [review, setReview] = useState<{ misses: CheckReviewMiss[]; go: () => void; cycle: number } | null>(null);
+
+  // The second re-check asks NEW questions (2026-10-14, session/freshForm.ts): by
+  // then the child has gone over the first re-check, and may have been shown an
+  // answer. Same skills slot by slot, different numbers, re-minted ids.
+  const formCycle = weekState?.state === 'cycle2' ? 2 : 1;
+  const form = useMemo(
+    () => (pack && weekState ? formBForCycle(pack, weekState.packSeed, weekState.contentVersion, formCycle) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pack, weekState?.packSeed, weekState?.contentVersion, formCycle],
+  );
 
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;
@@ -66,7 +77,7 @@ export default function FreshProblems() {
   }
 
   const cycle = weekState.state === 'cycle2' ? 2 : 1;
-  const items = pack.masteryCheck.formB;
+  const items = form?.items ?? pack.masteryCheck.formB;
 
   async function submit(answers: MasteryAnswerInput[]) {
     if (!weekState || !pack) return;
