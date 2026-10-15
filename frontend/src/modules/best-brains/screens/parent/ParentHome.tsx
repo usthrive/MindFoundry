@@ -8,8 +8,11 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { getCatalogWeek } from '../../content/catalog';
+import { generatePack } from '../../generator/packGenerator';
 import { listWeekStatesReadOnly } from '../../services/bbParentService';
+import { weekStatus, type WeekStatus } from '../../session/weekStatus';
 import { useParentContext } from './FoundryParentLayout';
+import ComebackSummary from './ComebackSummary';
 import type { BBParentReport, WeekState } from '../../types';
 
 const WELCOME_SEEN_KEY = 'bb-parent-welcome-seen';
@@ -39,6 +42,22 @@ function DayStrip({ weekState }: { weekState: WeekState | null }) {
   );
 }
 
+/**
+ * One line on a week that has not moved forward after Day 5 (2026-10-15) — the
+ * same facts as the child's status card (session/weekStatus.ts).
+ */
+function stalledLine(s: WeekStatus): string {
+  const last = s.checks[s.checks.length - 1];
+  if (s.kind === 'moved-on') {
+    return `Week ${s.week} closed after two practice rounds (last try ${last.right}/${s.total}) — moved on; the missed questions come back as warm-ups.`;
+  }
+  const held = last.heldBy.length
+    ? ` (held: Day ${last.heldBy.map((h) => `${h.day} practice ${h.pct}%`).join(', ')})`
+    : '';
+  const next = s.kind === 'second-round' ? 'one more practice round, then the last re-check' : 'a practice round, then new questions';
+  return `Week ${s.week} not finished yet — last try ${last.right}/${s.total}${held}; moving on needs ${s.needed}/${s.total}. Next: ${next}.`;
+}
+
 function reportState(reports: BBParentReport[] | undefined): {
   latest: BBParentReport | null;
   ready: boolean;
@@ -51,6 +70,7 @@ export default function ParentHome() {
   const navigate = useNavigate();
   const { loading, childList, enrollments, reportsByChild } = useParentContext();
   const [weekStates, setWeekStates] = useState<Map<string, WeekState | null>>(new Map());
+  const [levelStates, setLevelStates] = useState<Map<string, WeekState[]>>(new Map());
 
   const enrolledIds = childList.filter((c) => enrollments.has(c.id)).map((c) => c.id);
 
@@ -59,11 +79,15 @@ export default function ParentHome() {
     void Promise.all(
       enrolledIds.map(async (id) => {
         const enr = enrollments.get(id)!;
-        const states = await listWeekStatesReadOnly(id, enr.level).catch(() => []);
-        return [id, states.find((s) => s.week === enr.currentWeek) ?? null] as const;
+        const states = await listWeekStatesReadOnly(id, enr.level).catch(() => [] as WeekState[]);
+        return [id, states] as const;
       }),
     ).then((entries) => {
-      if (!cancelled) setWeekStates(new Map(entries));
+      if (cancelled) return;
+      setLevelStates(new Map(entries));
+      setWeekStates(
+        new Map(entries.map(([id, states]) => [id, states.find((s) => s.week === enrollments.get(id)!.currentWeek) ?? null] as const)),
+      );
     });
     return () => {
       cancelled = true;
@@ -116,6 +140,12 @@ export default function ParentHome() {
         }
 
         const ws = weekStates.get(child.id) ?? null;
+        let stalled: WeekStatus | null = null;
+        try {
+          stalled = ws ? weekStatus(ws, generatePack(ws.level, ws.week, ws.packSeed, ws.contentVersion)) : null;
+        } catch {
+          stalled = null;
+        }
         const catalogWeek = getCatalogWeek(enr.level, enr.currentWeek);
         const { latest, ready } = reportState(reportsByChild.get(child.id));
         const daysPracticed = ws
@@ -140,6 +170,12 @@ export default function ParentHome() {
               {daysPracticed} practice {daysPracticed === 1 ? 'day' : 'days'} this week
               {!latest && ' · report arrives after the weekly check'}
             </div>
+            {stalled && (
+              <p data-week-stalled className="text-[13px] leading-snug text-text-primary">
+                {stalledLine(stalled)}
+              </p>
+            )}
+            <ComebackSummary childId={child.id} level={enr.level} weeks={levelStates.get(child.id) ?? []} />
             {latest && ready && (
               <button
                 type="button"

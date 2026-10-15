@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { CONTENT_VERSION } from '../contentVersion';
 import { WEEK_STATE_TRANSITIONS } from '../constants';
 import type { AttemptRow } from '../session/checkReview';
+import type { LoggedAnswer } from '../session/comebacks';
 import type {
   BBEnrollment,
   BBEnrollmentSettings,
@@ -420,6 +421,27 @@ export async function listCheckAttempts(childId: string, packId: string): Promis
     .order('created_at');
   if (error) throw error;
   return (data ?? []) as AttemptRow[];
+}
+
+/**
+ * Every check answer and every comeback answer at one level, across its weeks —
+ * the comeback ledger's source (session/comebacks.ts, 2026-10-15). Two reads,
+ * because the two id shapes share no LIKE pattern; daily practice is never read.
+ */
+export async function listLedgerAnswers(childId: string, level: BBLevel): Promise<LoggedAnswer[]> {
+  const read = async (pattern: string) => {
+    const { data, error } = await supabase
+      .from('bb_item_attempts')
+      .select('pack_id, item_id, answer, correct, attempt_no, hint_rungs_used, created_at')
+      .eq('child_id', childId)
+      .like('pack_id', `MFM-${level}%`)
+      .like('item_id', pattern)
+      .order('created_at');
+    if (error) throw error;
+    return (data ?? []) as LoggedAnswer[];
+  };
+  const [checks, comebacks] = await Promise.all([read('%-M%'), read('%-CB-%')]);
+  return [...checks, ...comebacks];
 }
 
 export async function listParkedItems(childId: string, packId: string): Promise<ParkedItemRef[]> {

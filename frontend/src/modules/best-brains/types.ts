@@ -440,7 +440,9 @@ export interface WeeklyConceptPack {
  *  passed            — gate cleared (≥ passThresholdPct)
  *  near_miss_cycle1  — Form A < threshold; corrective cycle 1 (micro-reteach → Form B)
  *  cycle2            — cycle-1 Form B < threshold; corrective cycle 2 (new angle)
- *  escalated         — cycle-2 Form B < threshold; live teacher + placement re-check
+ *  escalated         — cycle-2 Form B < threshold; the week CLOSES and the child moves on,
+ *                      its misses coming back later (session/comebacks.ts, 2026-10-15).
+ *                      Was "live teacher + placement re-check" — neither ever existed.
  *  fast_track        — cycle-1 Form B ≥ 95%; passed with fast-track credit
  */
 export type WeekMasteryState =
@@ -465,6 +467,8 @@ export interface MasteryAttempt {
   attemptedAt: string; // ISO timestamp
   /** Dominant DD7 tags among misses — selects the micro-reteach content. */
   dominantErrorTags?: ErrorTag[];
+  /** LS1-R5: the check passed but a practice day below the stability line held it (written by the RPC). */
+  stabilityHold?: boolean;
 }
 
 /** Mirror of bb_week_state.mastery JSONB. */
@@ -472,8 +476,9 @@ export interface WeekMasteryRecord {
   attempts: MasteryAttempt[];
   /** Present once the week resolves. */
   finalScorePct?: number;
-  /** Set when state = escalated. */
+  /** Set when state = escalated: the week closed then (the hub opens the next one the day after). */
   escalatedAt?: string;
+  /** Written by the RPC since 2026-07-19; nothing has ever read it (no re-check flow exists). */
   placementRecheckRequested?: boolean;
 }
 
@@ -673,6 +678,8 @@ export type MasteryCellState =
   | 'mastered'
   | 'mastered_after_strengthening'
   | 'strengthening_now'
+  /** Closed after the second re-check; its missed questions are coming back (2026-10-15). */
+  | 'moved_on'
   | 'upcoming';
 
 export interface MasteryMapCell {

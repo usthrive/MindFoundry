@@ -31,6 +31,7 @@ import ThisWeekHub from './screens/ThisWeekHub';
 import LessonRoom from './screens/LessonRoom';
 import GuidedPractice from './screens/GuidedPractice';
 import WarmUp from './screens/WarmUp';
+import Comebacks from './screens/Comebacks';
 import PracticePage from './screens/PracticePage';
 import DayDone from './screens/DayDone';
 import PuzzleGrove from './screens/PuzzleGrove';
@@ -76,6 +77,8 @@ export default function FoundryRoutes() {
         <Route path="lesson" element={<LessonRoom />} />
         <Route path="guided" element={<GuidedPractice />} />
         {/* Flow 3 — daily practice */}
+        {/* Missed check questions come back first, then the warm-up (2026-10-15). */}
+        <Route path="day/:day/comeback" element={<Comebacks />} />
         <Route path="day/:day/warmup" element={<WarmUp />} />
         <Route path="day/:day/practice" element={<PracticePage />} />
         <Route path="day/:day/done" element={<DayDone />} />

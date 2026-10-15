@@ -4,22 +4,30 @@
  * law (no early unlock ever — a finished day leaves tomorrow "resting").
  * Day 1 sits behind the lesson gate (P8). AnchorPanel handle always present
  * (empty until the lesson fills it, P7).
+ *
+ * A week that has not moved forward after Day 5 shows WHERE IT IS AT (owner,
+ * 2026-10-15): what happened, what moving on needs, what is next, and a part for
+ * a grown-up (components/WeekStatusCard). A week whose second re-check missed
+ * closes and opens the next one like a passed week; its misses come back later.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { COPY, MODULE_COPY, weekPassedLine } from '../copy';
 import { deriveTiles, isLessonComplete } from '../session/weekLogic';
 import { CORRECTIVE_STATES, PASSED_STATES, WEEKS_PER_LEVEL } from '../constants';
 import { getCatalogWeek } from '../content/catalog';
-import { advanceToNextWeek, listParkedItems } from '../services/bbProgressService';
+import { advanceToNextWeek, listCheckAttempts, listParkedItems } from '../services/bbProgressService';
 import { useFoundrySession } from '../session/FoundrySession';
 import { getPackDay } from '../generator/packGenerator';
 import { dayDoneCount, dayFlow } from '../session/dayFlow';
 import WrenBubble from '../components/WrenBubble';
 import WrenMark from '../components/WrenMark';
 import AnchorPanel from '../components/AnchorPanel';
+import WeekStatusCard from '../components/WeekStatusCard';
+import { latestSittingMisses, weekStatus } from '../session/weekStatus';
+import type { AttemptRow } from '../session/checkReview';
 import type { DayTileState } from '../types';
 
 function isToday(iso: string | undefined): boolean {
@@ -52,6 +60,22 @@ export default function ThisWeekHub() {
   const [anchorOpen, setAnchorOpen] = useState(false);
   const [chestCount, setChestCount] = useState(0);
   const [revealing, setRevealing] = useState(false);
+
+  // The status card's misses: the latest sitting's, with the child's own answers.
+  const stalled = !!weekState && ['near_miss_cycle1', 'cycle2', 'escalated'].includes(weekState.state);
+  const [checkRows, setCheckRows] = useState<AttemptRow[]>([]);
+  useEffect(() => {
+    if (!childId || !pack || !stalled) return;
+    let live = true;
+    void listCheckAttempts(childId, pack.packId)
+      .then((rows) => { if (live) setCheckRows(rows); })
+      .catch(() => { if (live) setCheckRows([]); });
+    return () => { live = false; };
+  }, [childId, pack, stalled]);
+  const statusMisses = useMemo(
+    () => (weekState && pack && stalled ? latestSittingMisses(checkRows, weekState, pack) : []),
+    [checkRows, weekState, pack, stalled],
+  );
 
   // Quiet chest badge — count only, no red marks (P6).
   useEffect(() => {
@@ -94,15 +118,14 @@ export default function ThisWeekHub() {
   const lastAttemptAt = lastAttempt?.attemptedAt;
   // The reteach runs "usually next day" (Flow 6): same-day re-entry rests.
   const strengthenReady = corrective && !isToday(lastAttemptAt);
+  // A week that missed its second re-check has closed (2026-10-15): it opens the
+  // next one exactly as a passed week does, when the calendar turns.
+  const weekClosed = weekPassed || escalated;
+  const closedAt = weekPassed ? weekState.completedAt : (weekState.mastery.escalatedAt ?? lastAttemptAt);
   // The next-week reveal waits for the cycle to turn (P1: nothing extra today).
   const revealReady =
-    weekPassed && !isToday(weekState.completedAt) && enrollment.currentWeek < WEEKS_PER_LEVEL;
-  const strengtheningSkill =
-    corrective || escalated
-      ? pack.mistakeBank
-          .find((m) => m.errorTag === lastAttempt?.dominantErrorTags?.[0])
-          ?.subtype?.replace(/-/g, ' ') ?? 'one step'
-      : null;
+    weekClosed && !isToday(closedAt) && enrollment.currentWeek < WEEKS_PER_LEVEL;
+  const status = weekStatus(weekState, pack);
 
   async function openDay(day: number) {
     await ensureWeekStarted();
@@ -116,7 +139,9 @@ export default function ThisWeekHub() {
       navigate('/foundry/puzzle');
       return;
     }
-    navigate(`/foundry/day/${day}/warmup`);
+    // Missed check questions come back first; that screen forwards to the
+    // warm-up when none is due (screens/Comebacks.tsx, 2026-10-15).
+    navigate(`/foundry/day/${day}/comeback`);
   }
 
   async function revealNextWeek() {
@@ -135,7 +160,7 @@ export default function ThisWeekHub() {
   const wrenLine = weekPassed
     ? weekPassedLine(band, pack.identity.conceptName)
     : escalated
-      ? MODULE_COPY.strengthenEscalated[band]
+      ? MODULE_COPY.movedOn[band]
       : corrective
         ? COPY.nearMiss[band]
         : restingUntilTomorrow
@@ -174,15 +199,6 @@ export default function ThisWeekHub() {
         {!weekState.startedAt && <span className="mf-chip self-start">New this week</span>}
         <h1 className="text-[24px] font-bold leading-snug text-text-primary">{pack.identity.conceptName}</h1>
         <p className="text-[15px] leading-relaxed text-text-secondary">{pack.explanation.whyBeforeHow}</p>
-        {/* Corrective dual-thread line — matter-of-fact, never alarm (DD1/P6). */}
-        {(corrective || escalated) && strengtheningSkill && (
-          <p className="text-[13px] text-text-secondary">
-            This week: {pack.identity.conceptName} · Still strengthening:{' '}
-            <span className="font-semibold" style={{ color: 'var(--mf-accent-deep)' }}>
-              {strengtheningSkill}
-            </span>
-          </p>
-        )}
         {primaryCta && (
           <>
             <button type="button" onClick={() => void openDay(actionableDay!)} className="mf-btn-primary mt-1 w-full">
@@ -194,6 +210,10 @@ export default function ThisWeekHub() {
       </section>
 
       <WrenBubble band={band} text={wrenLine} emotion={weekPassed ? 'settled' : 'warm'} />
+
+      {/* Where the week is at, when it has not moved forward after Day 5. It
+          replaced "Still strengthening: <the mistake's adult slug>". */}
+      {status && <WeekStatusCard status={status} band={band} misses={statusMisses} />}
 
       {/* Corrective thread: the "one more round" continues here (Flow 6). */}
       {corrective &&
@@ -219,7 +239,7 @@ export default function ThisWeekHub() {
           not ready, and the one existing "comes back tomorrow" line below is
           gated on `!weekPassed`. A child who passed on the day they finished
           saw a settled Wren bubble and a dead screen. */}
-      {weekPassed && !revealReady && (
+      {weekClosed && !revealReady && (
         <p className="text-center text-sm text-text-muted">
           {enrollment.currentWeek < WEEKS_PER_LEVEL
             ? MODULE_COPY.nextWeekWaiting[band]

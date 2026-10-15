@@ -32,7 +32,8 @@ export interface ParentContextValue {
   refresh: () => Promise<void>;
 }
 
-const ParentContext = createContext<ParentContextValue | undefined>(undefined);
+/** Exported for the screen harness (scripts/screen-harness), as FoundrySessionContext is. */
+export const ParentContext = createContext<ParentContextValue | undefined>(undefined);
 
 export function useParentContext(): ParentContextValue {
   const ctx = useContext(ParentContext);

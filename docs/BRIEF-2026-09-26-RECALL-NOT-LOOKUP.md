@@ -301,3 +301,62 @@ re-checked on a question whose answer he had just been shown.
   (`docs/screens-2026-10-14/`).
 - Gate `bb-fresh-form-test` (117 weeks × 3 seeds; fresh / blueprint / ids / stable /
   cycle 1 unchanged / sources; six broken controls fire).
+
+## 11. Moving on, coming back, and "where the week is at" — built 2026-10-15 (owner)
+
+The owner asked what happens after the "a teacher will help" step. Verified in code:
+nothing. The RPC set `escalated` + `placementRecheckRequested`; nothing ever read the
+flag, no teacher was notified, no code left `escalated`, the hub had no button and
+the next week only opened from a PASSED week — so a second missed re-check stopped
+Best Brains for good. The parent report said "a teacher from our team is stepping
+in". Owner rulings, same day: the bar stays 5 of 6 (80%, already the rule since
+2026-08-10); a child may miss for reading, not maths (his week-4 miss was a 31-word
+question the app itself tagged "didn't understand what was asked"), so the week
+must not stall — move on, and bring the concept back later so it is understood and
+not forgotten; and "include a call-out … what is going on and what is needed to move
+forward so that he can show me".
+
+- **Check questions read themselves aloud at band B** (CheckRunner; the review and
+  the comebacks too). A was already; C still taps.
+- **A closed week moves on.** `escalated` stays the state (routing, guard trigger and
+  report CHECK untouched) but now means closed: the hub opens the next week the day
+  after, as for a pass. Child copy `movedOn` replaces the teacher promise; the parent
+  label is "Moved on · practice continues"; the mastery map says "Moved on · missed
+  questions coming back". Migration `20261015000001` patches the report's sentence in
+  place (asserted count; dry-run in a rolled-back transaction on the live DB:
+  replaced, apostrophe intact, threshold 80 intact).
+- **Comebacks** (`session/comebacks.ts`): every question missed on any check at the
+  level comes back as a warm-up with new numbers — 2 days after the miss, then 7,
+  then 21 — until right on the first try with no step showing, three times in a row
+  on different days. A miss goes back to 2 days. At most 2 a day; under-way ones
+  first, then newest misses. Derived from the attempt log (no new table): one entry
+  per (week, slot); review re-answers never count. Questions come from the slot's own
+  template at derived seeds (A14/A16/A24/B19/B21 needed up to 51 tries → 64);
+  where a week's space for a skill is used up (A2, A12, A22, B22 by round 2–3) an
+  older question comes back — never the missed one, never last round's; A15 (no
+  builder) brings the missed one back. Ids `B4-CB-05-2` dodge every other reader of
+  the log. Served by `screens/Comebacks.tsx` (the review component, `when="comeback"`)
+  before Days 2–5; it forwards straight on when none is due or the log cannot load.
+  Logged under the origin week, day null, no error tag.
+  His backlog at rollout: 13 (B1 ×4, B2 ×4, B3 ×3, B4 ×2); week 3's come first.
+- **"Where the week is at"** (`session/weekStatus.ts`, `components/WeekStatusCard`):
+  on the hub (and the closed week's strengthen screen) whenever a week has not moved
+  on after Day 5 — what happened (counts, never a percent), what moving on needs
+  ("5 of 6 right on brand-new questions"), what is next and when, then "Show this to
+  a grown-up": dates and scores, the held day, the questions missed with HIS answers,
+  one thing to try by mistake type, and the pack's own question to ask plus "How did
+  you get 6?". It replaced "Still strengthening: <the mistake's adult slug>". The
+  parent home gets the same facts in one line, plus the comeback list.
+- Found on the way: the near-miss line said "just the renaming step is wobbly" in
+  EVERY week — SCREEN-SPECS row 3's worked-example skill, shipped verbatim. Now
+  generic; the card names the real skill.
+- Gates `bb-comeback-test` (22 checks: his real log, the schedule, the daily cap,
+  2,808 slots × 3 rounds over 117 weeks × 2 seeds, isolation, sources; ten controls)
+  and `bb-week-status-test` (15 checks; nine controls). Photographed on his real
+  record (`bb-moving-on-visual.ts`, harness `real=b4`, fixture
+  `scripts/screen-harness/his-log.ts`; the closed week's second re-check is
+  hypothetical): `docs/screens-2026-10-15/`.
+
+Not changed: the Day-4 stability rule (held a 6/6; kept — it catches a lucky check
+day; whether it should look past reading-type misses is open). JourneyMap still
+shows a closed week as "strengthening".

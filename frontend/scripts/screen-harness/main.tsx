@@ -5,6 +5,13 @@
  * seed done=<n practice items already completed> fix=0|1 (fix=1 rewrites
  * pageCount to the writer-fix semantics in the browser, for a before/after on
  * one build).
+ *
+ * real=b4 (2026-10-15) — the owner's son's real week 4 (seed 645474193, his day
+ * accuracies and check answers) at wstate=near_miss_cycle1|cycle2|escalated, with
+ * his real check log seeded into the database stub, so the hub's status card, the
+ * closed-week strengthen screen, screen=comeback and screen=parent read real data.
+ * The escalated moment's second re-check (3 of 6) is hypothetical — it has not
+ * happened.
  */
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -25,7 +32,11 @@ import { HelpLadder } from '@/components/tables/HelpLadder';
 import { TimesTableCard } from '@/components/tables/TimesTableCard';
 import { AudioButton } from '@/components/homework/AudioButton';
 import ThisWeekHub from '@/modules/best-brains/screens/ThisWeekHub';
-import type { BBLevel, DayProgress } from '@/modules/best-brains/types';
+import Comebacks from '@/modules/best-brains/screens/Comebacks';
+import ParentHome from '@/modules/best-brains/screens/parent/ParentHome';
+import { ParentContext } from '@/modules/best-brains/screens/parent/FoundryParentLayout';
+import type { BBLevel, DayProgress, MasteryAttempt } from '@/modules/best-brains/types';
+import { B4_A, B4_B1, B4_B2, B4_DAYS, hisLog, weekRows } from './his-log';
 import '@/index.css';
 
 const q = new URLSearchParams(location.search);
@@ -38,6 +49,7 @@ const screen = q.get('screen') ?? 'practice';
 const fix = q.get('fix') === '1';
 const mins = Number(q.get('mins') ?? 0);
 
+const real = q.get('real') === 'b4';
 const pack = generatePack(level, week, seed);
 if (fix && pack.presentation?.oneOperationPerPage) {
   for (const d of pack.days) d.pageCount = d.items.filter((i) => !i.isRetrieval).length;
@@ -50,15 +62,24 @@ const warm = dayFlow(pack.days[day - 1]).warmup;
 dayProgress[String(day)] = { state: 'partial', completedItemIds: done < 0 ? warm.slice(0, 1).map((i) => i.id) : practice.slice(0, done).map((i) => i.id) };
 if (screen === 'puzzle') dayProgress['5'] = { state: 'partial', completedItemIds: [...warm.map((i) => i.id), ...practice.slice(0, Math.max(0, done)).map((i) => i.id)] };
 
+// --- real=b4: his week 4 and his check log (shared with the photo driver) ---
+const wstate = (q.get('wstate') as any) ?? 'in_week';
+if (real || screen === 'comeback' || screen === 'parent') {
+  (window as any).__sbFixture = { bb_item_attempts: hisLog(real && wstate === 'escalated'), bb_week_state: weekRows() };
+}
+const attempts: MasteryAttempt[] = real
+  ? wstate === 'near_miss_cycle1' ? [B4_A] : wstate === 'cycle2' ? [B4_A, B4_B1] : wstate === 'escalated' ? [B4_A, B4_B1, B4_B2] : []
+  : (wstate === 'near_miss_cycle1' || wstate === 'cycle2')
+    ? [{ form: 'A', cycle: 0, scorePct: 67, attemptedAt: '2026-09-26T16:56:00Z', dominantErrorTags: [(q.get('tag') as any) ?? 'concept-misconception'] }]
+    : [];
+
 const value: FoundrySessionValue = {
   childId: 'harness', childName: 'Harness', childAge: level === 'A' ? 5 : 9, loading: false,
   enrollment: { childId: 'harness', level, currentWeek: week as any, settings: { sprintOptOut: false, sessionLength: 'standard' } },
   weekState: {
-    childId: 'harness', level, week: week as any, packSeed: seed,
-    state: (q.get('wstate') as any) ?? 'in_week', dayProgress,
-    mastery: { attempts: (q.get('wstate') === 'near_miss_cycle1' || q.get('wstate') === 'cycle2')
-      ? [{ form: 'A', cycle: 0, scorePct: 67, attemptedAt: '2026-09-26T16:56:00Z', dominantErrorTags: [(q.get('tag') as any) ?? 'concept-misconception'] }]
-      : [] },
+    childId: 'harness', level, week: week as any, packSeed: seed, contentVersion: real ? '1.2.0' : undefined,
+    state: wstate, dayProgress: real ? B4_DAYS : dayProgress,
+    mastery: { attempts, ...(real && wstate === 'escalated' ? { escalatedAt: B4_B2.attemptedAt } : {}) },
   },
   pack, packUnavailable: false, band: bandForLevel(level), capMinutes: 12, sessionMinutes: () => mins,
   refreshEnrollment: async () => {}, refreshWeekState: async () => {}, ensureWeekStarted: async () => {},
@@ -151,7 +172,37 @@ function ReviewHarness() {
   );
 }
 
-if (screen === 'review') {
+/** screen=parent — the parent home on his real log (the week line and the comeback list). */
+function ParentHarness() {
+  const enr = { childId: 'harness', level: 'B' as BBLevel, currentWeek: 4 as any, settings: { sprintOptOut: false, sessionLength: 'standard' as const } };
+  return (
+    <ParentContext.Provider
+      value={{
+        loading: false,
+        childList: [{ id: 'harness', name: 'Harness' } as any],
+        enrollments: new Map([['harness', enr as any]]),
+        reportsByChild: new Map(),
+        childName: () => 'Harness',
+        refresh: async () => {},
+      }}
+    >
+      <MemoryRouter>
+        <div className="mf-foundry min-h-screen bg-background">
+          <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
+            <ParentHome />
+          </main>
+        </div>
+      </MemoryRouter>
+    </ParentContext.Provider>
+  );
+}
+
+if (screen === 'parent') {
+  // The parent home reads week 4's row for the week line: give it his real state.
+  const row = (window as any).__sbFixture.bb_week_state.find((r: any) => r.week === 4);
+  Object.assign(row, { state: 'cycle2', day_progress: B4_DAYS, mastery: { attempts: [B4_A, B4_B1] } });
+  createRoot(document.getElementById('root')!).render(<ParentHarness />);
+} else if (screen === 'review') {
   createRoot(document.getElementById('root')!).render(<ReviewHarness />);
 } else if (screen === 'ladder') {
   createRoot(document.getElementById('root')!).render(<LadderHarness />);
@@ -159,12 +210,13 @@ if (screen === 'review') {
   createRoot(document.getElementById('root')!).render(<KumonGridHarness />);
 } else createRoot(document.getElementById('root')!).render(
   <FoundrySessionContext.Provider value={value}>
-    <MemoryRouter initialEntries={[screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'strengthen' ? { pathname: '/foundry/strengthen', state: { reviewed: true } } : screen === 'fresh' ? '/foundry/fresh' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
+    <MemoryRouter initialEntries={[screen === 'comeback' ? `/foundry/day/${day}/comeback` : screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'strengthen' ? { pathname: '/foundry/strengthen', state: { reviewed: true } } : screen === 'fresh' ? '/foundry/fresh' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
       <div className="mf-foundry min-h-screen bg-background">
         <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
           <Routes>
             <Route path="/foundry/day/:day/practice" element={<PracticePage />} />
             <Route path="/foundry/day/:day/warmup" element={<WarmUp />} />
+            <Route path="/foundry/day/:day/comeback" element={<Comebacks />} />
             <Route path="/foundry/puzzle" element={<PuzzleGrove />} />
             <Route path="/foundry/day/:day/done" element={<DayDone />} />
             <Route path="/foundry/hub" element={<ThisWeekHub />} />

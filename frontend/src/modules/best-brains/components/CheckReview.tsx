@@ -11,6 +11,12 @@
  *     still stuck, the answer with its reasoning (the DD13 miss protocol).
  * The score never changes; this is teaching after the measuring. Every
  * re-answer is recorded with the number of steps he needed before it.
+ *
+ * `when="comeback"` (2026-10-15) serves a missed check question again days later,
+ * with new numbers (../session/comebacks.ts): no "last time you said" line — it is
+ * a new question — and the FIRST try has no step showing, because a first try
+ * with no help is the evidence the comeback schedule runs on. A miss then opens
+ * the steps one by one, exactly as the review does.
  */
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -33,14 +39,16 @@ export interface CheckReviewMiss {
 export interface CheckReviewProps {
   misses: CheckReviewMiss[];
   band: InteractionBand;
-  /** Where this review sits: right after the check, or opening the strengthening round. */
-  when: 'after-check' | 'before-strengthening';
+  /** Where this sits: right after the check, opening the strengthening round, or a later comeback. */
+  when: ReviewWhen;
   /** Record one re-answer: correct or not, and how many guiding steps were showing. */
   onReAnswer: (item: PackItem, answer: string, correct: boolean, stepsShown: number) => void;
   onDone: () => void;
 }
 
-const INTRO: Record<'after-check' | 'before-strengthening', Record<InteractionBand, (n: number) => string>> = {
+export type ReviewWhen = 'after-check' | 'before-strengthening' | 'comeback';
+
+const INTRO: Record<ReviewWhen, Record<InteractionBand, (n: number) => string>> = {
   'after-check': {
     A: () => "Let's look at these together!",
     B: (n) => `All done! Let's look at ${n === 1 ? 'one' : n === 2 ? 'two' : 'a few'} together before we go.`,
@@ -50,6 +58,11 @@ const INTRO: Record<'after-check' | 'before-strengthening', Record<InteractionBa
     A: () => "First, let's look at the last page!",
     B: (n) => `Before we practise, let's look at ${n === 1 ? 'one' : n === 2 ? 'two' : 'a few'} from the last page.`,
     C: (n) => `First, the ${n === 1 ? 'question' : `${n} questions`} from the last page that didn't land yet.`,
+  },
+  comeback: {
+    A: () => 'This one is back — with new numbers!',
+    B: (n) => `${n === 1 ? 'A question' : 'Two questions'} from an earlier week ${n === 1 ? 'is' : 'are'} back, with new numbers. Show me you've got it!`,
+    C: (n) => `${n === 1 ? 'One' : 'Two'} from an earlier week, new numbers. Let's see if it stuck.`,
   },
 };
 
@@ -64,7 +77,9 @@ type Phase = { kind: 'asking' } | { kind: 'right'; text: string } | { kind: 'sho
 
 export default function CheckReview({ misses, band, when, onReAnswer, onDone }: CheckReviewProps) {
   const [idx, setIdx] = useState(0);
-  const [steps, setSteps] = useState(1);
+  // A comeback's first try is unaided; a review opens with its first step showing.
+  const firstSteps = when === 'comeback' ? 0 : 1;
+  const [steps, setSteps] = useState(firstSteps);
   const [tries, setTries] = useState(0);
   const [phase, setPhase] = useState<Phase>({ kind: 'asking' });
 
@@ -97,7 +112,7 @@ export default function CheckReview({ misses, band, when, onReAnswer, onDone }: 
   function next() {
     if (last) { onDone(); return; }
     setIdx(idx + 1);
-    setSteps(1);
+    setSteps(firstSteps);
     setTries(0);
     setPhase({ kind: 'asking' });
   }
@@ -105,10 +120,10 @@ export default function CheckReview({ misses, band, when, onReAnswer, onDone }: 
   return (
     <div className="flex min-h-[70vh] flex-col gap-5" data-check-review>
       <header className="flex items-center justify-between">
-        <p className="mf-label">Looking back · {idx + 1} of {misses.length}</p>
+        <p className="mf-label">{when === 'comeback' ? 'Coming back' : 'Looking back'} · {idx + 1} of {misses.length}</p>
       </header>
 
-      {idx === 0 && phase.kind === 'asking' && steps === 1 && (
+      {idx === 0 && phase.kind === 'asking' && tries === 0 && (
         <WrenBubble band={band} autoplay={band === 'A'} text={INTRO[when][band](misses.length)} emotion="warm" />
       )}
 
@@ -117,14 +132,18 @@ export default function CheckReview({ misses, band, when, onReAnswer, onDone }: 
           <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
             {promptText(item.prompt)}
           </p>
-          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band === 'A' && idx > 0} />
+          {/* Read aloud by itself at band B too (2026-10-15): a miss should be the
+              maths, not the reading. At band A the opening line plays first. */}
+          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band === 'B' || (band === 'A' && idx > 0)} />
         </div>
         <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>
 
-      <p className="text-base font-medium text-text-secondary" data-review-your-answer>
-        {yourAnswerLine(item, miss.answer, band)}
-      </p>
+      {when !== 'comeback' && (
+        <p className="text-base font-medium text-text-secondary" data-review-your-answer>
+          {yourAnswerLine(item, miss.answer, band)}
+        </p>
+      )}
 
       {phase.kind === 'asking' && (
         <>
@@ -152,7 +171,7 @@ export default function CheckReview({ misses, band, when, onReAnswer, onDone }: 
             onClick={next}
             className="min-h-[56px] rounded-2xl bg-primary px-6 text-lg font-semibold text-white shadow-md hover:bg-primary-hover active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-primary/30 touch-manipulation"
           >
-            {last ? (when === 'after-check' ? 'On we go' : 'Ready to practise') : 'Next one'}
+            {last ? (when === 'after-check' ? 'On we go' : when === 'comeback' ? "On to today's practice" : 'Ready to practise') : 'Next one'}
           </button>
         </div>
       )}

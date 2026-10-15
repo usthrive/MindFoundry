@@ -59,7 +59,7 @@ export const MASTERY_BAND_MAX_PCT = 90;
 /** Form B ≥95% on the first corrective pass skips cycle two (DD1 fast-track). */
 export const FAST_TRACK_THRESHOLD = 0.95;
 export const FAST_TRACK_PCT = 95;
-/** Two failed corrective cycles → escalate to live teacher + placement re-check (DD1). */
+/** Two failed corrective cycles → the week closes and the child moves on; misses come back (2026-10-15). */
 export const MAX_CORRECTIVE_CYCLES = 2;
 
 /**
@@ -73,7 +73,8 @@ export const WEEK_STATE_TRANSITIONS: Record<WeekMasteryState, readonly WeekMaste
   mastery_check: ['passed', 'near_miss_cycle1'],
   // Cycle 1 Form B: >=95 fast-track, >=85 pass, <85 cycle 2.
   near_miss_cycle1: ['fast_track', 'passed', 'cycle2'],
-  // Cycle 2 Form B: >=85 pass, <85 escalate (live teacher + placement re-check).
+  // Cycle 2 Form B: >=80 pass, <80 escalated — the week closes and the child moves on
+  // (the hub opens the next week; session/comebacks.ts brings the misses back).
   cycle2: ['passed', 'escalated'],
   // Escalation resolves via intervention/re-check, then the week may still pass.
   escalated: ['passed'],
