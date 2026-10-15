@@ -177,7 +177,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SRC = path.join(ROOT, 'src/modules/best-brains')
 const read = (rel: string) => fs.readFileSync(path.join(SRC, rel), 'utf8')
 const MIG = path.resolve(ROOT, '../supabase/migrations/20261015000001_bb_closed_week_moves_on.sql')
-interface Srcs { hub: string; strengthen: string; copy: string; parentCopy: string; parentHome: string; migration: string }
+interface Srcs { hub: string; strengthen: string; copy: string; parentCopy: string; parentHome: string; migration: string; all: Array<{ rel: string; src: string }> }
+/** Every Best Brains screen, component and copy file (content packs aside), comments stripped. */
+function moduleCode(dir: string, rel = ''): Array<{ rel: string; src: string }> {
+  const out: Array<{ rel: string; src: string }> = []
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const here = path.join(dir, e.name)
+    const label = rel ? `${rel}/${e.name}` : e.name
+    if (e.isDirectory()) { if (!['generator', 'content'].includes(e.name)) out.push(...moduleCode(here, label)) }
+    else if (/\.tsx?$/.test(e.name)) out.push({ rel: label, src: fs.readFileSync(here, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\/.*$/gm, '') })
+  }
+  return out
+}
 const real: Srcs = {
   hub: read('screens/ThisWeekHub.tsx'),
   strengthen: read('screens/StrengthenPlan.tsx'),
@@ -185,6 +196,7 @@ const real: Srcs = {
   parentCopy: read('parentCopy.ts'),
   parentHome: read('screens/parent/ParentHome.tsx'),
   migration: fs.readFileSync(MIG, 'utf8'),
+  all: moduleCode(SRC),
 }
 function sourceFindings(s: Srcs): string[] {
   const out: string[] = []
@@ -197,6 +209,9 @@ function sourceFindings(s: Srcs): string[] {
   if (/teacher from our team|teacher friend/i.test(copyCode)) out.push('child copy still promises a teacher')
   if (/renaming step is wobbly|fighting you: renaming/.test(copyCode)) out.push('the spec\'s "renaming" example is back in the near-miss line')
   if (/escalated: 'Extra support'/.test(s.parentCopy)) out.push('the parent label still reads "Extra support"')
+  // Any screen, child or parent (the Settings page promised one too, found live 2026-10-15).
+  const PROMISE = /teacher from our team|real teacher|teacher friend|teacher (steps|is stepping) in|re-check(ing)? the starting point/i
+  for (const f of s.all) if (PROMISE.test(f.src)) out.push(`${f.rel} still promises a teacher or a starting-point re-check`)
   if (!/<ComebackSummary /.test(s.parentHome) || !/stalledLine\(stalled\)/.test(s.parentHome)) out.push('the parent home lacks the week line or the comeback list')
   if (!/old_text constant text := 'After two strengthening rounds, a teacher from our team is stepping in and we are re-checking the starting point\. That is the system working as designed\.';/.test(s.migration)) out.push('the migration does not target the exact old sentence')
   if (!/RAISE EXCEPTION 'expected exactly 1 occurrence/.test(s.migration)) out.push('the migration does not assert the occurrence count')
@@ -212,6 +227,8 @@ say(sReal.length === 0, `real sources${sReal.length ? ': ' + sReal.join('; ') : 
   say(stuck.hub !== real.hub && sourceFindings(stuck).length > 0, 'control fires: a closed week that never opens the next')
   const promise = { ...real, copy: real.copy.replace("B: 'This week is done for now", "B: 'A real teacher from our team wants to look at this with you. This week is done for now") }
   say(promise.copy !== real.copy && sourceFindings(promise).length > 0, 'control fires: the teacher promise back in the copy')
+  const settings = { ...real, all: real.all.map((f) => (f.rel.endsWith('ParentControls.tsx') ? { ...f, src: f.src.replace('the week closes and', 'a teacher from our team steps in and') } : f)) }
+  say(settings.all.some((f, i) => f.src !== real.all[i].src) && sourceFindings(settings).length > 0, 'control fires: the teacher promise back on the parent Settings page')
   const renaming = { ...real, copy: real.copy.replace("So close — one step is still wobbly.", 'So close — just the renaming step is wobbly.') }
   say(renaming.copy !== real.copy && sourceFindings(renaming).length > 0, 'control fires: the "renaming" example back')
 }

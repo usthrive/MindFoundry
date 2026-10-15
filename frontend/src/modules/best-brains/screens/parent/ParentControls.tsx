@@ -166,13 +166,17 @@ export default function ParentControls() {
         </p>
       </section>
 
-      {/* Escalation contact — visible queue state lands with the live-teacher flow. */}
+      {/* What happens after two practice rounds (owner ruling 2026-10-15). This card
+          promised "a teacher from our team steps in and we re-check the starting
+          point" — neither existed, and the week stopped for good. */}
       <section className="mf-card-quiet p-5">
         <span className="mf-label mf-label-apricot">If a week ever gets steep</span>
         <p className="mt-1.5 text-[13px] leading-relaxed text-text-secondary">
-          After two strengthening rounds, a teacher from our team steps in and we re-check the
-          starting point — you'd see the scheduling right here, and the weekly report walks you
-          through it. That's the system working, not a crisis.
+          If the re-check after a second practice round still misses, the week closes and {name}{' '}
+          moves on to the next idea the following day. Every question missed on a check comes back
+          as a warm-up with new numbers — in two days, a week, then three weeks — until it is right
+          three times running without help. {name}'s home screen shows where the week is at, with a
+          part for you. That's the system working, not a crisis.
         </p>
       </section>
     </div>
