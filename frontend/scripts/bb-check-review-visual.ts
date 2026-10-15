@@ -35,6 +35,7 @@ const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`
 let bad = 0
 const say = (ok: boolean, msg: string) => { if (!ok) bad++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${msg}`) }
 
+// innerText carries CSS text-transform: `.mf-label` is uppercase, so label checks ignore case.
 const text = (p: Page) => p.evaluate(`document.body.innerText.replace(/[ \\t\\r\\n]+/g, ' ')`) as Promise<string>
 const clickText = (p: Page, t: string) => p.evaluate(`(() => {
   const b = [...document.querySelectorAll('button')].find(x => (x.textContent || '').replace(/\\s+/g, ' ').trim() === ${JSON.stringify(t)} || (x.getAttribute('aria-label') || '') === ${JSON.stringify(t)});
@@ -63,7 +64,7 @@ await p.goto(`${base}/?screen=review&level=B&week=3&seed=1262874861&misses=B3-MA
 await p.waitForTimeout(700)
 let t = await text(p)
 fs.writeFileSync(`${OUT}/review-1-ma05-open.png`, await p.screenshot({ fullPage: true }))
-say(/Looking back · 1 of 2/.test(t), 'counts the review: "Looking back · 1 of 2"')
+say(/Looking back · 1 of 2/i.test(t), 'counts the review: "Looking back · 1 of 2"')
 say(/Before we practise, let's look at two from the last page/.test(t), 'opens with the band-B line for the strengthening round')
 say(/you chose 47/.test(t), 'shows his own answer: "On the last page you chose 47."')
 say(/Can a large ones digit hide inside a small count\?/.test(t), 'step 1 is the item\'s own first hint, aimed at his mistake')
@@ -78,7 +79,7 @@ await p.waitForTimeout(500)
 
 t = await text(p)
 fs.writeFileSync(`${OUT}/review-3-ma06-open.png`, await p.screenshot({ fullPage: true }))
-say(/Looking back · 2 of 2/.test(t) && /you wrote 5/.test(t), 'second miss: "On the last page you wrote 5."')
+say(/Looking back · 2 of 2/i.test(t) && /you wrote 5/.test(t), 'second miss: "On the last page you wrote 5."')
 say(!/(^|[^0-9])73([^0-9]|$)/.test(t), 'the answer 73 is nowhere on screen')
 say(await typeNumber(p, '70'), 'he tries 70')
 t = await text(p)

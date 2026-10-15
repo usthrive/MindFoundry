@@ -5,17 +5,23 @@
  * dominant DD7 tag; the plan is stated (short revisit + brand-new problems);
  * the non-stuck guarantee shows the other strands alive. Absent by law:
  * %, "Review", red, sad iconography, darker styling of any kind.
- * Cycle-2 promises a different angle; the escalation variant brings the
- * friendly live-teacher card ("that's ours to fix") — flagged to the parent
- * report by the scoring RPC, never to the child.
+ * Cycle-2 promises a different angle. After the second re-check misses
+ * (escalated), the week closes and the child moves on (owner, 2026-10-15): this
+ * screen used to promise "a real teacher from our team" — no teacher, re-check or
+ * way forward existed, so the week stopped for good. Now it says the week is
+ * done for now and shows where it is at (WeekStatusCard), so the child can show a
+ * grown-up; the missed questions come back later as comebacks.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { COPY, MODULE_COPY } from '../copy';
 import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import CheckReview, { type CheckReviewMiss } from '../components/CheckReview';
+import WeekStatusCard from '../components/WeekStatusCard';
+import { latestSittingMisses, weekStatus } from '../session/weekStatus';
+import type { AttemptRow } from '../session/checkReview';
 import { checkMissesFrom, REVIEW_PREFIX, skillInChildWords } from '../session/checkReview';
 import { listCheckAttempts, recordItemAttempt } from '../services/bbProgressService';
 import { formBForCycle } from '../session/freshForm';
@@ -56,6 +62,22 @@ export default function StrengthenPlan() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameFromReview, pack, childId, lastForm, weekState?.packSeed, weekState?.contentVersion]);
 
+  // A closed week's card lists the last try's misses with his own answers.
+  const closed = weekState?.state === 'escalated';
+  const [cardRows, setCardRows] = useState<AttemptRow[]>([]);
+  useEffect(() => {
+    if (!closed || !pack || !childId) return;
+    let live = true;
+    listCheckAttempts(childId, pack.packId)
+      .then((rows) => { if (live) setCardRows(rows); })
+      .catch(() => { if (live) setCardRows([]); });
+    return () => { live = false; };
+  }, [closed, pack, childId]);
+  const cardMisses = useMemo(
+    () => (closed && weekState && pack ? latestSittingMisses(cardRows, weekState, pack) : []),
+    [closed, cardRows, weekState, pack],
+  );
+
   if (loading) return <p className="py-12 text-center text-text-secondary">Setting up…</p>;
   if (!enrollment || !weekState || !pack) return <Navigate to="/foundry" replace />;
   // Route guard: this screen exists only inside the corrective loop.
@@ -88,7 +110,22 @@ export default function StrengthenPlan() {
     );
   }
 
-  const escalated = weekState.state === 'escalated';
+  if (weekState.state === 'escalated') {
+    const status = weekStatus(weekState, pack);
+    return (
+      <div className="flex min-h-[70vh] flex-col justify-center gap-6">
+        <WrenBubble band={band} autoplay text={MODULE_COPY.movedOn[band]} emotion="warm" />
+        {status && <WeekStatusCard status={status} band={band} misses={cardMisses} />}
+        <Link
+          to="/foundry/hub"
+          className="min-h-[56px] rounded-2xl bg-primary px-6 text-center leading-[56px] text-lg font-semibold text-white shadow-md hover:bg-primary-hover touch-manipulation"
+        >
+          Back to my week
+        </Link>
+      </div>
+    );
+  }
+
   const cycle2 = weekState.state === 'cycle2';
   const dominantTag: ErrorTag | undefined = lastAttempt?.dominantErrorTags?.[0];
   // The skill in the child's words: for a misconception, the week's own idea by
@@ -112,18 +149,6 @@ export default function StrengthenPlan() {
       </section>
 
       {cycle2 && <WrenBubble band={band} text={MODULE_COPY.strengthenCycle2[band]} emotion="curious" />}
-
-      {escalated && (
-        <section aria-label="A teacher joins in" className="rounded-3xl bg-primary-light p-6">
-          <p aria-hidden="true" className="text-3xl">🤝</p>
-          <p className="mt-2 text-lg text-text-primary">{MODULE_COPY.strengthenEscalated[band]}</p>
-          <p className="mt-2 text-sm text-text-secondary">
-            {band === 'C'
-              ? "We'll also double-check the starting point — calibration, not a verdict."
-              : "Ms. Wren is double-checking her own homework, too."}
-          </p>
-        </section>
-      )}
 
       {/* The other strands stay visibly alive — never a stuck screen. */}
       <div className="flex flex-col gap-3">

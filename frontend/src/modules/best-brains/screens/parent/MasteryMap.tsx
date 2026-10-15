@@ -18,6 +18,7 @@ const CELL_LABEL: Record<MasteryCellState, string> = {
   mastered: 'Mastered',
   mastered_after_strengthening: 'Mastered · took the strong road',
   strengthening_now: 'Strengthening now',
+  moved_on: 'Moved on · missed questions coming back',
   upcoming: 'Upcoming',
 };
 
@@ -26,7 +27,8 @@ function cellState(ws: WeekState | undefined): MasteryCellState {
     const strengthened = (ws.mastery.attempts ?? []).some((a) => a.form === 'B');
     return strengthened ? 'mastered_after_strengthening' : 'mastered';
   }
-  if (ws && (CORRECTIVE_STATES.includes(ws.state) || ws.state === 'escalated')) return 'strengthening_now';
+  if (ws && CORRECTIVE_STATES.includes(ws.state)) return 'strengthening_now';
+  if (ws && ws.state === 'escalated') return 'moved_on';
   return 'upcoming';
 }
 
@@ -82,7 +84,7 @@ export default function MasteryMap() {
               style={
                 mastered
                   ? { borderLeft: '5px solid var(--mf-primary)' }
-                  : state === 'strengthening_now'
+                  : state === 'strengthening_now' || state === 'moved_on'
                     ? { borderLeft: '5px solid var(--mf-accent)' }
                     : { opacity: state === 'upcoming' ? 0.75 : 1 }
               }

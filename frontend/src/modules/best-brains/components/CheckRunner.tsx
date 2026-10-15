@@ -161,7 +161,10 @@ export default function CheckRunner({
           {/* Authored lines survive `promptText` since 2026-09-22; `whitespace-pre-line`
               is what puts them on the screen. */}
           <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
-          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band === 'A'} />
+          {/* Every check question reads itself aloud at bands A and B (owner,
+              2026-10-15): the check measures the maths, not the reading. The
+              child can still replay it or read along. Band C taps to hear. */}
+          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band !== 'C'} />
         </div>
         <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>

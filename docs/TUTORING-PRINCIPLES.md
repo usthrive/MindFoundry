@@ -74,6 +74,18 @@ fluency time**. Anything less is "learning", and the app must say so.
     learning, looked-up) and one small thing to try. The parent is a
     like-instructor: offer the move, never assign it, never ask them to teach a
     second method.
+13. **A pass bar is not a wall.** After the last re-check the child moves on, and
+    every question missed on any check comes back later with new numbers (2, 7,
+    21 days) until it is right unaided three times in a row. A promise of help
+    ("a teacher will look at this") names who, when and what happens next — or
+    it is not made. Trace every state to a way out before shipping it.
+14. **A stalled screen says where it is at, for the child and the grown-up he
+    shows it to.** What happened (counts, not percents), what moving on needs,
+    what is next and when; then a grown-up part: the scores, the questions missed
+    with his own answers, one thing to try, one question to ask.
+15. **Measure the maths, not the reading.** Read check questions aloud to children
+    still learning to read. A "didn't understand what was asked" miss on a long
+    word problem is a reading flag before it is a maths one.
 
 ## 4. Screen laws for children
 
@@ -180,6 +192,11 @@ fluency time**. Anything less is "learning", and the app must say so.
 - [ ] Gates: seam contract, screen photographs, self-test controls, ratchets.
 - [ ] Before shipping a pass-rule change, re-score a real child's history under
       the new rule and show which "passes" would not have passed.
+- [ ] Every mastery state has a way out; no copy promises help that does not
+      exist (grep it for "teacher", "will help", "we'll").
+- [ ] Every missed check question comes back later, spaced, with new numbers.
+- [ ] Copy lifted from a spec's worked example (a named skill, a number) is read
+      against every week it ships to.
 
 ## Provenance (MindFoundry, all under `/home/usthr/Penta_University/Math_Tutor/MindFoundry`)
 
@@ -190,3 +207,5 @@ fluency time**. Anything less is "learning", and the app must say so.
 - 2026-09-22 AI explanation review: §12 and `SPEC-2026-09-22-EXPLANATION-REVIEW.md`.
 - 2026-09-26 recorded 100% vs first-try 73%, invisible table, zero timing:
   `docs/BRIEF-2026-09-26-RECALL-NOT-LOOKUP.md`.
+- 2026-10-15 the "teacher" dead end, comebacks, "where the week is at", the
+  spec's "renaming" example shipped to every week: same brief, §11.

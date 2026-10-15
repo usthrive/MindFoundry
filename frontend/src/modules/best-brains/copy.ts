@@ -37,11 +37,17 @@ export const COPY = {
     B: "That's the whole dose. Tomorrow's tile unlocks in the morning!",
     C: "Done — on time, like always. Tomorrow's set unlocks in the morning.",
   } as BandCopy,
-  /** #3 Near-miss (StrengthenPlan) */
+  /**
+   * #3 Near-miss (StrengthenPlan, hub). SCREEN-SPECS row 3 names "renaming" — its
+   * worked example's skill — and the app shipped it verbatim, so EVERY week's child
+   * was told "just the renaming step is wobbly" (the owner's son, on a week about
+   * moving along a track, 2026-10-15). The skill is not in this line; the
+   * strengthening card and the hub's status card name it.
+   */
   nearMiss: {
     A: 'One more round to make it stick — like gluing!',
-    B: 'So close — just the renaming step is wobbly. Tomorrow we glue it down with brand-new problems.',
-    C: 'One step is still fighting you: renaming. Short revisit tomorrow, then fresh problems — everything else keeps moving.',
+    B: 'So close — one step is still wobbly. Next we glue it down with brand-new problems.',
+    C: 'One step is still fighting you. A short revisit, then fresh problems — everything else keeps moving.',
   } as BandCopy,
   /** #4 Sprint intro (three facts) — no sprints at A */
   sprintIntro: {
@@ -208,11 +214,16 @@ export const MODULE_COPY = {
     B: 'This time we\'ll look at it from a different angle — sometimes the second door opens easily.',
     C: 'Round two, different angle. Same skill, new way in — that\'s how debugging works.',
   } as BandCopy,
-  /** StrengthenPlan escalation variant — reinforcements, program-owned. */
-  strengthenEscalated: {
-    A: 'A real teacher friend wants to explore this with you!',
-    B: 'A real teacher from our team wants to look at this with you — that\'s an upgrade, not a problem.',
-    C: 'A teacher from our team is joining in. If the hill was too steep, that\'s ours to fix — not yours.',
+  /**
+   * After the second re-check misses (owner, 2026-10-15). This was "a real teacher
+   * from our team wants to look at this with you" — and no teacher, re-check or
+   * next step existed, so the week stopped for good. Now the week closes, the child
+   * moves on, and the questions missed come back later (session/comebacks.ts).
+   */
+  movedOn: {
+    A: 'This week is done for now — on to a new adventure! The tricky ones come back later.',
+    B: 'This week is done for now — on to the next idea. The tricky questions will come back later, with new numbers.',
+    C: 'Week closed for now — on to the next concept. The questions that did not land come back later, with new numbers.',
   } as BandCopy,
   /** MicroReteach intro (worked example first). */
   reteachIntro: {

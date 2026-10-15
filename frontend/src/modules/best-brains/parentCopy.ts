@@ -18,7 +18,8 @@ import { MASTERY_THRESHOLD_PCT } from './constants';
 export const VERDICT_LABELS: Record<ReportVerdict, string> = {
   passed: 'Passed',
   one_more_round: 'One more round',
-  escalated: 'Extra support',
+  // Was 'Extra support' — for a teacher who never came (2026-10-15).
+  escalated: 'Moved on · practice continues',
 };
 
 /** The acknowledge microcopy (canonical; {child} slot filled at render). */
