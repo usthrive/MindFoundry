@@ -273,3 +273,31 @@ Seen, not fixed (next):
   adding one is a content-engine change across templates.
 - B3-MA-05's picture draws only one of the three piles (36) beside "which is the
   greatest?" — an authored figure that may mislead; to triage in the figure lane.
+
+## 10. Fresh questions for the second re-check — built 2026-10-14 (owner "go")
+
+What the record showed (Level B week 4): all five days genuinely done (Oct 2–12);
+weekly check 6/6 but HELD by the stability rule (Day 4 was 40% first try); first
+re-check today 4/6 → second strengthening round. The review ran after today's
+re-check: one miss fixed after one step; the other missed twice and its answer was
+shown. The second round re-checked the SAME six questions — so he would have been
+re-checked on a question whose answer he had just been shown.
+
+- `session/freshForm.ts`: cycle 2 draws Form B again from the week's builder at
+  seeds derived from the child's pack seed, SLOT BY SLOT: each slot takes the first
+  question that is new this week (prompt and numeric surface differ from Form A and
+  the first re-check) AND uses the same template as the first re-check's slot (same
+  skill, new numbers). Ids re-minted past the first set (B4-MB-07..12). Stable per
+  child. Fallback to the first set only where no builder exists (A15, a fixture).
+- Measured: 348 of 351 week × seed cases get a fresh set (the 3 misses are A15);
+  worst case 17 ms. Whole-set retries failed on small Level-A spaces (A12) — slot by
+  slot fixed it. The gate caught a wrong assumption on first run: A24's slot 6 changes
+  template with the seed, so slots are now template-matched.
+- His next re-check (pack seed 645474193): six new questions; the one whose answer he
+  saw ("square 8, back 1, then turns") becomes "square 9, back 3, then turns".
+- Wired: FreshProblems serves `formBForCycle` for the week's cycle; StrengthenPlan's
+  review can find the second set's questions. Real screen in the harness: round 1
+  opens "Ben stands on square 12…", round 2 "Mia stands on square 5…"
+  (`docs/screens-2026-10-14/`).
+- Gate `bb-fresh-form-test` (117 weeks × 3 seeds; fresh / blueprint / ids / stable /
+  cycle 1 unchanged / sources; six broken controls fire).
