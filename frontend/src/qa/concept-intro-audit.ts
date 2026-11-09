@@ -27,6 +27,7 @@ const RENDERED_ANIMATION_TYPES = new Set([
   'place-value',
   'sequence',
   'array-groups',
+  'stacked-multiplication', // a lesson: worked examples + "your turn" (2026-11-09)
   'fair-sharing',
   'long-division-steps',
   'fraction-bar',

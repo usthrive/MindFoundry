@@ -86,6 +86,17 @@ fluency time**. Anything less is "learning", and the app must say so.
 15. **Measure the maths, not the reading.** Read check questions aloud to children
     still learning to read. A "didn't understand what was asked" miss on a long
     word problem is a reading flag before it is a maths one.
+16. **Teach the method the sheet asks for, when it starts — and make it findable
+    again.** A new format opens with a worked example in the sheet's own layout,
+    then a guided "your turn" on the step children skip (adding the carry). An
+    intro that shows a different method (arrays for stacked multiplication) is
+    worse than none. "Seen" is per content version and per run of sheets, so a
+    child moved back, placed mid-run, or given new content still gets it; a "Show
+    me how" button replays it.
+17. **A new input format inherits old habits; design for them.** Enter-after-each-
+    digit from the times tables, left-to-right typing into right-to-left boxes, an
+    empty highlighted box read as "a digit is missing". Read the tried answers for
+    stray single digits and reversals before reading the misses as maths.
 
 ## 4. Screen laws for children
 
@@ -197,6 +208,10 @@ fluency time**. Anything less is "learning", and the app must say so.
 - [ ] Every missed check question comes back later, spaced, with new numbers.
 - [ ] Copy lifted from a spec's worked example (a named skill, a number) is read
       against every week it ships to.
+- [ ] Every concept intro teaches the method its sheets use, in the sheets' layout,
+      and re-shows when its content changes or a child re-enters the concept.
+- [ ] A move of a child's position goes through the app's own path (it clears what
+      must re-fire), never a bare database update.
 
 ## Provenance (MindFoundry, all under `/home/usthr/Penta_University/Math_Tutor/MindFoundry`)
 
@@ -209,3 +224,6 @@ fluency time**. Anything less is "learning", and the app must say so.
   `docs/BRIEF-2026-09-26-RECALL-NOT-LOOKUP.md`.
 - 2026-10-15 the "teacher" dead end, comebacks, "where the week is at", the
   spec's "renaming" example shipped to every week: same brief, §11.
+- 2026-11-09 stacked multiplication: no lesson (seen forever, arrays), times-table
+  hints on a column problem, the loud third box, Enter jumping problems, reversed
+  digits: same brief, §12.

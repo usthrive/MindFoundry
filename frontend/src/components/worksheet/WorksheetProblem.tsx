@@ -21,6 +21,11 @@ export interface WorksheetProblemProps {
   /** Total answer columns — one per place value the answer can reach.
    *  May exceed the operand digit count (e.g. 3 for a 2-digit × 1-digit product). */
   answerColumnCount?: number
+  /**
+   * The answer column used only SOMETIMES (getOptionalAnswerColumn): drawn dashed
+   * and quiet while empty, never as one more box to fill (2026-11-09).
+   */
+  optionalColumn?: number
   // ── Partial products (multiplication by a 2-digit-or-wider multiplier, Level D) ──
   /** partialProducts[row][col] — row 0 is the ones-digit product, row 1 the tens-digit
    *  product (written one place further left), and so on. Undefined for single-digit
@@ -81,6 +86,7 @@ export default function WorksheetProblem({
   onColumnClick,
   manualCarryMode = false,
   answerColumnCount,
+  optionalColumn,
   partialProducts,
   partialRowShift,
   partialRowSpanTo,
@@ -566,11 +572,15 @@ export default function WorksheetProblem({
             const colIndex = maxDigits - 1 - visualIdx // Visual L→R to column index (ones=0)
             const digit = columnDigits[colIndex]
             const isActiveCol = activeColumn === colIndex && isActive
+            // The "only if needed" place: while empty it stays dashed and quiet,
+            // even with the cursor in it, so it never reads as a missing digit.
+            const quietOptional = colIndex === optionalColumn && digit === null
 
             return (
               <div
                 key={`ans-${visualIdx}`}
                 data-testid="wp-answer-cell"
+                data-optional-col={colIndex === optionalColumn ? 'true' : undefined}
                 onClick={(e) => {
                   e.stopPropagation()
                   onClick()                  // Activate this problem card
@@ -582,7 +592,11 @@ export default function WorksheetProblem({
                   'font-mono font-bold tabular-nums text-center',
                   'border-2 rounded-md cursor-pointer transition-all',
                   'touch-manipulation select-none',
-                  isSubmitted
+                  quietOptional
+                    ? (isActiveCol
+                      ? 'border-dashed border-primary/60 bg-transparent'
+                      : 'border-dashed border-gray-300 bg-transparent')
+                    : isSubmitted
                     ? (isCorrect
                       ? 'border-green-500 bg-green-50 text-green-700'
                       : isActiveCol
@@ -602,6 +616,12 @@ export default function WorksheetProblem({
             )
           })}
         </div>
+        {isActive && !isSubmitted && optionalColumn !== undefined && activeColumn === optionalColumn &&
+          columnDigits[optionalColumn] === null && (
+          <p className="mt-1 text-[11px] font-medium text-gray-500" data-optional-caption>
+            Only if a carry is left. If not, you're done.
+          </p>
+        )}
       </div>
     )
   }

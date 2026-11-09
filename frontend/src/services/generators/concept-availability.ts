@@ -4,6 +4,12 @@ import { LEVEL_ORDER } from './types'
 export interface ConceptIntroduction {
   level: KumonLevel
   worksheet: number
+  /**
+   * Last worksheet of the concept's run. When set, a child who opens ANY sheet in
+   * [worksheet, through] without having seen the current intro gets it there — a
+   * child placed or moved mid-run, or whose intro content changed, is not skipped.
+   */
+  through?: number
 }
 
 export const CONCEPT_INTRODUCTION: Record<string, ConceptIntroduction> = {
@@ -71,8 +77,8 @@ export const CONCEPT_INTRODUCTION: Record<string, ConceptIntroduction> = {
   times_table_4_5: { level: 'C', worksheet: 21 },
   times_table_6_7: { level: 'C', worksheet: 31 },
   times_table_8_9: { level: 'C', worksheet: 41 },
-  multiplication_2digit_by_1digit: { level: 'C', worksheet: 51 },
-  multiplication_3digit_by_1digit: { level: 'C', worksheet: 101 },
+  multiplication_2digit_by_1digit: { level: 'C', worksheet: 51, through: 100 },
+  multiplication_3digit_by_1digit: { level: 'C', worksheet: 101, through: 110 },
   division: { level: 'C', worksheet: 111 },
   division_with_remainder: { level: 'C', worksheet: 121 },
   division_2digit_by_1digit: { level: 'C', worksheet: 161 },
@@ -302,6 +308,22 @@ export function getActiveConceptsForWorksheet(
   return Object.entries(CONCEPT_INTRODUCTION)
     .filter(([, intro]) => intro.level === level && intro.worksheet === bestWorksheet)
     .map(([concept]) => concept)
+}
+
+/**
+ * The concepts whose intro this worksheet should show if unseen: those that begin
+ * here, and those with a `through` run covering it (2026-11-09: the owner's son was
+ * moved back from C51 to C15 by a direct database change, which skipped the app's
+ * own "clear seen intros" step; back at C51 on Nov 4 he got no lesson at all).
+ */
+export function getConceptsToIntroduceAtWorksheet(level: KumonLevel, worksheet: number): string[] {
+  const out = new Set(getNewConceptsAtWorksheet(level, worksheet))
+  for (const [concept, intro] of Object.entries(CONCEPT_INTRODUCTION)) {
+    if (intro.level === level && intro.through !== undefined && intro.worksheet <= worksheet && worksheet <= intro.through) {
+      out.add(concept)
+    }
+  }
+  return [...out]
 }
 
 export function getNewConceptsAtWorksheet(

@@ -21,6 +21,7 @@ export { default as SequenceAnimation } from './visualizations/SequenceAnimation
 
 // Elementary Visualizations (Levels C-F)
 export { default as ArrayGroupsAnimation } from './visualizations/elementary/ArrayGroupsAnimation'
+export { default as StackedMultiplicationSteps } from './visualizations/elementary/StackedMultiplicationSteps'
 export { default as FairSharingAnimation } from './visualizations/elementary/FairSharingAnimation'
 export { default as LongDivisionStepsAnimation } from './visualizations/elementary/LongDivisionStepsAnimation'
 export { default as FractionBarAnimation } from './visualizations/elementary/FractionBarAnimation'

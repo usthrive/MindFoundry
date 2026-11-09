@@ -30,7 +30,8 @@ import WorksheetView, { type WorksheetViewRef } from '@/components/worksheet/Wor
 import { useRef, useState } from 'react';
 import { HelpLadder } from '@/components/tables/HelpLadder';
 import { TimesTableCard } from '@/components/tables/TimesTableCard';
-import { AudioButton } from '@/components/homework/AudioButton';
+import { AudioButton } from '@/components/homework/AudioButton'
+import { ConceptIntroModal } from '@/components/concept-intro';
 import ThisWeekHub from '@/modules/best-brains/screens/ThisWeekHub';
 import Comebacks from '@/modules/best-brains/screens/Comebacks';
 import ParentHome from '@/modules/best-brains/screens/parent/ParentHome';
@@ -149,6 +150,28 @@ function LadderHarness() {
   );
 }
 
+/**
+ * screen=kumon-intro — the Kumon new-concept intro on its own (2026-11-09), e.g. the
+ * stacked-multiplication lesson: ?concept=multiplication_2digit_by_1digit&ws=56.
+ * window.__introDone turns true when the child finishes it.
+ */
+function KumonIntroHarness() {
+  ;(window as any).__introDone = false
+  return (
+    <div className="min-h-screen bg-white">
+      <ConceptIntroModal
+        show
+        concepts={[q.get('concept') ?? 'multiplication_2digit_by_1digit']}
+        level={'C' as any}
+        worksheet={Number(q.get('ws') ?? 56)}
+        onComplete={() => { (window as any).__introDone = true }}
+        childId="harness"
+        childAge={7}
+      />
+    </div>
+  )
+}
+
 /** screen=review — going over the paper, on the pack's real Form A items (?misses=ID:answer,ID:answer). */
 function ReviewHarness() {
   const misses = (q.get('misses') ?? '').split(',').filter(Boolean).map((pair) => {
@@ -201,7 +224,9 @@ function ParentHarness() {
   );
 }
 
-if (screen === 'parent' || screen === 'controls') {
+if (screen === 'kumon-intro') {
+  createRoot(document.getElementById('root')!).render(<KumonIntroHarness />);
+} else if (screen === 'parent' || screen === 'controls') {
   // The parent home reads week 4's row for the week line: give it his real state.
   const row = (window as any).__sbFixture.bb_week_state.find((r: any) => r.week === 4);
   Object.assign(row, { state: 'cycle2', day_progress: B4_DAYS, mastery: { attempts: [B4_A, B4_B1] } });

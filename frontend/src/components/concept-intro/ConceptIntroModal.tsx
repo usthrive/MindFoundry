@@ -26,6 +26,7 @@ import SequenceAnimation from '@/components/animations/visualizations/SequenceAn
 import ArrayGroupsAnimation from '@/components/animations/visualizations/elementary/ArrayGroupsAnimation'
 import FairSharingAnimation from '@/components/animations/visualizations/elementary/FairSharingAnimation'
 import LongDivisionStepsAnimation from '@/components/animations/visualizations/elementary/LongDivisionStepsAnimation'
+import { StackedMultiplicationLesson, STACKED_LESSONS } from '@/components/animations/visualizations/elementary/StackedMultiplicationSteps'
 import FractionBarAnimation from '@/components/animations/visualizations/elementary/FractionBarAnimation'
 import FractionOperationAnimation from '@/components/animations/visualizations/elementary/FractionOperationAnimation'
 // Level G-I algebra animation imports
@@ -396,6 +397,17 @@ export default function ConceptIntroModal({
             problemData={problemData}
             showSolution={isReady}
             className="mx-auto"
+          />
+        )
+
+      case 'stacked-multiplication':
+        // The animation step draws this lesson in its own branch (it needs its full
+        // height, no timer); this case keeps any other caller from rendering a blank.
+        return (
+          <StackedMultiplicationLesson
+            key={`lesson-${key}`}
+            lesson={STACKED_LESSONS[(config.demoOperands[0] ?? 0) >= 100 ? '3digit' : '2digit']}
+            onDone={handleComplete}
           />
         )
 
@@ -899,12 +911,25 @@ export default function ConceptIntroModal({
                     exit={{ opacity: 0, y: -20 }}
                   >
                     <h3 className="text-lg font-semibold text-center mb-1">
-                      Step 2: Watch the Animation
+                      {config?.animationId === 'stacked-multiplication' ? 'Step 2: Watch, then try one' : 'Step 2: Watch the Animation'}
                     </h3>
                     <p className="text-sm text-gray-500 text-center mb-4">
                       {config?.title || currentConcept?.replace(/_/g, ' ')}
                     </p>
 
+                    {config?.animationId === 'stacked-multiplication' ? (
+                      /* The column method as a lesson: two worked examples the child steps
+                         through, then a guided "your turn". Child-paced, so no timer, no
+                         "Get Ready" overlay and no player controls; it needs its full height. */
+                      <div className="bg-gray-50 rounded-xl p-3 mb-4" data-concept-lesson>
+                        <StackedMultiplicationLesson
+                          key={`lesson-${currentConcept}-${animationKey}`}
+                          lesson={STACKED_LESSONS[(config.demoOperands[0] ?? 0) >= 100 ? '3digit' : '2digit']}
+                          onDone={handleComplete}
+                        />
+                      </div>
+                    ) : (
+                    <>
                     {/* Animation Container - constrained height */}
                     <div className="bg-gray-50 rounded-xl p-3 mb-4 relative" style={{ minHeight: '200px', maxHeight: '45vh', overflow: 'auto' }}>
                       {/* Get Ready Overlay */}
@@ -965,6 +990,8 @@ export default function ConceptIntroModal({
                         {currentIndex < totalConcepts - 1 ? 'Next Concept' : "Let's Practice!"}
                       </motion.button>
                     </div>
+                    </>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
