@@ -7,6 +7,7 @@
  */
 
 export type ConceptAnimationType =
+  | 'stacked-multiplication'
   | 'counting-objects'
   | 'number-line-addition'
   | 'number-line-subtraction'
@@ -71,6 +72,11 @@ export interface ConceptIntroConfig {
   demoOperands: number[]
   minViewTime: number // seconds before Continue is enabled
   showMode: 'mandatory' | 'optional' // mandatory = first encounter, optional = can skip
+  /**
+   * Content version (default 1). Bumping it shows the intro once more to every child
+   * who saw an older one — "seen" is recorded per version (conceptIntroService.seenKey).
+   */
+  version?: number
 }
 
 /**
@@ -543,21 +549,26 @@ export const CONCEPT_INTRO_CONFIG: Record<string, ConceptIntroConfig> = {
     minViewTime: 10,
     showMode: 'optional',
   },
+  // v2 (2026-11-09): was an array animation and "break apart: 23 × 4 = (20 × 4) +
+  // (3 × 4)" — a different method from the stacked sheets. Now the column method:
+  // two worked examples, then a guided "your turn" (StackedMultiplicationLesson).
   multiplication_2digit_by_1digit: {
-    animationId: 'array-groups',
-    title: 'Bigger Multiplication',
-    description: 'Break apart: 23 × 4 = (20 × 4) + (3 × 4)',
+    animationId: 'stacked-multiplication',
+    title: 'Stacked Multiplication',
+    description: 'Start with the ones. Multiply, write the ones digit, carry the tens — then add the carry after the next multiplication.',
     demoOperands: [23, 4],
     minViewTime: 10,
-    showMode: 'optional',
+    showMode: 'mandatory',
+    version: 2,
   },
   multiplication_3digit_by_1digit: {
-    animationId: 'array-groups',
-    title: 'Even Bigger Numbers',
-    description: 'Same strategy! Break into hundreds, tens, ones.',
-    demoOperands: [125, 3],
+    animationId: 'stacked-multiplication',
+    title: 'Stacked Multiplication: 3 Digits',
+    description: 'The same steps, one more column: ones, then tens, then hundreds. Add each carry after you multiply.',
+    demoOperands: [123, 4],
     minViewTime: 10,
-    showMode: 'optional',
+    showMode: 'mandatory',
+    version: 2,
   },
   division: {
     animationId: 'fair-sharing',
@@ -1840,6 +1851,25 @@ export const CONCEPT_INTRO_CONFIG: Record<string, ConceptIntroConfig> = {
  */
 export function getConceptAnimation(concept: string): ConceptIntroConfig | undefined {
   return CONCEPT_INTRO_CONFIG[concept]
+}
+
+/**
+ * The id "seen" is recorded under: the concept, plus its intro's content version
+ * when that is above 1 ("multiplication_2digit_by_1digit@v2"). A child who saw an
+ * older intro has not seen the new one; every existing version-1 record keeps
+ * counting exactly as before (2026-11-09).
+ */
+export function seenKey(concept: string): string {
+  const version = CONCEPT_INTRO_CONFIG[concept]?.version ?? 1
+  return version > 1 ? `${concept}@v${version}` : concept
+}
+
+/** Every key a concept may have been recorded under (for clearing). */
+export function allSeenKeys(concept: string): string[] {
+  const version = CONCEPT_INTRO_CONFIG[concept]?.version ?? 1
+  const keys = [concept]
+  for (let v = 2; v <= version; v++) keys.push(`${concept}@v${v}`)
+  return keys
 }
 
 /**

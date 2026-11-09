@@ -27,6 +27,7 @@ import {
   SequenceAnimation,
   // Elementary (Levels C-F)
   ArrayGroupsAnimation,
+  StackedMultiplicationSteps,
   FairSharingAnimation,
   LongDivisionStepsAnimation,
   FractionBarAnimation,
@@ -271,6 +272,16 @@ export const HINT_ANIMATION_MAP: Record<string, AnimationMapping> = {
   },
   'multiplication-repeated-addition': {
     component: ArrayGroupsAnimation,
+  },
+  // Stacked (column) multiplication by one digit, Level C51–C110 (2026-11-09): the
+  // method the sheet asks for. Setup = his own problem and where to start, no answer;
+  // steps = a worked similar problem, frame by frame (problemData.context.frame).
+  'stacked-multiplication-setup': {
+    component: StackedMultiplicationSteps,
+    isSetup: true,
+  },
+  'stacked-multiplication-steps': {
+    component: StackedMultiplicationSteps,
   },
 
   // ============================================

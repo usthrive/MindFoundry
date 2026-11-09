@@ -9,8 +9,11 @@
  */
 
 import type { KumonLevel } from './generators/types'
-import { getNewConceptsAtWorksheet, CONCEPT_INTRODUCTION } from './generators/concept-availability'
+import { getConceptsToIntroduceAtWorksheet, CONCEPT_INTRODUCTION } from './generators/concept-availability'
+import { allSeenKeys, seenKey } from './conceptAnimationMapping'
 import { supabase } from '@/lib/supabase'
+
+export { seenKey }
 
 const STORAGE_KEY = 'mindfoundry_seen_concepts'
 
@@ -45,8 +48,9 @@ export function markConceptSeen(childId: string, concept: string): void {
       parsed[childId] = []
     }
 
-    if (!parsed[childId].includes(concept)) {
-      parsed[childId].push(concept)
+    const key = seenKey(concept)
+    if (!parsed[childId].includes(key)) {
+      parsed[childId].push(key)
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
@@ -71,10 +75,10 @@ export function getUnseenNewConcepts(
   level: KumonLevel,
   worksheet: number
 ): string[] {
-  const newConcepts = getNewConceptsAtWorksheet(level, worksheet)
+  const newConcepts = getConceptsToIntroduceAtWorksheet(level, worksheet)
   const seenConcepts = getSeenConcepts(childId)
 
-  return newConcepts.filter(concept => !seenConcepts.includes(concept))
+  return newConcepts.filter(concept => !seenConcepts.includes(seenKey(concept)))
 }
 
 /**
@@ -152,7 +156,7 @@ export async function markConceptsSeenWithDB(
     // Insert concepts (ignore conflicts since we have UNIQUE constraint)
     const rows = concepts.map((conceptId) => ({
       child_id: childId,
-      concept_id: conceptId,
+      concept_id: seenKey(conceptId),
     }))
 
     const { error } = await supabase
@@ -178,9 +182,9 @@ export async function getUnseenNewConceptsWithDB(
 ): Promise<string[]> {
   // Load from DB to ensure we have the latest seen concepts
   const seenConcepts = await loadSeenConceptsFromDB(childId)
-  const newConcepts = getNewConceptsAtWorksheet(level, worksheet)
+  const newConcepts = getConceptsToIntroduceAtWorksheet(level, worksheet)
 
-  return newConcepts.filter((concept) => !seenConcepts.includes(concept))
+  return newConcepts.filter((concept) => !seenConcepts.includes(seenKey(concept)))
 }
 
 /**
@@ -197,7 +201,7 @@ export async function clearConceptsFromWorksheet(
   const conceptsToClear: string[] = []
   for (const [concept, intro] of Object.entries(CONCEPT_INTRODUCTION)) {
     if (intro.level === level && intro.worksheet >= fromWorksheet) {
-      conceptsToClear.push(concept)
+      conceptsToClear.push(...allSeenKeys(concept))
     }
   }
 

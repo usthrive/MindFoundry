@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import AnimationRenderer from './AnimationRenderer'
 import type { ProblemData } from '@/services/hintAnimationMapping'
+import { stackedFrames } from '@/services/stackedMultiplication'
 
 export interface FullTeachingProps {
   /** Teaching text/narration */
@@ -398,6 +399,19 @@ function getTeachingSteps(
   const operands = demoProblem.operands
   const answer = demoProblem.answer
 
+  // Stacked multiplication by one digit (Level C51–C110): the column method, frame by
+  // frame on the similar problem — not "N groups of M" (2026-11-09).
+  if (animationId === 'stacked-multiplication-steps' && operands.length >= 2) {
+    const frames = stackedFrames(operands[0], operands[1])
+    return frames.map((f, i) => ({
+      title: i === 0 ? 'Set it up' : i === frames.length - 1 ? 'The answer' : `Step ${i}`,
+      content: f.say,
+      visual: '✖️',
+      animationId: 'stacked-multiplication-steps',
+      frame: i,
+    }))
+  }
+
   // Addition teaching steps (using demo problem)
   if (operation === 'addition' || animationId?.includes('addition')) {
     return [
@@ -607,6 +621,8 @@ interface TeachingStepData {
   highlight?: number
   /** Animation ID to render instead of emoji (optional) */
   animationId?: string
+  /** For a step-by-step animation: which frame this step shows. */
+  frame?: number
 }
 
 interface TeachingStepProps {
@@ -629,7 +645,7 @@ function TeachingStep({ step, problemData }: TeachingStepProps) {
         <div className="mb-4 min-h-[100px] flex items-center justify-center">
           <AnimationRenderer
             animationId={step.animationId}
-            problemData={problemData}
+            problemData={step.frame !== undefined ? { ...problemData, context: { ...(problemData?.context ?? {}), frame: step.frame } } : problemData}
             showSolution={true} // PEDAGOGICAL: Full solution in teaching mode
             operation={problemData?.operation}
           />

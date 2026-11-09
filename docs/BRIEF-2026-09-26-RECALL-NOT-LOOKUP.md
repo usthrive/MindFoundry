@@ -360,3 +360,55 @@ forward so that he can show me".
 Not changed: the Day-4 stability rule (held a 6/6; kept — it catches a lucky check
 day; whether it should look past reading-type misses is open). JourneyMap still
 shows a closed week as "strengthening".
+
+## 12. Stacked multiplication is taught, and the sheet stops tripping him — built 2026-11-09 (owner "go")
+
+The owner: on the Kumon stacked multiplication sheets the third box shows even when
+it is not needed, and nothing teaches how to do this kind of multiplication. Read
+from his record (C51–C55, Nov 4–7, 70 problems): first-try right 20/70 (29%); 31 of
+the 70 began with a stray single digit; "665" for 13 × 5; "69" for 96, "54" for 45;
+real misses were carry errors (17 × 9 → "163", 18 × 8 → "164", 19 × 9 → "181") and
+20 × 5 → "105". Causes, all verified in code and reproduced in the harness:
+
+- No lesson. `concepts_seen` had "multiplication_2digit_by_1digit" from **Sep 21**
+  (first time at C51). The Sep 27 move back to C15 was a direct database change,
+  which skipped the app's own `clearConceptsFromWorksheet`, and "seen" is forever.
+  The intro itself was an optional array animation ("break apart"), not the method
+  the sheet uses. After a miss, every Level C multiplication got times-table help: "how
+  many groups of 5?", a 28-row array, repeated addition. The step-by-step
+  "multi-digit-multiplication" teaching id was unmapped and Level D-only.
+- The third box: 3 columns for every 2-digit × 1-digit (deliberate: width must not
+  leak the answer's size), but after two digits the cursor sat in it, highlighted.
+- Enter: on a stacked problem, a digit + Enter (the times-table habit) jumped to the
+  next problem — the next digit landed there.
+- Boxes fill from the ones; typing a number as it reads reverses it.
+- Found on the way: the Level B "carry it yourself" / "regroup it yourself" pop-ups
+  are on for every Level C+ sheet; a fresh device met a 43 − 18 card over C51.
+
+Built:
+- `services/stackedMultiplication.ts` (pure): frames of the column method, the guided
+  prompts (multiply; then ADD the carry, on its own), the setup sentence, the
+  backwards-digits test. `StackedMultiplicationSteps` draws it as the sheet does
+  (same boxes, red carries, dashed "only if needed" box);
+  `StackedMultiplicationLesson`: 23 × 4 and 28 × 5 worked, then his turn on 17 × 4
+  (a miss gets a nudge, never the number; a second, the number and the step).
+- Intros: both stacked concepts → `stacked-multiplication`, version 2. "Seen" is now
+  recorded per content version (`seenKey`: "…@v2"; version-1 records count as before),
+  and a concept may carry `through` (C51–C100, C101–C110): an unseen intro shows on
+  ANY sheet of its run. His next sheet (C56) opens with the lesson; "💡 Show me how"
+  replays it.
+- Hints: Level C stacked problems → column method (micro: where to start, no answer;
+  visual: his problem, setup only; teaching: a similar problem frame by frame).
+- Sheet: the optional column is dashed and quiet even with the cursor in it, with
+  "Only if a carry is left. If not, you're done."; Enter never leaves a stacked answer
+  shorter than any answer of its shape can be (`getMinAnswerDigits` — leaks nothing;
+  never holds a complete answer, checked over 7,920 products and ~30,000 sums);
+  "You wrote it from the left…" when the answer is the right digits reversed; the Level
+  B pop-ups only on pages that have stacked addition / subtraction.
+- Gate `kumon-stacked-multiplication-test` (25 checks, 12 controls); photographs
+  `docs/screens-2026-11-09/` (`kumon-stacked-visual.ts`, 27 rendered-page checks).
+
+Next (agreed step 2): every concept's intro read against what its sheets ask —
+Levels C and D first (D11/D41 teach an "area model"; the sheets are stacked with
+partial products). Seen, not changed: the sheet fills each carry in from the real
+problem as soon as a digit is typed (he still wrote "163" with the 6 shown).

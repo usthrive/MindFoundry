@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button'
 import WorksheetProblem from './WorksheetProblem'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import CarryTransitionModal from './CarryTransitionModal'
+import { isReversedAnswer, REVERSED_NOTE } from '@/services/stackedMultiplication'
 import RegroupTransitionModal from './RegroupTransitionModal'
 import RegroupGraduationModal from './RegroupGraduationModal'
 import {
@@ -182,6 +183,39 @@ export function getAnswerColumnCount(problem: Problem): number {
       return maxDigits
   }
 }
+
+/**
+ * The answer column that is used only SOMETIMES: the place a stacked
+ * multiplication by one digit reaches only when the last column carries
+ * (23 × 4 = 92 leaves it empty; 28 × 5 = 140 fills it). The worksheet keeps the
+ * box — its width must not give the answer's size away — but draws it quiet,
+ * dashed, "only if needed", instead of as one more box to fill (owner, 2026-11-09:
+ * the empty third box looked like a digit was missing; his son typed "665" for
+ * 13 × 5 = 65). Undefined for every other problem shape.
+ */
+export function getOptionalAnswerColumn(problem: Problem): number | undefined {
+  if (problem.type !== 'multiplication' || problem.displayFormat !== 'vertical') return undefined
+  if (getPartialRowCount(problem) > 0 || !problem.operands?.length) return undefined
+  const columns = getAnswerColumnCount(problem)
+  const top = String(Math.abs(problem.operands[0])).length
+  return columns > top ? columns - 1 : undefined
+}
+
+/**
+ * The fewest digits ANY answer of this problem's shape can have — a product is never
+ * narrower than its larger factor, a sum never narrower than its larger addend. An
+ * answer shorter than this is still being written, whatever the numbers are, so the
+ * check below reveals nothing about this particular answer.
+ */
+export function getMinAnswerDigits(problem: Problem): number {
+  if (problem.displayFormat !== 'vertical' || !problem.operands?.length) return 1
+  const widest = Math.max(...problem.operands.map(op => String(Math.abs(op)).length))
+  if (problem.type === 'addition') return widest
+  if (problem.type === 'multiplication' && problem.operands.every(op => op !== 0)) return widest
+  return 1
+}
+
+const PLACE_WORDS = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands']
 
 /**
  * How many partial-product rows a vertical multiplication needs.
@@ -580,6 +614,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const manualCarry = isManualCarryMode(level, worksheetNumber)
   const [showCarryTransitionModal, setShowCarryTransitionModal] = useState(false)
   const [carryNudgeIndex, setCarryNudgeIndex] = useState<number | null>(null)
+  /** "Keep going" when Enter is pressed on a stacked answer still being written. */
+  const [entryNudge, setEntryNudge] = useState<string | null>(null)
+  /** Problems (by id) whose last checked answer was the right digits written from the left. */
+  const [reversedNotes, setReversedNotes] = useState<Record<string, boolean>>({})
 
   // Subtraction regroup helpers ramp: auto-demo → manual → optional.
   // The phase is resolved from three inputs: the worksheet-number baseline, the parent
@@ -603,59 +641,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   // values remain. Auto-demo mode only (early worksheets); never set in manual or optional mode.
   const [operationChipsForIndex, setOperationChipsForIndex] = useState<number | null>(null)
 
-  // Show carry transition modal on first encounter of manual carry mode
-  useEffect(() => {
-    if (manualCarry) {
-      try {
-        const shown = localStorage.getItem(CARRY_MODAL_SHOWN_KEY)
-        if (!shown) {
-          setShowCarryTransitionModal(true)
-          localStorage.setItem(CARRY_MODAL_SHOWN_KEY, 'true')
-        }
-      } catch {
-        // localStorage may be unavailable
-      }
-    }
-  }, [manualCarry])
-
   // Keep the adaptive streak in sync if the active child changes (re-read their history).
   useEffect(() => {
     setRegroupStreak(readRegroupStreak(childId))
   }, [childId])
-
-  // Show regroup transition modal on first encounter of manual regroup mode
-  useEffect(() => {
-    if (manualRegroup) {
-      try {
-        const shown = localStorage.getItem(REGROUP_MODAL_SHOWN_KEY)
-        if (!shown) {
-          setShowRegroupTransitionModal(true)
-          localStorage.setItem(REGROUP_MODAL_SHOWN_KEY, 'true')
-        }
-      } catch {
-        // localStorage may be unavailable
-      }
-    }
-  }, [manualRegroup])
-
-  // Show the graduation modal once, when the child first enters 'optional' regroup mode
-  // after having seen the manual mode. Gated on REGROUP_MODAL_SHOWN_KEY so it never fires
-  // before manual mode has been introduced (e.g., if they jump straight to optional via a
-  // session restore or by skipping levels).
-  useEffect(() => {
-    if (regroupMode === 'optional') {
-      try {
-        const manualSeen = localStorage.getItem(REGROUP_MODAL_SHOWN_KEY)
-        const graduationSeen = localStorage.getItem(REGROUP_GRADUATION_MODAL_SHOWN_KEY)
-        if (manualSeen && !graduationSeen) {
-          setShowRegroupGraduationModal(true)
-          localStorage.setItem(REGROUP_GRADUATION_MODAL_SHOWN_KEY, 'true')
-        }
-      } catch {
-        // localStorage may be unavailable
-      }
-    }
-  }, [regroupMode])
 
   // Track if we've consumed the initialPageState to avoid re-using it
   const initialPageStateConsumed = useRef(false)
@@ -907,6 +896,65 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     ...emptyColumnState(),
   }
 
+  // The Level B "carry it yourself" / "regroup it yourself" pop-ups explain ADDITION
+  // and SUBTRACTION. Their modes are on for every Level C+ sheet, so a new device met
+  // them on a multiplication sheet (2026-11-09, found in the harness: a 43 − 18
+  // regrouping card over a C51 page). They now open only on a page that has that
+  // kind of stacked problem.
+  const pageHasVertical = (type: string) =>
+    currentPageState.problems.some(p => p.type === type && p.displayFormat === 'vertical')
+  const pageHasStackedAddition = pageHasVertical('addition')
+  const pageHasStackedSubtraction = pageHasVertical('subtraction')
+
+  // Show carry transition modal on first encounter of manual carry mode
+  useEffect(() => {
+    if (manualCarry && pageHasStackedAddition) {
+      try {
+        const shown = localStorage.getItem(CARRY_MODAL_SHOWN_KEY)
+        if (!shown) {
+          setShowCarryTransitionModal(true)
+          localStorage.setItem(CARRY_MODAL_SHOWN_KEY, 'true')
+        }
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, [manualCarry, pageHasStackedAddition])
+
+  // Show regroup transition modal on first encounter of manual regroup mode
+  useEffect(() => {
+    if (manualRegroup && pageHasStackedSubtraction) {
+      try {
+        const shown = localStorage.getItem(REGROUP_MODAL_SHOWN_KEY)
+        if (!shown) {
+          setShowRegroupTransitionModal(true)
+          localStorage.setItem(REGROUP_MODAL_SHOWN_KEY, 'true')
+        }
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, [manualRegroup, pageHasStackedSubtraction])
+
+  // Show the graduation modal once, when the child first enters 'optional' regroup mode
+  // after having seen the manual mode. Gated on REGROUP_MODAL_SHOWN_KEY so it never fires
+  // before manual mode has been introduced (e.g., if they jump straight to optional via a
+  // session restore or by skipping levels).
+  useEffect(() => {
+    if (regroupMode === 'optional' && pageHasStackedSubtraction) {
+      try {
+        const manualSeen = localStorage.getItem(REGROUP_MODAL_SHOWN_KEY)
+        const graduationSeen = localStorage.getItem(REGROUP_GRADUATION_MODAL_SHOWN_KEY)
+        if (manualSeen && !graduationSeen) {
+          setShowRegroupGraduationModal(true)
+          localStorage.setItem(REGROUP_GRADUATION_MODAL_SHOWN_KEY, 'true')
+        }
+      } catch {
+        // localStorage may be unavailable
+      }
+    }
+  }, [regroupMode, pageHasStackedSubtraction])
+
   // ── FIRST-TRY EVIDENCE (P0, 2026-09-26 — docs/BRIEF-2026-09-26-RECALL-NOT-LOOKUP.md) ──
   //
   // This grid is how a child works a Kumon sheet, and until now it saved every
@@ -1093,6 +1141,14 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
       const answer = currentPageState.answers[index] || ''
       const isCorrect = checkAnswer(problem, answer)
+
+      // The right digits written from the left (the boxes fill from the ones): say
+      // so, instead of a hint about the maths he got right (2026-11-09).
+      if (problem.id && problem.displayFormat === 'vertical' && typeof problem.correctAnswer === 'number') {
+        const reversed = !isCorrect && isReversedAnswer(answer, problem.correctAnswer)
+        const id = problem.id
+        setReversedNotes(prev => (reversed === !!prev[id] ? prev : { ...prev, [id]: reversed }))
+      }
 
       // Every checked answer is kept in order: the first is the first try, and a
       // run of different answers on one problem is how guessing looks in data.
@@ -1296,6 +1352,23 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         // throw the child onto a different question.
         const totalEmpty = (currentPageState.columnDigits[activeIndex] ?? []).every(d => d === null)
         if (rowHasDigits || row < rowCount || totalEmpty) return
+      }
+    }
+
+    // The same law for a one-row stacked answer (2026-11-09). Begun but shorter than
+    // any answer of its shape can be (getMinAnswerDigits), it is still being written:
+    // Enter keeps the child on it. Before this, a digit + Enter — the habit from the
+    // times tables, where Enter after the answer moves on — jumped to the next
+    // problem and the next digit landed THERE: on C51–C55 the owner's son had 31 of
+    // 70 problems start with a stray single digit.
+    if (activeProblem?.displayFormat === 'vertical' && getPartialRowCount(activeProblem) === 0) {
+      const columns = currentPageState.columnDigits[activeIndex] ?? []
+      const written = columns.filter(d => d !== null).length
+      if (written > 0 && written < getMinAnswerDigits(activeProblem)) {
+        const next = columns.findIndex(d => d === null)
+        setEntryNudge(`Keep going: next is the ${PLACE_WORDS[next >= 0 ? next : written] ?? 'next'} box.`)
+        setTimeout(() => setEntryNudge(null), 4000)
+        return
       }
     }
 
@@ -1923,6 +1996,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 onClick={() => handleProblemClick(index)}
                 compact={problemsPerPage > 3}
                 columnDigits={problem.displayFormat === 'vertical' ? currentPageState.columnDigits[index] : undefined}
+                optionalColumn={getOptionalAnswerColumn(problem)}
                 activeColumn={isActive && problem.displayFormat === 'vertical' ? (currentPageState.activeColumns[index] ?? 0) : undefined}
                 carries={problem.displayFormat === 'vertical' ? currentPageState.carries[index] : undefined}
                 onColumnClick={isActive && problem.displayFormat === 'vertical' ? (col: number) => {
@@ -2003,7 +2077,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
               {/* Micro hint - shown as inline toast below problem */}
               {hintLevel === 'micro' && hintData && (
                 <MicroHint
-                  text={hintData.text}
+                  text={problem.id && reversedNotes[problem.id] ? REVERSED_NOTE : hintData.text}
                   show={true}
                   position="inline"
                   onDismiss={() => dismissHint(index)}
@@ -2014,7 +2088,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
               {/* Visual hint - shown inline with animation */}
               {hintLevel === 'visual' && hintData && (
                 <VisualHint
-                  text={hintData.text}
+                  text={problem.id && reversedNotes[problem.id] ? REVERSED_NOTE : hintData.text}
                   animationId={hintData.animationId}
                   show={true}
                   problemData={{
@@ -2167,6 +2241,15 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         show={showRegroupGraduationModal}
         onDismiss={() => setShowRegroupGraduationModal(false)}
       />
+
+      {/* Entry nudge - Enter pressed on a stacked answer still being written */}
+      {entryNudge !== null && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40" data-entry-nudge>
+          <div className="bg-amber-100 border border-amber-300 text-amber-800 rounded-xl px-4 py-2 shadow-lg text-sm font-medium">
+            {entryNudge}
+          </div>
+        </div>
+      )}
 
       {/* Carry Nudge Toast - shown when child skips carry entry in manual mode */}
       {carryNudgeIndex !== null && (

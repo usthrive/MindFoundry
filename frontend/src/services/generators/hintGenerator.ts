@@ -481,6 +481,33 @@ export function generateMultiplicationHints(
   const [num1, num2] = operands
   const similarProblem = generateSimilarMultiplication(num1, num2)
 
+  // Level C, stacked: a 2- or 3-digit number times one digit (C51–C110). The
+  // times-table help below ("how many groups of 5?", a 28-row array, repeated
+  // addition) teaches a different method from the one the sheet asks for, so a
+  // stacked problem gets the column method: start with the ones, multiply, write
+  // the ones digit, carry the tens, then ADD the carry (2026-11-09).
+  if (level === 'C' && Math.abs(num1) >= 10 && Math.abs(num2) < 10) {
+    return {
+      micro: {
+        level: 'micro',
+        text: `Start with the ones, on the right: what is ${num2} × ${Math.abs(num1) % 10}? Write its ones digit, carry the tens — and add the carry after the next multiplication.`,
+        duration: 5,
+      },
+      visual: {
+        level: 'visual',
+        text: 'Work one column at a time, starting with the ones.',
+        animationId: 'stacked-multiplication-setup', // his problem, where to start; no answer
+        duration: 15,
+      },
+      teaching: {
+        level: 'teaching',
+        text: `Let me show you with a similar problem, one column at a time. Then try ${num1} × ${num2}!`,
+        animationId: 'stacked-multiplication-steps',
+        duration: 45,
+      },
+    }
+  }
+
   // Level C: Times tables
   if (level === 'C') {
     return {
