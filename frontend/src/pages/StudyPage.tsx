@@ -141,6 +141,8 @@ export default function StudyPage() {
   const [sheetNonPasses, setSheetNonPasses] = useState(0)
   /** Why this sheet's last sitting did not pass — the repeat line names the goal (review, 2026-11-10). */
   const [sheetRepeatReasons, setSheetRepeatReasons] = useState<Reason[]>([])
+  /** Where this sheet sits in its skill: sets the time allowed (10 → 5 min on stacked sheets). */
+  const [sheetPosition, setSheetPosition] = useState(1)
   /** The grid's teaching screen is open (the app's teaching is not the child's time). */
   const [gridTeaching, setGridTeaching] = useState(false)
   /** First checks of THIS sitting, by place on the sheet (what the pass rule counts). */
@@ -675,6 +677,7 @@ export default function StudyPage() {
           setSheetVariant(restoredRun.variant)
           setSheetNonPasses(restoredRun.nonPasses)
           setSheetRepeatReasons(restoredRun.lastReasons)
+          setSheetPosition(restoredRun.position)
           const restoredKey = sheetKey(persistedSession.level, persistedSession.worksheet, restoredRun.variant)
           sheetLedgerRef.current = persistedSession.sheetLedger?.sheet === restoredKey ? persistedSession.sheetLedger : ledgerStart(restoredKey)
           setSessionId(persistedSession.sessionId)
@@ -726,6 +729,7 @@ export default function StudyPage() {
           setSheetVariant(run.variant)
           setSheetNonPasses(run.nonPasses)
           setSheetRepeatReasons(run.lastReasons)
+          setSheetPosition(run.position)
           sheetLedgerRef.current = ledgerStart(sheetKey(position.level, position.worksheet, run.variant))
 
           try {
@@ -1307,6 +1311,7 @@ export default function StudyPage() {
       firstTry,
       seconds,
       priorNonPasses: sheetNonPasses,
+      position: sheetPosition,
     })
     const lastSheet = currentWorksheet >= (LEVEL_WORKSHEETS[currentLevel] || 200)
     const message = decision.advance && lastSheet
@@ -1486,6 +1491,7 @@ export default function StudyPage() {
     let nextVariant = sheetVariant + 1
     let nextNonPasses = sheetNonPasses + 1
     let nextReasons: Reason[] = c.decision.reasons
+    let nextPosition = sheetPosition // a repeat keeps its sheet's allowance
     if (movedTo) {
       nextLevel = movedTo.level
       nextWorksheet = movedTo.worksheet
@@ -1493,6 +1499,7 @@ export default function StudyPage() {
       nextVariant = run.variant
       nextNonPasses = run.nonPasses
       nextReasons = run.lastReasons
+      nextPosition = run.position
     } else if (c.decision.advance) {
       nextWorksheet = currentWorksheet + 1
       await updateCurrentPosition(currentChild.id, currentLevel, nextWorksheet)
@@ -1500,6 +1507,7 @@ export default function StudyPage() {
       nextVariant = run.variant
       nextNonPasses = run.nonPasses
       nextReasons = run.lastReasons
+      nextPosition = run.position
     }
 
     // Clear stale page state to prevent ghost pages on remount
@@ -1517,6 +1525,7 @@ export default function StudyPage() {
     setSheetVariant(nextVariant)
     setSheetNonPasses(nextNonPasses)
     setSheetRepeatReasons(nextReasons)
+    setSheetPosition(nextPosition)
     setCurrentLevel(nextLevel)
     setCurrentWorksheet(nextWorksheet)
     setSessionActive(true)
@@ -1766,6 +1775,7 @@ export default function StudyPage() {
     setSheetVariant(levelRun.variant)
     setSheetNonPasses(levelRun.nonPasses)
     setSheetRepeatReasons(levelRun.lastReasons)
+    setSheetPosition(levelRun.position)
     sheetLedgerRef.current = ledgerStart(sheetKey(level, 1, levelRun.variant))
 
     // Create new session
@@ -1834,6 +1844,7 @@ export default function StudyPage() {
     setSheetVariant(jumpRun.variant)
     setSheetNonPasses(jumpRun.nonPasses)
     setSheetRepeatReasons(jumpRun.lastReasons)
+    setSheetPosition(jumpRun.position)
     sheetLedgerRef.current = ledgerStart(sheetKey(currentLevel, worksheetNum, jumpRun.variant))
 
     // Create new session
@@ -1890,6 +1901,7 @@ export default function StudyPage() {
     setSheetVariant(nextRun.variant)
     setSheetNonPasses(nextRun.nonPasses)
     setSheetRepeatReasons(nextRun.lastReasons)
+    setSheetPosition(nextRun.position)
     sheetLedgerRef.current = ledgerStart(sheetKey(next, 1, nextRun.variant))
 
     // Clear stale page state to prevent ghost pages on remount

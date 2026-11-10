@@ -526,3 +526,28 @@ abandoned sitting); the rule's time half also applies to levels Kumon does not t
 (7A–5A); `sittings` is read-then-written (two devices at once can drop an event — move to
 a server-side append); the recap's empty effort stars read as a score; the header "0 / 10"
 moves per page, not per problem; the sitting does not record lesson replays.
+
+## 14. The time allowed starts generous and comes down slowly — owner ruling, 2026-11-10
+
+After §13 shipped (PR #26), the owner: "I think we should be a little more flexible on
+timing, it should get difficult slowly", then "I would start with 10 min per sheet so he has
+good time and then slowly decline to reach 5 min" (a sheet = 10 problems).
+
+Built: the time allowed is a multiple of the run's standard that starts at **5×** on a new
+skill and comes down **0.25× with each new sheet of it**, to a floor of **2.5×** — on his
+stacked sheets (standard 2 min): **10 min at C56, 9½ at C57 … 5 min from C66**. A repeat
+keeps its sheet's allowance. A new kind of work starts generous again: each new times table,
+stacked multiplication (C51), 3–4 digits (C101), division (C111), remainders (C121), long
+division (C161, C181); the bigger-number steps inside stacked multiplication (C61, C71, …)
+do not restart it. The position counts the sheets of the skill actually WORKED under the
+rule (a sitting on record), so he begins at the generous end although C56 is the sixth sheet
+of a skill that starts at C51 (`sheetPass.ts` `timeFactorAt`, `SKILL_STARTS`,
+`skillPosition`; `getSheetRun` returns it). The parent card says what today's sheet allows
+("Now: C56 — try 1 of 3 · up to 10 min") and shows every sitting as time taken of time
+allowed ("4:20 of 8:00").
+
+His C15–C55 re-scored under it (as if the rule had run from each skill's first sheet): **21
+of 42 pass**, 21 repeat — 8 on time only (the very slow sheets: C30 10.8×, C38 and C49 9×,
+C40 8×), 9 on first try only, 4 both. Gate 56 checks (ramp, position, his record; controls:
+an allowance that never comes down, no generous start, counting sheet numbers, counting
+every sitting); photo driver 48 checks.

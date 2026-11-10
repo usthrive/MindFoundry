@@ -99,8 +99,10 @@ fluency time**. Anything less is "learning", and the app must say so.
     stray single digits and reversals before reading the misses as maths.
 18. **Speed is the half of mastery that accuracy hides — and a pass rule needs a way
     out.** A sheet passes on first-try accuracy (no help opened) AND time against the
-    standard for its run, both measured on the sheet; the clock counts corrections but
-    not a lesson, and a clock that did not run never holds a child back. Not passed →
+    standard for its run, both measured on the sheet; the time allowed starts generous on
+    a new skill and comes down sheet by sheet (owner: 10 min a sheet, slowly to 5); the
+    clock counts corrections but not a lesson, and a clock that did not run never holds
+    a child back. Not passed →
     the same sheet with its facts in a new order; the third try moves on and the parent
     is told; the parent can move on, repeat or go back. Re-scored, one child's 42
     "passed" sittings held 32 repeats — 19 on time alone: right answers, worked out.

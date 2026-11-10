@@ -17,7 +17,10 @@ import { getSctForSheet } from '@/services/sct'
 import {
   MAX_TRIES,
   PASS_FIRST_TRY_PER_TEN,
-  TIME_FACTOR,
+  TIME_FLOOR_FACTOR,
+  TIME_STEP_FACTOR,
+  skillPosition,
+  timeFactorAt,
   movedOnLogLine,
   nonPassesInRun,
   parentActionLine,
@@ -68,8 +71,13 @@ export default function KumonSheetsCard({ childId, childName, level, currentWork
   // repeated, its own sittings are the newest — they are not "the sheet just finished").
   const lastFinished = events.find((x) => x.e.kind === 'sitting' && x.ws < currentWorksheet)?.ws ?? null
   const movedOn = events.filter((x) => x.e.kind === 'sitting' && x.e.outcome === 'moved_on').slice(0, 3)
+  // Today's allowance: generous on a new skill, 30 s less (on stacked sheets) with
+  // each new sheet of it, down to the floor (owner, 2026-11-10: 10 min → 5 min).
   const standard = getSctForSheet(level, currentWorksheet)
-  const limit = TIME_FACTOR * standard
+  const position = skillPosition(level, currentWorksheet, rows)
+  const limit = Math.round(timeFactorAt(position) * standard)
+  const floor = Math.round(TIME_FLOOR_FACTOR * standard)
+  const step = Math.round(TIME_STEP_FACTOR * standard)
 
   const ask = (action: ParentAction, to: number, label: string) => {
     setNotice(null)
@@ -100,14 +108,15 @@ export default function KumonSheetsCard({ childId, childName, level, currentWork
         <h3 className="text-sm font-semibold text-gray-700">Sheets: first try and time</h3>
       </div>
       <p className="text-xs text-gray-500 mb-3">
-        A sheet moves on at {PASS_FIRST_TRY_PER_TEN} of 10 right the first time, without help, in up to{' '}
-        {TIME_FACTOR}× the standard time ({level}{currentWorksheet}: standard {minutes(standard)}, so up to {minutes(limit)}). Otherwise it is done again
-        with new numbers; after {MAX_TRIES} tries it moves on. <span className="text-amber-700">Amber</span> marks what fell short.
+        A sheet moves on at {PASS_FIRST_TRY_PER_TEN} of 10 right the first time, without help, within the time allowed.
+        A new skill starts with plenty of time, and it comes down {step} s with each new sheet, to {minutes(floor)}.
+        Otherwise the sheet is done again with new numbers; after {MAX_TRIES} tries it moves on.
+        Times show taken of allowed. <span className="text-amber-700">Amber</span> marks what fell short.
       </p>
 
       <div className="rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-900 mb-3" data-sheet-now>
         Now: <strong>{level}{currentWorksheet}</strong>
-        {` — try ${repeating + 1} of ${MAX_TRIES}`}
+        {` — try ${repeating + 1} of ${MAX_TRIES} · up to ${minutes(limit)}`}
       </div>
 
       {movedOn.length > 0 && (

@@ -27,8 +27,59 @@
 import { getSctForSheet } from './sct'
 
 export const PASS_FIRST_TRY_PER_TEN = 8
-export const TIME_FACTOR = 2
 export const MAX_TRIES = 3
+
+// ---------------------------------------------------------------------------
+// The time allowed: generous on a new skill, tightening sheet by sheet
+// ---------------------------------------------------------------------------
+
+/**
+ * Owner, 2026-11-10: "start with 10 min per sheet so he has good time and then slowly
+ * decline to reach 5 min" — on his stacked sheets (standard 2 min) that is 5× the
+ * standard falling to 2.5×, 30 s less with each new sheet of the skill (C56 10 min,
+ * C57 9½ … 5 min from the eleventh sheet). Other runs use the same multiples of their
+ * own standard (times tables 7½ → 3¾ min). A repeat keeps its sheet's allowance.
+ */
+export const TIME_START_FACTOR = 5
+export const TIME_FLOOR_FACTOR = 2.5
+export const TIME_STEP_FACTOR = 0.25
+
+export function timeFactorAt(position: number): number {
+  const p = Math.max(1, Math.floor(position || 1))
+  return Math.max(TIME_FLOOR_FACTOR, TIME_START_FACTOR - TIME_STEP_FACTOR * (p - 1))
+}
+
+/**
+ * Where a NEW kind of work begins — a new times table, stacked multiplication, 3–4
+ * digits, division, remainders, long division — and the time allowance starts
+ * generous again. The bigger-number steps inside stacked multiplication (C61, C71, …)
+ * are the same method and do not restart it. Levels not listed: their sheet 1.
+ */
+export const SKILL_STARTS: Record<string, number[]> = {
+  C: [1, 11, 15, 21, 25, 31, 35, 41, 45, 51, 101, 111, 121, 161, 181],
+  D: [1, 51, 131, 141, 161],
+}
+
+export function skillStart(level: string, worksheet: number): number {
+  const starts = (SKILL_STARTS[level] ?? [1]).filter((x) => x <= worksheet)
+  return starts.length ? Math.max(...starts) : 1
+}
+
+/**
+ * Where this sheet sits in its skill: 1 + the sheets of the skill before it that were
+ * actually WORKED under this rule (they have a sitting). Counting worked sheets, not
+ * sheet numbers, is what lets a child already partway through a skill when the rule
+ * began — him, at C56 of a skill that starts at C51 — begin at the generous end.
+ */
+export function skillPosition(level: string, worksheet: number, rows: Array<{ worksheet_number: number; sittings?: unknown }>): number {
+  const from = skillStart(level, worksheet)
+  const worked = new Set<number>()
+  for (const r of rows) {
+    if (r.worksheet_number < from || r.worksheet_number >= worksheet || !Array.isArray(r.sittings)) continue
+    if ((r.sittings as SheetEvent[]).some((e) => e && e.kind === 'sitting')) worked.add(r.worksheet_number)
+  }
+  return 1 + worked.size
+}
 
 // ---------------------------------------------------------------------------
 // One problem
@@ -107,6 +158,8 @@ export interface SittingRecord {
   firstTry: number
   /** Seconds with the app in view; null when the clock did not run. */
   seconds: number | null
+  /** The time this sitting was allowed (the declining allowance, 2026-11-10). */
+  limitSeconds?: number
   sctSeconds: number
   /** seconds ÷ (standard time for this many problems); null when unmeasured. */
   timeRatio: number | null
@@ -149,6 +202,8 @@ export interface SheetDecisionInput {
   seconds: number | null
   /** Sittings of this run already not passed (nonPassesInRun). */
   priorNonPasses: number
+  /** Where the sheet sits in its skill (skillPosition): 1 = the most generous time. */
+  position: number
 }
 
 export interface SheetDecision {
@@ -161,6 +216,8 @@ export interface SheetDecision {
   sctSeconds: number
   /** The most time that passes, for this many problems. */
   limitSeconds: number
+  /** The allowance as a multiple of the standard (timeFactorAt(position)). */
+  timeFactor: number
   timeRatio: number | null
   reasons: Reason[]
   tryNumber: number
@@ -172,19 +229,20 @@ export function decideSheet(i: SheetDecisionInput): SheetDecision {
   const sctSeconds = getSctForSheet(i.level, i.worksheet)
   const n = Math.max(1, i.problems)
   const scaled = (sctSeconds * n) / 10
-  const limitSeconds = Math.round(TIME_FACTOR * scaled)
+  const timeFactor = timeFactorAt(i.position)
+  const limitSeconds = Math.round(timeFactor * scaled)
   const timeMeasured = i.seconds !== null && i.seconds > 0
   const timeRatio = timeMeasured ? Math.round((i.seconds! / scaled) * 100) / 100 : null
   // Integer form of "at least 80%": 8 of 10, 12 of 15, 16 of 20.
   const firstTryOk = i.problems > 0 && i.firstTry * 10 >= PASS_FIRST_TRY_PER_TEN * i.problems
-  const timeOk = !timeMeasured || i.seconds! <= TIME_FACTOR * scaled
+  const timeOk = !timeMeasured || i.seconds! <= timeFactor * scaled
   const passed = firstTryOk && timeOk
   const tryNumber = Math.max(0, i.priorNonPasses) + 1
   const outcome: SheetOutcome = passed ? 'pass' : tryNumber >= MAX_TRIES ? 'moved_on' : 'repeat'
   const reasons: Reason[] = []
   if (!firstTryOk) reasons.push('first_try')
   if (!timeOk) reasons.push('time')
-  return { outcome, passed, firstTryOk, timeOk, timeMeasured, sctSeconds, limitSeconds, timeRatio, reasons, tryNumber, advance: outcome !== 'repeat' }
+  return { outcome, passed, firstTryOk, timeOk, timeMeasured, sctSeconds, limitSeconds, timeFactor, timeRatio, reasons, tryNumber, advance: outcome !== 'repeat' }
 }
 
 export function sittingRecord(
@@ -199,6 +257,7 @@ export function sittingRecord(
     problems: s.problems,
     firstTry: s.firstTry,
     seconds: d.timeMeasured ? Math.round(s.seconds!) : null,
+    limitSeconds: d.limitSeconds,
     sctSeconds: d.sctSeconds,
     timeRatio: d.timeRatio,
     focusScore: s.focusScore,
@@ -282,15 +341,27 @@ export function repeatBanner(newNumbers: boolean, reasons: Reason[] = []): strin
 
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0)
 
-/** "C52: moved on after 3 tries — first try 60%, 2.5× standard time" */
+/** 345 → "5:45" (the parent reads time in minutes, as the owner set it). */
+export function mmss(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** A sitting's time for the parent: "4:20 of 9:00" (taken of allowed). */
+function timeText(s: SittingRecord): string {
+  if (s.seconds === null) return 'time not measured'
+  if (typeof s.limitSeconds === 'number') return `${mmss(s.seconds)} of ${mmss(s.limitSeconds)}`
+  return s.timeRatio === null ? mmss(s.seconds) : `${s.timeRatio.toFixed(1)}× standard`
+}
+
+/** "C52: moved on after 3 tries — first try 60%, 7:30 of 6:00" */
 export function movedOnLogLine(level: string, worksheet: number, s: SittingRecord): string {
-  const time = s.timeRatio === null ? 'time not measured' : `${s.timeRatio.toFixed(1)}× standard time`
-  return `${level}${worksheet}: moved on after ${s.tryNumber} tries — first try ${pct(s.firstTry, s.problems)}%, ${time}`
+  return `${level}${worksheet}: moved on after ${s.tryNumber} tries — first try ${pct(s.firstTry, s.problems)}%, ${timeText(s)}`
 }
 
 /**
  * One sitting for the parent's list: "Not yet · try 1 of 3" over "6 of 10 first try ·
- * 2.5× standard · focus 92%". What fell short is flagged (missedFirstTry / missedTime)
+ * 4:20 of 9:00 · focus 92%" (time taken of time allowed). What fell short is flagged (missedFirstTry / missedTime)
  * for the page to mark, rather than spelled out in a line that wraps on a phone.
  */
 export function parentSittingLine(s: SittingRecord): {
@@ -303,7 +374,7 @@ export function parentSittingLine(s: SittingRecord): {
 } {
   return {
     score: `${s.firstTry} of ${s.problems} first try`,
-    time: s.timeRatio === null ? 'time not measured' : `${s.timeRatio.toFixed(1)}× standard`,
+    time: timeText(s),
     focus: s.focusScore === null ? null : `focus ${Math.round(s.focusScore)}%`,
     outcome:
       s.outcome === 'pass' ? (s.tryNumber > 1 ? `Passed on try ${s.tryNumber}` : 'Passed')

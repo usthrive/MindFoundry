@@ -50,6 +50,9 @@ import {
   nonPassesInRun,
   repeatBanner,
   sittingRecord,
+  skillPosition,
+  skillStart,
+  timeFactorAt,
   type SheetDecision,
   type SheetDecisionInput,
   type SheetEvent,
@@ -71,33 +74,39 @@ const say = (ok: boolean, msg: string) => {
 type Decide = (i: SheetDecisionInput) => SheetDecision
 
 // ---------------------------------------------------------------------------
-console.log('\n# rule (R1)')
-// [level, ws, problems, firstTry, seconds, priorNonPasses, outcome]
-const CASES: Array<[string, number, number, number, number | null, number, 'pass' | 'repeat' | 'moved_on', string]> = [
-  ['C', 40, 10, 8, 180, 0, 'pass', '8 of 10 at exactly 2× (180 s for a times-table sheet)'],
-  ['C', 40, 10, 7, 100, 0, 'repeat', '7 of 10 first try, quick'],
-  ['C', 40, 10, 10, 181, 0, 'repeat', '10 of 10 but over 2× standard'],
-  ['C', 56, 10, 9, 239, 0, 'pass', 'stacked sheet: 120 s standard, 239 s passes'],
-  ['C', 56, 10, 9, 241, 0, 'repeat', 'stacked sheet: 241 s does not'],
-  ['C', 53, 15, 12, 300, 0, 'pass', '12 of 15 is 80%; 15 problems get 1.5× the time'],
-  ['C', 53, 15, 11, 300, 0, 'repeat', '11 of 15 is under 80%'],
-  ['C', 56, 10, 6, 300, 1, 'repeat', 'second try not passed → a third'],
-  ['C', 56, 10, 6, 300, 2, 'moved_on', 'third try not passed → moves on'],
-  ['C', 56, 10, 9, 100, 2, 'pass', 'a third try that passes is a pass'],
-  ['C', 56, 10, 9, null, 0, 'pass', 'a clock that did not run never holds him back'],
-  ['C', 56, 10, 9, 0, 0, 'pass', 'nor does a clock that read 0'],
-  ['C', 56, 10, 7, null, 0, 'repeat', 'unmeasured time: judged on first try alone'],
+console.log('\n# rule (R1) — first try AND the time allowed, which starts at 5× the standard and declines')
+// [level, ws, problems, firstTry, seconds, priorNonPasses, position, outcome, label]
+const CASES: Array<[string, number, number, number, number | null, number, number, 'pass' | 'repeat' | 'moved_on', string]> = [
+  ['C', 56, 10, 9, 600, 0, 1, 'pass', 'his next sheet (first of the rule): 10 min allowed, 600 s passes'],
+  ['C', 56, 10, 9, 601, 0, 1, 'repeat', '601 s does not'],
+  ['C', 57, 10, 9, 570, 0, 2, 'pass', 'the next new sheet: 9½ min'],
+  ['C', 57, 10, 9, 571, 0, 2, 'repeat', '…and not a second more'],
+  ['C', 66, 10, 9, 300, 0, 11, 'pass', 'the eleventh sheet: 5 min'],
+  ['C', 66, 10, 9, 301, 0, 11, 'repeat', '5 min is the floor it reaches'],
+  ['C', 90, 10, 9, 300, 0, 40, 'pass', 'and it never goes below 5 min'],
+  ['C', 40, 10, 8, 337, 0, 6, 'pass', 'a times table, sixth sheet: 3.75 × 90 s'],
+  ['C', 40, 10, 7, 100, 0, 6, 'repeat', '7 of 10 first try, quick'],
+  ['C', 53, 15, 12, 800, 0, 3, 'pass', '12 of 15 is 80%; 15 problems get 1.5× the time'],
+  ['C', 53, 15, 11, 300, 0, 3, 'repeat', '11 of 15 is under 80%'],
+  ['C', 56, 10, 6, 300, 1, 1, 'repeat', 'second try not passed → a third'],
+  ['C', 56, 10, 6, 300, 2, 1, 'moved_on', 'third try not passed → moves on'],
+  ['C', 56, 10, 9, 100, 2, 1, 'pass', 'a third try that passes is a pass'],
+  ['C', 56, 10, 9, null, 0, 11, 'pass', 'a clock that did not run never holds him back'],
+  ['C', 56, 10, 9, 0, 0, 11, 'pass', 'nor does a clock that read 0'],
+  ['C', 56, 10, 7, null, 0, 1, 'repeat', 'unmeasured time: judged on first try alone'],
 ]
 const ruleFindings = (decide: Decide): string[] =>
-  CASES.filter(([level, worksheet, problems, firstTry, seconds, priorNonPasses, want]) =>
-    decide({ level, worksheet, problems, firstTry, seconds, priorNonPasses }).outcome !== want,
-  ).map((c) => c[7])
+  CASES.filter(([level, worksheet, problems, firstTry, seconds, priorNonPasses, position, want]) =>
+    decide({ level, worksheet, problems, firstTry, seconds, priorNonPasses, position }).outcome !== want,
+  ).map((c) => c[8])
 {
   const f = ruleFindings(decideSheet)
   say(f.length === 0, `${CASES.length} cases${f.length ? ': ' + f.join('; ') : ''}`)
-  const d = decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 6, seconds: 300, priorNonPasses: 0 })
-  say(d.reasons.join(',') === 'first_try,time' && !d.advance && d.tryNumber === 1 && d.limitSeconds === 240, 'a repeat names both reasons, stays put, try 1, limit 240 s')
+  const d = decideSheet({ level: 'C', worksheet: 66, problems: 10, firstTry: 6, seconds: 301, priorNonPasses: 0, position: 11 })
+  say(d.reasons.join(',') === 'first_try,time' && !d.advance && d.tryNumber === 1 && d.limitSeconds === 300, 'a repeat names both reasons, stays put, try 1, limit 300 s at the floor')
   say(getSctForSheet('C', 40) === 90 && getSctForSheet('C', 56) === 120 && getSctForSheet('C', 105) === 150 && getSctForSheet('B', 40) === 90, 'standard times by run: C40 90 s, C56 120 s, C105 150 s, other levels by level')
+  const mins = [1, 2, 3, 6, 10, 11, 12, 40].map((p) => (timeFactorAt(p) * 120) / 60)
+  say(mins.join() === '10,9.5,9,7.5,5.5,5,5,5', `stacked allowance by sheet of the skill: ${mins.join(' / ')} min (10 → 5, 30 s a sheet)`)
   // Controls
   const finalOnly: Decide = (i) => ({ ...decideSheet({ ...i, firstTry: i.problems }) })
   say(ruleFindings(finalOnly).length > 0, 'control fires: a rule on FINAL answers (every sheet ends all right)')
@@ -107,6 +116,36 @@ const ruleFindings = (decide: Decide): string[] =>
   say(ruleFindings(neverMovesOn).length > 0, 'control fires: a rule that repeats forever')
   const blindClockFails: Decide = (i) => decideSheet({ ...i, seconds: i.seconds ? i.seconds : 99999 })
   say(ruleFindings(blindClockFails).length > 0, 'control fires: an unmeasured clock that holds him back')
+  const neverDeclines: Decide = (i) => decideSheet({ ...i, position: 1 })
+  say(ruleFindings(neverDeclines).length > 0, 'control fires: an allowance that never comes down')
+  const startsStrict: Decide = (i) => decideSheet({ ...i, position: 40 })
+  say(ruleFindings(startsStrict).length > 0, 'control fires: no generous start (5 min from the first sheet)')
+}
+
+console.log('\n# where a sheet sits in its skill')
+{
+  const sit = sittingRecord(decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 9, seconds: 100, priorNonPasses: 0, position: 1 }), { problems: 10, firstTry: 9, seconds: 100, focusScore: 100 })
+  const parentOnly: SheetEvent = { kind: 'parent', at: '2026-11-10T00:00:00Z', outcome: 'parent_move_on', from: 57, to: 58 }
+  const rows = [
+    { worksheet_number: 50, sittings: [sit] },               // another skill (times tables)
+    { worksheet_number: 52, sittings: [] },                  // before the rule: no sittings
+    { worksheet_number: 56, sittings: [sit, sit, sit] },     // worked three times: one sheet
+    { worksheet_number: 57, sittings: [parentOnly] },        // skipped by a parent: not worked
+    { worksheet_number: 58, sittings: [sit] },
+  ]
+  const posFindings = (fn: typeof skillPosition): string[] => {
+    const out: string[] = []
+    if (fn('C', 56, rows) !== 1) out.push(`C56 (first worked sheet of the skill under the rule) → ${fn('C', 56, rows)}, want 1`)
+    if (fn('C', 59, rows) !== 3) out.push(`C59 → ${fn('C', 59, rows)}, want 3 (C56 and C58 worked; repeats, a parent skip, earlier sheets and another skill do not count)`)
+    if (fn('C', 101, rows) !== 1) out.push('a new kind of work (C101) starts generous again')
+    return out
+  }
+  const pf = posFindings(skillPosition)
+  say(pf.length === 0 && skillStart('C', 56) === 51 && skillStart('C', 66) === 51 && skillStart('C', 17) === 15, `C56 is sheet 1 for him; C59 is sheet 3; C101 starts again; C61's bigger numbers do not restart${pf.length ? ': ' + pf.join('; ') : ''}`)
+  const bySheetNumber: typeof skillPosition = (level, ws) => ws - skillStart(level, ws) + 1
+  say(posFindings(bySheetNumber).length > 0, 'control fires: counting sheet numbers (he would start C56 at sheet 6, with 7½ min)')
+  const countsRepeats: typeof skillPosition = (level, ws, rs) => 1 + rs.filter((r) => r.worksheet_number >= skillStart(level, ws) && r.worksheet_number < ws).reduce((n, r) => n + (Array.isArray(r.sittings) ? r.sittings.length : 0), 0)
+  say(posFindings(countsRepeats).length > 0, 'control fires: every sitting counted (a repeat would cut the time)')
 }
 
 // ---------------------------------------------------------------------------
@@ -129,21 +168,22 @@ const HIS: Array<[number, string, number, number, number, number, number]> = [
   [51, 'Nov 03', 10, 10, 8, 8, 903], [51, 'Nov 04', 10, 10, 8, 1, 342], [52, 'Nov 05', 20, 20, 11, 0, 564],
   [53, 'Nov 06', 15, 15, 10, 10, 946], [54, 'Nov 07', 15, 15, 11, 8, 510], [55, 'Nov 07', 10, 10, 9, 1, 139],
 ]
-const PASSED_SHOWN = [18, 19, 23, 26, 28, 32, 36, 42, 45, 55]
+// Under the declining allowance (owner, 2026-11-10), as if the rule had run from each skill's first sheet.
+const PASSED_SHOWN = [15, 16, 18, 19, 22, 23, 26, 27, 28, 32, 33, 34, 35, 36, 39, 42, 45, 47, 50, 51, 55]
 // Time is scaled to the problems he met: the app's re-served pages are its fault, not his.
 const rescore = (decide: Decide) =>
-  HIS.map(([ws, , met, worked, firstTry, , seconds]) => ({ ws, d: decide({ level: 'C', worksheet: ws, problems: met, firstTry, seconds: (seconds * met) / worked, priorNonPasses: 0 }) }))
+  HIS.map(([ws, , met, worked, firstTry, , seconds]) => ({ ws, d: decide({ level: 'C', worksheet: ws, problems: met, firstTry, seconds: (seconds * met) / worked, priorNonPasses: 0, position: ws - skillStart('C', ws) + 1 }) }))
 {
   const r = rescore(decideSheet)
   const passed = r.filter((x) => x.d.passed).map((x) => x.ws)
   const time = r.filter((x) => !x.d.passed && x.d.reasons.join() === 'time').length
   const first = r.filter((x) => !x.d.passed && x.d.reasons.join() === 'first_try').length
   const both = r.filter((x) => x.d.reasons.length === 2).length
-  say(passed.join() === PASSED_SHOWN.join() && passed.length === 10 && r.length - passed.length === 32,
-    `10 of 42 sittings pass (${passed.map((w) => 'C' + w).join(' ')}), 32 repeat`)
-  say(time === 19 && first === 2 && both === 11, `repeats: ${time} time only, ${first} first try only, ${both} both (shown: 19 / 2 / 11)`)
+  say(passed.join() === PASSED_SHOWN.join() && passed.length === 21 && r.length - passed.length === 21,
+    `21 of 42 sittings pass (${passed.map((w) => 'C' + w).join(' ')}), 21 repeat`)
+  say(time === 8 && first === 9 && both === 4, `repeats: ${time} time only, ${first} first try only, ${both} both (shown: 8 / 9 / 4)`)
   const oldRule: Decide = (i) => ({ ...decideSheet(i), passed: true, outcome: 'pass', advance: true, reasons: [] })
-  say(rescore(oldRule).filter((x) => x.d.passed).length !== 10, 'control fires: the old rule (every sheet advances) does not reproduce the table')
+  say(rescore(oldRule).filter((x) => x.d.passed).length !== 21, 'control fires: the old rule (every sheet advances) does not reproduce the table')
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +226,7 @@ console.log('\n# ledger')
 // ---------------------------------------------------------------------------
 console.log('\n# run of tries')
 {
-  const s = (outcome: 'pass' | 'repeat' | 'moved_on'): SheetEvent => sittingRecord(decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: outcome === 'pass' ? 9 : 5, seconds: 100, priorNonPasses: 0 }), { problems: 10, firstTry: 5, seconds: 100, focusScore: 100 })
+  const s = (outcome: 'pass' | 'repeat' | 'moved_on'): SheetEvent => sittingRecord(decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: outcome === 'pass' ? 9 : 5, seconds: 100, priorNonPasses: 0, position: 1 }), { problems: 10, firstTry: 5, seconds: 100, focusScore: 100 })
   const repeat = { ...s('repeat'), outcome: 'repeat' as const }
   const pass = { ...s('pass'), outcome: 'pass' as const }
   const parent: SheetEvent = { kind: 'parent', at: '2026-11-10T00:00:00Z', outcome: 'parent_move_on', from: 56, to: 57 }
@@ -202,9 +242,9 @@ console.log('\n# record')
   // A repeat (6 of 10 first try, all 10 right in the end), then a pass the next day.
   const recordFindings = (merge: typeof mergeSitting): string[] => {
     const out: string[] = []
-    const d1 = decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 6, seconds: 300, priorNonPasses: 0 })
+    const d1 = decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 6, seconds: 300, priorNonPasses: 0, position: 1 })
     const r1 = merge(null, sittingRecord(d1, { problems: 10, firstTry: 6, seconds: 300, focusScore: 100, at: '2026-11-10T01:00:00Z' }), 10)
-    const d2 = decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 9, seconds: 200, priorNonPasses: 1 })
+    const d2 = decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 9, seconds: 200, priorNonPasses: 1, position: 1 })
     const r2 = merge({ ...r1 }, sittingRecord(d2, { problems: 10, firstTry: 9, seconds: 200, focusScore: 80, at: '2026-11-11T01:00:00Z' }), 10)
     if (r1.status !== 'in_progress' || 'completed_at' in r1) out.push('a repeated sheet is recorded "completed"')
     if (r1.best_score_total !== 10 || r1.first_try_correct !== 6 || r1.times_attempted !== 1) out.push('totals not out of the sheet\'s problems')
@@ -298,7 +338,7 @@ console.log('\n# Check (R2)')
 // ---------------------------------------------------------------------------
 console.log('\n# words')
 {
-  const d = (outcome: 'pass' | 'repeat' | 'moved_on') => ({ ...decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 9, seconds: 100, priorNonPasses: 0 }), outcome, advance: outcome !== 'repeat' })
+  const d = (outcome: 'pass' | 'repeat' | 'moved_on') => ({ ...decideSheet({ level: 'C', worksheet: 56, problems: 10, firstTry: 9, seconds: 100, priorNonPasses: 0, position: 1 }), outcome, advance: outcome !== 'repeat' })
   const msg = (o: 'pass' | 'repeat' | 'moved_on', fn = childSheetMessage) => fn(d(o), { level: 'C', worksheet: 56, next: o === 'repeat' ? 56 : 57, problems: 10, firstTry: 6, newNumbers: true })
   const wordFindings = (fn: typeof childSheetMessage): string[] => {
     const out: string[] = []
