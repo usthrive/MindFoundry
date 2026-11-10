@@ -82,6 +82,8 @@ export interface WorksheetViewProps {
   onCanCheckChange?: (canCheck: boolean) => void
   /** How many times this sheet has been done before; a repeat asks its facts in a new order (R1). */
   variant?: number
+  /** The teaching screen is open (after a third miss) — the page holds the sheet's clock meanwhile. */
+  onTeachingChange?: (open: boolean) => void
   /** Fires whenever the child moves to a different problem, so the parent can adapt
    *  the keypad (Level G+ shows the variables that appear in THIS question). */
   onActiveProblemChange?: (problem: Problem | null) => void
@@ -640,6 +642,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   onAnswerChange,
   onCanCheckChange,
   variant = 0,
+  onTeachingChange,
   onActiveProblemChange,
   scaffoldVisible = false,
   scaffoldMode = null,
@@ -1909,6 +1912,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     onCanCheckChange?.(canCheck && !allResolved)
   }, [canCheck, allResolved, onCanCheckChange])
 
+  // The app's teaching screen is not the child's working time (review, 2026-11-10).
+  useEffect(() => {
+    onTeachingChange?.(showTeaching)
+  }, [showTeaching, onTeachingChange])
+
   // A nudge about one problem is about that problem: it goes when he moves on
   // (the "Keep going" toast used to hang over the next problem, 2026-11-10).
   useEffect(() => {
@@ -2282,7 +2290,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             onClick={handleSubmitPage}
             disabled={!canCheck || !sessionActive}
           >
-            {hasWrongAnswers ? 'Try Again' : currentPageState.submitted ? 'Check' : `Check Answers (${problemsOnThisPage})`}
+            {/* Always "Check" once the page has been checked: it grades whatever is new
+                (R2); the line below says which ones to try again. */}
+            {currentPageState.submitted ? 'Check' : `Check Answers (${problemsOnThisPage})`}
           </Button>
         ) : allResolved && currentPage < totalPages ? (
           // All resolved - go to next page

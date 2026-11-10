@@ -315,6 +315,19 @@ console.log('\n# words')
   const scored: typeof childSheetMessage = (dd, s) => (dd.outcome === 'repeat' ? `You got ${s.firstTry} of ${s.problems}. Try again!` : childSheetMessage(dd, s))
   say(wordFindings(scored).length > 0, 'control fires: a repeat that reads out the score')
   say(repeatBanner(false).includes('again') && !repeatBanner(false).includes('new numbers'), 'an ordered sheet does not promise new numbers')
+  // The repeat names the GOAL by its reason, in a child's words, never a score or clock.
+  const goalFindings = (fn: typeof repeatBanner): string[] => {
+    const out: string[] = []
+    const slow = fn(true, ['time']), miss = fn(true, ['first_try']), both = fn(true, ['first_try', 'time'])
+    if (slow === miss) out.push('a slow sheet and a missed sheet get the same words')
+    if (!/Good work!/.test(slow) || !/pop right into your head/.test(slow)) out.push(`time only should praise, then name recall: "${slow}"`)
+    if (!/take a good look/.test(miss) || both !== miss) out.push(`a first-try repeat should ask him to look before he checks: "${miss}"`)
+    if (/\d|second|minute|clock|timer|quick|fast|hurry|%/i.test(slow + miss)) out.push('a repeat line talks numbers, clock or hurry')
+    return out
+  }
+  const gf = goalFindings(repeatBanner)
+  say(gf.length === 0, `the repeat names the goal: "${repeatBanner(true, ['time'])}" / "${repeatBanner(true, ['first_try'])}"${gf.length ? ' — ' + gf.join('; ') : ''}`)
+  say(goalFindings((n) => repeatBanner(n)).length > 0, 'control fires: one line for every repeat (the reason ignored)')
 }
 
 // ---------------------------------------------------------------------------
@@ -343,7 +356,11 @@ function sourceFindings(s: Src): string[] {
   if (!/positionMovedElsewhere\(\)/.test(s.study.slice(s.study.indexOf('const handleSessionComplete')))) out.push('finishing a sheet can write over a grown-up\'s move')
   if (!/key=\{`\$\{currentLevel\}-\$\{currentWorksheet\}-\$\{sheetVariant\}`\}/.test(s.study) || !/variant=\{sheetVariant\}/.test(s.study)) out.push('a repeated sheet does not remount with new numbers')
   if (!/recordFirstCheck\(attempt\.place,/.test(s.study)) out.push('the grid does not feed the sheet ledger by place')
-  if (!/holdTimer\(showConceptIntro\)/.test(s.study) || !/if \(holdRef\.current\) return/.test(s.timer)) out.push('a lesson before the sheet is timed as the sheet')
+  if (!/holdTimer\(showConceptIntro \|\| gridTeaching \|\| showTeaching\)/.test(s.study) || !/if \(holdRef\.current\) return/.test(s.timer)) out.push('a lesson or the app\'s teaching screen is timed as the sheet')
+  if (!/onTeachingChange=\{setGridTeaching\}/.test(s.study) || !/onTeachingChange\?\.\(showTeaching\)/.test(s.view)) out.push('the grid does not report its teaching screen')
+  if (!/onDismiss=\{dismissFeedback\}/.test(s.study)) out.push('the end-of-sheet message is dismissed by an inline callback (its timer re-arms every render)')
+  if (/setRecapOpen\(true\), 1200\)/.test(s.study) || !/setRecapOpen\(true\), done\.holdMs \+ 300\)/.test(s.study)) out.push('the cohort recap covers the verdict')
+  if (!/repeatBanner\(repeatServesNewNumbers, sheetRepeatReasons\)/.test(s.study)) out.push('the line on a repeated sheet ignores why it is repeated')
   if (/const now = Date\.now\(\)/.test(s.timer) || !/const now = monotonicNow\(\)/.test(s.timer)) out.push('the sheet clock ticks on the wall clock')
   // R2
   if (!/onCanCheckChange=\{setCanSubmitWorksheet\}/.test(s.study) || !/submitDisabled=\{!canSubmitWorksheet\}/.test(s.study)) out.push('the pad\'s Check does not follow R2')
@@ -373,6 +390,9 @@ function sourceFindings(s: Src): string[] {
     ['the restore into page 1', { view: S.view.replace('setPageStates({ [restoredPage]: normalized })', 'setPageStates({ 1: normalized })') }],
     ['the empty hint record', { view: S.view.replace('hintLevelReached: hintsReached[index] || null', 'hintLevelReached: hintLevels[index] || null') }],
     ['the wall-clock timer', { timer: S.timer.replace('const now = monotonicNow()', 'const now = Date.now()') }],
+    ['the teaching screen on the clock', { study: S.study.replace('holdTimer(showConceptIntro || gridTeaching || showTeaching)', 'holdTimer(showConceptIntro)') }],
+    ['the inline dismiss', { study: S.study.replace('onDismiss={dismissFeedback}', 'onDismiss={() => setFeedback({ ...feedback, show: false })}') }],
+    ['the recap over the verdict', { study: S.study.replace('setRecapOpen(true), done.holdMs + 300)', 'setRecapOpen(true), 1200)') }],
     ['a move back that keeps the seen intros', { move: S.move.replace('if (m.to < m.from) await clearConceptsFromWorksheet', 'if (false) await clearConceptsFromWorksheet') }],
     ['an unguarded parent card', { card: S.card.replace('<ParentVerification', '<div') }],
   ]

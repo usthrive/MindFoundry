@@ -461,10 +461,12 @@ Built:
   sheet again — the grid remounts with `variant` = times done before, and a times-table
   sheet asks the same ten facts in a new order (`repeatPlace`, a bijection; ordered sheets
   keep their walk and their copy says "Same sheet again"). Child words: a pass names a
-  count ("🎉 C56 done! ✅ 9 of 10 right the first time · Next: C57"), a repeat "Same
-  sheet, new numbers — let's make it steady and smooth." (no score, no clock), the third
-  try "Time for a new sheet: C57." A repeated sheet carries the line on the sheet itself
-  (🔁, read-aloud). A grown-up's move made while the sheet was open stands.
+  count ("🎉 C56 done! ✅ 9 of 10 right the first time · Next: C57"); a repeat names the
+  goal by its reason, never a score or a clock — right but slow: "Good work! Same sheet,
+  new numbers — let's see if the answers pop right into your head."; missed: "Same sheet,
+  new numbers — take a good look at each one before you check."; the third try "Time for
+  a new sheet: C57." A repeated sheet carries the line on the sheet itself (🔁, a 48 px
+  read-aloud button). The verdict is read before the cohort recap opens. A grown-up's move made while the sheet was open stands.
 - Parent: `components/parent/KumonSheetsCard` on the progress page — each sitting's first
   try, time against the standard, focus (amber where it fell short), the "C52: moved on
   after 3 tries — first try 60%, 2.5× standard time" line, and "Move on anyway" /
@@ -477,7 +479,9 @@ Built:
   on this page."
 - R4: the stopwatch and focus score show only in Parent Mode; "Welcome back!" no longer
   reads out the time away; the idle warning has no countdown (`showCountdown={false}`).
-  The clock ticks on `performance.now()` and holds while a lesson is open.
+  The clock ticks on `performance.now()` and holds while a lesson or the app's teaching
+  screen is open (his own corrections count, as in Kumon; an animation the app imposes
+  does not).
 - Records: `hintLevelReached` is the highest hint reached (was cleared first — empty on
   all 390 times-table rows); tried answers, checked answers and the page number live in
   the page state, so a reload keeps them; the restore puts the page back where it was
@@ -489,16 +493,36 @@ Built:
   `worksheet_progress.first_try_correct`, `problems_total`, `sittings jsonb` (additive).
   **Not yet applied** — it must be applied (and recorded in schema_migrations) BEFORE the
   frontend deploys, or the try count is never stored and the third-try rule never fires.
-- Gate `scripts/kumon-pass-rule-test.ts` (45 checks, 23 broken controls; his 42 sittings
+- Gate `scripts/kumon-pass-rule-test.ts` (50 checks, 27 broken controls; his 42 sittings
   as a numbers-only fixture reproduce 10 / 32 and 19 / 2 / 11). Harness: the REAL
   StudyPage (`screen=kumon-study`, auth stub, the Supabase stub as an in-memory database
   when `__sbApplyUpdates`) and the parent card (`screen=kumon-parent`). Photographs
   `docs/screens-2026-11-10/` by `scripts/kumon-pass-rule-visual.ts` (touch pad at 820 px,
-  keyboard at 430 px; 41 rendered-page checks, all pass).
+  keyboard at 430 px; 48 rendered-page checks, all pass; 19 photographs).
+
+**Review (Fable, read-only, before push).** Verified in code and fixed before push: the
+repeat said nothing about why (19 of his 32 repeats are right-but-slow) → the words above;
+the end-of-sheet toast's timer re-armed on every render (an inline `onDismiss` while the
+clock re-renders the page each second) and the cohort recap covered the verdict after
+1.2 s → a stable dismiss and the recap after the verdict; the app's teaching screen ran on
+the child's clock → held; "Try Again" on a Check that grades new answers → "Check"; the
+32 px read-aloud button → 48 px; a ledger that saw part of the sheet against the whole
+clock → judged on first try alone; the parent card's "(C56: 4 min)" and "first try" →
+"standard 2 min, so up to 4 min", "try 1 of 3", and the move notice says an open sheet
+finishes first; a Parent-Mode jump to the current sheet no longer logs a "move". Found by
+the new photographs: the toast began at mid-screen and ran off a phone's edge (motion's
+transform replaced the centring) → centred by a wrapper. Owed to the owner: the time
+limit for C51+ is 2 × 120 s = 4 min (Kumon's own repeat threshold for that run, ×2), where
+the ruling's text read 2 × the level value (90 s) = 3 min — same for the tables.
 
 Seen, not changed (next): carries are still drawn from the true answer (R3, change set 2);
 the C51–C70 header still says "Multiplication ×6-9 Tables" / "All Times Tables Mixed"
 (`sessionManager.ts:344-347`); at 430 px "Show me how" runs off the header; the cohort
 "Great practicing!" card covers the end-of-sheet message; the first-try dwell clock is
 not kept across a reload (first-try seconds are null on a restored page); an empty
-session still opens after every sheet.
+session still opens after every sheet. From the review, for change set 2+: "End Session"
+on the child's screen discards a sheet with no record (a bypass — gate it or record an
+abandoned sitting); the rule's time half also applies to levels Kumon does not time
+(7A–5A); `sittings` is read-then-written (two devices at once can drop an event — move to
+a server-side append); the recap's empty effort stars read as a score; the header "0 / 10"
+moves per page, not per problem; the sitting does not record lesson replays.

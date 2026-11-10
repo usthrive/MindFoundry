@@ -23,6 +23,8 @@
  *                    asks for the parent check and goes through the one move path.
  *   E  tablet        Parent Mode shows the clock the child no longer sees.
  *   F  tablet        an ordered table sheet's repeat does not promise new numbers.
+ *   G  tablet        a repeat for time only names the goal ("pop right into your head"),
+ *                    with a finger-sized read-aloud button.
  */
 import fs from 'node:fs'
 import http from 'node:http'
@@ -96,6 +98,8 @@ async function write(p: Page, pr: Prob, answer: string, via: 'pad' | 'keys') {
     else { await p.keyboard.press(d); await wait(p, 80) }
   }
 }
+/** The end-of-sheet message sits wholly inside the screen (it began at mid-screen and ran off the edge). */
+const toastInView = (p: Page) => ev<boolean>(p, `(() => { const t = document.querySelector('div.fixed.inset-x-0.top-20 > div'); if (!t) return false; const r = t.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= window.innerWidth })()`)
 const inserts = (p: Page, table: string) => ev<Array<Record<string, any>>>(p, `(window.__sbInserts || []).filter(x => x.table === ${JSON.stringify(table)}).map(x => x.row)`)
 const updates = (p: Page, table: string) => ev<Array<Record<string, any>>>(p, `(window.__sbUpdates || []).filter(x => x.table === ${JSON.stringify(table)})`)
 const fixture = (p: Page, table: string) => ev<Array<Record<string, any>>>(p, `JSON.parse(JSON.stringify((window.__sbFixture || {})[${JSON.stringify(table)}] || []))`)
@@ -180,7 +184,9 @@ await workPage(p, new Set([0, 1, 2]))
 await wait(p, 1600)
 t = await text(p)
 await shot(p, 'A4-repeat-message')
-say(/Same sheet, new numbers — let's make it steady and smooth\./.test(t) && !/\d+ of 10|%/.test(t.slice(0, 400)), 'end of sheet, 6 of 10 first try: "Same sheet, new numbers — let\'s make it steady and smooth." — no score')
+say(/Same sheet, new numbers — take a good look at each one before you check\./.test(t) && !/\d+ of \d+ right|%/.test(t), 'end of sheet, 6 of 10 first try: "Same sheet, new numbers — take a good look at each one before you check." — no score')
+say(!/Great practicing/.test(t), 'the verdict is on screen alone (the cohort recap waits for it)')
+say(await toastInView(p), 'and wholly inside the screen (tablet)')
 await wait(p, 4000)
 let rec = await record(p, 56)
 let last = rec?.sittings?.[rec.sittings.length - 1]
@@ -191,12 +197,15 @@ say(sess[0]?.problems_completed === 10 && sess[0]?.problems_correct === 10, `ses
 say((await position(p)) === 56, 'the position stays on C56')
 for (let i = 0; i < 4 && (await click(p, 'Done')); i++) await wait(p, 300) // the cohort recap that follows every sheet
 t = await text(p)
+// The toast and the line on the sheet say the same words: once the toast has gone, they appear once.
+say(t.split('take a good look at each one before you check').length - 1 === 1, 'the end-of-sheet message has gone by itself; the line on the sheet stays')
 say(/Worksheet 56/.test(t) && /🔁/.test(t) && /Same sheet, new numbers/.test(t), 'C56 again, with the line on the sheet: 🔁 "Same sheet, new numbers…"')
 await shot(p, 'A5-repeat-banner-on-the-sheet')
 await workSheet(p, [], [])
 t = await text(p)
 await shot(p, 'A6-pass-message')
 say(/🎉 C56 done!/.test(t) && /10 of 10 right the first time/.test(t) && /Next: C57/.test(t) && !/%/.test(t.slice(0, 300)), 'a clean sitting: "🎉 C56 done! ✅ 10 of 10 right the first time — Next: C57" (a count, no %)')
+say(!/Great practicing/.test(t), 'and it is read before the cohort recap opens')
 await wait(p, 4000)
 rec = await record(p, 56)
 say(rec?.sittings?.map((s: any) => s.outcome).join() === 'repeat,pass' && rec?.status === 'completed' && (await position(p)) === 57, `then: sittings ${rec?.sittings?.map((s: any) => s.outcome).join(' → ')}, status ${rec?.status}, position C${await position(p)}`)
@@ -207,12 +216,13 @@ console.log('\n# B — phone, touch pad: the third try moves on')
 p = await open('?screen=kumon-study&ws=56&runs=repeat,repeat', PHONE)
 t = await text(p)
 await shot(p, 'B1-third-try-phone')
-say(/🔁/.test(t) && /Same sheet, new numbers/.test(t), 'the line on the sheet at phone width')
+say(/🔁/.test(t) && /Same sheet, new numbers — take a good look/.test(t), 'the line on the sheet at phone width')
 await workSheet(p, [0, 1, 2], [0, 1])
 t = await text(p)
 await shot(p, 'B2-moved-on-message')
 // A score reads "N of M right"; "Page 1 of 2" is not one.
 say(/Time for a new sheet: C57\./.test(t) && !/\d+ of \d+ right/.test(t), '"Time for a new sheet: C57." — no score')
+say(await toastInView(p), 'the message is wholly inside the screen at phone width')
 await wait(p, 4000)
 rec = await record(p, 56)
 last = rec?.sittings?.[rec.sittings.length - 1]
@@ -302,7 +312,7 @@ console.log('\n# D — phone: the parent card and its moves')
 p = await open('?screen=kumon-parent&ws=56', PHONE)
 t = await text(p)
 await shot(p, 'D1-parent-card-phone')
-say(/Now: C56 — try 2 of 3/.test(t), '"Now: C56 — try 2 of 3"')
+say(/Now: C56 — try 2 of 3/.test(t) && /C56: standard 2 min, so up to 4 min/.test(t), '"Now: C56 — try 2 of 3"; "standard 2 min, so up to 4 min"')
 say(/C52: moved on after 3 tries — first try 60%, 2\.5× standard time/.test(t), 'the log line: "C52: moved on after 3 tries — first try 60%, 2.5× standard time"')
 say(/6 of 10 first try · 2\.2× standard · focus 91%/.test(t) && /Not yet · try 1 of 3/.test(t) && /Moved on · try 3 of 3/.test(t) && /Passed on try 2/.test(t), 'each sitting: first try, time against the standard, focus, and "Not yet · try 1 of 3" / "Passed on try 2" / "Moved on · try 3 of 3"')
 say(/Repeat C55/.test(t) && /Move on anyway/.test(t), 'while C56 is repeating: "Move on anyway" and "Repeat C55"')
@@ -315,7 +325,7 @@ await wait(p, 800)
 t = await text(p)
 const prog = await fixture(p, 'worksheet_progress')
 const c56 = prog.find((r) => r.worksheet_number === 56)
-say(/Done\. Next time Harness practises, C57 opens\./.test(t) && (await position(p)) === 57 && c56?.sittings?.at(-1)?.outcome === 'parent_move_on',
+say(/Done\. Next time Harness practises, C57 opens \(a sheet already open on the tablet is finished first\)\./.test(t) && (await position(p)) === 57 && c56?.sittings?.at(-1)?.outcome === 'parent_move_on',
   `moved: position C${await position(p)}, C56 record ends "${c56?.sittings?.at(-1)?.outcome}"`)
 await shot(p, 'D3-moved-on-by-parent')
 await p.fill('#kumon-back-to', '50')
@@ -344,8 +354,18 @@ await p.context().close()
 console.log('\n# F — tablet: an ordered table sheet repeats without promising new numbers')
 p = await open('?screen=kumon-study&ws=15&runs=repeat', TABLET)
 t = await text(p)
-say(/Same sheet again — let's make it steady and smooth\./.test(t) && !/new numbers/.test(t), '"Same sheet again — let\'s make it steady and smooth." (the ×3 walk stays in order)')
+say(/Same sheet again — take a good look at each one before you check\./.test(t) && !/new numbers/.test(t), '"Same sheet again — take a good look…" (the ×3 walk stays in order, so no "new numbers")')
 await shot(p, 'F1-ordered-sheet-repeat')
+await p.context().close()
+
+// ===========================================================================
+console.log('\n# G — tablet: a repeat for time only names the goal, not a clock')
+p = await open('?screen=kumon-study&ws=56&runs=repeat&why=time', TABLET)
+t = await text(p)
+say(/Good work! Same sheet, new numbers — let's see if the answers pop right into your head\./.test(t) && !/second|minute|clock|fast|quick/i.test(t.slice(0, 600)), '"Good work! Same sheet, new numbers — let\'s see if the answers pop right into your head." (no clock)')
+const speaker = await ev<number>(p, `(() => { const b = document.querySelector('[data-repeat-banner] button'); return b ? Math.round(b.getBoundingClientRect().height) : 0 })()`)
+say(speaker >= 44, `the read-aloud button on the line is ${speaker} px tall (a finger target, ≥ 44)`)
+await shot(p, 'G1-repeat-for-time-only')
 await p.context().close()
 
 const real = errors.filter((e) => !/harness: supabase disabled|Proxy\(Function\)/.test(e))

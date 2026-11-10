@@ -237,7 +237,8 @@ function ParentHarness() {
  * __sbApplyUpdates), so a driver can work a sheet on the touch pad or a keyboard and
  * read back what was recorded: the sitting, the position, the attempts.
  * Query: level (C), ws (56), seen=0 (show the new-concept lesson), runs=repeat,repeat
- * (sittings already on this sheet), mode=standard|one.
+ * (sittings already on this sheet), why=time (those sittings were slow, not wrong),
+ * mode=standard|one.
  */
 function kumonStudyFixture() {
   const lvl = (q.get('level') ?? 'C') as string;
@@ -252,10 +253,15 @@ function kumonStudyFixture() {
   const seen = q.get('seen') !== '0'
     ? Object.entries(CONCEPT_INTRODUCTION).filter(([, i]) => i.level === lvl && i.worksheet <= ws).map(([c]) => ({ child_id: child.id, concept_id: seenKey(c), seen_at: '2026-11-01T00:00:00Z' }))
     : [];
-  const sittings: SheetEvent[] = runs.map((outcome, k) => ({
-    ...sittingRecord(decideSheet({ level: lvl, worksheet: ws, problems: 10, firstTry: outcome === 'pass' ? 9 : 5, seconds: 400, priorNonPasses: k }), { problems: 10, firstTry: outcome === 'pass' ? 9 : 5, seconds: 400, focusScore: 95, at: `2026-11-0${k + 1}T22:00:00Z` }),
-    outcome,
-  }));
+  // why=time: the earlier sittings were right enough but slow (a time-only repeat).
+  const timeOnly = q.get('why') === 'time';
+  const sittings: SheetEvent[] = runs.map((outcome, k) => {
+    const firstTry = outcome === 'pass' || timeOnly ? 9 : 5;
+    return {
+      ...sittingRecord(decideSheet({ level: lvl, worksheet: ws, problems: 10, firstTry, seconds: 400, priorNonPasses: k }), { problems: 10, firstTry, seconds: 400, focusScore: 95, at: `2026-11-0${k + 1}T22:00:00Z` }),
+      outcome,
+    };
+  });
   (window as any).__harnessChild = child;
   (window as any).__sbApplyUpdates = true;
   (window as any).__sbFixture = {

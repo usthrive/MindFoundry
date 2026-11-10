@@ -260,16 +260,24 @@ export function childSheetMessage(
   d: SheetDecision,
   sheet: { level: string; worksheet: number; next: number; problems: number; firstTry: number; newNumbers: boolean },
 ): string {
-  if (d.outcome === 'repeat') return repeatBanner(sheet.newNumbers)
+  if (d.outcome === 'repeat') return repeatBanner(sheet.newNumbers, d.reasons)
   if (d.outcome === 'moved_on') return `Time for a new sheet: ${sheet.level}${sheet.next}.`
   return `🎉 ${sheet.level}${sheet.worksheet} done!\n✅ ${sheet.firstTry} of ${sheet.problems} right the first time\nNext: ${sheet.level}${sheet.next}`
 }
 
-/** The line on top of a repeated sheet (and the end-of-sheet message that leads to it). */
-export function repeatBanner(newNumbers: boolean): string {
-  return newNumbers
-    ? "Same sheet, new numbers — let's make it steady and smooth."
-    : "Same sheet again — let's make it steady and smooth."
+/**
+ * The line on top of a repeated sheet (and the end-of-sheet message that leads to it).
+ * It names the GOAL in a child's words, never a score or a clock (review, 2026-11-10):
+ * most repeats are right answers that were worked out — "Good work!" first, then the
+ * aim, recall ("pop right into your head"); a repeat on first try asks him to look
+ * before he checks. `reasons` empty (unknown) reads as the first-try line.
+ */
+export function repeatBanner(newNumbers: boolean, reasons: Reason[] = []): string {
+  const sheet = newNumbers ? 'Same sheet, new numbers' : 'Same sheet again'
+  const timeOnly = reasons.length === 1 && reasons[0] === 'time'
+  return timeOnly
+    ? `Good work! ${sheet} — let's see if the answers pop right into your head.`
+    : `${sheet} — take a good look at each one before you check.`
 }
 
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0)

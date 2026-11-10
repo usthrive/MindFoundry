@@ -22,6 +22,12 @@ pushed) — they go up with the first change set's push.
   count is never stored and the third-try rule never fires).
 - After deploy: his next sheet (C56) should write a `sittings` entry; check
   `worksheet_progress` for C56 and the parent card.
+- A Fable review (read-only) ran before push; its "fix before push" items are fixed (brief
+  §13, "Review"). **Owner decision owed:** the C51+ time limit is 4 min (2 × Kumon's 120 s for
+  that run) where the ruling's text implied 3 min (2 × 90 s); the tables are 3 min either way.
+- Later (from the review): gate "End Session" on the child's screen or record an abandoned
+  sitting; scope the time half to levels Kumon times; server-side append for `sittings`;
+  the recap's empty stars; "0 / 10" per problem; record lesson replays.
 - Next: change set 2 (R3 carries) — also fix the C51–C70 header label
   (`sessionManager.ts:344-347` says "×6-9 Tables" on stacked sheets).
 

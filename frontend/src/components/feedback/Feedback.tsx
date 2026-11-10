@@ -61,7 +61,11 @@ const Feedback = ({
 
   const config = variants[type]
 
+  // Centred by a full-width wrapper, not by translate-x on the animated element:
+  // framer-motion's transform replaced the -translate-x-1/2, so the message began at
+  // mid-screen and ran off the right edge on a phone (photographed 2026-11-10).
   return (
+    <div className="pointer-events-none fixed inset-x-0 top-20 z-50 flex justify-center px-4">
     <AnimatePresence>
       {isVisible && (
         <motion.div
@@ -69,7 +73,7 @@ const Feedback = ({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.9 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed left-1/2 top-20 z-50 -translate-x-1/2"
+          className="pointer-events-auto max-w-full"
         >
           <div
             className={cn(
@@ -87,6 +91,7 @@ const Feedback = ({
         </motion.div>
       )}
     </AnimatePresence>
+    </div>
   )
 }
 

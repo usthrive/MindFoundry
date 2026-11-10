@@ -4,7 +4,7 @@ import type { KumonLevel } from '@/types'
 import { LEVEL_ORDER } from './generators/types'
 import { evidencePayload, type AttemptEvidence } from './attemptEvidence'
 import { getSctForLevel } from './sct'
-import { mergeSitting, nonPassesInRun, type SheetEvent, type SittingRecord } from './sheetPass'
+import { mergeSitting, nonPassesInRun, type Reason, type SheetEvent, type SittingRecord } from './sheetPass'
 
 type Child = Database['public']['Tables']['children']['Row']
 
@@ -173,7 +173,7 @@ export async function getSheetRun(
   childId: string,
   level: KumonLevel,
   worksheetNumber: number,
-): Promise<{ nonPasses: number; variant: number }> {
+): Promise<{ nonPasses: number; variant: number; lastReasons: Reason[] }> {
   const { data, error } = await supabase
     .from('worksheet_progress')
     .select('sittings, times_attempted')
@@ -181,9 +181,11 @@ export async function getSheetRun(
     .eq('level', level)
     .eq('worksheet_number', worksheetNumber)
     .maybeSingle()
-  if (error || !data) return { nonPasses: 0, variant: 0 }
+  if (error || !data) return { nonPasses: 0, variant: 0, lastReasons: [] }
   const row = data as { sittings?: SheetEvent[] | null; times_attempted?: number | null }
-  return { nonPasses: nonPassesInRun(row.sittings), variant: row.times_attempted ?? 0 }
+  // Why the last sitting did not pass, so a reloaded repeat says the same thing.
+  const last = [...(row.sittings ?? [])].reverse().find((e): e is SittingRecord => e.kind === 'sitting')
+  return { nonPasses: nonPassesInRun(row.sittings), variant: row.times_attempted ?? 0, lastReasons: last?.reasons ?? [] }
 }
 
 /** Append a parent's move to a sheet's record (it also ends that sheet's run of tries). */

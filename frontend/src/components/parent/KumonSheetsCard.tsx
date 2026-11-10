@@ -68,7 +68,8 @@ export default function KumonSheetsCard({ childId, childName, level, currentWork
   // repeated, its own sittings are the newest — they are not "the sheet just finished").
   const lastFinished = events.find((x) => x.e.kind === 'sitting' && x.ws < currentWorksheet)?.ws ?? null
   const movedOn = events.filter((x) => x.e.kind === 'sitting' && x.e.outcome === 'moved_on').slice(0, 3)
-  const limit = TIME_FACTOR * getSctForSheet(level, currentWorksheet)
+  const standard = getSctForSheet(level, currentWorksheet)
+  const limit = TIME_FACTOR * standard
 
   const ask = (action: ParentAction, to: number, label: string) => {
     setNotice(null)
@@ -82,7 +83,9 @@ export default function KumonSheetsCard({ childId, childName, level, currentWork
     setBusy(true)
     const ok = await moveKumonPosition({ childId, level, from: currentWorksheet, to: pending.to, action: pending.action })
     setBusy(false)
-    setNotice(ok ? `Done. Next time ${childName} practises, ${level}${pending.to} opens.` : 'That did not save. Please try again.')
+    setNotice(ok
+      ? `Done. Next time ${childName} practises, ${level}${pending.to} opens (a sheet already open on the tablet is finished first).`
+      : 'That did not save. Please try again.')
     setPending(null)
     if (ok) await onMoved()
   }
@@ -98,13 +101,13 @@ export default function KumonSheetsCard({ childId, childName, level, currentWork
       </div>
       <p className="text-xs text-gray-500 mb-3">
         A sheet moves on at {PASS_FIRST_TRY_PER_TEN} of 10 right the first time, without help, in up to{' '}
-        {TIME_FACTOR}× the standard time ({level}{currentWorksheet}: {minutes(limit)}). Otherwise it is done again
+        {TIME_FACTOR}× the standard time ({level}{currentWorksheet}: standard {minutes(standard)}, so up to {minutes(limit)}). Otherwise it is done again
         with new numbers; after {MAX_TRIES} tries it moves on. <span className="text-amber-700">Amber</span> marks what fell short.
       </p>
 
       <div className="rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-900 mb-3" data-sheet-now>
         Now: <strong>{level}{currentWorksheet}</strong>
-        {repeating > 0 ? ` — try ${repeating + 1} of ${MAX_TRIES}` : ' — first try'}
+        {` — try ${repeating + 1} of ${MAX_TRIES}`}
       </div>
 
       {movedOn.length > 0 && (
