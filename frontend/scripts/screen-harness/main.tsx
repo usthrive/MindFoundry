@@ -38,6 +38,13 @@ import ParentHome from '@/modules/best-brains/screens/parent/ParentHome';
 import ParentControls from '@/modules/best-brains/screens/parent/ParentControls';
 import { ParentContext } from '@/modules/best-brains/screens/parent/FoundryParentLayout';
 import type { BBLevel, DayProgress, MasteryAttempt } from '@/modules/best-brains/types';
+import StudyPage from '@/pages/StudyPage';
+import KumonSheetsCard from '@/components/parent/KumonSheetsCard';
+import { CelebrationProvider } from '@/contexts/CelebrationContext';
+import { NavigationGuardProvider } from '@/contexts/NavigationGuardContext';
+import { CONCEPT_INTRODUCTION } from '@/services/generators/concept-availability';
+import { seenKey } from '@/services/conceptAnimationMapping';
+import { decideSheet, sittingRecord, type SheetEvent } from '@/services/sheetPass';
 import { B4_A, B4_B1, B4_B2, B4_DAYS, hisLog, weekRows } from './his-log';
 import '@/index.css';
 
@@ -224,7 +231,89 @@ function ParentHarness() {
   );
 }
 
-if (screen === 'kumon-intro') {
+/**
+ * screen=kumon-study — the REAL Kumon StudyPage (2026-11-10), signed in as a parent
+ * with one child (auth-stub.tsx) over an in-memory database (supabase-stub.ts with
+ * __sbApplyUpdates), so a driver can work a sheet on the touch pad or a keyboard and
+ * read back what was recorded: the sitting, the position, the attempts.
+ * Query: level (C), ws (56), seen=0 (show the new-concept lesson), runs=repeat,repeat
+ * (sittings already on this sheet), mode=standard|one.
+ */
+function kumonStudyFixture() {
+  const lvl = (q.get('level') ?? 'C') as string;
+  const ws = Number(q.get('ws') ?? 56);
+  const runs = (q.get('runs') ?? '').split(',').filter(Boolean) as Array<'pass' | 'repeat' | 'moved_on'>;
+  const child = {
+    id: 'harness-child', user_id: 'harness-parent', name: 'Harness', age: 7, grade_level: 2, avatar: null,
+    current_level: lvl, current_worksheet: ws, questions_per_page_mode: q.get('mode') ?? 'standard',
+    supplementary_practice: null, regroup_helper_mode: null, tier: 'free', streak: 0, total_problems: 0, total_correct: 0,
+    created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
+  };
+  const seen = q.get('seen') !== '0'
+    ? Object.entries(CONCEPT_INTRODUCTION).filter(([, i]) => i.level === lvl && i.worksheet <= ws).map(([c]) => ({ child_id: child.id, concept_id: seenKey(c), seen_at: '2026-11-01T00:00:00Z' }))
+    : [];
+  const sittings: SheetEvent[] = runs.map((outcome, k) => ({
+    ...sittingRecord(decideSheet({ level: lvl, worksheet: ws, problems: 10, firstTry: outcome === 'pass' ? 9 : 5, seconds: 400, priorNonPasses: k }), { problems: 10, firstTry: outcome === 'pass' ? 9 : 5, seconds: 400, focusScore: 95, at: `2026-11-0${k + 1}T22:00:00Z` }),
+    outcome,
+  }));
+  (window as any).__harnessChild = child;
+  (window as any).__sbApplyUpdates = true;
+  (window as any).__sbFixture = {
+    children: [child],
+    worksheet_progress: runs.length ? [{ id: 'wp-current', child_id: child.id, level: lvl, worksheet_number: ws, status: 'in_progress', times_attempted: runs.length, best_score: 0, best_score_total: 10, sittings, completed_at: null }] : [],
+    practice_sessions: [], problem_attempts: [], daily_practice: [], concepts_seen: seen,
+  };
+}
+
+function KumonStudyHarness() {
+  return (
+    <MemoryRouter initialEntries={['/study']}>
+      <CelebrationProvider>
+        <NavigationGuardProvider>
+          <Routes>
+            <Route path="/study" element={<StudyPage />} />
+            <Route path="*" element={<p data-harness="redirected">REDIRECTED: {location.pathname}</p>} />
+          </Routes>
+        </NavigationGuardProvider>
+      </CelebrationProvider>
+    </MemoryRouter>
+  );
+}
+
+/** screen=kumon-parent — the parent's Kumon sheets card on a made-up record (?ws=56). */
+function KumonParentHarness() {
+  const ws = Number(q.get('ws') ?? 56);
+  const at = (d: number, h = 22) => `2026-11-${String(d).padStart(2, '0')}T${h}:00:00Z`;
+  const s = (w: number, outcome: 'pass' | 'repeat' | 'moved_on', firstTry: number, seconds: number, focus: number, day: number, prior: number): SheetEvent => ({
+    ...sittingRecord(decideSheet({ level: 'C', worksheet: w, problems: 10, firstTry, seconds, priorNonPasses: prior }), { problems: 10, firstTry, seconds, focusScore: focus, at: at(day) }),
+    outcome,
+  });
+  const rows = [
+    { worksheet_number: ws - 4, sittings: [s(ws - 4, 'repeat', 5, 410, 92, 11, 0), s(ws - 4, 'repeat', 6, 380, 88, 12, 1), s(ws - 4, 'moved_on', 6, 300, 97, 13, 2)] },
+    { worksheet_number: ws - 3, sittings: [s(ws - 3, 'pass', 9, 200, 100, 14, 0)] },
+    { worksheet_number: ws - 2, sittings: [s(ws - 2, 'repeat', 9, 520, 84, 15, 0), s(ws - 2, 'pass', 8, 230, 100, 16, 1)] },
+    { worksheet_number: ws - 1, sittings: [s(ws - 1, 'pass', 10, 150, 100, 17, 0)] },
+    { worksheet_number: ws, sittings: [s(ws, 'repeat', 6, 260, 91, 18, 0)] },
+  ];
+  (window as any).__harnessChild = { id: 'harness-child', name: 'Harness', current_level: 'C', current_worksheet: ws };
+  (window as any).__sbApplyUpdates = true;
+  (window as any).__sbFixture = { children: [{ id: 'harness-child', current_level: 'C', current_worksheet: ws }], worksheet_progress: rows.map((r) => ({ id: `wp-${r.worksheet_number}`, child_id: 'harness-child', level: 'C', ...r })), concepts_seen: [] };
+  (window as any).__moved = 0;
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
+        <KumonSheetsCard childId="harness-child" childName="Harness" level={'C' as any} currentWorksheet={ws} rows={rows} onMoved={() => { (window as any).__moved++; }} />
+      </div>
+    </div>
+  );
+}
+
+if (screen === 'kumon-study') {
+  kumonStudyFixture();
+  createRoot(document.getElementById('root')!).render(<KumonStudyHarness />);
+} else if (screen === 'kumon-parent') {
+  createRoot(document.getElementById('root')!).render(<KumonParentHarness />);
+} else if (screen === 'kumon-intro') {
   createRoot(document.getElementById('root')!).render(<KumonIntroHarness />);
 } else if (screen === 'parent' || screen === 'controls') {
   // The parent home reads week 4's row for the week line: give it his real state.

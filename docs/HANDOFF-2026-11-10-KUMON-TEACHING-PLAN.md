@@ -6,6 +6,25 @@ Start here in a new conversation. Read, in order: this file; `docs/AUDIT-2026-11
 `mindfoundry-recall-not-lookup.md`. This file and the audit were committed locally on 2026-11-10 (NOT
 pushed) — they go up with the first change set's push.
 
+## Status (updated 2026-11-10)
+
+- **Change set 1 BUILT, uncommitted** (brief §13): R1 pass rule + repeat + parent card and
+  moves, R2 Check never locked, R4 no clock for the child, the record fixes, the keyboard
+  Enter rule. His C15–C55 re-scored: 10 of 42 sittings pass, 32 would repeat (19 time,
+  2 first try, 11 both). Gate `kumon-pass-rule-test` (45 checks), photographs
+  `docs/screens-2026-11-10/`.
+- **Ship order (each step on the owner's word):** commit → apply migration
+  `20261110000001_kumon_sheet_pass_rule.sql` through the management API (dry-run as ONE
+  statement that rolls itself back, e.g. a DO block ending in RAISE EXCEPTION — a BEGIN
+  and a ROLLBACK sent as two calls is not a dry run), record it in
+  `supabase_migrations.schema_migrations`, confirm the three columns → push → PR → merge.
+  The migration must be live BEFORE the frontend deploys (without `sittings` the try
+  count is never stored and the third-try rule never fires).
+- After deploy: his next sheet (C56) should write a `sittings` entry; check
+  `worksheet_progress` for C56 and the parent card.
+- Next: change set 2 (R3 carries) — also fix the C51–C70 header label
+  (`sessionManager.ts:344-347` says "×6-9 Tables" on stacked sheets).
+
 ## The owner's delegation (2026-11-10)
 
 "You are the expert teacher. And I trust your teaching and UI/UX understanding for students of
@@ -163,11 +182,12 @@ bb-animation-test · bb-broken-promise-scan · bb-readability-test · `bb-guessa
 `bb-cross-week-test --strict` · `bb-probe-and-rank-test --seeds 60 --selftest --strict` ·
 bb-lesson-audio-test · kumon-sheet-coverage-test · `bb-screen-contract-test --selftest` ·
 kumon-attempt-evidence-test · kumon-help-ladder-test · bb-check-review-test · bb-fresh-form-test ·
-bb-comeback-test · bb-week-status-test · kumon-stacked-multiplication-test (all in `scripts/`) ·
-`src/qa/concept-intro-audit.ts`. Last result 27/27 (2026-11-09). By-hand photo drivers:
-`scripts/kumon-stacked-visual.ts`, `bb-moving-on-visual.ts`, `bb-check-review-visual.ts`,
+bb-comeback-test · bb-week-status-test · kumon-stacked-multiplication-test · kumon-pass-rule-test
+(all in `scripts/`) · `src/qa/concept-intro-audit.ts` — 28 runs since 2026-11-10. By-hand photo drivers:
+`scripts/kumon-pass-rule-visual.ts`, `kumon-stacked-visual.ts`, `bb-moving-on-visual.ts`, `bb-check-review-visual.ts`,
 `kumon-evidence-visual.ts`, `kumon-help-ladder-visual.ts`, `bb-screen-visual.ts`; harness
-`scripts/screen-harness/` (screens include `kumon`, `kumon-intro`, `hub`, `strengthen`, `parent`, …).
+`scripts/screen-harness/` (screens include `kumon-study` — the REAL StudyPage over an in-memory
+database —, `kumon-parent`, `kumon`, `kumon-intro`, `hub`, `strengthen`, `parent`, …).
 
 ## Where he is (2026-11-10)
 

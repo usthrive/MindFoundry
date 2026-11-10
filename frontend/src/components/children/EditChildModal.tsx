@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { updateChildProfile, deleteChildProfile } from '@/services/progressService'
+import { moveKumonPosition } from '@/services/kumonPosition'
+import { clearConceptsFromWorksheet } from '@/services/conceptIntroService'
 import { getInitialLevelForGrade, getLevelDescription } from '@/utils/levelMapping'
 import { getStandardProblemsPerPage, type QuestionsPerPageMode } from '@/utils/worksheetConfig'
 import { GRADE_LEVELS, AGE_LIMITS, KUMON_LEVELS_DROPDOWN } from '@/constants/gradeConfig'
@@ -53,6 +55,22 @@ export default function EditChildModal({ isOpen, child, onClose, onSuccess }: Ed
     setLoading(true)
 
     try {
+      // A change of sheet goes through the app's move path (2026-11-10): a move back
+      // must clear the concept intros from that sheet on, or the lessons he has
+      // "seen" never show again (it cost the C51 lesson once, by a bare update).
+      const levelChanged = currentLevel !== child.current_level
+      if (!levelChanged && currentWorksheet !== child.current_worksheet) {
+        await moveKumonPosition({
+          childId: child.id,
+          level: currentLevel,
+          from: child.current_worksheet,
+          to: currentWorksheet,
+          action: currentWorksheet < child.current_worksheet ? 'parent_go_back' : 'parent_move_on',
+        })
+      } else if (levelChanged) {
+        await clearConceptsFromWorksheet(child.id, currentLevel, currentWorksheet)
+      }
+
       const success = await updateChildProfile(child.id, {
         name,
         age,

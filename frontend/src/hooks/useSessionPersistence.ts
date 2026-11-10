@@ -14,6 +14,7 @@
 import { useCallback } from 'react'
 import type { KumonLevel, HintLevel } from '@/types'
 import type { Problem } from '@/services/generators/types'
+import type { SheetLedger } from '@/services/sheetPass'
 
 // Worksheet page state for persistence (mirrors WorksheetView's PageState)
 // We define it here to avoid circular imports
@@ -33,6 +34,12 @@ export interface PersistedPageState {
   carries?: Record<number, (string | null)[]>
   // Scratch pad state
   scratchPadStrokes?: Record<number, { points: { x: number; y: number }[]; color: string; width: number }[]>
+  // 2026-11-10: where the page sits and what it has recorded (see WorksheetView PageState)
+  pageNumber?: number
+  totalsBefore?: { correct: number; answered: number }
+  checkedAnswers?: Record<number, string>
+  hintsReached?: Record<number, HintLevel>
+  triedAnswers?: Record<number, string[]>
 }
 
 const STORAGE_KEY = 'mindfoundry_active_session'
@@ -94,6 +101,12 @@ export interface PersistedSession {
   firstTryCorrect: number
   withHintsCorrect: number
   totalIncorrect: number
+
+  /**
+   * The sheet's first checks so far, by place (R1, 2026-11-10). Kept here so a
+   * reload mid-sheet keeps the pages already done in the pass decision.
+   */
+  sheetLedger?: SheetLedger
 
   // Metadata
   createdAt: number        // Unix timestamp when session started

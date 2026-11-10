@@ -49,13 +49,13 @@ import {
   getUnseenNewConceptsWithDB,
   markConceptsSeenWithDB,
   loadSeenConceptsFromDB,
-  clearConceptsFromWorksheet,
 } from '@/services/conceptIntroService'
 import { getProblemsPerPage, usesTapToSelect, type QuestionsPerPageMode } from '@/utils/worksheetConfig'
 import { generateProblem, getWorksheetLabel } from '@/services/sessionManager'
 import {
   getCurrentPosition,
-  updateWorksheetProgress,
+  recordSheetSitting,
+  getSheetRun,
   updateCurrentPosition,
   createPracticeSession,
   completePracticeSession,
@@ -72,6 +72,31 @@ import type { KumonLevel, HintLevel, MasteryStatus, SupplementaryPractice } from
 import { type Problem, LEVEL_WORKSHEETS } from '@/services/generators/types'
 import type { ProblemAttemptData } from '@/components/worksheet/WorksheetView'
 import { firstTrySeconds, monotonicNow, type AttemptEvidence } from '@/services/attemptEvidence'
+import {
+  childSheetMessage,
+  decideSheet,
+  firstTryUnaided,
+  ledgerCounts,
+  ledgerFinal,
+  ledgerRecord,
+  ledgerStart,
+  repeatBanner,
+  sheetKey,
+  sittingRecord,
+  type SheetDecision,
+  type SheetLedger,
+} from '@/services/sheetPass'
+import { moveKumonPosition } from '@/services/kumonPosition'
+
+/** A finished sheet, judged (ruling R1, 2026-11-10): what the record and the next step need. */
+interface SheetConclusion {
+  decision: SheetDecision
+  problems: number
+  firstTry: number
+  finallyRight: number
+  seconds: number
+  focusScore: number
+}
 
 function getNextLevel(current: KumonLevel): KumonLevel | null {
   const idx = LEVEL_ORDER.indexOf(current)
@@ -88,7 +113,7 @@ export default function StudyPage() {
 
   const [inputValue, setInputValue] = useState('')
   const [sequenceAnswers, setSequenceAnswers] = useState<Record<number, string>>({})
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'incorrect' | 'hint' | 'encouragement'; message: string; show: boolean }>({
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'incorrect' | 'hint' | 'encouragement'; message: string; show: boolean; holdMs?: number }>({
     type: 'success',
     message: '',
     show: false,
@@ -102,6 +127,14 @@ export default function StudyPage() {
   const [totalIncorrect, setTotalIncorrect] = useState(0)      // Never got correct
   const [currentLevel, setCurrentLevel] = useState<KumonLevel>('A')
   const [currentWorksheet, setCurrentWorksheet] = useState(1)
+  // THE SHEET'S RUN (ruling R1, 2026-11-10). A sheet not passed is done again, its
+  // numbers in a new order (`sheetVariant` = how many times it has been done before);
+  // the third sitting of a run that does not pass moves on. `sheetNonPasses` = the
+  // sittings of this run already not passed. Both are read from the sheet's record.
+  const [sheetVariant, setSheetVariant] = useState(0)
+  const [sheetNonPasses, setSheetNonPasses] = useState(0)
+  /** First checks of THIS sitting, by place on the sheet (what the pass rule counts). */
+  const sheetLedgerRef = useRef<SheetLedger>(ledgerStart(''))
   const [levelCompleted, setLevelCompleted] = useState(false)
   const [sessionActive, setSessionActive] = useState(true)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -113,7 +146,7 @@ export default function StudyPage() {
   const showParentChallengeRef = useRef(false)
   const [loading, setLoading] = useState(true)
   const [worksheetMode, setWorksheetMode] = useState(true) // Multi-problem view mode
-  const [canSubmitWorksheet, setCanSubmitWorksheet] = useState(false) // All questions answered
+  const [canSubmitWorksheet, setCanSubmitWorksheet] = useState(false) // Check has something to check (R2: one answer is enough)
   const worksheetViewRef = useRef<WorksheetViewRef>(null)
 
   // Restored page state for WorksheetView (from localStorage persistence)
@@ -263,6 +296,14 @@ export default function StudyPage() {
     navigate('/select-child')
   }, [clearSession, enhancedTimer, navigate])
 
+  /** The child's position as the database has it — a grown-up may have moved it from another device. */
+  const positionMovedElsewhere = useCallback(async (): Promise<{ level: KumonLevel; worksheet: number } | null> => {
+    if (!currentChild) return null
+    const db = await getCurrentPosition(currentChild.id)
+    if (!db) return null
+    return db.level !== currentLevel || db.worksheet !== currentWorksheet ? db : null
+  }, [currentChild, currentLevel, currentWorksheet])
+
   // Handle save progress (user clicks Save & Exit)
   // Saves current position to database and navigates to child select page
   const handleSaveProgress = useCallback(async () => {
@@ -280,8 +321,11 @@ export default function StudyPage() {
       return
     }
 
-    // Save current position to database
-    await updateCurrentPosition(currentChild.id, currentLevel, currentWorksheet)
+    // Save current position to database — unless a grown-up moved the child while
+    // this page was open (their move stands; writing this sheet back would undo it).
+    if (!(await positionMovedElsewhere())) {
+      await updateCurrentPosition(currentChild.id, currentLevel, currentWorksheet)
+    }
 
     // DON'T clear localStorage - keep page state for resumption
     // localStorage contains problems, answers, results that we need to restore
@@ -294,7 +338,7 @@ export default function StudyPage() {
 
     // Navigate to child select page
     navigate('/select-child')
-  }, [currentChild?.id, currentLevel, currentWorksheet, dailySaveLimit, enhancedTimer, navigate])
+  }, [currentChild?.id, currentLevel, currentWorksheet, dailySaveLimit, enhancedTimer, navigate, positionMovedElsewhere])
 
   // Handle continue from timeout warning
   const handleContinueFromWarning = useCallback(() => {
@@ -542,6 +586,13 @@ export default function StudyPage() {
     setShowConceptIntro(true)
   }
 
+  // A lesson on screen is not the sheet: the sheet's clock holds while it is open
+  // (the stacked-multiplication lesson takes minutes; R1 times the sheet, 2026-11-10).
+  const holdTimer = enhancedTimer.hold
+  useEffect(() => {
+    holdTimer(showConceptIntro)
+  }, [showConceptIntro, holdTimer])
+
   const handleConceptIntroComplete = async () => {
     if (!currentChild) return
 
@@ -606,6 +657,13 @@ export default function StudyPage() {
 
           setCurrentLevel(persistedSession.level)
           setCurrentWorksheet(persistedSession.worksheet)
+          // The sitting's run and its first checks so far (R1): the variant must be
+          // the one its pages were made with, so page 2 after a reload matches page 1.
+          const restoredRun = await getSheetRun(currentChild.id, persistedSession.level, persistedSession.worksheet)
+          setSheetVariant(restoredRun.variant)
+          setSheetNonPasses(restoredRun.nonPasses)
+          const restoredKey = sheetKey(persistedSession.level, persistedSession.worksheet, restoredRun.variant)
+          sheetLedgerRef.current = persistedSession.sheetLedger?.sheet === restoredKey ? persistedSession.sheetLedger : ledgerStart(restoredKey)
           setSessionId(persistedSession.sessionId)
           setProblemsCompleted(persistedSession.problemsCompleted)
           setProblemsCorrect(persistedSession.problemsCorrect)
@@ -630,7 +688,7 @@ export default function StudyPage() {
               // across its worksheet, so a problem generated without its index is
               // pinned to the same fact every time — a ×2 sheet asked "2 × 1" ten
               // times over. Every call here passes where in the worksheet we are.
-              setCurrentProblem(generateProblem(persistedSession.level, persistedSession.worksheet, persistedSession.problemsCompleted))
+              setCurrentProblem(generateProblem(persistedSession.level, persistedSession.worksheet, persistedSession.problemsCompleted, restoredRun.variant))
             }
           } catch (error) {
             console.error('Error restoring/generating problem during restore:', error)
@@ -651,9 +709,13 @@ export default function StudyPage() {
         if (position) {
           setCurrentLevel(position.level)
           setCurrentWorksheet(position.worksheet)
+          const run = await getSheetRun(currentChild.id, position.level, position.worksheet)
+          setSheetVariant(run.variant)
+          setSheetNonPasses(run.nonPasses)
+          sheetLedgerRef.current = ledgerStart(sheetKey(position.level, position.worksheet, run.variant))
 
           try {
-            setCurrentProblem(generateProblem(position.level, position.worksheet, 0))
+            setCurrentProblem(generateProblem(position.level, position.worksheet, 0, run.variant))
           } catch (error) {
             console.error('Error generating problem for level', position.level, error)
             // Fallback to level 3A if current level fails
@@ -669,6 +731,7 @@ export default function StudyPage() {
           try {
             setCurrentLevel(level)
             setCurrentWorksheet(worksheet)
+            sheetLedgerRef.current = ledgerStart(sheetKey(level, worksheet, 0))
             setCurrentProblem(generateProblem(level, worksheet, 0))
           } catch (error) {
             console.error('Error generating problem for level', level, error)
@@ -762,6 +825,7 @@ export default function StudyPage() {
       firstTryCorrect,
       withHintsCorrect,
       totalIncorrect,
+      sheetLedger: sheetLedgerRef.current,
       createdAt: sessionStartTime,
       lastSavedAt: Date.now()
     }
@@ -906,6 +970,8 @@ export default function StudyPage() {
 
     const isCorrect = value === currentProblem.correctAnswer
     const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
+    const tapEvidence = singleEvidence(String(value))
+    recordFirstCheck(`q:${problemsCompleted}`, isCorrect, tapEvidence, isCorrect)
 
     // Save problem attempt to database with hints tracking
     await saveProblemAttempt(
@@ -920,7 +986,7 @@ export default function StudyPage() {
         firstAttemptCorrect: attemptCount === 0,
         hintLevelReached: currentHintLevel,
         tableChecked: tableCheckedThisProblem,
-        evidence: singleEvidence(String(value)),
+        evidence: tapEvidence,
       }
     )
 
@@ -934,14 +1000,9 @@ export default function StudyPage() {
       // Check if session is complete
       if (newCompleted >= 10) {
         setSessionActive(false)
-        setFeedback({
-          type: 'success',
-          message: `Great job! You got ${newCorrect} out of 10 correct!`,
-          show: true
-        })
-
+        const done = concludeSheet(newCorrect, newCompleted)
         setTimeout(() => {
-          handleSessionComplete(newCorrect, newCompleted)
+          handleSessionComplete(done)
         }, 3000)
         return
       }
@@ -950,7 +1011,7 @@ export default function StudyPage() {
 
       // Brief pause before next problem
       setTimeout(() => {
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted))
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted, sheetVariant))
         setSessionStartTime(Date.now())
         setFeedback({ ...feedback, show: false })
       }, 1000)
@@ -960,14 +1021,9 @@ export default function StudyPage() {
 
       if (newCompleted >= 10) {
         setSessionActive(false)
-        setFeedback({
-          type: 'success',
-          message: `Good try! You got ${problemsCorrect} out of 10 correct!`,
-          show: true
-        })
-
+        const done = concludeSheet(problemsCorrect, newCompleted)
         setTimeout(() => {
-          handleSessionComplete(problemsCorrect, newCompleted)
+          handleSessionComplete(done)
         }, 3000)
         return
       }
@@ -976,7 +1032,7 @@ export default function StudyPage() {
 
       // Longer pause for incorrect to learn
       setTimeout(() => {
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted))
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted, sheetVariant))
         setFeedback({ ...feedback, show: false })
         setSessionStartTime(Date.now())
       }, 2000)
@@ -1041,6 +1097,10 @@ export default function StudyPage() {
     }
 
     const problemTimeSpent = Math.floor((Date.now() - sessionStartTime) / 1000)
+    const typedEvidence = singleEvidence(submittedAnswer)
+    const place = `q:${problemsCompleted}`
+    if (attemptCount === 0) recordFirstCheck(place, isCorrect, typedEvidence, isCorrect)
+    else if (isCorrect) sheetLedgerRef.current = ledgerFinal(sheetLedgerRef.current, place, true)
 
     // Save problem attempt to database with hints tracking
     await saveProblemAttempt(
@@ -1055,7 +1115,7 @@ export default function StudyPage() {
         firstAttemptCorrect: attemptCount === 0,
         hintLevelReached: currentHintLevel,
         tableChecked: tableCheckedThisProblem,
-        evidence: singleEvidence(submittedAnswer),
+        evidence: typedEvidence,
       }
     )
 
@@ -1072,11 +1132,7 @@ export default function StudyPage() {
       // Check if session is complete
       if (newCompleted >= 10) {
         setSessionActive(false)
-        setFeedback({
-          type: 'success',
-          message: `🎉 Session Complete! You got ${newCorrect} out of 10 correct!`,
-          show: true
-        })
+        const done = concludeSheet(newCorrect, newCompleted)
         setInputValue('')
 
         // Show feedback prompt after completion
@@ -1087,7 +1143,7 @@ export default function StudyPage() {
 
         // Save session completion and advance
         setTimeout(() => {
-          handleSessionComplete(newCorrect, newCompleted)
+          handleSessionComplete(done)
           // Open cohort recap shortly after so it layers over the feedback.
           setTimeout(() => setRecapOpen(true), 1200)
         }, 3000)
@@ -1103,7 +1159,7 @@ export default function StudyPage() {
         setSequenceAnswers({})
         setAttemptCount(0)  // Reset attempt count for new problem
         setCurrentHintLevel(null)
-        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted))
+        setCurrentProblem(generateProblem(currentLevel, currentWorksheet, newCompleted, sheetVariant))
         setSessionStartTime(Date.now())
         setFeedback({ ...feedback, show: false })
       }, 300)
@@ -1173,14 +1229,9 @@ export default function StudyPage() {
     // Check if session is complete
     if (problemsCompleted >= 10) {
       setSessionActive(false)
-      setFeedback({
-        type: 'success',
-        message: `🎉 Session Complete! You got ${problemsCorrect} out of 10 correct!`,
-        show: true
-      })
-
+      const done = concludeSheet(problemsCorrect, problemsCompleted)
       setTimeout(() => {
-        handleSessionComplete(problemsCorrect, problemsCompleted)
+        handleSessionComplete(done)
       }, 2000)
       return
     }
@@ -1189,7 +1240,7 @@ export default function StudyPage() {
     setTimeout(() => {
       setInputValue('')
       setSequenceAnswers({})
-      setCurrentProblem(generateProblem(currentLevel, currentWorksheet, problemsCompleted + 1))
+      setCurrentProblem(generateProblem(currentLevel, currentWorksheet, problemsCompleted + 1, sheetVariant))
       setSessionStartTime(Date.now())
     }, 500)
   }
@@ -1200,7 +1251,66 @@ export default function StudyPage() {
     setFeedback({ ...feedback, show: false })
   }
 
-  const handleSessionComplete = async (score: number, totalProblems: number) => {
+  /** Record one problem's first check in this sitting's ledger (R1: right first time, nothing opened before it). */
+  const recordFirstCheck = (place: string, firstTryRight: boolean, e: AttemptEvidence | undefined, finallyRight: boolean) => {
+    sheetLedgerRef.current = ledgerRecord(
+      sheetLedgerRef.current,
+      place,
+      firstTryUnaided({
+        firstTryRight,
+        helpRung: e?.helpRungBeforeFirstCheck ?? 0,
+        tableRevealed: e?.scaffoldRevealedBeforeFirstCheck ?? false,
+      }),
+      finallyRight,
+    )
+  }
+
+  /** Whether a repeat of this sheet brings new numbers (an ordered table sheet keeps its 1→10 walk). */
+  const repeatServesNewNumbers = !(currentLevel === 'C' && tableSupport?.beat === 'ordered')
+
+  /**
+   * THE SHEET IS OVER — judge it (ruling R1, 2026-11-10; services/sheetPass.ts) and
+   * tell the child, at the moment it ends: the clock stops here. A pass names the
+   * count ("9 of 10 right the first time"); a repeat carries no score and no clock.
+   * The fallbacks are for a ledger that saw nothing (it never holds a child back).
+   */
+  const concludeSheet = (fallbackCorrect: number, fallbackTotal: number): SheetConclusion => {
+    enhancedTimer.stop()
+    const counts = ledgerCounts(sheetLedgerRef.current)
+    const seen = counts.problems > 0
+    const problems = seen ? counts.problems : Math.max(1, fallbackTotal)
+    const firstTry = seen ? counts.firstTry : fallbackCorrect
+    const finallyRight = seen ? counts.finallyRight : fallbackCorrect
+    const seconds = enhancedTimer.focusedTime
+    const decision = decideSheet({
+      level: currentLevel,
+      worksheet: currentWorksheet,
+      problems,
+      firstTry,
+      seconds,
+      priorNonPasses: sheetNonPasses,
+    })
+    const lastSheet = currentWorksheet >= (LEVEL_WORKSHEETS[currentLevel] || 200)
+    const message = decision.advance && lastSheet
+      ? `🎉 Level ${currentLevel} done!`
+      : childSheetMessage(decision, {
+          level: currentLevel,
+          worksheet: currentWorksheet,
+          next: decision.advance ? currentWorksheet + 1 : currentWorksheet,
+          problems,
+          firstTry,
+          newNumbers: repeatServesNewNumbers,
+        })
+    setFeedback({
+      type: decision.outcome === 'pass' ? 'success' : 'encouragement',
+      message,
+      show: true,
+      holdMs: decision.outcome === 'pass' ? 3000 : 4500,
+    })
+    return { decision, problems, firstTry, finallyRight, seconds, focusScore: enhancedTimer.focusScore }
+  }
+
+  const handleSessionComplete = async (c: SheetConclusion) => {
     if (!currentChild || !sessionId) return
 
     // A session may only be completed once. Belt and braces alongside the latch in
@@ -1213,19 +1323,9 @@ export default function StudyPage() {
     }
     completingSessionRef.current = sessionId
 
-    // Stop the enhanced timer and get final metrics
+    // The clock was stopped when the sheet ended (concludeSheet).
     enhancedTimer.stop()
     const totalTimeSpent = enhancedTimer.totalTime
-
-    // Debug: Log timer values
-    console.log('[handleSessionComplete] Enhanced timer values:', {
-      focusedTime: enhancedTimer.focusedTime,
-      awayTime: enhancedTimer.awayTime,
-      totalTime: enhancedTimer.totalTime,
-      distractionCount: enhancedTimer.distractionCount,
-      focusScore: enhancedTimer.focusScore,
-      isRunning: enhancedTimer.isRunning
-    })
 
     // Prepare focus metrics for database
     const focusMetrics: FocusMetrics = {
@@ -1235,20 +1335,27 @@ export default function StudyPage() {
       focusScore: enhancedTimer.focusScore,
       distractions
     }
-    console.log('[handleSessionComplete] Focus metrics to save:', focusMetrics)
 
     // Clear the persisted session from localStorage
     clearSession()
+
+    const sitting = sittingRecord(c.decision, {
+      problems: c.problems,
+      firstTry: c.firstTry,
+      seconds: c.seconds,
+      focusScore: c.focusScore,
+      sessionId,
+    })
 
     // Save progress and check badges/achievements — wrapped in try/catch so that
     // network failures don't prevent worksheet advancement (child should never be stuck)
     let updatedChild: Awaited<ReturnType<typeof getChildProfile>> = null
     try {
-      // Run independent database operations in parallel for faster completion
+      // Totals count PROBLEMS (c.problems), never retries or a page shown twice.
       await Promise.all([
-        completePracticeSession(sessionId, totalProblems, score, totalTimeSpent, currentChild.id, focusMetrics),
-        updateWorksheetProgress(currentChild.id, currentLevel, currentWorksheet, score, totalProblems, enhancedTimer.focusedTime),
-        updateChildStats(currentChild.id, totalProblems, score),
+        completePracticeSession(sessionId, c.problems, c.finallyRight, totalTimeSpent, currentChild.id, focusMetrics),
+        recordSheetSitting(currentChild.id, currentLevel, currentWorksheet, sitting, c.finallyRight),
+        updateChildStats(currentChild.id, c.problems, c.finallyRight),
       ])
 
       // Check and award any new badges (depends on stats being updated)
@@ -1273,8 +1380,8 @@ export default function StudyPage() {
               sessionNumber: 1 as const,
               startedAt: new Date(sessionStartTime).toISOString(),
               completedAt: new Date().toISOString(),
-              problemsCompleted: totalProblems,
-              problemsCorrect: score,
+              problemsCompleted: c.problems,
+              problemsCorrect: c.finallyRight,
               timeSpent: totalTimeSpent,
               status: 'completed' as const,
             },
@@ -1294,7 +1401,7 @@ export default function StudyPage() {
             },
             dailyStreak: updatedChild.streak,
             masteryStatuses: [] as MasteryStatus[],
-            isFirstProblem: updatedChild.total_problems <= totalProblems,
+            isFirstProblem: updatedChild.total_problems <= c.problems,
             levelCompleted: false,
             previousLevel: undefined,
           }
@@ -1313,9 +1420,20 @@ export default function StudyPage() {
       console.error('Error saving progress (worksheet will still advance):', error)
     }
 
+    // A grown-up moved this child (another device, the parent page) while the
+    // sheet was open: that move stands. Without this, finishing the old sheet wrote
+    // the old sheet + 1 straight over it (a backward move is not a "decrease" once
+    // the tablet adds one).
+    let movedTo: { level: KumonLevel; worksheet: number } | null = null
+    try {
+      movedTo = await positionMovedElsewhere()
+    } catch {
+      movedTo = null
+    }
+
     // Check if the student has completed the final worksheet for this level
     const maxWorksheet = LEVEL_WORKSHEETS[currentLevel] || 200
-    if (currentWorksheet >= maxWorksheet) {
+    if (!movedTo && c.decision.advance && currentWorksheet >= maxWorksheet) {
       // Level complete! Show celebration and stop - parent must advance manually
       setLevelCompleted(true)
       setSessionActive(false)
@@ -1342,9 +1460,25 @@ export default function StudyPage() {
       return // Do NOT increment past the max worksheet
     }
 
-    // Move to next worksheet
-    const nextWorksheet = currentWorksheet + 1
-    await updateCurrentPosition(currentChild.id, currentLevel, nextWorksheet)
+    // WHAT COMES NEXT (R1): a pass, or the last try of a run, moves on; otherwise the
+    // same sheet again with its numbers in a new order. A grown-up's move wins.
+    let nextLevel: KumonLevel = currentLevel
+    let nextWorksheet = currentWorksheet
+    let nextVariant = sheetVariant + 1
+    let nextNonPasses = sheetNonPasses + 1
+    if (movedTo) {
+      nextLevel = movedTo.level
+      nextWorksheet = movedTo.worksheet
+      const run = await getSheetRun(currentChild.id, nextLevel, nextWorksheet)
+      nextVariant = run.variant
+      nextNonPasses = run.nonPasses
+    } else if (c.decision.advance) {
+      nextWorksheet = currentWorksheet + 1
+      await updateCurrentPosition(currentChild.id, currentLevel, nextWorksheet)
+      const run = await getSheetRun(currentChild.id, currentLevel, nextWorksheet)
+      nextVariant = run.variant
+      nextNonPasses = run.nonPasses
+    }
 
     // Clear stale page state to prevent ghost pages on remount
     setRestoredPageState(undefined)
@@ -1357,12 +1491,15 @@ export default function StudyPage() {
     setWithHintsCorrect(0)
     setTotalIncorrect(0)
     setDistractions([])
+    sheetLedgerRef.current = ledgerStart(sheetKey(nextLevel, nextWorksheet, nextVariant))
+    setSheetVariant(nextVariant)
+    setSheetNonPasses(nextNonPasses)
+    setCurrentLevel(nextLevel)
     setCurrentWorksheet(nextWorksheet)
     setSessionActive(true)
-    setCurrentProblem(generateProblem(currentLevel, nextWorksheet))
-    setFeedback({ ...feedback, show: false })
+    setCurrentProblem(generateProblem(nextLevel, nextWorksheet, 0, nextVariant))
 
-    const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
+    const newSessionId = await createPracticeSession(currentChild.id, nextLevel)
     setSessionId(newSessionId)
     setSessionStartTime(Date.now())
 
@@ -1375,14 +1512,14 @@ export default function StudyPage() {
       const newPersistedSession = createPersistedSession(
         currentChild.id,
         newSessionId,
-        currentLevel,
+        nextLevel,
         nextWorksheet
       )
       saveSession(newPersistedSession)
     }
 
     // Check for new concepts to introduce at the next worksheet
-    await checkForNewConcepts(currentLevel, nextWorksheet)
+    await checkForNewConcepts(nextLevel, nextWorksheet)
   }
 
   // Handler for worksheet page completion (multi-problem view)
@@ -1416,6 +1553,11 @@ export default function StudyPage() {
     setWithHintsCorrect(prev => prev + pageWithHints)
     setTotalIncorrect(prev => prev + pageIncorrect)
 
+    // The sheet's ledger, by PLACE (R1): a page shown twice is still the same places.
+    for (const attempt of results.problemAttempts) {
+      recordFirstCheck(attempt.place, attempt.firstAttemptCorrect, attempt.evidence, attempt.isCorrect)
+    }
+
     // Save each problem attempt to database with hints/attempt tracking
     if (sessionId && currentChild) {
       for (const attempt of results.problemAttempts) {
@@ -1447,20 +1589,9 @@ export default function StudyPage() {
   const handleWorksheetComplete = async (totalCorrect: number, totalProblems: number) => {
     setSessionActive(false)
 
-    // Build detailed scorecard message with clearer labels
-    const scorecardLines = [
-      `🎉 Worksheet Complete!`,
-      ``,
-      `✅ Correct on First Try: ${firstTryCorrect}/${totalProblems} (${Math.round((firstTryCorrect / totalProblems) * 100)}%)`,
-      withHintsCorrect > 0 ? `🔄 Correct After Hints: ${withHintsCorrect}/${totalProblems}` : null,
-      totalIncorrect > 0 ? `❌ Still Learning: ${totalIncorrect}/${totalProblems}` : null,
-    ].filter(Boolean).join('\n')
-
-    setFeedback({
-      type: 'success',
-      message: scorecardLines,
-      show: true
-    })
+    // Judge the sheet (R1) and tell the child — a pass names the count, a repeat
+    // carries no score and no clock (concludeSheet).
+    const done = concludeSheet(totalCorrect, totalProblems)
 
     // Show feedback prompt after completion
     setShowCompletionFeedback(true)
@@ -1472,7 +1603,7 @@ export default function StudyPage() {
     // state while DB operations run in the background. Previously this used a 1500ms
     // setTimeout which could be silently killed by iOS Safari when the iPad screen
     // locks or the app goes to background, preventing worksheet advancement entirely.
-    handleSessionComplete(totalCorrect, totalProblems)
+    handleSessionComplete(done)
 
     // Open the cohort end-of-session recap on a short delay so the existing
     // celebration / scorecard renders first; the recap layers over after.
@@ -1569,6 +1700,7 @@ export default function StudyPage() {
         firstTryCorrect,
         withHintsCorrect,
         totalIncorrect,
+        sheetLedger: sheetLedgerRef.current,
         createdAt: sessionStartTime,
         lastSavedAt: Date.now()
       }
@@ -1605,6 +1737,10 @@ export default function StudyPage() {
 
     // Update database
     await updateCurrentPosition(currentChild.id, level, 1)
+    const levelRun = await getSheetRun(currentChild.id, level, 1)
+    setSheetVariant(levelRun.variant)
+    setSheetNonPasses(levelRun.nonPasses)
+    sheetLedgerRef.current = ledgerStart(sheetKey(level, 1, levelRun.variant))
 
     // Create new session
     const newSessionId = await createPracticeSession(currentChild.id, level)
@@ -1656,16 +1792,20 @@ export default function StudyPage() {
     setDistractions([])
     setSessionActive(true)
 
-    // If jumping backward, clear concept intros at or after the target worksheet
-    // so they re-fire when the child reaches those concept boundaries again
-    if (worksheetNum < currentWorksheet) {
-      await clearConceptsFromWorksheet(currentChild.id, currentLevel, worksheetNum)
-    }
-
-    // Update database. allowDecrease=true because this is the explicit
-    // "jump to a different worksheet" flow — moving backward is intentional
-    // here (kid wants to redo an earlier sheet).
-    await updateCurrentPosition(currentChild.id, currentLevel, worksheetNum, true)
+    // Through the one move path (services/kumonPosition.ts): a move back clears the
+    // concept intros from the target on, so they show again; the move is written
+    // into the sheet's record and ends its run of tries.
+    await moveKumonPosition({
+      childId: currentChild.id,
+      level: currentLevel,
+      from: currentWorksheet,
+      to: worksheetNum,
+      action: worksheetNum < currentWorksheet ? 'parent_go_back' : 'parent_move_on',
+    })
+    const jumpRun = await getSheetRun(currentChild.id, currentLevel, worksheetNum)
+    setSheetVariant(jumpRun.variant)
+    setSheetNonPasses(jumpRun.nonPasses)
+    sheetLedgerRef.current = ledgerStart(sheetKey(currentLevel, worksheetNum, jumpRun.variant))
 
     // Create new session
     const newSessionId = await createPracticeSession(currentChild.id, currentLevel)
@@ -1717,6 +1857,10 @@ export default function StudyPage() {
 
     // Update child's position to worksheet 1 of the next level
     await updateCurrentPosition(currentChild.id, next, 1)
+    const nextRun = await getSheetRun(currentChild.id, next, 1)
+    setSheetVariant(nextRun.variant)
+    setSheetNonPasses(nextRun.nonPasses)
+    sheetLedgerRef.current = ledgerStart(sheetKey(next, 1, nextRun.variant))
 
     // Clear stale page state to prevent ghost pages on remount
     setRestoredPageState(undefined)
@@ -1834,12 +1978,9 @@ export default function StudyPage() {
               <span className="text-2xl">👋</span>
               <div>
                 <p className="font-semibold text-blue-900">Welcome back!</p>
-                <p className="text-sm text-blue-700">
-                  You were away for {welcomeBackToast.duration < 60
-                    ? `${welcomeBackToast.duration} seconds`
-                    : `${Math.floor(welcomeBackToast.duration / 60)} minute${Math.floor(welcomeBackToast.duration / 60) !== 1 ? 's' : ''}`
-                  }. Let's keep going!
-                </p>
+                {/* No clock in front of the child (R4, 2026-11-10): the time away is
+                    recorded for the grown-up, not read out to him. */}
+                <p className="text-sm text-blue-700">Let's keep going!</p>
               </div>
             </div>
           </div>
@@ -1850,6 +1991,7 @@ export default function StudyPage() {
           type={feedback.type}
           message={feedback.message}
           show={feedback.show}
+          dismissAfter={feedback.holdMs ?? 2000}
           onDismiss={() => setFeedback({ ...feedback, show: false })}
         />
 
@@ -2011,14 +2153,21 @@ export default function StudyPage() {
           )}
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <EnhancedTimerDisplay
-              focusedTime={enhancedTimer.focusedTime}
-              awayTime={enhancedTimer.awayTime}
-              totalTime={enhancedTimer.totalTime}
-              focusScore={enhancedTimer.focusScore}
-              isPaused={enhancedTimer.isPaused}
-              distractionCount={enhancedTimer.distractionCount}
-            />
+            {/* RULING R4 (2026-11-10): no stopwatch and no focus score in front of
+                the child — a running clock turns a sheet into a race, and the speed
+                half of the pass rule is the grown-up's to read. The clock still
+                runs and is recorded; it shows here only in Parent Mode, and per
+                sheet on the parent's progress page. */}
+            {parentMode && (
+              <EnhancedTimerDisplay
+                focusedTime={enhancedTimer.focusedTime}
+                awayTime={enhancedTimer.awayTime}
+                totalTime={enhancedTimer.totalTime}
+                focusScore={enhancedTimer.focusScore}
+                isPaused={enhancedTimer.isPaused}
+                distractionCount={enhancedTimer.distractionCount}
+              />
+            )}
 
             {/* Session Controls - End/Save buttons */}
             <SessionControls
@@ -2035,20 +2184,35 @@ export default function StudyPage() {
           {/* Worksheet Mode: Multi-problem view with fixed numberpad */}
           {shouldUseWorksheetMode() ? (
             <>
+              {/* A repeated sheet says so, on the sheet (R1): the end-of-sheet toast lasts
+                  seconds, and the same sheet number coming back with no word looks
+                  like the app went wrong. No score, no clock, never "failed". */}
+              {sheetNonPasses > 0 && (
+                <div
+                  className="mb-4 mx-auto flex max-w-xl items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-center text-base font-medium text-sky-900"
+                  data-repeat-banner
+                >
+                  <span aria-hidden>🔁</span>
+                  <span>{repeatBanner(repeatServesNewNumbers)}</span>
+                  <AudioButton text={repeatBanner(repeatServesNewNumbers)} size="small" />
+                </div>
+              )}
+
               <h2 className="mb-6 text-center text-xl sm:text-2xl font-semibold text-gray-700">
                 Solve the problems:
               </h2>
 
               <WorksheetView
-                key={`${currentLevel}-${currentWorksheet}`}
+                key={`${currentLevel}-${currentWorksheet}-${sheetVariant}`}
                 ref={worksheetViewRef}
                 level={currentLevel}
                 worksheetNumber={currentWorksheet}
+                variant={sheetVariant}
                 questionsPerPageMode={getQuestionsPerPageMode()}
                 initialPageState={restoredPageState}
                 onPageComplete={handleWorksheetPageComplete}
                 onWorksheetComplete={handleWorksheetComplete}
-                onAllAnsweredChange={setCanSubmitWorksheet}
+                onCanCheckChange={setCanSubmitWorksheet}
                 onActiveProblemChange={setActiveWorksheetProblem}
                 scaffoldVisible={!!tableSupport && showTable}
                 scaffoldMode={tableSupport?.support ?? null}
@@ -2577,6 +2741,7 @@ export default function StudyPage() {
         remainingSeconds={idleTimeout.secondsUntilTimeout}
         onContinue={handleContinueFromWarning}
         onEnd={handleSessionTimeout}
+        showCountdown={false}
       />
 
       {/* Cohorts: pull-up scorecard. Hidden if the child is not in any

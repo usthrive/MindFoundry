@@ -23,13 +23,19 @@ interface TimeoutWarningModalProps {
   onContinue: () => void
   /** Called when user clicks "End Session" */
   onEnd: () => void
+  /**
+   * Show the ticking M:SS countdown and the alarm faces (default). The Kumon study
+   * page turns it off (ruling R4, 2026-11-10): no clock in front of a child.
+   */
+  showCountdown?: boolean
 }
 
 const TimeoutWarningModal = ({
   isOpen,
   remainingSeconds,
   onContinue,
-  onEnd
+  onEnd,
+  showCountdown = true,
 }: TimeoutWarningModalProps) => {
   const continueButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -49,9 +55,9 @@ const TimeoutWarningModal = ({
 
   if (!isOpen) return null
 
-  // Calculate urgency level for styling
-  const isUrgent = remainingSeconds <= 60 // Last minute
-  const isCritical = remainingSeconds <= 30 // Last 30 seconds
+  // Calculate urgency level for styling (none without the countdown: a calm question)
+  const isUrgent = showCountdown && remainingSeconds <= 60 // Last minute
+  const isCritical = showCountdown && remainingSeconds <= 30 // Last 30 seconds
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -92,7 +98,7 @@ const TimeoutWarningModal = ({
         </p>
 
         {/* Countdown */}
-        <div className={cn(
+        {showCountdown && <div className={cn(
           'text-center py-4 px-6 rounded-xl mb-6',
           isCritical ? 'bg-red-50' : isUrgent ? 'bg-yellow-50' : 'bg-gray-50'
         )}>
@@ -103,7 +109,7 @@ const TimeoutWarningModal = ({
           )}>
             {formatTime(remainingSeconds)}
           </p>
-        </div>
+        </div>}
 
         {/* Buttons */}
         <div className="flex flex-col gap-3">

@@ -17,6 +17,7 @@ import {
   getSessionTimeAnalytics,
   getChildFocusStats,
   getPerformanceTrendData,
+  getChildProfile,
   type SessionAttemptStats,
   type LifetimeStats,
   type TrendDataPoint,
@@ -30,6 +31,7 @@ import PerformanceTrendChart from '@/components/analytics/PerformanceTrendChart'
 import PerformanceQuadrantChart from '@/components/analytics/PerformanceQuadrantChart'
 import { getChildBadges, type Badge } from '@/utils/badgeSystem'
 import BestBrainsProgressTab from '@/pages/progress/BestBrainsProgressTab'
+import KumonSheetsCard from '@/components/parent/KumonSheetsCard'
 import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 
@@ -137,7 +139,7 @@ function CircularProgress({ percentage, size = 120, strokeWidth = 8, color = 'bl
 }
 
 export default function ProgressDashboard() {
-  const { user, children, currentChild, selectChild } = useAuth()
+  const { user, children, currentChild, selectChild, refreshChildren } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -153,7 +155,7 @@ export default function ProgressDashboard() {
   }
 
   const [selectedChild, setSelectedChild] = useState<Child | null>(null)
-  const [, setWorksheetProgress] = useState<any[]>([])
+  const [worksheetProgress, setWorksheetProgress] = useState<Array<{ worksheet_number: number; sittings?: unknown }>>([])
   const [recentSessions, setRecentSessions] = useState<any[]>([])
   const [dailyPracticeData, setDailyPracticeData] = useState<any[]>([])
   const [badges, setBadges] = useState<Badge[]>([])
@@ -366,6 +368,25 @@ export default function ProgressDashboard() {
             </p>
           </div>
         </div>
+
+        {/* Each sheet's first try, time against the standard and focus — the
+            numbers the child no longer sees (R1/R4, 2026-11-10) — and the
+            grown-up's three moves. */}
+        <KumonSheetsCard
+          childId={selectedChild.id}
+          childName={selectedChild.name}
+          level={selectedChild.current_level as KumonLevel}
+          currentWorksheet={selectedChild.current_worksheet}
+          rows={worksheetProgress}
+          onMoved={async () => {
+            await refreshChildren()
+            const fresh = await getChildProfile(selectedChild.id)
+            if (fresh) {
+              setSelectedChild(fresh)
+              await loadChildProgress(fresh)
+            }
+          }}
+        />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-3">

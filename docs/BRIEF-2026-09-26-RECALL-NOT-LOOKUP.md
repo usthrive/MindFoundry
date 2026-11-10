@@ -412,3 +412,93 @@ Next (agreed step 2): every concept's intro read against what its sheets ask —
 Levels C and D first (D11/D41 teach an "area model"; the sheets are stacked with
 partial products). Seen, not changed: the sheet fills each carry in from the real
 problem as soon as a digit is typed (he still wrote "163" with the 6 shown).
+
+## 13. A sheet moves on when it is passed; Check is never locked; no clock for the child — built 2026-11-10 (owner delegated)
+
+The owner delegated the teaching and screen calls (rulings R1–R4 in
+`docs/HANDOFF-2026-11-10-KUMON-TEACHING-PLAN.md`) and asked for Phase 1 change set 1:
+Check never locked, the pass rule with repeat-the-sheet and parent controls, the timer
+hidden from his son and shown to him, the record fixes — his C15–C55 history re-scored
+first.
+
+**His history under the rule** (8 in 10 first try with no help, AND ≤ 2 × the standard
+time for the run — 90 s a page for the times tables, 120 s for C51+; his records since the
+Sep 27 move-back; filler digits set aside, as R2 removes them; pages the app re-served
+count in the time allowed): **10 of 42 sittings pass** (C18, C19, C23, C26, C28, C32,
+C36, C42, C45, C55); **32 would have repeated** — 19 on time alone, 2 on first try alone
+(C41, C46: facts uncovered on the table), 11 on both. The reading: he gets the facts right
+but works them out instead of recalling them (C30: 974 s for ten facts); counting only
+first-pass time does not change the picture. Nothing is retroactive.
+
+Found on the way (all verified in code or on the rendered page):
+- **A reload re-served a page and double-counted it.** The restore put the saved page in
+  slot 1 whatever page it was, seeded the totals from that page's own answers and added
+  them again when it resolved, then served page 2 again: C22/C29/C40/C47 saved a page
+  twice, C35 three times, and "10/13, 10/14, 10/15" are this, not retries (C17: 3 restored
+  answers + 5 + 5). The audit's "totals count retries" reading was wrong.
+- **An unchanged wrong answer was re-graded at every check** and climbed the hints to the
+  teaching screen (C20 3 × 5: "35" ×4 while he checked the others) — with Check unlocked
+  this would have been every check.
+- **A blank on a checked page is drawn red ✗** (`isSubmitted` was the page's flag).
+- **The sheet clock ticked on the wall clock** and ran during the new-concept lesson.
+- **Finishing a sheet, or Save & Exit, wrote over a grown-up's move** made on another
+  device (old sheet + 1 is not a "decrease"). **Edit Child changed the sheet with a bare
+  update** — the exact path that cost him the C51 lesson.
+- My own restore fix dropped the page number (the restore copies fields one by one) —
+  caught by the reload photograph, not by any gate.
+
+Built:
+- `services/sheetPass.ts` (pure): the rule (`decideSheet`), first try unaided (a help rung
+  or a tap to uncover is help; a table simply open on an ordered sheet is not), the
+  sheet's ledger BY PLACE ("page:index", so a page shown twice is still ten problems), the
+  run of tries (trailing repeats since anything else), the record (`mergeSitting`:
+  `status` completed = passed, totals out of problems, `avg_focus_score` written), and the
+  words. `services/sct.ts`: the standard time per run of sheets (top of the Kumon
+  reference range; C51–100 = 120 s, C101–110 = 150 s), re-exported by progressService.
+- R1 in `StudyPage`: every path (grid, one-at-a-time, tap) records first checks; the end
+  of a sheet is judged once (`concludeSheet`) and recorded (`recordSheetSitting` →
+  `worksheet_progress.sittings`); a pass or the third try moves on, otherwise the same
+  sheet again — the grid remounts with `variant` = times done before, and a times-table
+  sheet asks the same ten facts in a new order (`repeatPlace`, a bijection; ordered sheets
+  keep their walk and their copy says "Same sheet again"). Child words: a pass names a
+  count ("🎉 C56 done! ✅ 9 of 10 right the first time · Next: C57"), a repeat "Same
+  sheet, new numbers — let's make it steady and smooth." (no score, no clock), the third
+  try "Time for a new sheet: C57." A repeated sheet carries the line on the sheet itself
+  (🔁, read-aloud). A grown-up's move made while the sheet was open stands.
+- Parent: `components/parent/KumonSheetsCard` on the progress page — each sitting's first
+  try, time against the standard, focus (amber where it fell short), the "C52: moved on
+  after 3 tries — first try 60%, 2.5× standard time" line, and "Move on anyway" /
+  "Repeat C__" / "Go back to C__", each behind the parent check and through
+  `services/kumonPosition.ts` (clears seen intros on a move back, logs the move, ends the
+  run). Parent Mode's jump and Edit Child use the same path.
+- R2 in `WorksheetView`: `problemsToGrade` — Check is on as soon as one answer is new; a
+  blank is "not yet" (no try, no hint, not wrong, not red); an unchanged answer is not a
+  new try; after a right check the cursor moves to the next problem; "Keep going — N more
+  on this page."
+- R4: the stopwatch and focus score show only in Parent Mode; "Welcome back!" no longer
+  reads out the time away; the idle warning has no countdown (`showCountdown={false}`).
+  The clock ticks on `performance.now()` and holds while a lesson is open.
+- Records: `hintLevelReached` is the highest hint reached (was cleared first — empty on
+  all 390 times-table rows); tried answers, checked answers and the page number live in
+  the page state, so a reload keeps them; the restore puts the page back where it was
+  with the totals from the pages before it; the "Keep going" nudge leaves with its
+  problem. Keyboard Enter: never off an answer shorter than any answer of its shape
+  across the line (7 × 10 → 2 digits; a missing factor → 1), the Level D total row
+  (81 × 63 → 3), or "13 R".
+- Migration `supabase/migrations/20261110000001_kumon_sheet_pass_rule.sql`:
+  `worksheet_progress.first_try_correct`, `problems_total`, `sittings jsonb` (additive).
+  **Not yet applied** — it must be applied (and recorded in schema_migrations) BEFORE the
+  frontend deploys, or the try count is never stored and the third-try rule never fires.
+- Gate `scripts/kumon-pass-rule-test.ts` (45 checks, 23 broken controls; his 42 sittings
+  as a numbers-only fixture reproduce 10 / 32 and 19 / 2 / 11). Harness: the REAL
+  StudyPage (`screen=kumon-study`, auth stub, the Supabase stub as an in-memory database
+  when `__sbApplyUpdates`) and the parent card (`screen=kumon-parent`). Photographs
+  `docs/screens-2026-11-10/` by `scripts/kumon-pass-rule-visual.ts` (touch pad at 820 px,
+  keyboard at 430 px; 41 rendered-page checks, all pass).
+
+Seen, not changed (next): carries are still drawn from the true answer (R3, change set 2);
+the C51–C70 header still says "Multiplication ×6-9 Tables" / "All Times Tables Mixed"
+(`sessionManager.ts:344-347`); at 430 px "Show me how" runs off the header; the cohort
+"Great practicing!" card covers the end-of-sheet message; the first-try dwell clock is
+not kept across a reload (first-try seconds are null on a restored page); an empty
+session still opens after every sheet.
