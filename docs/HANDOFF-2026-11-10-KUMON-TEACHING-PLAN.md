@@ -23,8 +23,10 @@ pushed) — they go up with the first change set's push.
 - After deploy: his next sheet (C56) should write a `sittings` entry; check
   `worksheet_progress` for C56 and the parent card.
 - A Fable review (read-only) ran before push; its "fix before push" items are fixed (brief
-  §13, "Review"). **Owner decision owed:** the C51+ time limit is 4 min (2 × Kumon's 120 s for
-  that run) where the ruling's text implied 3 min (2 × 90 s); the tables are 3 min either way.
+  §13, "Review"). SHIPPED: migration applied, PR #26 merged (b1b97ba), live 13:40Z.
+- **Owner ruling on time (brief §14):** start at 10 min per sheet and come down slowly to
+  5 min — built as 5× the run's standard on a new skill, 0.25× less per new sheet, floor 2.5×
+  (stacked: 10 → 5 min by C66). Supersedes the 2× limit and the 4-vs-3-min question.
 - Later (from the review): gate "End Session" on the child's screen or record an abandoned
   sitting; scope the time half to levels Kumon times; server-side append for `sittings`;
   the recap's empty stars; "0 / 10" per problem; record lesson replays.

@@ -257,8 +257,9 @@ function kumonStudyFixture() {
   const timeOnly = q.get('why') === 'time';
   const sittings: SheetEvent[] = runs.map((outcome, k) => {
     const firstTry = outcome === 'pass' || timeOnly ? 9 : 5;
+    const seconds = timeOnly ? 700 : 400; // over the first sheet's 10 minutes
     return {
-      ...sittingRecord(decideSheet({ level: lvl, worksheet: ws, problems: 10, firstTry, seconds: 400, priorNonPasses: k }), { problems: 10, firstTry, seconds: 400, focusScore: 95, at: `2026-11-0${k + 1}T22:00:00Z` }),
+      ...sittingRecord(decideSheet({ level: lvl, worksheet: ws, problems: 10, firstTry, seconds, priorNonPasses: k, position: 1 }), { problems: 10, firstTry, seconds, focusScore: 95, at: `2026-11-0${k + 1}T22:00:00Z` }),
       outcome,
     };
   });
@@ -290,14 +291,15 @@ function KumonStudyHarness() {
 function KumonParentHarness() {
   const ws = Number(q.get('ws') ?? 56);
   const at = (d: number, h = 22) => `2026-11-${String(d).padStart(2, '0')}T${h}:00:00Z`;
+  // Positions in the skill: the made-up record starts at ws-4 (the first sheet worked).
   const s = (w: number, outcome: 'pass' | 'repeat' | 'moved_on', firstTry: number, seconds: number, focus: number, day: number, prior: number): SheetEvent => ({
-    ...sittingRecord(decideSheet({ level: 'C', worksheet: w, problems: 10, firstTry, seconds, priorNonPasses: prior }), { problems: 10, firstTry, seconds, focusScore: focus, at: at(day) }),
+    ...sittingRecord(decideSheet({ level: 'C', worksheet: w, problems: 10, firstTry, seconds, priorNonPasses: prior, position: w - (ws - 4) + 1 }), { problems: 10, firstTry, seconds, focusScore: focus, at: at(day) }),
     outcome,
   });
   const rows = [
     { worksheet_number: ws - 4, sittings: [s(ws - 4, 'repeat', 5, 410, 92, 11, 0), s(ws - 4, 'repeat', 6, 380, 88, 12, 1), s(ws - 4, 'moved_on', 6, 300, 97, 13, 2)] },
     { worksheet_number: ws - 3, sittings: [s(ws - 3, 'pass', 9, 200, 100, 14, 0)] },
-    { worksheet_number: ws - 2, sittings: [s(ws - 2, 'repeat', 9, 520, 84, 15, 0), s(ws - 2, 'pass', 8, 230, 100, 16, 1)] },
+    { worksheet_number: ws - 2, sittings: [s(ws - 2, 'repeat', 9, 600, 84, 15, 0), s(ws - 2, 'pass', 8, 230, 100, 16, 1)] },
     { worksheet_number: ws - 1, sittings: [s(ws - 1, 'pass', 10, 150, 100, 17, 0)] },
     { worksheet_number: ws, sittings: [s(ws, 'repeat', 6, 260, 91, 18, 0)] },
   ];
