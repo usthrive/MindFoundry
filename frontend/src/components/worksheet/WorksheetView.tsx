@@ -49,6 +49,8 @@ import {
  */
 export interface ProblemAttemptData {
   problem: Problem
+  /** Its place on the sheet, "page:index" — what the pass rule counts (a page shown twice is still ten places). */
+  place: string
   answer: string
   isCorrect: boolean
   attemptsCount: number        // Total attempts (1 = first try)
@@ -71,7 +73,17 @@ export interface WorksheetViewProps {
   }) => void
   onWorksheetComplete: (totalCorrect: number, totalProblems: number) => void
   onAnswerChange?: (problemIndex: number, answer: string) => void
-  onAllAnsweredChange?: (allAnswered: boolean) => void
+  /**
+   * Whether Check has anything to check right now (ruling R2, 2026-11-10): true as
+   * soon as one problem has an answer not yet checked. It was "every problem
+   * answered", and on a touch pad with no Enter key that made a child type a filler
+   * digit into each empty problem just to check the one he had done (31 of 70 on C51–C55).
+   */
+  onCanCheckChange?: (canCheck: boolean) => void
+  /** How many times this sheet has been done before; a repeat asks its facts in a new order (R1). */
+  variant?: number
+  /** The teaching screen is open (after a third miss) — the page holds the sheet's clock meanwhile. */
+  onTeachingChange?: (open: boolean) => void
   /** Fires whenever the child moves to a different problem, so the parent can adapt
    *  the keypad (Level G+ shows the variables that appear in THIS question). */
   onActiveProblemChange?: (problem: Problem | null) => void
@@ -130,6 +142,45 @@ export interface PageState {
   regroupAdds?: Record<number, (string | null)[]>    // "+10" receiver indicator per column
   // Scratch pad state
   scratchPadStrokes: Record<number, Stroke[]>
+  // ── 2026-11-10 (rulings R1/R2 and the record fixes) — optional so older saved
+  //    sessions still restore ──
+  /**
+   * The page this state belongs to. A reload used to restore EVERY saved page as
+   * page 1, so a child who reloaded on page 2 did page 2, then page 2 again (five
+   * of his sheets saved a page twice), and the totals counted the page twice.
+   */
+  pageNumber?: number
+  /** Sheet totals from the pages before this one, so a restore continues the count. */
+  totalsBefore?: { correct: number; answered: number }
+  /** The answer each problem had at its last check: an unchanged answer is not a new try. */
+  checkedAnswers?: Record<number, string>
+  /** The highest hint each problem reached (the shown hint is cleared once it is right). */
+  hintsReached?: Record<number, HintLevel>
+  /** Every checked answer, in order, kept with the page so a reload does not lose them. */
+  triedAnswers?: Record<number, string[]>
+}
+
+const HINT_ORDER: Record<HintLevel, number> = { micro: 1, visual: 2, teaching: 3 }
+const higherHint = (a: HintLevel | undefined, b: HintLevel | null | undefined): HintLevel | undefined =>
+  !b ? a : !a || HINT_ORDER[b] > HINT_ORDER[a] ? b : a
+
+/**
+ * What a check grades (ruling R2, 2026-11-10): every problem not yet right and not
+ * locked that has an answer — except one whose answer has not changed since it was
+ * last checked (re-checking "35" four times while working the others is one try,
+ * not four; it used to climb the hints to the teaching screen). A blank problem is
+ * "not yet": no try recorded, no hint, never marked wrong.
+ */
+export function problemsToGrade(s: Pick<PageState, 'problems' | 'answers' | 'results' | 'lockedProblems' | 'checkedAnswers'>): number[] {
+  const out: number[] = []
+  s.problems.forEach((_, i) => {
+    if (s.results[i] === true || s.lockedProblems[i]) return
+    const answer = s.answers[i] || ''
+    if (answer.trim() === '') return
+    if (s.results[i] === false && s.checkedAnswers?.[i] === answer) return
+    out.push(i)
+  })
+  return out
 }
 
 /**
@@ -208,11 +259,39 @@ export function getOptionalAnswerColumn(problem: Problem): number | undefined {
  * check below reveals nothing about this particular answer.
  */
 export function getMinAnswerDigits(problem: Problem): number {
-  if (problem.displayFormat !== 'vertical' || !problem.operands?.length) return 1
-  const widest = Math.max(...problem.operands.map(op => String(Math.abs(op)).length))
+  if (!problem.operands?.length || !problem.operands.every(op => Number.isInteger(op))) return 1
+  if (typeof problem.correctAnswer !== 'number') return 1
+  // Written across the line (2026-11-10): only when the blank IS the result,
+  // "7 × 10 = ___" — never a missing factor, "8 × ___ = 24", whose answer is a factor.
+  if (problem.displayFormat !== 'vertical') {
+    const q = typeof problem.question === 'string' ? problem.question : ''
+    if (!/=\s*_+\s*$/.test(q)) return 1
+  }
+  const widths = problem.operands.map(op => String(Math.abs(op)).length)
+  const widest = Math.max(...widths)
   if (problem.type === 'addition') return widest
-  if (problem.type === 'multiplication' && problem.operands.every(op => op !== 0)) return widest
+  // A product of a d1-digit and a d2-digit number has at least d1 + d2 − 1 digits
+  // (10 × 10 = 100): 23 × 4 → 2, 81 × 63 → 3 (the Level D total row).
+  if (problem.type === 'multiplication' && problem.operands.every(op => op !== 0)) {
+    return widths.reduce((sum, w) => sum + w, 0) - (widths.length - 1)
+  }
   return 1
+}
+
+/**
+ * The keyboard Enter rule for an answer written across the line (2026-11-10):
+ * Enter means "done with this one", so it must not move on from an answer that is
+ * plainly still being written — fewer digits than ANY answer of this shape can have,
+ * or a "13 R" / "3/" / "0." with its second part still to come. Read from the
+ * problem's shape and what has been typed, never from the answer.
+ */
+export function isHorizontalAnswerUnfinished(problem: Problem, typed: string): boolean {
+  const a = typed.trim()
+  if (a === '') return false
+  if (/(r|\/|\.)$/i.test(a)) return true
+  const lead = a.split(/r/i)[0]
+  const digits = (lead.match(/\d/g) ?? []).length
+  return digits > 0 && digits < getMinAnswerDigits(problem)
 }
 
 const PLACE_WORDS = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands']
@@ -561,7 +640,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   onPageComplete,
   onWorksheetComplete,
   onAnswerChange,
-  onAllAnsweredChange,
+  onCanCheckChange,
+  variant = 0,
+  onTeachingChange,
   onActiveProblemChange,
   scaffoldVisible = false,
   scaffoldMode = null,
@@ -579,6 +660,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const [pageStates, setPageStates] = useState<Record<number, PageState>>({})
   const [totalCorrect, setTotalCorrect] = useState(0)
   const [totalAnswered, setTotalAnswered] = useState(0)
+  /** The same totals, readable when a new page is created (it records them as totalsBefore). */
+  const totalsRef = useRef({ correct: 0, answered: 0 })
+  /** The page a restore put back (gates page generation for exactly that page). */
+  const restoredPageRef = useRef(1)
 
   // Stable key for this worksheet (used for restore gating)
   const worksheetKey = `${level}:${worksheetNumber}`
@@ -702,6 +787,13 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         regroupStrikes: initialPageState.regroupStrikes ?? {},
         regroupAdds: initialPageState.regroupAdds ?? {},
         scratchPadStrokes: initialPageState.scratchPadStrokes ?? {},
+        // 2026-11-10 — carried through, or a restore forgets which page it was on
+        // (found by the reload photograph: page 2 came back as "Page 1 of 2").
+        pageNumber: initialPageState.pageNumber,
+        totalsBefore: initialPageState.totalsBefore,
+        checkedAnswers: initialPageState.checkedAnswers ?? {},
+        hintsReached: initialPageState.hintsReached ?? {},
+        triedAnswers: initialPageState.triedAnswers ?? {},
       }
 
       // Backfill column state for vertical problems missing it (legacy sessions).
@@ -743,14 +835,27 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
       console.log('📂 WorksheetView: Restoring from initialPageState for', worksheetKey, 'with', normalized.problems.length, 'problems')
 
-      // Use the normalized page state
-      setPageStates({ 1: normalized })
-      setCurrentPage(1)
+      // Put the page back WHERE IT WAS (2026-11-10). Every saved page used to come
+      // back as page 1: a reload on page 2 served page 2 as page 1 and then page 2
+      // again, and the totals below were seeded from the restored page's own
+      // answers and then had the same page added again when it resolved (a
+      // ten-problem sheet recorded 13, 14 or 15 problems). Older saves without a
+      // page number still restore as page 1.
+      const restoredPage = Math.min(Math.max(1, normalized.pageNumber ?? 1), totalPages)
+      normalized.pageNumber = restoredPage
+      restoredPageRef.current = restoredPage
+      setPageStates({ [restoredPage]: normalized })
+      setCurrentPage(restoredPage)
       setActiveIndex(0)
 
-      // Calculate progress from the restored state
-      const correct = Object.values(normalized.results).filter(Boolean).length
-      const answered = Object.keys(normalized.answers).length
+      // The totals are the pages BEFORE this one, plus this one only if it was
+      // already fully resolved when it was saved (its results are in, and
+      // onPageComplete has already run for it).
+      const before = normalized.totalsBefore ?? { correct: 0, answered: 0 }
+      const resolved = normalized.problems.every((_, i) => normalized.results[i] === true || normalized.lockedProblems[i])
+      const correct = before.correct + (resolved ? Object.values(normalized.results).filter(Boolean).length : 0)
+      const answered = before.answered + (resolved ? normalized.problems.length : 0)
+      totalsRef.current = { correct, answered }
       setTotalCorrect(correct)
       setTotalAnswered(answered)
 
@@ -787,8 +892,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     setCurrentPage(1)
     setActiveIndex(0)
     setPageStates({})
+    totalsRef.current = { correct: 0, answered: 0 }
     setTotalCorrect(0)
     setTotalAnswered(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- totalPages only clamps a restored page number
   }, [worksheetNumber, level, initialPageState, worksheetKey])
 
   // Generate problems for a page (with optional supplementary problems mixed in)
@@ -822,7 +929,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     // the whole worksheet, not the page — a times table has to run 1..10 across both
     // pages to read as a table.
     for (let i = 0; i < mainCount; i++) {
-      problems.push(generateProblem(level, worksheetNumber, startIndex + i))
+      problems.push(generateProblem(level, worksheetNumber, startIndex + i, variant))
     }
 
     // Generate supplementary problems at the end
@@ -834,7 +941,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     }
 
     return problems
-  }, [level, worksheetNumber, problemsPerPage, supplementaryPractice])
+  }, [level, worksheetNumber, problemsPerPage, supplementaryPractice, variant])
 
   // Initialize page state if missing (for new worksheets, NOT for restored sessions)
   // CRITICAL: Uses functional setState to avoid reading stale pageStates closure
@@ -846,10 +953,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       return
     }
 
-    // Gate 2: Don't initialize if we already restored PAGE 1 for this worksheet
-    // (Allow page 2+ to generate new problems normally)
-    if (restoredForKeyRef.current === worksheetKey && currentPage === 1) {
-      console.log('📂 WorksheetView: Skipping init - page 1 already restored for', worksheetKey)
+    // Gate 2: Don't initialize the page a restore just put back (other pages
+    // generate normally).
+    if (restoredForKeyRef.current === worksheetKey && currentPage === restoredPageRef.current) {
+      console.log('📂 WorksheetView: Skipping init - page', currentPage, 'already restored for', worksheetKey)
       return
     }
 
@@ -877,6 +984,11 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           firstAttemptResults: {},
           correctedProblems: {},
           ...initColumnStateForProblems(problems),
+          pageNumber: currentPage,
+          totalsBefore: { ...totalsRef.current },
+          checkedAnswers: {},
+          hintsReached: {},
+          triedAnswers: {},
         }
       }
     })
@@ -967,7 +1079,6 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   // screen changes, and no child ever sees a clock.
   const dwellRef = useRef(dwellStart())
   const scaffoldRef = useRef(scaffoldStart())
-  const triesRef = useRef<Record<string, string[]>>({})
   const activeKeyRef = useRef<string | null>(null)
   const activeProblemKey = currentPageState.problems[activeIndex]?.id ?? null
 
@@ -1130,17 +1241,26 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     const lockedProblems: Record<number, boolean> = { ...currentPageState.lockedProblems }
     const firstAttemptResults: Record<number, boolean | null> = { ...currentPageState.firstAttemptResults }
     const correctedProblems: Record<number, boolean> = { ...currentPageState.correctedProblems }
+    const checkedAnswers: Record<number, string> = { ...(currentPageState.checkedAnswers ?? {}) }
+    const hintsReached: Record<number, HintLevel> = { ...(currentPageState.hintsReached ?? {}) }
+    const triedAnswers: Record<number, string[]> = { ...(currentPageState.triedAnswers ?? {}) }
 
     let newlyCorrect = 0
     let needsTeaching: number | null = null
     const firstCheckKeys: string[] = []
 
+    // Ruling R2 (2026-11-10): Check is never locked, and it grades only what has
+    // changed. A blank is "not yet" (no try, no hint, not wrong); an answer already
+    // checked and not touched since is not a new try (problemsToGrade).
+    const toGrade = new Set(problemsToGrade(currentPageState))
+    if (toGrade.size === 0) return
+
     currentPageState.problems.forEach((problem, index) => {
-      // Skip already correct or locked problems
-      if (results[index] === true || lockedProblems[index]) return
+      if (!toGrade.has(index)) return
 
       const answer = currentPageState.answers[index] || ''
       const isCorrect = checkAnswer(problem, answer)
+      checkedAnswers[index] = answer
 
       // The right digits written from the left (the boxes fill from the ones): say
       // so, instead of a hint about the maths he got right (2026-11-09).
@@ -1152,7 +1272,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
       // Every checked answer is kept in order: the first is the first try, and a
       // run of different answers on one problem is how guessing looks in data.
-      if (problem.id) triesRef.current[problem.id] = [...(triesRef.current[problem.id] ?? []), answer]
+      triedAnswers[index] = [...(triedAnswers[index] ?? []), answer]
 
       // Track first attempt result (lock it in once set)
       if (firstAttemptResults[index] === undefined || firstAttemptResults[index] === null) {
@@ -1187,6 +1307,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             needsTeaching = index  // Show teaching for first problem that needs it
           }
         }
+        // Kept apart from hintLevels, which is cleared once the answer is right —
+        // that is why hintLevelReached was empty on all 390 times-table rows.
+        hintsReached[index] = higherHint(hintsReached[index], hintLevels[index])!
       }
     })
 
@@ -1203,6 +1326,17 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       (_, index) => results[index] === true || lockedProblems[index]
     )
 
+    // The problem he just got right is done: the cursor goes on to the next one that
+    // still needs work, as a pencil would — on the touch pad, digits typed into a
+    // finished problem went nowhere (2026-11-10, now that Check can come after one).
+    if (!allResolved && (results[activeIndex] === true || lockedProblems[activeIndex])) {
+      const n = currentPageState.problems.length
+      for (let k = 1; k <= n; k++) {
+        const j = (activeIndex + k) % n
+        if (results[j] !== true && !lockedProblems[j]) { setActiveIndex(j); break }
+      }
+    }
+
     // Update page state
     setPageStates(prev => ({
       ...prev,
@@ -1215,6 +1349,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         lockedProblems,
         firstAttemptResults,
         correctedProblems,
+        checkedAnswers,
+        hintsReached,
+        triedAnswers,
       },
     }))
 
@@ -1229,20 +1366,22 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       const pageCorrect = Object.values(results).filter(Boolean).length
       const newTotalCorrect = totalCorrect + pageCorrect
       const newTotalAnswered = totalAnswered + currentPageState.problems.length
+      totalsRef.current = { correct: newTotalCorrect, answered: newTotalAnswered }
       setTotalCorrect(newTotalCorrect)
       setTotalAnswered(newTotalAnswered)
 
       // Build per-problem attempt data for DB saving
       const problemAttempts: ProblemAttemptData[] = currentPageState.problems.map((problem, index) => ({
         problem,
+        place: `${currentPage}:${index}`,
         answer: currentPageState.answers[index] || '',
         isCorrect: results[index] || false,
         attemptsCount: (attemptCounts[index] || 0) + 1,  // +1 because first attempt starts at 0
         firstAttemptCorrect: firstAttemptResults[index] === true,
-        hintLevelReached: hintLevels[index] || null,
+        hintLevelReached: hintsReached[index] || null,
         evidence: {
           firstTryMs: problem.id ? dwellMs(dwellRef.current, problem.id) : null,
-          triedAnswers: (problem.id && triesRef.current[problem.id]) || [],
+          triedAnswers: triedAnswers[index] || [],
           scaffoldMode,
           scaffoldShownBeforeFirstCheck: !!(problem.id && scaffoldRef.current.shown[problem.id]),
           scaffoldRevealedBeforeFirstCheck: !!(problem.id && scaffoldRef.current.revealed[problem.id]),
@@ -1281,7 +1420,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
         }, 1200)
       }
     }
-  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, fireWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId, scaffoldMode])
+  }, [currentPageState, currentPage, totalCorrect, totalAnswered, onPageComplete, totalPages, fireWorksheetComplete, checkAnswer, manualCarry, manualRegroup, regroupStreak, childId, scaffoldMode, activeIndex])
 
   // Handle completing full teaching (locks the problem and shows answer)
   const handleTeachingComplete = useCallback(() => {
@@ -1361,12 +1500,28 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     // times tables, where Enter after the answer moves on — jumped to the next
     // problem and the next digit landed THERE: on C51–C55 the owner's son had 31 of
     // 70 problems start with a stray single digit.
-    if (activeProblem?.displayFormat === 'vertical' && getPartialRowCount(activeProblem) === 0) {
+    // Also the TOTAL row of a problem with partial-product working (Level D, 2026-11-10),
+    // which the working-row branch above lets fall through to here.
+    const inTotalRow = activeProblem?.displayFormat === 'vertical' &&
+      (getPartialRowCount(activeProblem) === 0 ||
+        (currentPageState.activeRows?.[activeIndex] ?? 0) >= getPartialRowCount(activeProblem))
+    if (activeProblem && inTotalRow) {
       const columns = currentPageState.columnDigits[activeIndex] ?? []
       const written = columns.filter(d => d !== null).length
       if (written > 0 && written < getMinAnswerDigits(activeProblem)) {
         const next = columns.findIndex(d => d === null)
         setEntryNudge(`Keep going: next is the ${PLACE_WORDS[next >= 0 ? next : written] ?? 'next'} box.`)
+        setTimeout(() => setEntryNudge(null), 4000)
+        return
+      }
+    }
+
+    // The same law for an answer written across the line (2026-11-10, keyboard only:
+    // the touch pad has no Enter). Never off "7" for 7 × 10, nor off "13 R".
+    if (activeProblem && activeProblem.displayFormat !== 'vertical') {
+      const typed = currentPageState.answers[activeIndex] ?? ''
+      if (isHorizontalAnswerUnfinished(activeProblem, typed)) {
+        setEntryNudge(/r$/i.test(typed.trim()) ? 'Keep going: type the number after R.' : 'Keep going: finish this answer.')
         setTimeout(() => setEntryNudge(null), 4000)
         return
       }
@@ -1396,8 +1551,16 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       Object.keys(currentPageState.answers).length >= currentPageState.problems.length
 
     if (allAnswered) {
-      // All answered - submit the page
-      handleSubmitPage()
+      // All answered - check whatever is new; if nothing is (only unchanged answers
+      // that were wrong), go to the first one still to fix instead of doing nothing.
+      if (problemsToGrade(currentPageState).length > 0) {
+        handleSubmitPage()
+      } else {
+        const toFix = currentPageState.problems.findIndex((_, i) =>
+          currentPageState.results[i] === false && !currentPageState.lockedProblems[i]
+        )
+        if (toFix !== -1) setActiveIndex(toFix)
+      }
     } else {
       // Move to next unanswered question
       const nextEmpty = currentPageState.problems.findIndex((_, i) =>
@@ -1718,14 +1881,12 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     10 - (currentPage - 1) * problemsPerPage
   )
 
-  // Check if all problems have answers (or are locked/correct)
-  const allAnswered = currentPageState.problems.length > 0 &&
-    currentPageState.problems.every((_, index) =>
-      // Problem is "answered" if: has answer text, OR is correct, OR is locked
-      (currentPageState.answers[index] || '').length > 0 ||
-      currentPageState.results[index] === true ||
-      currentPageState.lockedProblems[index]
-    )
+  // Is there anything for Check to grade? (R2: one new answer is enough.)
+  const canCheck = problemsToGrade(currentPageState).length > 0
+  // Problems on this page with nothing written yet, and never checked — "not yet".
+  const notYet = currentPageState.problems.filter((_, index) =>
+    currentPageState.results[index] === undefined && !currentPageState.lockedProblems[index]
+  ).length
 
   // Check if all problems are resolved (correct or locked) - page can advance
   const allResolved = currentPageState.problems.length > 0 &&
@@ -1746,14 +1907,21 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
     onActiveProblemChange?.(currentPageState.problems[activeIndex] ?? null)
   }, [activeIndex, currentPage, currentPageState.problems, onActiveProblemChange])
 
-  // Notify parent when allAnswered status changes
+  // Tell the parent whether the pad's Check has anything to check.
   useEffect(() => {
-    if (onAllAnsweredChange) {
-      // Can submit if all editable problems have answers
-      const canSubmit = allAnswered && !allResolved
-      onAllAnsweredChange(canSubmit)
-    }
-  }, [allAnswered, allResolved, onAllAnsweredChange])
+    onCanCheckChange?.(canCheck && !allResolved)
+  }, [canCheck, allResolved, onCanCheckChange])
+
+  // The app's teaching screen is not the child's working time (review, 2026-11-10).
+  useEffect(() => {
+    onTeachingChange?.(showTeaching)
+  }, [showTeaching, onTeachingChange])
+
+  // A nudge about one problem is about that problem: it goes when he moves on
+  // (the "Keep going" toast used to hang over the next problem, 2026-11-10).
+  useEffect(() => {
+    setEntryNudge(null)
+  }, [activeIndex, currentPage])
 
   // Recovery: if we're restored into a "last page, all resolved" state (e.g., the
   // completion flow was interrupted by iPad sleep/background), auto-trigger completion.
@@ -1991,7 +2159,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 problemNumber={(currentPage - 1) * problemsPerPage + index + 1}
                 answer={currentPageState.answers[index] || ''}
                 isActive={isActive}
-                isSubmitted={currentPageState.submitted}
+                // Checked means THIS problem was checked (R2): a blank on a checked
+                // page is "not yet", never drawn as wrong.
+                isSubmitted={currentPageState.results[index] !== undefined}
                 isCorrect={currentPageState.results[index]}
                 onClick={() => handleProblemClick(index)}
                 compact={problemsPerPage > 3}
@@ -2033,7 +2203,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                   : undefined}
                 partialRowShift={(row: number) => getPartialRowSpan(problem, row).from}
                 partialRowSpanTo={(row: number) => getPartialRowSpan(problem, row).to}
-                partialRowResults={currentPageState.submitted && getPartialRowCount(problem) > 0
+                partialRowResults={currentPageState.results[index] !== undefined && getPartialRowCount(problem) > 0
                   ? Array.from({ length: getPartialRowCount(problem) }, (_, row) =>
                       checkPartialRow(problem, row, currentPageState.partialProducts?.[index]?.[row]))
                   : undefined}
@@ -2112,25 +2282,17 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
 
       {/* Navigation / Submit buttons */}
       <div className="flex justify-center gap-4 pt-4">
-        {!currentPageState.submitted ? (
-          // First submission - check all answers
+        {!allResolved ? (
+          // Check whatever is new (R2): one answer is enough; blanks wait.
           <Button
             variant="primary"
             size="lg"
             onClick={handleSubmitPage}
-            disabled={!allAnswered || !sessionActive}
+            disabled={!canCheck || !sessionActive}
           >
-            Check Answers ({problemsOnThisPage})
-          </Button>
-        ) : hasWrongAnswers ? (
-          // Has wrong answers - allow retry
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleSubmitPage}
-            disabled={!allAnswered || !sessionActive}
-          >
-            Try Again
+            {/* Always "Check" once the page has been checked: it grades whatever is new
+                (R2); the line below says which ones to try again. */}
+            {currentPageState.submitted ? 'Check' : `Check Answers (${problemsOnThisPage})`}
           </Button>
         ) : allResolved && currentPage < totalPages ? (
           // All resolved - go to next page
@@ -2141,7 +2303,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
           >
             Next Page →
           </Button>
-        ) : allResolved ? (
+        ) : (
           // Last page, all resolved: auto-advances (recovery effect handles re-trigger)
           <div className="flex flex-col items-center gap-2">
             <div className="text-lg font-medium text-primary animate-pulse">
@@ -2153,11 +2315,6 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             >
               Tap here if stuck
             </button>
-          </div>
-        ) : (
-          // Waiting for teaching to complete
-          <div className="text-lg font-medium text-gray-500">
-            Complete the lesson to continue...
           </div>
         )}
       </div>
@@ -2175,6 +2332,10 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             {hasWrongAnswers ? (
               <span className="text-amber-600">
                 Try the highlighted problems again!
+              </span>
+            ) : !allResolved ? (
+              <span className="text-gray-600" data-not-yet={notYet}>
+                Keep going — {notYet} more on this page.
               </span>
             ) : (
               <>

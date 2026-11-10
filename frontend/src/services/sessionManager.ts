@@ -122,8 +122,10 @@ function getOperationsForWorksheet(
 /**
  * @param index Position of the problem within its worksheet (0-based). Used by levels
  *   that present a times table in order — see generateCProblem.
+ * @param variant How many times this sheet has been done before (0 = first sitting).
+ *   A repeated sheet asks its facts in a new order (R1, 2026-11-10; level-c repeatPlace).
  */
-export function generateProblem(level: KumonLevel, sublevel?: number, index?: number): Problem {
+export function generateProblem(level: KumonLevel, sublevel?: number, index?: number, variant = 0): Problem {
   // Default to mid-level if no sublevel provided
   const worksheetNumber = sublevel ?? 100
 
@@ -167,7 +169,7 @@ export function generateProblem(level: KumonLevel, sublevel?: number, index?: nu
 
     // Elementary Advanced levels
     case 'C':
-      return generateCProblem(worksheetNumber, index)
+      return generateCProblem(worksheetNumber, index, variant)
     case 'D':
       return generateDProblem(worksheetNumber)
     case 'E':

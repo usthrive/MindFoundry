@@ -15,6 +15,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useVisibilityTracking } from './useVisibilityTracking'
 import type { TimerState } from './useSessionPersistence'
+import { monotonicNow } from '@/services/attemptEvidence'
 
 export interface EnhancedTimerState {
   focusedTime: number     // Seconds when app was visible
@@ -57,7 +58,13 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
 
   // Refs for interval and callbacks
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const lastTickRef = useRef<number>(Date.now())
+  // Ticks are measured on the MONOTONIC clock (2026-11-10): this time now decides
+  // whether a Kumon sheet moves on, and the wall clock was seen jumping 10–12 s
+  // backwards mid-sheet on 2026-09-26. Away time (which spans the device sleeping)
+  // stays on the wall clock in useVisibilityTracking.
+  const lastTickRef = useRef<number>(monotonicNow())
+  /** While held (a lesson is on screen before the sheet), seconds are not counted. */
+  const holdRef = useRef(false)
   const onTickRef = useRef(onTick)
 
   // Keep callback ref up to date
@@ -115,14 +122,16 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
     }
 
     // Start the interval
-    lastTickRef.current = Date.now()
+    lastTickRef.current = monotonicNow()
 
     intervalRef.current = setInterval(() => {
-      const now = Date.now()
+      const now = monotonicNow()
       const elapsed = Math.floor((now - lastTickRef.current) / 1000)
 
       if (elapsed > 0) {
-        lastTickRef.current = now
+        // Advance by whole seconds only, so the fraction carries into the next tick.
+        lastTickRef.current += elapsed * 1000
+        if (holdRef.current) return
         setFocusedTime(prev => {
           const newFocusedTime = prev + elapsed
           // Call onTick with updated state
@@ -150,7 +159,7 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
   const start = useCallback(() => {
     setIsRunning(true)
     setIsPaused(false)
-    lastTickRef.current = Date.now()
+    lastTickRef.current = monotonicNow()
   }, [])
 
   // Stop the timer completely
@@ -172,9 +181,19 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
   const resume = useCallback(() => {
     if (isRunning) {
       setIsPaused(false)
-      lastTickRef.current = Date.now()
+      lastTickRef.current = monotonicNow()
     }
   }, [isRunning])
+
+  /**
+   * Hold the clock while something that is not the sheet is on screen — the
+   * new-concept lesson before it (Kumon does not time the teaching). Unlike pause,
+   * a hold survives the app going to the background and coming back.
+   */
+  const hold = useCallback((on: boolean) => {
+    holdRef.current = on
+    lastTickRef.current = monotonicNow()
+  }, [])
 
   // Reset the timer to initial state
   const reset = useCallback((newInitialState?: Partial<TimerState>) => {
@@ -182,7 +201,7 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
     setAwayTime(newInitialState?.awayTime ?? 0)
     setIsPaused(!autoStart)
     setIsRunning(autoStart)
-    lastTickRef.current = Date.now()
+    lastTickRef.current = monotonicNow()
     resetVisibilityTracking()
   }, [autoStart, resetVisibilityTracking])
 
@@ -200,7 +219,7 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
   const restoreFromState = useCallback((state: TimerState) => {
     setFocusedTime(state.focusedTime)
     setAwayTime(state.awayTime)
-    lastTickRef.current = Date.now()
+    lastTickRef.current = monotonicNow()
   }, [])
 
   // Format time as MM:SS
@@ -240,6 +259,7 @@ export function useEnhancedTimer(options: UseEnhancedTimerOptions = {}) {
     stop,
     pause,
     resume,
+    hold,
     reset,
 
     // Persistence helpers

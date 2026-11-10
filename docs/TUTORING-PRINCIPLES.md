@@ -97,6 +97,22 @@ fluency time**. Anything less is "learning", and the app must say so.
     digit from the times tables, left-to-right typing into right-to-left boxes, an
     empty highlighted box read as "a digit is missing". Read the tried answers for
     stray single digits and reversals before reading the misses as maths.
+18. **Speed is the half of mastery that accuracy hides — and a pass rule needs a way
+    out.** A sheet passes on first-try accuracy (no help opened) AND time against the
+    standard for its run, both measured on the sheet; the clock counts corrections but
+    not a lesson, and a clock that did not run never holds a child back. Not passed →
+    the same sheet with its facts in a new order; the third try moves on and the parent
+    is told; the parent can move on, repeat or go back. Re-scored, one child's 42
+    "passed" sittings held 32 repeats — 19 on time alone: right answers, worked out.
+19. **A control a child cannot use until everything is filled teaches filling.** Check
+    locked until every problem had an answer made a child on a touch pad type a filler
+    digit into each empty problem (31 of 70). Check whatever is new: a blank is "not
+    yet" (no try, no hint, never drawn wrong), and an answer not changed since its last
+    check is not a new try — re-grading it climbed the hints to the teaching screen.
+20. **A reload must put the child back on the same page, with the same count.** Restoring
+    every saved page as page 1 served a page twice and counted it twice (10-problem
+    sheets recorded 13–15); count a sheet by PLACE, carry the page number, and photograph
+    a reload — the first fix dropped the page number and only the photograph saw it.
 
 ## 4. Screen laws for children
 
@@ -212,6 +228,12 @@ fluency time**. Anything less is "learning", and the app must say so.
       and re-shows when its content changes or a child re-enters the concept.
 - [ ] A move of a child's position goes through the app's own path (it clears what
       must re-fire), never a bare database update.
+- [ ] A pass rule reads first try (no help) AND time, shows the time to the grown-up
+      only, repeats with the facts reordered, and moves on after three tries.
+- [ ] Check is never locked; a blank is "not yet"; an unchanged answer is not a new try.
+- [ ] A reload restores the page AND the count (photograph one).
+- [ ] Every way a grown-up can move a child (parent page, profile editor, parent
+      mode) goes through the one move path, and a move made on another device stands.
 
 ## Provenance (MindFoundry, all under `/home/usthr/Penta_University/Math_Tutor/MindFoundry`)
 
@@ -227,3 +249,6 @@ fluency time**. Anything less is "learning", and the app must say so.
 - 2026-11-09 stacked multiplication: no lesson (seen forever, arrays), times-table
   hints on a column problem, the loud third box, Enter jumping problems, reversed
   digits: same brief, §12.
+- 2026-11-10 the pass rule (32 of 42 sittings would repeat), the locked Check and its
+  filler digits, a blank drawn wrong, the re-graded unchanged answer, the reload that
+  served a page twice, the child's stopwatch: same brief, §13.

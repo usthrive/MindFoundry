@@ -105,6 +105,13 @@ export type Database = {
           updated_at: string
           sct_seconds: number | null
           time_vs_sct: number | null
+          avg_focus_score: number | null
+          /** Right on the first check, no help, in the latest sitting (2026-11-10). */
+          first_try_correct: number | null
+          /** Problems in the latest sitting (2026-11-10). */
+          problems_total: number | null
+          /** Every sitting and parent move, oldest first (services/sheetPass.ts SheetEvent). */
+          sittings: unknown[]
         }
         Insert: {
           id?: string
@@ -122,6 +129,10 @@ export type Database = {
           completed_at?: string | null
           sct_seconds?: number | null
           time_vs_sct?: number | null
+          avg_focus_score?: number | null
+          first_try_correct?: number | null
+          problems_total?: number | null
+          sittings?: unknown[]
         }
       }
       practice_sessions: {

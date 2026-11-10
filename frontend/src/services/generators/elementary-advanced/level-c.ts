@@ -373,10 +373,24 @@ function generateDivisionProblem(
   }
 }
 
-export function generateCProblem(worksheet: number, index?: number): Problem {
+/**
+ * Where problem `index` of a REPEATED sheet sits (2026-11-10, ruling R1: a sheet not
+ * passed comes back "with fresh numbers"). A table sheet is deterministic — the same
+ * sheet number gives the same ten facts in the same order — so a repeat would be the
+ * answers he has just seen, in the order he saw them. Instead the same ten facts
+ * come back in a new order: 3i + 7v (mod 10) is a bijection on 0..9 for every v,
+ * so each fact is still asked exactly once. v = 0 (the first sitting) is unchanged.
+ * Ordered sheets keep their 1→10 walk: there the order IS the lesson.
+ */
+export function repeatPlace(index: number, variant: number): number {
+  if (!variant || index < 0 || index > 9) return index
+  return (3 * index + 7 * variant) % 10
+}
+
+export function generateCProblem(worksheet: number, index?: number, variant = 0): Problem {
   const config = getWorksheetConfig(worksheet)
   let problem: Problem
-  
+
   switch (config.type) {
     case 'review_level_b':
       problem = generateReviewProblem()
@@ -384,9 +398,11 @@ export function generateCProblem(worksheet: number, index?: number): Problem {
     case 'times_table_2_3':
     case 'times_table_4_5':
     case 'times_table_6_7':
-    case 'times_table_8_9':
-      problem = generateTimesTableProblem(config.tables || [2, 3], config.presentation, index, worksheet)
+    case 'times_table_8_9': {
+      const place = index !== undefined && config.presentation !== 'ordered' ? repeatPlace(index, variant) : index
+      problem = generateTimesTableProblem(config.tables || [2, 3], config.presentation, place, worksheet)
       break
+    }
     case 'multiplication_2digit_by_1digit':
       problem = generateMultiDigitMultiplication(config.maxMultiplicand || 99, config.type)
       break

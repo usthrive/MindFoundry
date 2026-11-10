@@ -3,73 +3,17 @@ import type { Database } from '@/lib/supabase'
 import type { KumonLevel } from '@/types'
 import { LEVEL_ORDER } from './generators/types'
 import { evidencePayload, type AttemptEvidence } from './attemptEvidence'
+import { getSctForLevel } from './sct'
+import { mergeSitting, nonPassesInRun, type Reason, type SheetEvent, type SittingRecord } from './sheetPass'
 
 type Child = Database['public']['Tables']['children']['Row']
 
 // ============================================
 // SCT (Standard Completion Time) Configuration
 // ============================================
-
-/**
- * Standard Completion Time (SCT) in seconds by Kumon level
- *
- * These are for a SINGLE PAGE (10 problems) - half of a full Kumon worksheet.
- * Full Kumon worksheets have sides a and b (20 problems total).
- * Times based on official Kumon SCT charts (halved for single page).
- *
- * See: /Requirements/KUMON-SCT-TIMING-REFERENCE.md
- */
-export const SCT_BY_LEVEL: Record<string, { min: number; target: number; max: number }> = {
-  // Pre-K (not timed officially, set generous defaults)
-  '7A': { min: 60, target: 120, max: 300 },
-  '6A': { min: 60, target: 120, max: 300 },
-  '5A': { min: 60, target: 120, max: 300 },
-
-  // Early Elementary - very fast for basic counting/addition
-  '4A': { min: 15, target: 45, max: 60 },   // Number writing
-  '3A': { min: 30, target: 45, max: 60 },   // Adding +1, +2, +3
-  '2A': { min: 30, target: 45, max: 60 },   // Adding +4 to +10
-
-  // Elementary - Addition/Subtraction
-  'A':  { min: 30, target: 60, max: 90 },   // Subtraction intro
-  'B':  { min: 60, target: 90, max: 150 },  // Vertical, regrouping
-
-  // Elementary - Multiplication/Division/Fractions
-  'C':  { min: 60, target: 90, max: 150 },  // Times tables, division
-  'D':  { min: 90, target: 120, max: 180 }, // Long division, fractions intro
-  'E':  { min: 90, target: 120, max: 180 }, // Fraction operations
-  'F':  { min: 90, target: 150, max: 180 }, // Decimals, PEMDAS
-
-  // Middle School - Algebra
-  'G':  { min: 90, target: 150, max: 180 },  // Pre-algebra
-  'H':  { min: 120, target: 150, max: 180 }, // Algebra I
-  'I':  { min: 120, target: 150, max: 180 }, // Algebra I/II
-
-  // High School - Advanced Algebra
-  'J':  { min: 150, target: 240, max: 360 }, // Algebra II
-  'K':  { min: 180, target: 300, max: 480 }, // Pre-calculus
-
-  // Calculus (wide ranges)
-  'L':  { min: 180, target: 480, max: 900 },  // Calculus basics
-  'M':  { min: 180, target: 360, max: 720 },  // Trigonometry
-  'N':  { min: 240, target: 600, max: 900 },  // Sequences, Series
-  'O':  { min: 300, target: 600, max: 1200 }, // Advanced Calculus
-}
-
-/**
- * Get the target SCT for a given level (in seconds)
- * Returns 90 seconds as default for unknown levels (1.5 minutes)
- */
-export function getSctForLevel(level: string): number {
-  return SCT_BY_LEVEL[level]?.target || 90
-}
-
-/**
- * Get the full SCT config for a given level
- */
-export function getSctConfigForLevel(level: string): { min: number; target: number; max: number } {
-  return SCT_BY_LEVEL[level] || { min: 60, target: 90, max: 150 }
-}
+// Lives in ./sct (pure) since 2026-11-10, so the pass-rule gate can load it
+// without the database client. Re-exported here for existing importers.
+export { SCT_BY_LEVEL, getSctForLevel, getSctConfigForLevel, getSctForSheet } from './sct'
 
 // ============================================
 // Level Comparison Utilities
@@ -184,44 +128,29 @@ export async function getOrCreateWorksheetProgress(
 }
 
 /**
- * Update worksheet progress after completing a session
+ * Record one sitting of a sheet (ruling R1, 2026-11-10; services/sheetPass.ts).
+ *
+ * Replaces updateWorksheetProgress, whose "80%" was measured on FINAL answers out of
+ * a total that counted a reloaded page twice (10/13, 10/14, 10/15 on ten-problem
+ * sheets) and decided nothing — every sheet advanced. The sitting now carries the
+ * first-try count, the time against the standard for its run of sheets, the focus
+ * score and the outcome, appended to `worksheet_progress.sittings`; the row's
+ * columns are derived from it (mergeSitting). `avg_focus_score` is written at last.
  */
-export async function updateWorksheetProgress(
+export async function recordSheetSitting(
   childId: string,
   level: KumonLevel,
   worksheetNumber: number,
-  score: number,
-  total: number,
-  /**
-   * Seconds the child spent on the sheet with the app in view (P0, 2026-09-26).
-   * Written against Kumon's Standard Completion Time so the record carries the
-   * speed half of Kumon's mastery rule; the columns existed and nothing wrote
-   * them. Recorded only — the pass rule is unchanged until the owner rules.
-   */
-  focusedSeconds?: number
+  sitting: SittingRecord,
+  finallyRight: number,
 ): Promise<boolean> {
-  // Get or create the progress record
   const progress = await getOrCreateWorksheetProgress(childId, level, worksheetNumber)
   if (!progress) return false
 
-  const isCompleted = score >= total * 0.8 // 80% threshold for completion
-  const newTimesAttempted = progress.times_attempted + 1
-  const newBestScore = Math.max(progress.best_score, score)
-
-  const updateData: Database['public']['Tables']['worksheet_progress']['Update'] = {
-    status: isCompleted ? 'completed' : 'in_progress',
-    times_attempted: newTimesAttempted,
-    best_score: newBestScore,
-    best_score_total: total,
-    last_attempted_at: new Date().toISOString(),
-    ...(isCompleted && !progress.completed_at && {
-      completed_at: new Date().toISOString()
-    }),
-    ...(focusedSeconds !== undefined && focusedSeconds > 0 && {
-      sct_seconds: getSctForLevel(level),
-      time_vs_sct: Math.min(999.99, Math.round((focusedSeconds / getSctForLevel(level)) * 100) / 100),
-    }),
-  }
+  const updateData = {
+    ...mergeSitting(progress, sitting, finallyRight),
+    last_attempted_at: sitting.at,
+  } satisfies Database['public']['Tables']['worksheet_progress']['Update']
 
   const { error } = await supabase
     .from('worksheet_progress')
@@ -229,10 +158,54 @@ export async function updateWorksheetProgress(
     .eq('id', progress.id)
 
   if (error) {
-    console.error('Error updating worksheet progress:', error)
+    console.error('Error recording sheet sitting:', error)
     return false
   }
+  return true
+}
 
+/**
+ * Where a sheet's current run stands: sittings not yet passed (for the third-try
+ * rule) and how many times it has ever been done (which order its numbers come in).
+ * A failed read is a first sitting — never a reason to block the child.
+ */
+export async function getSheetRun(
+  childId: string,
+  level: KumonLevel,
+  worksheetNumber: number,
+): Promise<{ nonPasses: number; variant: number; lastReasons: Reason[] }> {
+  const { data, error } = await supabase
+    .from('worksheet_progress')
+    .select('sittings, times_attempted')
+    .eq('child_id', childId)
+    .eq('level', level)
+    .eq('worksheet_number', worksheetNumber)
+    .maybeSingle()
+  if (error || !data) return { nonPasses: 0, variant: 0, lastReasons: [] }
+  const row = data as { sittings?: SheetEvent[] | null; times_attempted?: number | null }
+  // Why the last sitting did not pass, so a reloaded repeat says the same thing.
+  const last = [...(row.sittings ?? [])].reverse().find((e): e is SittingRecord => e.kind === 'sitting')
+  return { nonPasses: nonPassesInRun(row.sittings), variant: row.times_attempted ?? 0, lastReasons: last?.reasons ?? [] }
+}
+
+/** Append a parent's move to a sheet's record (it also ends that sheet's run of tries). */
+export async function appendSheetEvent(
+  childId: string,
+  level: KumonLevel,
+  worksheetNumber: number,
+  event: SheetEvent,
+): Promise<boolean> {
+  const progress = await getOrCreateWorksheetProgress(childId, level, worksheetNumber)
+  if (!progress) return false
+  const prior = Array.isArray((progress as { sittings?: unknown }).sittings) ? ((progress as { sittings: SheetEvent[] }).sittings) : []
+  const { error } = await supabase
+    .from('worksheet_progress')
+    .update({ sittings: [...prior, event] })
+    .eq('id', progress.id)
+  if (error) {
+    console.error('Error recording a parent move:', error)
+    return false
+  }
   return true
 }
 
