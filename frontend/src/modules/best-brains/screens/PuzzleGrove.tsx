@@ -21,7 +21,7 @@ import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import { PromptFigure } from '../components/figures/BBFigureView';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import AnchorPanel from '../components/AnchorPanel';
 import HintLadderView from '../components/HintLadder';
@@ -268,7 +268,7 @@ export default function PuzzleGrove() {
           {/* Authored lines survive `promptText` since 2026-09-22; `whitespace-pre-line`
               is what puts them on the screen. */}
           <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(prompt)}</p>
-          <AudioButton text={speakablePrompt(prompt, figure?.alt, statements)} band={band} autoplay={band === 'A'} />
+          <AudioButton text={speakablePrompt(prompt, figureScene(figure), statements)} band={band} autoplay={band === 'A'} />
         </div>
         <div className="mt-4">
           <PromptFigure prompt={prompt} figure={figure} band={band} />

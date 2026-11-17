@@ -206,7 +206,7 @@ const sitWheelShed = withFigure(
     },
   }),
   (p) =>
-    counters(numOf(p, 'b'), 'balls', {
+    counters(numOf(p, 'b'), 'wheels', {
       alt: `the ${countNoun(numOf(p, 'b'), 'wheels')} on one ${String(p.vehicle)}`,
       asserts: assertsParam('b'),
     }),
@@ -706,7 +706,7 @@ export const buildC08 = makeWeekBuilder({
         { childDo: 'Work out what all the chairs need first, then take off what is already cut.', expected: '15' },
       ], '15'),
       visual: 'One chair\'s four legs. The rest of the batch is yours to work out.',
-      figure: counters(4, 'balls', { alt: 'the four legs one chair takes' }),
+      figure: counters(4, 'legs', { alt: 'the four legs one chair takes' }),
     },
   ],
   days: [

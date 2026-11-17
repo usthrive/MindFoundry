@@ -29,7 +29,7 @@ import {
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import { PromptFigure } from '../components/figures/BBFigureView';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import type { BBLevel, PlacementClusterResult, PlacementResult } from '../types';
 
@@ -289,7 +289,7 @@ export default function PlacementActivity() {
           <p className={band === 'A' ? 'flex-1 whitespace-pre-line text-2xl text-text-primary' : 'flex-1 whitespace-pre-line text-xl text-text-primary'}>
             {promptText(item.prompt)}
           </p>
-          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band === 'A'} />
+          <AudioButton text={speakablePrompt(item.prompt, figureScene(item.figure), item.statements)} band={band} autoplay={band === 'A'} />
         </div>
         <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>

@@ -125,7 +125,8 @@
  */
 
 import { GENERATED_WEEKS, generatePack, CONTENT_VERSION } from '../src/modules/best-brains/generator/packGenerator';
-import { promptImageAlt, promptText, speakablePrompt } from '../src/modules/best-brains/figures/prompt';
+import { figureScene, promptImageAlt, promptText, speakablePrompt } from '../src/modules/best-brains/figures/prompt';
+import { bandForLevel } from '../src/modules/best-brains/copy';
 
 const argv = process.argv.slice(2);
 const arg = (k: string) => {
@@ -195,7 +196,7 @@ interface Item {
   prompt: string;
   choices?: Choice[];
   answer?: { value?: string };
-  figure?: { alt?: string };
+  figure?: { alt?: string; spoken?: string };
 }
 
 /**
@@ -203,7 +204,7 @@ interface Item {
  * cannot drift from what the child hears.
  */
 function sceneOf(item: Item): string {
-  return (item.figure?.alt ?? promptImageAlt(item.prompt) ?? '').trim();
+  return (figureScene(item.figure) ?? promptImageAlt(item.prompt) ?? '').trim();
 }
 
 /** The keyed correct option's text, or the plain answer value. */
@@ -250,7 +251,7 @@ function inspect(week: string, band: string, seed: number, raw: Item, autoplayed
   const surface = answerSurface(raw);
   if (!surface) return;
   const choices = raw.choices ?? [];
-  const spoken = speakablePrompt(raw.prompt, raw.figure?.alt);
+  const spoken = speakablePrompt(raw.prompt, figureScene(raw.figure));
   const push = (rule: Leak['rule'], disclosed: string) =>
     into.push({ rule, week, band, seed, id: raw.id ?? '?', answer: surface, disclosed, spoken, autoplayed });
 
@@ -439,6 +440,19 @@ const FIXTURES: Fixture[] = [
     item: { id: 'FX-13', prompt: 'Which one rolls?', answer: { value: 'A' },
       choices: [{ key: 'A', text: 'the ball', isCorrect: true }, { key: 'B', text: 'the box', isCorrect: false }] },
   },
+  {
+    name: 'a graph whose spoken scene lists its values reads the answer out (B23 before 2026-11-17)',
+    fires: true,
+    item: { id: 'FX-14', prompt: 'How many wrens does the bird-table graph show?', answer: { value: '10' },
+      figure: { alt: 'the bird-table graph, with one square for every bird: 11 robins, 3 starlings and 10 wrens' } },
+  },
+  {
+    name: 'the same graph with a SPOKEN line naming only its bars says nothing (the accessible name keeps the data)',
+    fires: false,
+    item: { id: 'FX-15', prompt: 'How many wrens does the bird-table graph show?', answer: { value: '10' },
+      figure: { alt: 'the bird-table graph, with one square for every bird: 11 robins, 3 starlings and 10 wrens',
+        spoken: 'the bird-table graph, with one square for every bird: a bar for robins, starlings and wrens' } },
+  },
 ];
 
 if (argv.includes('--selftest')) {
@@ -480,8 +494,11 @@ for (const { level, week } of weeks) {
      * IS THIS STRING ACTUALLY SPOKEN WITHOUT BEING ASKED FOR? Band A autoplays
      * every prompt on every screen; above it, `PracticePage` still autoplays a
      * word-problem on a word-problem day (`packDay.focus === 'word-problems' &&
-     * item.type === 'word-problem'`). Mastery forms and the puzzle are read by
-     * `CheckRunner` / `PuzzleGrove`, which autoplay at band A only.
+     * item.type === 'word-problem'`). Mastery forms are read by `CheckRunner`,
+     * which autoplays at interaction bands A AND B (`band !== 'C'` — levels A, B
+     * and C; this said "band A only" until 2026-11-17, which hid B23's check
+     * forms reading their answers out). The puzzle (`PuzzleGrove`) autoplays at
+     * band A only.
      */
     const visit = (it: Item, autoplayed: boolean) => {
       items++;
@@ -494,7 +511,7 @@ for (const { level, week } of weeks) {
       }
     }
     for (const key of ['formA', 'formB']) {
-      for (const it of (p.masteryCheck ?? {})[key] ?? []) visit(it as Item, level === 'A');
+      for (const it of (p.masteryCheck ?? {})[key] ?? []) visit(it as Item, bandForLevel(level as never) !== 'C');
     }
     if (p.puzzle) visit(p.puzzle as Item, level === 'A');
   }
@@ -587,7 +604,41 @@ if (advisory.length > 0) {
   else console.log('  (--list prints every distinct advisory line)');
 }
 
+/**
+ * DATA DISPLAYS NEVER SPEAK THEIR VALUES (2026-11-17), at any band. A graph's
+ * accessible name lists every value, so its `spoken` line must name the display
+ * and its categories only — otherwise "How many wrens does the graph show?" is
+ * answered aloud before it is asked (B23 did this on 191 surfaces over 25 seeds,
+ * its check forms autoplaying at band B). Unlike a clock's hand positions or a
+ * number line's endpoints, a listed value is never a landmark coincidence.
+ */
+const DATA_DISPLAY_WEEKS = ['B23'];
+const dataLeaks = rows.filter((r) => DATA_DISPLAY_WEEKS.includes(r.week)).flatMap((r) => r.leaks);
+const weeksSeen = rows.filter((r) => DATA_DISPLAY_WEEKS.includes(r.week)).length;
+if (!ONLY_LEVEL || ONLY_LEVEL === 'B') {
+  console.log(`\n  data displays (${DATA_DISPLAY_WEEKS.join(', ')}): ${dataLeaks.length} spoken value(s)${dataLeaks.length ? ' — e.g. ' + line(dataLeaks[0]) : ''}`);
+}
+const dataFail = (!ONLY_LEVEL || ONLY_LEVEL === 'B') && (weeksSeen !== DATA_DISPLAY_WEEKS.length || dataLeaks.length > 0);
+
+/**
+ * SPOKEN-UNASKED RATCHET at the reading bands (2026-11-17). Correcting the check
+ * screen's autoplay model raised the unasked count from 50 to 209 (B23 then fixed
+ * to 0). What is left is the landmark kind the header argues for — clock hands
+ * (B12, B17, C18), number-line endpoints (C2), a scale's first step (C23) — which
+ * describe what a sighted child already sees. They are read by a human, not
+ * failed; but the count per week may only FALL, and a week not listed may not
+ * start. Measured at the default 25 seeds.
+ */
+const UNASKED_DEBT: Record<string, number> = { B4: 2, B12: 22, B15: 2, B16: 6, B17: 50, C2: 97, C18: 15, C23: 9 };
+const unaskedOver = SEEDS === 25
+  ? rows.filter((r) => r.band !== AUTOPLAY_BAND)
+      .map((r) => ({ week: r.week, n: r.leaks.filter((l) => l.autoplayed).length }))
+      .filter((r) => r.n > (UNASKED_DEBT[r.week] ?? 0))
+  : [];
+if (unaskedOver.length) console.log(`\n  SPOKEN-UNASKED above the ratchet: ${unaskedOver.map((r) => `${r.week} ${r.n} (allowed ${UNASKED_DEBT[r.week] ?? 0})`).join(', ')}`);
+const unaskedFail = unaskedOver.length > 0;
+
 console.log(
-  `\n${failing.length === 0 ? 'PASS' : 'FAIL'} — ${failing.length} band-A week(s) speak an item's own answer before asking it${failing.length ? ': ' + failing.map((f) => f.week).join(', ') : ''}\n`,
+  `\n${failing.length === 0 && !dataFail && !unaskedFail ? 'PASS' : 'FAIL'} — ${failing.length} band-A week(s) speak an item's own answer before asking it${failing.length ? ': ' + failing.map((f) => f.week).join(', ') : ''}; ${dataLeaks.length} data-display value(s) spoken\n`,
 );
-process.exit(failing.length === 0 ? 0 : 1);
+process.exit(failing.length === 0 && !dataFail && !unaskedFail ? 0 : 1);

@@ -143,7 +143,7 @@ import { discrimination } from '../lib/discrimination';
 import { withCheckBack, withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { barModel, numberLine } from '../lib/figures';
+import { balance, barModel, numberLine } from '../lib/figures';
 import {
   eaFlipWhenAdding,
   evaluateAtX,
@@ -606,14 +606,12 @@ export const buildE15 = makeWeekBuilder({
     script: [
       {
         say: 'Here are two pans that are not level. The left holds a sealed box and thirty; the right holds fifty; and the left is the heavier side, so whatever is in the box, the box plus thirty comes to more than fifty. Now I take thirty off both pans, in one breath. The left is the box on its own. The right is twenty. And the left is still the heavier side, because I lightened both by the same amount. So the box is more than twenty.',
-        visual: 'The two pans as they stand, to one scale. The left is the longer, and that is the whole message.',
-        figure: barModel(
-          [
-            { label: 'the left pan: the box and the thirty', segments: [{ value: 34, label: 'the box' }, { value: 30, label: '30', fill: 'hatch' }], total: 'more than 50' },
-            { label: 'the right pan', segments: [{ value: 50, label: '50' }] },
-          ],
-          { scaleMax: 64, alt: 'a longer left bar made of a block for the box and a hatched 30 block, beside a shorter right bar of 50' },
-        ),
+        // The pans the words name (2026-11-17; they were two bars to one scale).
+        visual: 'The two pans as they stand. The left, with the box and thirty, hangs lower, and that is the whole message.',
+        figure: balance({ objects: ['box'], weights: [30] }, { weights: [50] }, {
+          tilt: 'left-down',
+          alt: 'a balance whose left pan, holding a sealed box and a weight of 30, hangs lower than the right pan with a weight of 50',
+        }),
       },
       {
         say: 'Now look at what I have actually found, because it is not a number. More than twenty is a whole run of numbers — twenty-one, twenty-two, a hundred, every one of them. So I draw it. I put a circle on twenty and shade everything to the right of it. And I leave that circle open, hollow, because twenty is the one number the run does not include: twenty is not more than twenty.',
@@ -624,7 +622,7 @@ export const buildE15 = makeWeekBuilder({
             max: 26,
             step: 2,
             marks: [{ at: 20, label: '20', style: 'open' }],
-            hops: [{ from: 20, to: 26 }],
+            ray: { from: 20, dir: 'right' },
           },
           { alt: 'a number line with an open circle at 20 and the line shaded from there to the right' },
         ),
@@ -638,7 +636,7 @@ export const buildE15 = makeWeekBuilder({
             max: 26,
             step: 2,
             marks: [{ at: 20, label: '20', style: 'point' }],
-            hops: [{ from: 20, to: 26 }],
+            ray: { from: 20, dir: 'right' },
           },
           { alt: 'a number line with a filled circle at 20 and the line shaded from there to the right' },
         ),
@@ -698,7 +696,7 @@ export const buildE15 = makeWeekBuilder({
           max: 23,
           step: 2,
           marks: [{ at: 17, label: '17', style: 'point' }],
-          hops: [{ from: 17, to: 23 }],
+          ray: { from: 17, dir: 'right' },
         },
         { alt: 'a number line with a filled circle at 17 and the line shaded from there to the right' },
       ),
@@ -721,7 +719,7 @@ export const buildE15 = makeWeekBuilder({
           max: 14,
           step: 2,
           marks: [{ at: 8, label: '8', style: 'open' }],
-          hops: [{ from: 8, to: 2 }],
+          ray: { from: 8, dir: 'left' },
         },
         { alt: 'a number line with an open circle at 8 and the line shaded from there to the left' },
       ),

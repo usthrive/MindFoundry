@@ -233,6 +233,22 @@ export default function NumberLineFig({ params, size, animate }: FigurePartProps
         strokeLinecap="round"
       />
 
+      {/* A shaded ray (E15): every number from `from` on, coloured along the line
+          with an arrowhead past the end — "and on, and on". Drawn under the marks,
+          so an open or filled circle at `from` still sits on top of it. */}
+      {params.ray && Number.isFinite(params.ray.from) && (() => {
+        const from = X(clamp(params.ray.from, min, max));
+        const right = params.ray.dir !== 'left';
+        const end = right ? r2(x1 + 9) : r2(x0 - 9);
+        const tip = right ? end + 7 : end - 7;
+        return (
+          <g>
+            <line x1={from} y1={lineY} x2={end} y2={lineY} stroke={FIG.primary} strokeWidth={STROKE.heavy + 2} strokeLinecap="butt" opacity={0.85} />
+            <polygon points={`${r2(tip)},${lineY} ${end},${r2(lineY - 6)} ${end},${r2(lineY + 6)}`} fill={FIG.primary} />
+          </g>
+        );
+      })()}
+
       {showTickLabels &&
         printed.map((p) => (
           <text

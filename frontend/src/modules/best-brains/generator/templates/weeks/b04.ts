@@ -310,7 +310,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam, numberLine } from '../lib/figures';
+import { assertsAnswer, assertsParam, numberTrack } from '../lib/figures';
 import { numberWords } from '../shared';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
@@ -377,8 +377,27 @@ const move = (r: Rng, goesOn: boolean, k: number): string =>
 /** What a sighted child reads off the track: where the counter stands, only. */
 const trackAlt = (squares: readonly number[]): string =>
   squares.length > 1
-    ? `a number track from 0 to 20 with a counter on square ${fmtInt(squares[0])} and another on square ${fmtInt(squares[1])}`
-    : `a number track from 0 to 20 with a counter on square ${fmtInt(squares[0])}`;
+    ? `the number track, with a counter on square ${fmtInt(squares[0])} and another on square ${fmtInt(squares[1])}`
+    : `the number track, with a counter on square ${fmtInt(squares[0])}`;
+
+/**
+ * THE STRETCH OF TRACK DRAWN (2026-11-17). All 21 squares across a phone left
+ * numbers about 7 px tall inside their squares — unreadable at seven. So the
+ * picture shows the track six squares either side of where the counters stand
+ * (inside 0–20, and never fewer than 13 squares): room for every hop this week
+ * asks for, at a size a child can read. The stretch depends only on the counters,
+ * which the prompt states, so it says nothing about where a journey ends.
+ */
+function trackWindow(lo: number, hi: number): { min: number; max: number } {
+  let min = Math.max(TRACK_MIN, lo - 6);
+  let max = Math.min(TRACK_MAX, hi + 6);
+  while (max - min < 12) {
+    if (min > TRACK_MIN) min--;
+    else if (max < TRACK_MAX) max++;
+    else break;
+  }
+  return { min, max };
+}
 
 /**
  * The track with the journey's starting square (or squares) dotted, and NOTHING
@@ -387,14 +406,11 @@ const trackAlt = (squares: readonly number[]): string =>
  * the numbers under the line are the manipulative and not the answer.
  */
 const trackAt = (squares: readonly number[], asserts?: BBFigure['asserts']): BBFigure =>
-  numberLine(
-    {
-      min: TRACK_MIN,
-      max: TRACK_MAX,
-      step: 1,
-      labels: 'all',
-      marks: squares.map((n) => ({ at: n, label: fmtInt(n), style: 'point' as const })),
-    },
+  // A TRACK, drawn as one (2026-11-17): numbered squares with a counter standing
+  // on its square. It was a number LINE — ticks and gaps — under words about
+  // squares, which is where "counted the start square" hides.
+  numberTrack(
+    { ...trackWindow(Math.min(...squares), Math.max(...squares)), counters: [...squares] },
     { alt: trackAlt(squares), ...(asserts ? { asserts } : {}) },
   );
 
@@ -408,18 +424,18 @@ const trackAt = (squares: readonly number[], asserts?: BBFigure['asserts']): BBF
 const trackWalk = (from: number, to: number, asserts?: BBFigure['asserts']): BBFigure => {
   const stepDir = to > from ? 1 : -1;
   const stops = Array.from({ length: Math.abs(to - from) }, (_, i) => from + stepDir * (i + 1));
-  return numberLine(
+  return numberTrack(
     {
-      min: TRACK_MIN,
-      max: TRACK_MAX,
-      step: 1,
-      labels: 'all',
-      marks: [{ at: to, label: fmtInt(to), style: 'flag' as const }],
+      ...trackWindow(Math.min(from, to), Math.max(from, to)),
+      counters: [from],
+      flag: to,
       hops: stops.map((stop, i) => ({ from: i === 0 ? from : stops[i - 1], to: stop })),
     },
     {
-      alt: `a number track from 0 to 20 with ${countNoun(stops.length, 'single hops')} drawn from square ${fmtInt(from)}, ending with a flag on square ${fmtInt(to)}`,
-      ...(asserts ? { asserts } : {}),
+      alt: `the number track, with ${countNoun(stops.length, 'single hops')} drawn from square ${fmtInt(from)}, ending with a flag on square ${fmtInt(to)}`,
+      // The journey's end is the flag, so an assertion reads the flag (a number
+      // line's default was its first mark, the flag; a track's is its counter).
+      ...(asserts ? { asserts: { ...asserts, of: 'flag' } } : {}),
     },
   );
 };
@@ -606,7 +622,7 @@ const sitHopOn = withTrack(
     },
   }),
   (p) => [numOf(p, 'start')],
-  assertsParam('start', 'mark:0'),
+  assertsParam('start', 'counter:0'),
 );
 
 const sitHopBack = withTrack(
@@ -631,7 +647,7 @@ const sitHopBack = withTrack(
     },
   }),
   (p) => [numOf(p, 'a')],
-  assertsParam('a', 'mark:0'),
+  assertsParam('a', 'counter:0'),
 );
 
 /**
@@ -681,7 +697,7 @@ const sitMeetOnOneSquare = withTrack(
     },
   }),
   (p) => [numOf(p, 'first'), numOf(p, 'second')],
-  assertsParam('first', 'mark:0'),
+  assertsParam('first', 'counter:0'),
 );
 
 // ---------------------------------------------------------------------------
@@ -758,7 +774,7 @@ const discWhichWay = withTrack(
     }),
   ),
   (p) => [numOf(p, 'a')],
-  assertsParam('a', 'mark:0'),
+  assertsParam('a', 'counter:0'),
 );
 
 // ---------------------------------------------------------------------------
@@ -933,7 +949,7 @@ const msSameWayTwice = withTrack(
     },
   }),
   (p) => [numOf(p, 'initN')],
-  assertsParam('initN', 'mark:0'),
+  assertsParam('initN', 'counter:0'),
 );
 
 // ---------------------------------------------------------------------------
@@ -982,7 +998,7 @@ const eaCountedTheStart = withTrack(
     },
   }),
   (p) => [numOf(p, 'a')],
-  assertsParam('a', 'mark:0'),
+  assertsParam('a', 'counter:0'),
 );
 
 // ---------------------------------------------------------------------------

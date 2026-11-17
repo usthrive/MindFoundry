@@ -240,7 +240,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswerOf, assertsParam, barModel } from '../lib/figures';
+import { assertsAnswerOf, assertsParam, barModel, linePlot } from '../lib/figures';
 import { distinctSet } from '../lib/stats';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
@@ -391,6 +391,24 @@ const graphAlt = (board: string, unit: string, labels: readonly string[], counts
   `${board}, with one square for every ${unitFor(1, unit)}: ${entryList(labels, counts)}`;
 
 /**
+ * What the READ-ALOUD says about the same graph (2026-11-17): the board, how the
+ * bars are built and which bars there are — never a count. `graphAlt` stays the
+ * accessible name (a screen-reader child's only page), but spoken in front of
+ * "How many wrens does the graph show?" it was the answer, and the check screen
+ * autoplays it at band B. ("A square", not "one square": a spoken "one" read as
+ * the answer 1 on difference items.)
+ *
+ * The `[image: …]` bracket in each prompt keeps the FULL description: it is the
+ * item's record of the display (QG-11 reads the misconception value off it), it
+ * is never shown, and it is spoken only when no figure is drawn — every graph
+ * item here draws one, so the read-aloud always takes this line instead.
+ * `bb-spoken-answer-test` fails the run if B23 ever speaks a value, which is what
+ * would happen the day a graph item lost its figure.
+ */
+const graphSpoken = (board: string, unit: string, labels: readonly string[]): string =>
+  `${board}, with a square for every ${unitFor(1, unit)}: a bar for ${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+
+/**
  * One bar per kind, each bar a stack of single squares.
  *
  * `scaleMax` is the tallest bar, so one square is the same width in every bar on
@@ -401,7 +419,7 @@ const graphAlt = (board: string, unit: string, labels: readonly string[], counts
 const barGraph = (
   labels: readonly string[],
   counts: readonly number[],
-  opts: { alt: string; asserts?: BBFigure['asserts'] },
+  opts: { alt: string; spoken?: string; asserts?: BBFigure['asserts'] },
 ): BBFigure =>
   barModel(
     labels.map((label, i) => ({
@@ -411,6 +429,7 @@ const barGraph = (
     {
       scaleMax: Math.max(...counts),
       alt: opts.alt,
+      ...(opts.spoken ? { spoken: opts.spoken } : {}),
       ...(opts.asserts ? { asserts: opts.asserts } : {}),
     },
   );
@@ -421,6 +440,7 @@ const graphFromParams = (p: Params, asserts?: BBFigure['asserts']): BBFigure => 
   const counts = numsOf(p, 'counts');
   return barGraph(labels, counts, {
     alt: graphAlt(strOf(p, 'board'), strOf(p, 'unit'), labels, counts),
+    spoken: graphSpoken(strOf(p, 'board'), strOf(p, 'unit'), labels),
     ...(asserts ? { asserts } : {}),
   });
 };
@@ -519,6 +539,24 @@ const plotProse = (plot: Plot): string =>
     `One dot stands for one pod.`,
     ...plot.values.map((v, i) => `Above the ${v} there are ${countNoun(plot.dots[i], 'dots')}.`),
   ].join(' ');
+
+/**
+ * THE PLOT, DRAWN (2026-11-17). Until today no primitive could put a column of
+ * dots on a line, so every line plot in this week was prose only — under words
+ * that say "Above the 5 there are 8 dots". `linePlot` draws exactly what the
+ * prose says: the values along a line, a stack of dots over each. Every count on
+ * it is one the prompt prints.
+ */
+const plotFigure = (values: readonly number[], dots: readonly number[]): BBFigure =>
+  linePlot(
+    {
+      min: Math.min(...values),
+      max: Math.max(...values),
+      dots: values.map((v, i) => ({ at: v, count: dots[i] })),
+      label: `${POD.inside} in a pod — one dot for each pod`,
+    },
+    { alt: `a line plot of ${POD.inside} in a pod: ${values.map((v, i) => `${countNoun(dots[i], 'dots')} above ${v}`).join(', ')}` },
+  );
 
 /** The plot's params, in the shape `stat_verify_graph_read_v1` reads. */
 const plotParams = (plot: Plot): Params => ({
@@ -713,11 +751,10 @@ const sitBarGap = withFigure(
  * the stack and never by the label, and a child who has only met bar graphs has
  * to notice that the display has changed what its numbers mean.
  *
- * Stated in prose, not drawn: no primitive can put a column of dots on a line
- * (see the header). The asked column rotates freely here, tallest included, for
+ * Drawn since 2026-11-17 (`plotFigure`): the stacks the prose states. The asked column rotates freely here, tallest included, for
  * the same reason `sitBarValue` does.
  */
-const sitPlotColumn = situation({
+const sitPlotColumn = withFigure(situation({
   situationType: 'part-whole',
   cognitiveOp: 'plot-read-column',
   draw: (r) => {
@@ -736,7 +773,7 @@ const sitPlotColumn = situation({
       errorTags: ['concept-misconception', 'representation-misread'],
     };
   },
-});
+}), (p) => plotFigure((p.values as number[]).map(Number), (p.counts as number[]).map(Number)));
 
 // ---------------------------------------------------------------------------
 // Metacognition — the Level-B intro form, a call made before any working
@@ -954,6 +991,7 @@ const msAllBarsTotal = withShownFigure(
   (s) =>
     barGraph(s.labels, s.counts, {
       alt: graphAlt(s.board, s.unit, s.labels, s.counts),
+      spoken: graphSpoken(s.board, s.unit, s.labels),
       asserts: assertsParam('initN', `bar:${s.firstIdx}`),
     }),
 );
@@ -994,6 +1032,7 @@ const msTwoBarsThenGap = withShownFigure(
   (s) =>
     barGraph(s.labels, s.counts, {
       alt: graphAlt(s.board, s.unit, s.labels, s.counts),
+      spoken: graphSpoken(s.board, s.unit, s.labels),
       asserts: assertsParam('initN', `bar:${s.firstIdx}`),
     }),
 );
@@ -1176,6 +1215,7 @@ export const buildB23 = makeWeekBuilder({
       {
         say: 'A line plot moves the numbers. I counted the peas in each pod. Above the 5 I put one dot for every pod that held 5 peas. The dots are pods, not peas.',
         visual: 'A line plot: the numbers 4, 5 and 6 along a line, with a column of dots sitting on the line above each one.',
+        figure: plotFigure([4, 5, 6], [3, 5, 2]),
       },
       {
         say: 'One habit before I read any bar. About how many squares does it look like? I make a call, then I count to check. The counting is what settles it.',
@@ -1239,12 +1279,13 @@ export const buildB23 = makeWeekBuilder({
       }),
     },
     {
-      // Independent, and no picture at all — this one is a line plot, which no
-      // primitive can draw honestly (see the file header).
+      // The line plot the words describe (2026-11-17; until then no primitive
+      // could draw one). Every stack on it is a count the prompt states.
       ...ge(23, 4, 'independent', 'A line plot counts the peas in each pod. Above the 4 there are 3 dots. Above the 5 there are 8 dots. Above the 6 there are 2 dots. How many pods held 4 peas? Solve cold.', [
         { childDo: 'Decide what one dot stands for, then count only the dots above the named number.', expected: '3' },
       ], '3'),
-      visual: 'No picture — read the plot from the words.',
+      visual: 'The line plot: three dots above 4, eight above 5, two above 6.',
+      figure: plotFigure([4, 5, 6], [3, 8, 2]),
     },
   ],
   days: [

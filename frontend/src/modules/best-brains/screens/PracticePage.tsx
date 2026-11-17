@@ -32,7 +32,7 @@ import {
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import { PromptFigure } from '../components/figures/BBFigureView';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import AnchorPanel from '../components/AnchorPanel';
 import HintLadderView from '../components/HintLadder';
@@ -527,7 +527,7 @@ export default function PracticePage() {
               is what makes `promptText`'s preserved `\n` reach the child. */}
           <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>{promptText(item.prompt)}</p>
           <AudioButton
-            text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)}
+            text={speakablePrompt(item.prompt, figureScene(item.figure), item.statements)}
             band={band}
             autoplay={band === 'A' || (packDay.focus === 'word-problems' && item.type === 'word-problem')}
           />

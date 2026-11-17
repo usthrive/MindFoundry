@@ -31,6 +31,11 @@ import AngleFig from './AngleFig';
 import MathSentenceFig from './MathSentenceFig';
 import ColumnMethodFig from './ColumnMethodFig';
 import BalanceFig from './BalanceFig';
+import TallyFig from './TallyFig';
+import FractionCircleFig from './FractionCircleFig';
+import PictographFig from './PictographFig';
+import NumberTrackFig from './NumberTrackFig';
+import LinePlotFig from './LinePlotFig';
 
 /** Band A gets the biggest drawing: small hands, unpractised eyes, no reading. */
 export function sizeForBand(band: InteractionBand): FigureSize {
@@ -60,6 +65,11 @@ function Primitive({ figure, size, animate }: { figure: BBFigure; size: FigureSi
     case 'math-sentence': return <MathSentenceFig params={figure.params} size={size} animate={animate} />;
     case 'column-method': return <ColumnMethodFig params={figure.params} size={size} animate={animate} />;
     case 'balance': return <BalanceFig params={figure.params} size={size} />;
+    case 'tally': return <TallyFig params={figure.params} size={size} />;
+    case 'fraction-circle': return <FractionCircleFig params={figure.params} size={size} />;
+    case 'pictograph': return <PictographFig params={figure.params} size={size} />;
+    case 'number-track': return <NumberTrackFig params={figure.params} size={size} />;
+    case 'line-plot': return <LinePlotFig params={figure.params} size={size} />;
   }
 }
 

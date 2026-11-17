@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { CONFIRMS, MISS_OPENER, type InteractionBand } from '../copy';
 import { checkAnswer } from '../answers';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import { PromptFigure } from './figures/BBFigureView';
 import AnswerEntry from './AnswerEntry';
 import AudioButton from './AudioButton';
@@ -134,7 +134,7 @@ export default function CheckReview({ misses, band, when, onReAnswer, onDone }: 
           </p>
           {/* Read aloud by itself at band B too (2026-10-15): a miss should be the
               maths, not the reading. At band A the opening line plays first. */}
-          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band === 'B' || (band === 'A' && idx > 0)} />
+          <AudioButton text={speakablePrompt(item.prompt, figureScene(item.figure), item.statements)} band={band} autoplay={band === 'B' || (band === 'A' && idx > 0)} />
         </div>
         <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>

@@ -32,6 +32,9 @@ const NOUN_ICON: Record<string, CounterIcon> = {
   ducks: 'duck', stars: 'star', apples: 'apple', fish: 'fish', leaves: 'leaf',
   shells: 'shell', flowers: 'flower', balls: 'ball', blocks: 'block',
   buttons: 'dot', counters: 'dot', dots: 'dot',
+  // 2026-11-17: C7/C8's wheels and chair legs were drawn as balls. Not added to
+  // DRAWABLE_NOUNS, so no counting week's noun pool (or its rng) changes.
+  wheels: 'wheel', legs: 'leg',
 };
 
 /** The nouns a counting week may draw and still be drawn honestly. */
@@ -213,6 +216,7 @@ export function numberLine(
     labelAs?: 'number' | 'fraction';
     marks?: Array<{ at: number; label?: string; style?: MarkStyle }>;
     hops?: Array<{ from: number; to: number; label?: string }>;
+    ray?: { from: number; dir: 'right' | 'left' };
   },
   opts: { alt: string; asserts?: FigureAssertion },
 ): BBFigure {
@@ -227,9 +231,11 @@ export function numberLine(
  * (checkFigureShape) refuses a level bar over unequal visible pans, and a tipped
  * bar whose lower side is the lighter one.
  */
+type BalanceSide = { heaps?: number[]; bags?: number; weights?: number[]; objects?: Array<'stone' | 'balloon' | 'box' | 'tin'> };
+
 export function balance(
-  left: { heaps?: number[]; bags?: number },
-  right: { heaps?: number[]; bags?: number },
+  left: BalanceSide,
+  right: BalanceSide,
   opts: {
     tilt: 'level' | 'left-down' | 'right-down';
     alt: string;
@@ -237,6 +243,10 @@ export function balance(
     cover?: 'bag' | 'dish';
     /** Countable dots — teaching surfaces only (script, modeled / completion examples). */
     countable?: boolean;
+    /** 'block' draws countable heaps as squares (A20's blocks). */
+    icon?: 'block';
+    /** Written on each weight block ("g"). */
+    unit?: string;
     asserts?: FigureAssertion;
   },
 ): BBFigure {
@@ -250,18 +260,71 @@ export function balance(
       ...(opts.showCounts === false ? { showCounts: false } : {}),
       ...(opts.cover === 'dish' ? { cover: 'dish' as const } : {}),
       ...(opts.countable ? { countable: true } : {}),
+      ...(opts.icon ? { icon: opts.icon } : {}),
+      ...(opts.unit ? { unit: opts.unit } : {}),
     },
     ...(opts.asserts ? { asserts: opts.asserts } : {}),
   };
 }
 
+/** Tally marks in gates of five (C7). */
+export function tally(count: number, opts: { alt: string; asserts?: FigureAssertion }): BBFigure {
+  return { type: 'tally', alt: opts.alt, params: { count }, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
+/** A pizza or cake cut into pieces (C15): `parts` are relative sizes round the circle. */
+export function fractionCircle(
+  parts: number[],
+  opts: { shaded?: number[]; alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  return {
+    type: 'fraction-circle',
+    alt: opts.alt,
+    params: { parts, ...(opts.shaded?.length ? { shaded: opts.shaded } : {}) },
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
+  };
+}
+
+/** Rows of one symbol with a key (C23). */
+export function pictograph(
+  rows: Array<{ label: string; count: number }>,
+  symbol: 'star' | 'circle' | 'square' | 'drop',
+  key: { worth: number; unit: string },
+  opts: { alt: string; spoken?: string; asserts?: FigureAssertion },
+): BBFigure {
+  return {
+    type: 'pictograph',
+    alt: opts.alt,
+    ...(opts.spoken ? { spoken: opts.spoken } : {}),
+    params: { rows, symbol, key },
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
+  };
+}
+
+/** Numbered squares with counters, hops and a flag (B4). */
+export function numberTrack(
+  params: { min: number; max: number; counters?: number[]; flag?: number; hops?: Array<{ from: number; to: number }> },
+  opts: { alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  return { type: 'number-track', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
+/** A line plot: stacks of dots over values (B23). */
+export function linePlot(
+  params: { min: number; max: number; dots: Array<{ at: number; count: number }>; label?: string },
+  opts: { alt: string; asserts?: FigureAssertion },
+): BBFigure {
+  return { type: 'line-plot', alt: opts.alt, params, ...(opts.asserts ? { asserts: opts.asserts } : {}) };
+}
+
 export function barModel(
   bars: Array<{ label?: string; segments: Array<{ value: number; label?: string; fill?: 'solid' | 'soft' | 'none' | 'hatch' }>; total?: string }>,
-  opts: { scaleMax?: number; brace?: { label: string }; alt: string; asserts?: FigureAssertion },
+  opts: { scaleMax?: number; brace?: { label: string }; alt: string; spoken?: string; asserts?: FigureAssertion },
 ): BBFigure {
   return {
     type: 'bar-model',
     alt: opts.alt,
+    ...(opts.spoken ? { spoken: opts.spoken } : {}),
     params: { bars, ...(opts.scaleMax ? { scaleMax: opts.scaleMax } : {}), ...(opts.brace ? { brace: opts.brace } : {}) },
     ...(opts.asserts ? { asserts: opts.asserts } : {}),
   };

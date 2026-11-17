@@ -74,6 +74,9 @@ export function checkFigureShape(fig: BBFigure): string[] {
       if (!isNum(p.min) || !isNum(p.max)) bad('min and max must be finite numbers');
       else if (p.max <= p.min) bad(`max (${p.max}) must exceed min (${p.min})`);
       if (p.step !== undefined && (!isNum(p.step) || p.step <= 0)) bad('step must be > 0');
+      if (p.ray && (!isNum(p.ray.from) || p.ray.from < p.min || p.ray.from > p.max || !['right', 'left'].includes(p.ray.dir))) {
+        bad(`a ray must start on the line (${p.min}–${p.max}) and run right or left`);
+      }
       if (p.partition !== undefined && (!isInt(p.partition) || p.partition < 1 || p.partition > 24)) {
         bad('partition must be a whole number 1–24');
       }
@@ -264,6 +267,60 @@ export function checkFigureShape(fig: BBFigure): string[] {
       }
       break;
     }
+    case 'tally': {
+      const n = fig.params.count;
+      if (!isInt(n) || n < 0 || n > 60) bad(`a tally of ${n} — whole strokes, 0–60`);
+      break;
+    }
+    case 'fraction-circle': {
+      const { parts, shaded } = fig.params;
+      if (!Array.isArray(parts) || parts.length < 2 || parts.length > 12) bad('a cut circle needs 2–12 pieces');
+      (parts ?? []).forEach((w, k) => { if (!(typeof w === 'number' && w > 0)) bad(`piece ${k} must have a positive size`); });
+      const seen = new Set<number>();
+      for (const i of shaded ?? []) {
+        if (!isInt(i) || i < 0 || i >= (parts?.length ?? 0)) bad(`shaded piece ${i} is not one of the ${parts?.length ?? 0} pieces`);
+        if (seen.has(i)) bad(`piece ${i} is shaded twice`);
+        seen.add(i);
+      }
+      break;
+    }
+    case 'pictograph': {
+      const { rows, symbol, key } = fig.params;
+      if (!rows?.length || rows.length > 6) bad('a pictograph needs 1–6 rows');
+      for (const r of rows ?? []) {
+        if (!r.label) bad('every pictograph row needs a label');
+        if (!isInt(r.count) || r.count < 0 || r.count > 12) bad(`row "${r.label}" has ${r.count} symbols — 0–12 fit`);
+      }
+      if (!['star', 'circle', 'square', 'drop'].includes(symbol)) bad(`symbol "${symbol}" must be star, circle, square or drop`);
+      if (!key || !isInt(key.worth) || key.worth < 1 || !key.unit) bad('a pictograph needs its key: a whole worth and a unit');
+      break;
+    }
+    case 'number-track': {
+      const { min, max, counters, flag, hops } = fig.params;
+      if (!isInt(min) || !isInt(max) || max <= min) bad('a number track runs from a whole min to a larger whole max');
+      if (max - min > 30) bad(`${max - min + 1} squares will not fit (max 31)`);
+      const on = (v: number) => isInt(v) && v >= min && v <= max;
+      for (const c of counters ?? []) if (!on(c)) bad(`counter on square ${c} is off the track ${min}–${max}`);
+      if (flag !== undefined && !on(flag)) bad(`flag on square ${flag} is off the track`);
+      for (const h of hops ?? []) {
+        if (!on(h.from) || !on(h.to)) bad(`hop ${h.from}→${h.to} leaves the track`);
+        else if (Math.abs(h.to - h.from) !== 1) bad(`hop ${h.from}→${h.to} skips squares — a track hop is one square`);
+      }
+      break;
+    }
+    case 'line-plot': {
+      const { min, max, dots } = fig.params;
+      if (!isInt(min) || !isInt(max) || max <= min) bad('a line plot runs from a whole min to a larger whole max');
+      if (max - min > 12) bad(`${max - min + 1} values will not fit a line plot (max 13)`);
+      const seen = new Set<number>();
+      for (const d of dots ?? []) {
+        if (!isInt(d.at) || d.at < min || d.at > max) bad(`dots at ${d.at} are off the line ${min}–${max}`);
+        if (!isInt(d.count) || d.count < 0 || d.count > 12) bad(`${d.count} dots at ${d.at} — 0–12 stack`);
+        if (seen.has(d.at)) bad(`two stacks at ${d.at}`);
+        seen.add(d.at);
+      }
+      break;
+    }
     case 'balance': {
       // A balance cannot draw an impossibility: with no closed bag the two sides
       // are fully visible, so a level bar needs equal sides and a tipped bar
@@ -277,18 +334,29 @@ export function checkFigureShape(fig: BBFigure): string[] {
           if (h > 99) bad(`${name} heap ${k} (${h}) is too many to draw as a heap`);
         });
         if (pan.bags !== undefined && (!isInt(pan.bags) || pan.bags < 0 || pan.bags > 3)) bad(`${name} bags must be 0–3`);
+        (pan.weights ?? []).forEach((w, k) => {
+          if (!(typeof w === 'number' && Number.isFinite(w) && w > 0)) bad(`${name} weight ${k} must be a positive amount, got ${w}`);
+        });
+        if ((pan.objects ?? []).length > 6) bad(`${name} pan holds more than 6 objects`);
+        (pan.objects ?? []).forEach((o) => {
+          if (!['stone', 'balloon', 'box', 'tin'].includes(o)) bad(`${name} object "${o}" must be stone, balloon, box or tin`);
+        });
       }
       if (!['level', 'left-down', 'right-down'].includes(p.tilt)) bad(`tilt "${p.tilt}" must be level, left-down or right-down`);
       if (p.cover !== undefined && p.cover !== 'bag' && p.cover !== 'dish') bad(`cover "${p.cover}" must be bag or dish`);
-      const sum = (pan?: { heaps?: number[] }) => (pan?.heaps ?? []).reduce((a, h) => a + h, 0);
-      const things = (pan?: { heaps?: number[]; bags?: number }) => (pan?.heaps?.length ?? 0) + (pan?.bags ?? 0);
+      // Heaps and weights are known amounts; bags and objects are not.
+      const sum = (pan?: { heaps?: number[]; weights?: number[] }) =>
+        [...(pan?.heaps ?? []), ...(pan?.weights ?? [])].reduce((a, h) => a + h, 0);
+      const things = (pan?: { heaps?: number[]; bags?: number; weights?: number[]; objects?: string[] }) =>
+        (pan?.heaps?.length ?? 0) + (pan?.bags ?? 0) + (pan?.weights?.length ?? 0) + (pan?.objects?.length ?? 0);
+      const unknown = (pan?: { bags?: number; objects?: string[] }) => (pan?.bags ?? 0) + (pan?.objects?.length ?? 0) > 0;
       if (things(p.left) + things(p.right) === 0) bad('a balance with nothing on either pan says nothing');
       // A pile is the same size whatever it holds, so without its written number it
       // carries no amount at all: an uncounted heap must be drawn as countable dots.
-      if (p.showCounts === false && !p.countable && sum(p.left) + sum(p.right) > 0) {
+      if (p.showCounts === false && !p.countable && (p.left?.heaps ?? []).length + (p.right?.heaps ?? []).length > 0) {
         bad('heaps drawn as piles with no numbers say nothing about how much is on the pans — set countable, or show the counts');
       }
-      if (!(p.left?.bags) && !(p.right?.bags)) {
+      if (!unknown(p.left) && !unknown(p.right)) {
         const l = sum(p.left), r = sum(p.right);
         if (p.tilt === 'level' && l !== r) bad(`the bar is drawn level but the pans hold ${l} and ${r}`);
         if (p.tilt === 'left-down' && !(l > r)) bad(`the left pan is drawn lower but holds ${l} against ${r}`);
@@ -516,11 +584,49 @@ export function figureValue(fig: BBFigure, selector?: string): string[] | null {
       if (!s) return null;
       return Math.abs(s.value - s.claimed) < 1e-9 ? [String(s.claimed)] : [String(s.value)];
     }
+    case 'tally': {
+      if (of !== undefined && of !== 'count') return null;
+      return [String(fig.params.count)];
+    }
+    case 'fraction-circle': {
+      // 'pieces' (default): how many pieces; 'shaded': how many are coloured.
+      if (of === 'shaded') return [String(fig.params.shaded?.length ?? 0)];
+      if (of !== undefined && of !== 'pieces') return null;
+      return [String(fig.params.parts.length)];
+    }
+    case 'pictograph': {
+      // Default: what one symbol is worth (the key). 'symbols:k' = row k's symbol
+      // count; 'row:k' = what row k stands for (count × worth).
+      const p = fig.params;
+      if (of === undefined || of === 'key') return [String(p.key.worth)];
+      const m = /^(symbols|row):(\d+)$/.exec(of);
+      const r = m ? p.rows[Number(m[2])] : undefined;
+      if (!m || !r) return null;
+      return [String(m[1] === 'symbols' ? r.count : r.count * p.key.worth)];
+    }
+    case 'number-track': {
+      // Default: the first counter. 'counter:k', or 'flag'.
+      const p = fig.params;
+      if (of === 'flag') return p.flag === undefined ? null : [String(p.flag)];
+      const k = of === undefined || of === 'counter' ? 0 : Number(/^counter:(\d+)$/.exec(of)?.[1] ?? NaN);
+      const c = p.counters?.[k];
+      return c === undefined ? null : [String(c)];
+    }
+    case 'line-plot': {
+      // Default: every dot on the plot; 'at:v' = the stack above v.
+      const p = fig.params;
+      if (of === undefined || of === 'total') return [String(p.dots.reduce((a, d) => a + d.count, 0))];
+      const m = /^at:(\d+)$/.exec(of);
+      if (!m) return null;
+      return [String(p.dots.find((d) => d.at === Number(m[1]))?.count ?? 0)];
+    }
     case 'balance': {
       // The heaps you can see: a whole pan (left | right) or one heap (left:k | right:k).
       // Default: the left pan. A closed bag is never a value — it is the question.
+      // A pan's value is its heaps plus its labelled weights; objects are unknown.
       const p = fig.params;
-      const sum = (pan?: { heaps?: number[] }) => (pan?.heaps ?? []).reduce((a, h) => a + h, 0);
+      const sum = (pan?: { heaps?: number[]; weights?: number[] }) =>
+        [...(pan?.heaps ?? []), ...(pan?.weights ?? [])].reduce((a, h) => a + h, 0);
       if (of === undefined || of === 'left') return [String(sum(p.left))];
       if (of === 'right') return [String(sum(p.right))];
       const m = /^(left|right):(\d+)$/.exec(of);
@@ -606,6 +712,11 @@ const SELECTORS: Record<BBFigure['type'], RegExp[]> = {
   'math-sentence': [/^value$/],
   'column-method': [/^result$/],
   balance: [/^left$/, /^right$/, /^left:\d+$/, /^right:\d+$/],
+  tally: [/^count$/],
+  'fraction-circle': [/^pieces$/, /^shaded$/],
+  pictograph: [/^key$/, /^symbols:\d+$/, /^row:\d+$/],
+  'number-track': [/^counter$/, /^counter:\d+$/, /^flag$/],
+  'line-plot': [/^total$/, /^at:\d+$/],
 };
 
 const PLACE_WORTH: Record<string, number> = {

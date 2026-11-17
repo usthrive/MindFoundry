@@ -83,7 +83,7 @@ import { discrimination } from '../lib/discrimination';
 import { withCheckBack, withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { barModel } from '../lib/figures';
+import { balance, barModel } from '../lib/figures';
 import {
   eaWrongInverse,
   equationText,
@@ -419,36 +419,31 @@ export const buildE13 = makeWeekBuilder({
     script: [
       {
         say: 'Watch a level balance while I take something off it. The left arm holds a sealed box and 40 g of weights; the right arm holds 70 g; the beam is level. I want that box standing alone, so I lift the 40 g off the left arm — and the instant I do, that arm is lighter and the beam tips. So I lift 40 g off the right arm as well. Both arms lost the same amount, the beam is level again, and now it tells me plainly: the box is 30 g.',
-        visual: 'The two arms before the lift, drawn to one scale: the box and its weights against the single block of weights opposite.',
-        figure: barModel(
-          [
-            { label: 'the left arm: the box and the weights', segments: [{ value: 30, label: 'the box' }, { value: 40, label: '40' }], total: '70' },
-            { label: 'the right arm', segments: [{ value: 70, label: '70' }], total: '70' },
-          ],
-          { scaleMax: 70, alt: 'two bars of equal length: the left made of a 30 block for the box and a 40 block for the weights, the right a single 70 block' },
-        ),
+        // The balance the words name (2026-11-17; it was two bars drawn to one scale).
+        visual: 'The level balance before the lift: the sealed box and 40 g on the left arm, 70 g on the right.',
+        figure: balance({ objects: ['box'], weights: [40] }, { weights: [70] }, {
+          tilt: 'level',
+          unit: 'g',
+          alt: 'a level balance: a sealed box and a 40 g weight on the left arm, a 70 g weight on the right arm',
+        }),
       },
       {
         say: 'Now the move that looks like work and is not. Some students see the 40 sitting there and add 40 to both arms. Nothing illegal happens — the left arm becomes the box with 80 g, the right becomes 110 g, and the beam stays perfectly level. But look at the box: it is buried under more weight than before, not less. Repeating a move never undoes it. Only its inverse does.',
-        visual: 'The same two arms after adding to both, still level, with the box no nearer to standing alone.',
-        figure: barModel(
-          [
-            { label: 'the left arm after adding to it', segments: [{ value: 30, label: 'the box' }, { value: 80, label: '80', fill: 'hatch' }], total: '110' },
-            { label: 'the right arm after adding to it', segments: [{ value: 110, label: '110' }], total: '110' },
-          ],
-          { scaleMax: 110, alt: 'two bars of equal length again, the left now a 30 block for the box under an 80 block, the right a single 110 block' },
-        ),
+        visual: 'The same balance after 40 g more lands on each arm, still level, with the box no nearer to standing alone.',
+        figure: balance({ objects: ['box'], weights: [40, 40] }, { weights: [70, 40] }, {
+          tilt: 'level',
+          unit: 'g',
+          alt: 'the same balance, still level, after 40 g more on each arm: the box with two 40 g weights on the left, 70 g and 40 g on the right',
+        }),
       },
       {
         say: 'A balance can also be undone by sharing. Five identical sealed tins on the left, 60 g of weights on the right, level. One tin is a fifth of what the left arm carries, so I take a fifth of the right arm too, and the beam holds. The rule has not changed at all — the same move, both arms. Only the move itself is different: this one is a division, because the equation scaled the unknown instead of adding to it.',
-        visual: 'The five equal tins against the block of weights, with the fifth part of each side marked off.',
-        figure: barModel(
-          [
-            { label: 'the left arm: five identical tins', segments: [{ value: 12 }, { value: 12 }, { value: 12 }, { value: 12 }, { value: 12 }], total: '60' },
-            { label: 'the right arm', segments: [{ value: 60, label: '60' }], total: '60' },
-          ],
-          { scaleMax: 60, alt: 'a bar of five equal 12 blocks for the tins beside a single 60 block for the weights, the two bars the same length' },
-        ),
+        visual: 'Five identical sealed tins on the left arm against 60 g on the right, the beam level.',
+        figure: balance({ objects: ['tin', 'tin', 'tin', 'tin', 'tin'] }, { weights: [60] }, {
+          tilt: 'level',
+          unit: 'g',
+          alt: 'a level balance: five identical sealed tins on the left arm, a 60 g weight on the right arm',
+        }),
       },
       {
         say: 'One habit before any of the arithmetic, and one after. Before: I work out roughly how big the answer has to be. If something was taken off the unknown, what is left is the smaller of the two, so the start has to be the larger — an answer below what was left cannot be right, whatever my working says. After: I put my value back into the equation I started from and work out each side on its own. If the two sides land on the same number, the check is done. If they do not, I have not failed to check my answer — I have found my mistake.',

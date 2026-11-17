@@ -17,7 +17,7 @@ import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import BBFigureView, { PromptFigure } from '../components/figures/BBFigureView';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import BBScratchPad from '../components/BBScratchPad';
 
 const FADE_LABELS: Record<string, string> = {
@@ -219,7 +219,7 @@ export default function GuidedPractice() {
           <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
             {promptText(example.prompt)}
           </p>
-          <AudioButton text={speakablePrompt(example.prompt, example.figure?.alt)} band={band} autoplay={band === 'A'} />
+          <AudioButton text={speakablePrompt(example.prompt, figureScene(example.figure))} band={band} autoplay={band === 'A'} />
         </div>
         {/* A worked example is exactly where a teacher draws; the step's own
             picture wins over the example's while that step is in focus. */}

@@ -133,6 +133,16 @@ function spokenLines(text: string): string {
  * those claims live in `item.statements` rather than in the prompt string and
  * would otherwise be the one part of the item the audio channel never carries.
  */
+/**
+ * The scene the read-aloud puts in front of the question: the figure's `spoken`
+ * line when it has one (a data display that must not read its values out), else
+ * its `alt`. Every screen passes this — never `figure.alt` directly — so the
+ * accessible name and the spoken scene can differ where they must.
+ */
+export function figureScene(figure?: { alt?: string; spoken?: string } | null): string | undefined {
+  return figure?.spoken ?? figure?.alt;
+}
+
 export function speakablePrompt(
   prompt: string,
   figureAlt?: string,
