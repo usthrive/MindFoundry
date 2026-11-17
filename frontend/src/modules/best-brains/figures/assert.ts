@@ -264,6 +264,38 @@ export function checkFigureShape(fig: BBFigure): string[] {
       }
       break;
     }
+    case 'balance': {
+      // A balance cannot draw an impossibility: with no closed bag the two sides
+      // are fully visible, so a level bar needs equal sides and a tipped bar
+      // needs the heavier side to be the one hanging lower (2026-11-17).
+      const p = fig.params;
+      const pans = [['left', p.left], ['right', p.right]] as const;
+      for (const [name, pan] of pans) {
+        if (!pan) { bad(`the ${name} pan is missing`); continue; }
+        (pan.heaps ?? []).forEach((h, k) => {
+          if (!isInt(h) || h < 0) bad(`${name} heap ${k} must be a whole number of things, got ${h}`);
+          if (h > 99) bad(`${name} heap ${k} (${h}) is too many to draw as a heap`);
+        });
+        if (pan.bags !== undefined && (!isInt(pan.bags) || pan.bags < 0 || pan.bags > 3)) bad(`${name} bags must be 0–3`);
+      }
+      if (!['level', 'left-down', 'right-down'].includes(p.tilt)) bad(`tilt "${p.tilt}" must be level, left-down or right-down`);
+      if (p.cover !== undefined && p.cover !== 'bag' && p.cover !== 'dish') bad(`cover "${p.cover}" must be bag or dish`);
+      const sum = (pan?: { heaps?: number[] }) => (pan?.heaps ?? []).reduce((a, h) => a + h, 0);
+      const things = (pan?: { heaps?: number[]; bags?: number }) => (pan?.heaps?.length ?? 0) + (pan?.bags ?? 0);
+      if (things(p.left) + things(p.right) === 0) bad('a balance with nothing on either pan says nothing');
+      // A pile is the same size whatever it holds, so without its written number it
+      // carries no amount at all: an uncounted heap must be drawn as countable dots.
+      if (p.showCounts === false && !p.countable && sum(p.left) + sum(p.right) > 0) {
+        bad('heaps drawn as piles with no numbers say nothing about how much is on the pans — set countable, or show the counts');
+      }
+      if (!(p.left?.bags) && !(p.right?.bags)) {
+        const l = sum(p.left), r = sum(p.right);
+        if (p.tilt === 'level' && l !== r) bad(`the bar is drawn level but the pans hold ${l} and ${r}`);
+        if (p.tilt === 'left-down' && !(l > r)) bad(`the left pan is drawn lower but holds ${l} against ${r}`);
+        if (p.tilt === 'right-down' && !(r > l)) bad(`the right pan is drawn lower but holds ${r} against ${l}`);
+      }
+      break;
+    }
     case 'column-method': {
       const p = fig.params;
       if (!p.rows?.length || p.rows.length < 2) bad('column-method needs at least two rows');
@@ -346,6 +378,7 @@ export function checkFigureShape(fig: BBFigure): string[] {
  *   coin-set          cents | count
  *   coordinate-grid   point | point:k
  *   angle-figure      angle | sum | missing
+ *   balance           left | right | left:k | right:k   (the visible heaps; a bag is never a value)
  */
 export function figureValue(fig: BBFigure, selector?: string): string[] | null {
   const of = selector ?? fig.asserts?.of;
@@ -483,6 +516,18 @@ export function figureValue(fig: BBFigure, selector?: string): string[] | null {
       if (!s) return null;
       return Math.abs(s.value - s.claimed) < 1e-9 ? [String(s.claimed)] : [String(s.value)];
     }
+    case 'balance': {
+      // The heaps you can see: a whole pan (left | right) or one heap (left:k | right:k).
+      // Default: the left pan. A closed bag is never a value — it is the question.
+      const p = fig.params;
+      const sum = (pan?: { heaps?: number[] }) => (pan?.heaps ?? []).reduce((a, h) => a + h, 0);
+      if (of === undefined || of === 'left') return [String(sum(p.left))];
+      if (of === 'right') return [String(sum(p.right))];
+      const m = /^(left|right):(\d+)$/.exec(of);
+      if (!m) return null;
+      const h = (m[1] === 'left' ? p.left : p.right)?.heaps?.[Number(m[2])];
+      return h === undefined ? null : [String(h)];
+    }
     case 'column-method': {
       // The result row re-read as one number (with the drawn point, if any) —
       // so an item's answer can be audited against the algorithm's own total.
@@ -560,6 +605,7 @@ const SELECTORS: Record<BBFigure['type'], RegExp[]> = {
   'angle-figure': [/^angle$/, /^sum$/, /^missing$/],
   'math-sentence': [/^value$/],
   'column-method': [/^result$/],
+  balance: [/^left$/, /^right$/, /^left:\d+$/, /^right:\d+$/],
 };
 
 const PLACE_WORTH: Record<string, number> = {

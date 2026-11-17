@@ -22,6 +22,8 @@ import { dayFlow } from '@/modules/best-brains/session/dayFlow';
 import PracticePage from '@/modules/best-brains/screens/PracticePage';
 import WarmUp from '@/modules/best-brains/screens/WarmUp';
 import PuzzleGrove from '@/modules/best-brains/screens/PuzzleGrove';
+import LessonRoom from '@/modules/best-brains/screens/LessonRoom';
+import GuidedPractice from '@/modules/best-brains/screens/GuidedPractice';
 import DayDone from '@/modules/best-brains/screens/DayDone';
 import StrengthenPlan from '@/modules/best-brains/screens/StrengthenPlan';
 import FreshProblems from '@/modules/best-brains/screens/FreshProblems';
@@ -336,7 +338,7 @@ if (screen === 'kumon-study') {
   createRoot(document.getElementById('root')!).render(<KumonGridHarness />);
 } else createRoot(document.getElementById('root')!).render(
   <FoundrySessionContext.Provider value={value}>
-    <MemoryRouter initialEntries={[screen === 'comeback' ? `/foundry/day/${day}/comeback` : screen === 'puzzle' ? '/foundry/puzzle' : screen === 'hub' ? '/foundry/hub' : screen === 'strengthen' ? { pathname: '/foundry/strengthen', state: { reviewed: true } } : screen === 'fresh' ? '/foundry/fresh' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
+    <MemoryRouter initialEntries={[screen === 'comeback' ? `/foundry/day/${day}/comeback` : screen === 'puzzle' ? '/foundry/puzzle' : screen === 'lesson' ? '/foundry/lesson' : screen === 'guided' ? '/foundry/guided' : screen === 'hub' ? '/foundry/hub' : screen === 'strengthen' ? { pathname: '/foundry/strengthen', state: { reviewed: true } } : screen === 'fresh' ? '/foundry/fresh' : screen === 'done' ? { pathname: `/foundry/day/${day}/done`, state: { partial: true, done, total: pack.days[day - 1].items.length } } : `/foundry/day/${day}/${screen}`]}>
       <div className="mf-foundry min-h-screen bg-background">
         <main className="mx-auto w-full max-w-[430px] px-4 py-6 sm:px-5">
           <Routes>
@@ -344,6 +346,8 @@ if (screen === 'kumon-study') {
             <Route path="/foundry/day/:day/warmup" element={<WarmUp />} />
             <Route path="/foundry/day/:day/comeback" element={<Comebacks />} />
             <Route path="/foundry/puzzle" element={<PuzzleGrove />} />
+            <Route path="/foundry/lesson" element={<LessonRoom />} />
+            <Route path="/foundry/guided" element={<GuidedPractice />} />
             <Route path="/foundry/day/:day/done" element={<DayDone />} />
             <Route path="/foundry/hub" element={<ThisWeekHub />} />
             <Route path="/foundry/strengthen" element={<StrengthenPlan />} />

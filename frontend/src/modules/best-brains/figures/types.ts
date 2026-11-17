@@ -352,6 +352,47 @@ export interface ColumnMethodParams {
 
 // ---------------------------------------------------------------------------
 // The figure union
+/**
+ * A pan balance (2026-11-17). Level B week 6 — "the balanced equal sign", whose
+ * whole anchor is the balance scale — asked every question about "the left pan of
+ * a balance … one closed bag … the bar sits level" and drew a BAR MODEL: boxes like
+ * tens and ones, one pan only. A child told to look at a balance must see one: a
+ * beam, two pans, the heaps on each, any closed bag (never its contents), and the
+ * bar level or tipped exactly as the words say.
+ */
+export interface BalancePan {
+  /** Heaps of things on the pan, each drawn as a pile with its count (see `countable`). */
+  heaps?: number[];
+  /** Closed bags — an amount nobody can see. Drawn as a sack with "?". Never the answer. */
+  bags?: number;
+}
+
+export interface BalanceParams {
+  left: BalancePan;
+  right: BalancePan;
+  /** How the bar sits: level, or the heavier side hanging lower. */
+  tilt: 'level' | 'left-down' | 'right-down';
+  /** The thing being counted (a dot by default). */
+  icon?: CounterIcon;
+  /** Write each heap's count under it. Default true; false for "which pan is fuller?" without numbers. */
+  showCounts?: boolean;
+  /** What hides the unknown amount, as the words name it: a closed bag (default) or a covered dish (B7). */
+  cover?: 'bag' | 'dish';
+  /**
+   * Draw each heap as COUNTABLE dots. Default false: a heap is one solid pile, the
+   * same size whatever it holds, with its number written under it.
+   *
+   * WHY the default. On an assessed page the givens are already in the words, and
+   * countable dots on both pans hand over the sum — "7, 4 and 5 against 12 and a
+   * bag" becomes sixteen dots against twelve, counted, never added (L33: what does
+   * this picture let the child skip?). So dots belong only where the answer is
+   * already on the page: the lesson script and the modeled / completion guided
+   * examples, where watching the heaps balance IS the teaching.
+   * `bb-figure-kind-test` enforces the split.
+   */
+  countable?: boolean;
+}
+
 // ---------------------------------------------------------------------------
 
 export type BBFigureType =
@@ -367,12 +408,13 @@ export type BBFigureType =
   | 'coordinate-grid'
   | 'angle-figure'
   | 'math-sentence'
-  | 'column-method';
+  | 'column-method'
+  | 'balance';
 
 export const FIGURE_TYPES: readonly BBFigureType[] = [
   'number-line', 'bar-model', 'area-grid', 'ten-frame', 'counters',
   'place-value-chart', 'base-ten-blocks', 'clock', 'coin-set', 'coordinate-grid', 'angle-figure',
-  'math-sentence', 'column-method',
+  'math-sentence', 'column-method', 'balance',
 ] as const;
 
 /**
@@ -415,7 +457,8 @@ export type BBFigure =
   | (FigureBase & { type: 'coordinate-grid'; params: CoordinateGridParams })
   | (FigureBase & { type: 'angle-figure'; params: AngleFigureParams })
   | (FigureBase & { type: 'math-sentence'; params: MathSentenceParams })
-  | (FigureBase & { type: 'column-method'; params: ColumnMethodParams });
+  | (FigureBase & { type: 'column-method'; params: ColumnMethodParams })
+  | (FigureBase & { type: 'balance'; params: BalanceParams });
 
 /** Narrow a figure to one type (renderers take the concrete params shape). */
 export type FigureOf<T extends BBFigureType> = Extract<BBFigure, { type: T }>;

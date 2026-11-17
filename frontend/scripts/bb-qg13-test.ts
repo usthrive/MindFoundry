@@ -283,6 +283,37 @@ check(
   onItem({ type: 'ten-frame', alt, asserts: { of: 'cents', equals: 'answer' }, params: { filled: 3 } }, '3').some((m) => m.includes('cents')),
   'ten-frames do not have cents',
 );
+// A balance cannot draw an impossibility (2026-11-17, B6 drew its balances as bars).
+check(
+  'a level balance over unequal visible pans is refused',
+  checkFigureShape({ type: 'balance', alt, params: { left: { heaps: [3, 4] }, right: { heaps: [8] }, tilt: 'level' } }).length > 0,
+  '3 + 4 is not 8, so the bar cannot sit level',
+);
+check(
+  'a balance tipped toward its LIGHTER side is refused',
+  checkFigureShape({ type: 'balance', alt, params: { left: { heaps: [7] }, right: { heaps: [7, 2] }, tilt: 'left-down' } }).length > 0,
+  'the right pan holds more, so it is the one that hangs lower',
+);
+check(
+  'a level balance with a closed bag is possible (the bag is the question)',
+  checkFigureShape({ type: 'balance', alt, params: { left: { heaps: [5, 3] }, right: { heaps: [2], bags: 1 }, tilt: 'level' } }).length === 0,
+  'the bag holds 6 — never drawn',
+);
+check(
+  'a balance with nothing on either pan is refused',
+  checkFigureShape({ type: 'balance', alt, params: { left: {}, right: {}, tilt: 'level' } }).length > 0,
+  'an empty scale says nothing',
+);
+check(
+  'uncounted piles with no numbers are refused (they carry no amount)',
+  checkFigureShape({ type: 'balance', alt, params: { left: { heaps: [9] }, right: { heaps: [4] }, tilt: 'left-down', showCounts: false } }).length > 0,
+  'two same-size piles and no numbers: which is 9?',
+);
+check(
+  'uncounted heaps are allowed when drawn as countable dots',
+  checkFigureShape({ type: 'balance', alt, params: { left: { heaps: [9] }, right: { heaps: [4] }, tilt: 'left-down', showCounts: false, countable: true } }).length === 0,
+  'nine dots against four: the eye compares them',
+);
 check(
   'a figure with NO assertion is checked for possibility only',
   onItem({ type: 'ten-frame', alt, params: { filled: 7 } }, '8').length === 0,
@@ -316,6 +347,8 @@ const values: Array<[string, BBFigure, string, string]> = [
   ['coordinate-grid reads its point', { type: 'coordinate-grid', alt, params: { xMin: 0, xMax: 9, yMin: 0, yMax: 9, points: [{ x: 3, y: 7 }] } }, '', '(3,7)'],
   ['angle-figure solves for the unknown angle', { type: 'angle-figure', alt, params: { shape: 'triangle', angles: [90, 55, null] } }, 'missing', '35'],
   ['angle-figure reads a plain opening', { type: 'angle-figure', alt, params: { shape: 'angle', degrees: 135 } }, '', '135'],
+  ['balance reads its left pan by default', { type: 'balance', alt, params: { left: { heaps: [7, 4, 5] }, right: { heaps: [12], bags: 1 }, tilt: 'level' } }, '', '16'],
+  ['balance reads one heap on the right pan (never the bag)', { type: 'balance', alt, params: { left: { heaps: [7, 4, 5] }, right: { heaps: [12], bags: 1 }, tilt: 'level' } }, 'right:0', '12'],
 ];
 for (const [name, fig, of, want] of values) {
   const got = figureValue(fig, of || undefined);

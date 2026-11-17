@@ -513,7 +513,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { counterGroups, hundredChart } from '../lib/figures';
+import { baseTenBlocks, hundredChart } from '../lib/figures';
 import type { BBFigure, PlaceName } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -837,14 +837,17 @@ function withPin(box: { last: Pin | null }, templateId: string, base: ItemGen): 
  * drawing against, and on the worked example the total is printed under the
  * picture, so an assertion would be auditing a numeral already in view.
  */
+// Ten-blocks are RODS — each one ten long (2026-11-17). They were drawn as
+// `counterGroups` of single small squares, the glyph a ONE gets, under a lesson
+// that says "each block worth ten".
 const tenBlocks = (here: number, arriving: number): BBFigure =>
-  counterGroups(
-    [
-      { count: here, noun: 'blocks', label: 'here already' },
-      { count: arriving, noun: 'blocks', label: 'arriving' },
-    ],
+  baseTenBlocks(
+    { rods: here, ones: 0, label: 'here already' },
     {
-      relation: 'join',
+      then: { rods: arriving, ones: 0, label: 'arriving' },
+      connector: 'beside',
+      highlight: 'none',
+      showNumeral: false,
       alt: `${fmtInt(here)} ten-blocks with ${fmtInt(arriving)} more ten-blocks brought alongside, each block worth ten`,
     },
   );

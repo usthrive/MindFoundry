@@ -69,8 +69,15 @@ export default function BaseTenBlocksFig({ params, size, animate }: FigurePartPr
   const showNumeral = params.showNumeral ?? false;
   const showColumns = params.showColumns ?? false;
 
-  const GAP = params.then ? 46 : 0;
   const widths = states.map(stateWidth);
+  // Two labelled states sit far enough apart that their labels never run into one
+  // phrase (2026-11-17: B10's "here already" and "arriving", under 4 and 3 rods,
+  // read as "here already arriving"). A label is centred under its state, so it
+  // overhangs by half its excess width; the gap takes both overhangs plus a space.
+  // Labels that already fit leave the gap at its old 46.
+  const labelW = (s: BaseTenState) => (s.label ? s.label.length * TEXT.large * ts * 0.6 : 0);
+  const overhang = (si: number) => Math.max(0, (labelW(states[si]) - widths[si]) / 2);
+  const GAP = params.then ? Math.max(46, overhang(0) + overhang(1) + 26) : 0;
   const totalW = widths.reduce((a, b) => a + b, 0) + GAP * (states.length - 1);
   const scale = Math.min(1, (W - 24) / Math.max(totalW, 1));
 
