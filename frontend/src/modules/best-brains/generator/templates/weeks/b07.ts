@@ -263,28 +263,42 @@
  * measurement. b03's author deleted one figure for this reason; here it rules out
  * the whole family.
  *
- * SO AN ASSESSED PAGE MAY DRAW EXACTLY ONE AMOUNT: the whole, as a single
+ * SO AN ASSESSED PAGE MAY DRAW NOTHING TO SCALE. The shelf and the journey
+ * (`sitShelfSpace`, `msStillNeeded`) draw the whole alone, as a single
  * unpartitioned bar carrying its own number, with no second bar and no shared
  * scale to lay it against. It asserts `param:a` or `param:initN` — a quantity the
  * first sentence of the prose has already given away — and never `answer`. What
  * the child gets is the half of the anchor that is safe to give: a whole is ONE
  * amount, not a pair of digits. What they cannot get is a length to measure.
- * `sitCoveredPan`, `sitShelfSpace` and `msStillNeeded` carry it, so Days 1, 3 and
- * 4 each show a picture; Days 2 and 5 show none, which is a consequence of the
- * result above rather than an oversight.
  *
- * THE FULL PICTURE — the whole above the same length split into the visible part
- * and the found part — appears in the lesson script and in the modeled and
- * completion guided examples, and nowhere else. On those surfaces the answer is
- * already printed beside it, and watching two parts fill a whole is the teaching.
+ * THE BALANCE PAGE IS DRAWN AS A BALANCE (2026-11-17). `sitCoveredPan` used to
+ * carry the same whole-bar, under words that tell the child to look at a balance
+ * — a bar is not a balance, and the owner saw the mismatch on his son's week. It
+ * now draws the level balance the words describe, under the rule above: the whole
+ * and the part you can see are solid PILES of one fixed size, each with the
+ * number the prose already printed, and the covered dish is a fixed-size bowl
+ * marked "?". Nothing is to scale and nothing can be counted, so the picture is
+ * the anchor without the measurement. Days 1, 3 and 4 each show a picture; Days 2
+ * and 5 show none, which is a consequence of the result above rather than an
+ * oversight.
+ *
+ * THE FULL PICTURE — the balance with every heap drawn as countable nuggets,
+ * and in the script the dish lifted to show the found part — appears in the
+ * lesson script and in the modeled guided example, and nowhere else. On those
+ * surfaces the answer is already printed beside it, and watching two parts fill
+ * a whole is the teaching. (It was two bars, the whole above its two parts, until
+ * 2026-11-17; the words on those surfaces describe a balance.) The completion
+ * example fades to the whole alone, as one bar, because its words are a card.
  *
  * REFUSED, and why:
- *   · THE COVERED DISH, always. An unlabelled box drawn to its true length is
- *     still the answer to anyone who puts a finger against it. (b06 reached the
- *     same conclusion about its closed bag; the geometry is the same.)
- *   · THE VISIBLE PART, on any assessed page. Beside the whole it is half of a
- *     measurable gap. Alone it is a number the prose already printed, so it buys
- *     nothing and can be misread as the answer.
+ *   · THE COVERED DISH TO SCALE, always. An unlabelled box drawn to its true
+ *     length is still the answer to anyone who puts a finger against it. (b06
+ *     reached the same conclusion about its closed bag; the geometry is the
+ *     same.) The balance draws the dish at one fixed size, marked "?".
+ *   · THE VISIBLE PART AS A LENGTH OR A COUNT, on any assessed page. Beside the
+ *     whole it is half of a measurable gap. On the balance it is a fixed-size
+ *     pile carrying the number the prose printed, beside a dish marked "?", so
+ *     it cannot be measured and is not mistaken for the answer.
  *   · `discPartOrWhole`, entirely. A drawing of two collections announces which
  *     amount is missing before the question is read, and that reading is the item.
  *   · `predictCoveredDish`, entirely. The probe wants a judgement made BEFORE any
@@ -305,10 +319,10 @@
  * it is not, so the picture went.
  *
  * ACCESSIBILITY. A whole-bar's accessible name reads "one bar standing for the
- * left pan, labelled 13, with no part marked on it" — including the last clause,
+ * shelf, labelled 15, with no part marked on it" — including the last clause,
  * because a sighted child can see that nothing is marked and a screen-reader child
- * has to be told. Each bar names what it is a whole OF, so the balance page and
- * the shelf page do not describe themselves identically. Where both parts are
+ * has to be told. Each bar names what it is a whole OF. The balance page names the
+ * balance, its two pans and the covered dish — never what is under it. Where both parts are
  * drawn (script and guided examples only) both are named, in the order the prose
  * names them. No alt text in the pack names a missing part.
  *
@@ -350,7 +364,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtInt, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsParam, barModel } from '../lib/figures';
+import { assertsParam, balance, barModel } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -410,9 +424,9 @@ const hiddenPartFor = (r: Rng, shown: number): number =>
  * THE WHOLE, AS ONE BAR. A single unpartitioned length carrying its own number,
  * and nothing else on the page to measure it against.
  *
- * This is the only figure an assessed page in this week may carry, for the reason
- * set out in the header: two of the three amounts drawn to one scale hand over
- * the third. What survives that constraint is the part of the anchor that is
+ * The shelf and journey pages carry it (the balance page draws a balance — see
+ * `withCoveredPan`), for the reason set out in the header: two of the three
+ * amounts drawn to one scale hand over the third. What survives that constraint is the part of the anchor that is
  * genuinely worth showing — the whole is ONE amount, not a pair of digits — and
  * it asserts a number the prose has already stated.
  */
@@ -421,36 +435,6 @@ const wholeBar = (whole: number, what: string, asserts?: BBFigure['asserts']): B
     alt: `one bar standing for ${what}, labelled ${fmtInt(whole)}, with no part marked on it`,
     ...(asserts ? { asserts } : {}),
   });
-
-/**
- * THE WHOLE ABOVE ITS TWO PARTS, to one scale — the picture the whole week is
- * about, and the picture that answers it.
- *
- * Allowed on three surfaces and no others: the lesson script, and the two guided
- * examples that print their answer next to the picture (kit §E2.5). Neither surface
- * carries an `asserts` clause. A script figure has neither an answer nor params for
- * QG-13 to check against; and on a guided example the number worth pinning is a
- * SEGMENT, which the bar-model addresses through neither `total` nor `bar:k`, so an
- * assertion there would audit some other quantity and read as if it had audited
- * the right one.
- */
-const partWholeBars = (known: number, missing: number): BBFigure =>
-  barModel(
-    [
-      { label: 'the whole lot', segments: [{ value: known + missing, label: fmtInt(known + missing) }] },
-      {
-        label: 'its two parts',
-        segments: [
-          { value: known, label: fmtInt(known) },
-          { value: missing, label: fmtInt(missing) },
-        ],
-      },
-    ],
-    {
-      scaleMax: known + missing,
-      alt: `a bar labelled ${fmtInt(known + missing)} for the whole lot, and under it the same length split into ${fmtInt(known)} and ${fmtInt(missing)}`,
-    },
-  );
 
 // ---------------------------------------------------------------------------
 // Two decorators, both of them decorating a draft that has already been made
@@ -652,12 +636,39 @@ const wBridgePastTen = asWarmup(
 // every route except the forward one — leave the heap you can see, walk up to the
 // pan you can, and count the walk.
 //
-// The picture is one bar, labelled with the countable pan's own number, asserted
-// against the item's `a`. Neither the dish nor the visible heap is drawn; §7 of
-// the header sets out why not, and it is a result rather than a preference.
+// The picture is the balance itself (2026-11-17; it was one bar), drawn under §7
+// of the header: two fixed-size piles carrying the printed numbers, and a
+// fixed-size dish marked "?" — nothing to scale, nothing to count.
 // ---------------------------------------------------------------------------
 
-const sitCoveredPan = withWholeBar(
+/**
+ * The covered-dish balance, drawn AS A BALANCE (2026-11-17). It was `wholeBar`:
+ * one bar labelled with the left pan's amount, under words that tell the child
+ * to look at a balance. Now: the whole as a pile on the left pan; on the right
+ * the pile you can see and a covered dish marked "?"; the bar level, as the
+ * words say. Piles and dish are all one fixed size (no `countable`), so nothing
+ * on the page can be counted or measured in place of counting on. The left pile
+ * is asserted against the item's own `a`.
+ */
+function withCoveredPan(base: ItemGen): ItemGen {
+  return (rng, guard, difficulty) => {
+    const draft = base(rng, guard, difficulty);
+    if (!draft.generator) return draft;
+    const whole = numOf(draft.generator.params, 'a');
+    const shown = numOf(draft.generator.params, 'b');
+    return {
+      ...draft,
+      figure: balance({ heaps: [whole] }, { heaps: [shown], bags: 1 }, {
+        tilt: 'level',
+        cover: 'dish',
+        alt: `a level balance: ${fmtInt(whole)} nuggets on the left pan, and ${fmtInt(shown)} nuggets with a covered dish on the right pan`,
+        asserts: assertsParam('a', 'left'),
+      }),
+    };
+  };
+}
+
+const sitCoveredPan = withCoveredPan(
   situation({
     situationType: 'part-whole',
     cognitiveOp: 'missing-part-balance',
@@ -679,8 +690,6 @@ const sitCoveredPan = withWholeBar(
       };
     },
   }),
-  'a',
-  'the left pan',
 );
 
 // ---------------------------------------------------------------------------
@@ -1204,8 +1213,13 @@ export const buildB07 = makeWeekBuilder({
     script: [
       {
         say: 'Here is the balance. The left pan holds 13 nuggets. The right pan holds 6 and a dish.',
-        visual: 'The left pan of 13 drawn as one bar, with no part marked on it.',
-        figure: wholeBar(13, 'the left pan'),
+        visual: 'A level balance: 13 nuggets on the left pan, 6 nuggets and a covered dish on the right.',
+        figure: balance({ heaps: [13] }, { heaps: [6], bags: 1 }, {
+          tilt: 'level',
+          countable: true,
+          cover: 'dish',
+          alt: 'a level balance: 13 nuggets on the left pan, and 6 nuggets with a covered dish on the right pan',
+        }),
       },
       {
         say: 'The dish is not empty. Something is under it, and the bar between the pans is level.',
@@ -1215,8 +1229,12 @@ export const buildB07 = makeWeekBuilder({
       },
       {
         say: 'That was seven numbers. So there are seven nuggets under the dish, and no other number will do.',
-        visual: 'The whole of 13 drawn as one bar, and under it the same length split into 6 and 7.',
-        figure: partWholeBars(6, 7),
+        visual: 'The same balance with the dish lifted: 13 on the left pan, 6 and 7 on the right, the bar level.',
+        figure: balance({ heaps: [13] }, { heaps: [6, 7] }, {
+          tilt: 'level',
+          countable: true,
+          alt: 'the dish lifted: 13 nuggets on the left pan, and heaps of 6 and 7 on the right pan, the bar level',
+        }),
       },
       {
         say: 'One habit before I finish. I check by putting the two parts back together again.',
@@ -1244,10 +1262,15 @@ export const buildB07 = makeWeekBuilder({
           expected: '7',
         },
       ], '7'),
-      // Drawn in full, and only here and in the script: the answer is on the page
-      // beside it, and two parts filling a whole is what there is to see (§E2.5).
-      visual: 'The whole of 12 as one bar, and under it the same length split into 5 and 7.',
-      figure: partWholeBars(5, 7),
+      // The balance the words describe (2026-11-17: this was two bars). The answer
+      // stays in the teacher's talk; the dish keeps it covered on the page.
+      visual: 'A level balance: 12 nuggets on the left pan, 5 nuggets and a covered dish on the right.',
+      figure: balance({ heaps: [12] }, { heaps: [5], bags: 1 }, {
+        tilt: 'level',
+        countable: true,
+        cover: 'dish',
+        alt: 'a level balance: 12 nuggets on the left pan, and 5 nuggets with a covered dish on the right pan',
+      }),
     },
     {
       ...ge(7, 2, 'completion', 'A card reads 9 + ▢ = 16. Which number belongs in the box?', [

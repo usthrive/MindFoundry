@@ -95,6 +95,15 @@ const CASES: Array<[string, BBFigure]> = [
   ['triangle · find the third angle', F('angle-figure', 'a right triangle with a fifty five degree angle and one unknown', { shape: 'triangle', angles: [90, 55, null], showRightMarks: true })],
   ['quadrilateral · the tilted square (A7/C22)', F('angle-figure', 'a square turned on its corner, still a square', { shape: 'quadrilateral', angles: [90, 90, 90, 90], rotation: 45, sideMarks: [1, 1, 1, 1] })],
   ['polygon · a hexagon', F('angle-figure', 'a six sided shape', { shape: 'polygon', sides: 6 })],
+  // --- balance (2026-11-17: B6 drew its balances as bars) ------------------
+  ['balance · level, three piles against a pile and a bag (B6 assessed)', F('balance', 'a level balance: three heaps on the left pan, a heap and a closed bag on the right', { left: { heaps: [7, 4, 5] }, right: { heaps: [12], bags: 1 }, tilt: 'level' })],
+  ['balance · the left pan hangs lower (B6 assessed)', F('balance', 'a balance whose loaded left pan hangs lower', { left: { heaps: [4, 6] }, right: { heaps: [7] }, tilt: 'left-down' })],
+  ['balance · a covered dish beside a pile (B7 assessed)', F('balance', 'a level balance: 13 on the left pan, 6 and a covered dish on the right', { left: { heaps: [13] }, right: { heaps: [6], bags: 1 }, tilt: 'level', cover: 'dish' })],
+  ['balance · countable, three heaps against a heap and a bag (B6 worked example)', F('balance', 'a level balance: three heaps on the left pan, a heap and a closed bag on the right', { left: { heaps: [7, 4, 5] }, right: { heaps: [12], bags: 1 }, tilt: 'level', countable: true })],
+  ['balance · countable, the right pan hangs lower (B6 lesson)', F('balance', 'two more on the right pan, so it hangs lower', { left: { heaps: [7] }, right: { heaps: [7, 2] }, tilt: 'right-down', countable: true })],
+  ['balance · countable, no amounts written (B6 lesson)', F('balance', 'one pan plainly fuller, no amounts', { left: { heaps: [9] }, right: { heaps: [4] }, tilt: 'left-down', showCounts: false, countable: true })],
+  ['balance · countable, a crowded pan shrinks, never spills', F('balance', 'two big heaps against a bag', { left: { heaps: [19, 18, 17] }, right: { bags: 2 }, tilt: 'level', countable: true })],
+  ['balance · piles, a crowded pan shrinks, never spills', F('balance', 'three piles against three bags', { left: { heaps: [19, 18, 17] }, right: { heaps: [9], bags: 3 }, tilt: 'level' })],
 ];
 
 let failures = 0;

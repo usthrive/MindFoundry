@@ -115,6 +115,18 @@ fluency time**. Anything less is "learning", and the app must say so.
     every saved page as page 1 served a page twice and counted it twice (10-problem
     sheets recorded 13–15); count a sheet by PLACE, carry the page number, and photograph
     a reload — the first fix dropped the page number and only the photograph saw it.
+21. **The picture must be the kind of thing the words name — and still give nothing
+    away.** A week built on the balance scale drew every "left pan … right pan … the bar
+    sits level" question as a bar model (boxes like tens and ones, one pan only), because
+    no balance figure existed; "ten-blocks" were drawn as single small squares, and "6
+    rods and 2 cubes" as a digit chart that printed the answer. A father saw it on his
+    son's screen; every gate had passed, because they proved a figure could not
+    contradict the NUMBERS and nothing asked whether it was the right THING. Check the
+    kind against the words on every surface (lesson, examples, practice, check, puzzle)
+    with a ratchet on known debt. Then ask L33 again of the right picture: countable
+    heaps on both pans turn a sum into a count, so where the child answers draw a
+    fixed-size pile carrying its number; countable dots only where the answer is
+    already on the page.
 
 ## 4. Screen laws for children
 
@@ -236,6 +248,9 @@ fluency time**. Anything less is "learning", and the app must say so.
 - [ ] A reload restores the page AND the count (photograph one).
 - [ ] Every way a grown-up can move a child (parent page, profile editor, parent
       mode) goes through the one move path, and a move made on another device stands.
+- [ ] Every picture is the kind of thing its words name (a balance for a balance,
+      rods for rods), on every surface — and, where the child answers, nothing in it
+      can be counted or measured in place of the step being asked.
 
 ## Provenance (MindFoundry, all under `/home/usthr/Penta_University/Math_Tutor/MindFoundry`)
 

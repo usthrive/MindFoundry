@@ -23,18 +23,27 @@
  *   - the balance-scale stories put the unknown on the LEFT of the sentence as
  *     often as on the right, because a pan is a pan.
  *
- * THE ANCHOR IS DRAWN, NOT DESCRIBED. `barModel` shows two pans of one scale in
- * the script and in three of the four guided examples — the places where the
- * answer is already on the page and a full worked journey belongs (kit §E2.5).
- * On ASSESSED items the picture states a GIVEN and never the answer:
- *   - `buildTheOtherSide` draws the two heaps ALREADY on the left pan and
- *     asserts the first heap against the item's own `a`;
- *   - `bagOnTheOtherSide` and `msThreeOnTheLeft` draw the pan that can be
- *     counted end to end and leave the closed bag out of the picture entirely —
- *     an empty box drawn to true length is still the answer, measured;
- *   - `msBalanceGap` is the one assessed page that draws BOTH pans, and it can:
- *     nothing is hidden there, the scale is honestly tilted, and the answer is
- *     the gap, which no length hands over at this band.
+ * THE ANCHOR IS DRAWN, NOT DESCRIBED — AS A BALANCE (2026-11-17). Every picture
+ * in this week is `balance()`: a beam, two pans, the heaps on each and any closed
+ * bag, the bar level or tipped exactly as the words say. Until then it was
+ * `barModel` — boxes like tens and ones, one pan only — under questions that tell
+ * the child to look at a balance (the owner saw it on his son's B6 day 4).
+ * On ASSESSED items the picture states only GIVENS, never the answer:
+ *   - each heap is a solid PILE of one fixed size with its number under it, so
+ *     nothing on the page can be counted or measured in place of adding — dots
+ *     on both pans would turn "7, 4 and 5 against 12 and a bag" into sixteen
+ *     dots against twelve, counted (L33). Countable dots (`countable: true`) are
+ *     drawn only in the lesson script and the modeled / completion examples,
+ *     where the answer is already on the page; the prompted example is drawn as
+ *     piles, like the pages it leads into;
+ *   - a closed bag is a sack of FIXED size marked "?", so nothing about it
+ *     measures what is inside (the bar model left the bag out for that reason —
+ *     a box drawn to true length is the answer, measured);
+ *   - `buildTheOtherSide` asserts the first heap against the item's own `a`;
+ *     the bag items assert the visible heaps against their params;
+ *   - the tilt is the prose's: level where "the bar sits level", the heavier
+ *     side lower where one pan "hangs lower" — QG-13 refuses a level bar over
+ *     unequal visible pans and a tipped bar whose lower side is the lighter.
  *
  * ⚠ VERIFY-LIBRARY LIMIT, and the choice made (kit §E2.3, documented here rather
  * than buried). The recipe's error-analysis child JUDGES `3 + 4 = 7 + 2` to be
@@ -73,7 +82,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsParam, barModel, tenFrame } from '../lib/figures';
+import { assertsParam, balance, tenFrame } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -127,14 +136,6 @@ function withFigure(base: ItemGen, build: (params: Params) => BBFigure): ItemGen
     const d = base(rng, guard, difficulty);
     return d.generator ? { ...d, figure: build(d.generator.params) } : d;
   };
-}
-
-/** A pan drawn as one bar, its heaps side by side — the shape every figure here uses. */
-function pan(label: string, heaps: readonly number[]): {
-  label: string;
-  segments: Array<{ value: number; label: string }>;
-} {
-  return { label, segments: heaps.map((v) => ({ value: v, label: String(v) })) };
 }
 
 /**
@@ -299,11 +300,10 @@ const buildTheOtherSide = withFigure(
     const a = numOf(p, 'a');
     const b = numOf(p, 'b');
     const noun = strOf(p, 'units');
-    return barModel([pan('the first heap', [a]), pan('the second heap', [b])], {
-      scaleMax: a + b,
-      brace: { label: 'the left pan' },
-      alt: `the left pan of a balance, drawn as two heaps: ${heapWords([a, b], noun)}`,
-      asserts: assertsParam('a', 'bar:0'),
+    return balance({ heaps: [a, b] }, {}, {
+      tilt: 'left-down',
+      alt: `a balance with ${heapWords([a, b], noun)} on its left pan and nothing on its right pan, so the left pan hangs lower`,
+      asserts: assertsParam('a', 'left:0'),
     });
   },
 );
@@ -344,11 +344,10 @@ const matchTheHeap = withFigure(
     const a = numOf(p, 'a');
     const b = numOf(p, 'b');
     const noun = strOf(p, 'units');
-    return barModel([pan('the first heap', [a]), pan('the second heap', [b])], {
-      scaleMax: a + b,
-      brace: { label: 'the right pan' },
-      alt: `the right pan of a balance, drawn as two heaps: ${heapWords([a, b], noun)}`,
-      asserts: assertsParam('a', 'bar:0'),
+    return balance({ bags: 1 }, { heaps: [a, b] }, {
+      tilt: 'level',
+      alt: `a level balance: one closed bag on the left pan, and ${heapWords([a, b], noun)} on the right pan`,
+      asserts: assertsParam('a', 'right:0'),
     });
   },
 );
@@ -403,9 +402,9 @@ const bagOnTheOtherSide = withFigure(
     const noun = strOf(p, 'units');
     const x = numOf(p, 'x');
     const y = numOf(p, 'y');
-    return barModel([pan('the left pan', [x, y])], {
-      scaleMax: x + y,
-      alt: `the left pan of a balance, holding ${heapWords([x, y], noun)} in two heaps`,
+    return balance({ heaps: [x, y] }, { heaps: [numOf(p, 'b')], bags: 1 }, {
+      tilt: 'level',
+      alt: `a level balance: ${heapWords([x, y], noun)} on the left pan, and ${countNoun(numOf(p, 'b'), noun)} with one closed bag on the right pan`,
       asserts: assertsParam('a'),
     });
   },
@@ -620,9 +619,9 @@ const msBalanceGap = withFigure(
     const a = numOf(p, 'initN');
     const b = stepN(p, 0);
     const c = stepN(p, 1);
-    return barModel([pan('the left pan', [a, b]), pan('the right pan', [c])], {
-      scaleMax: a + b,
-      alt: 'a balance drawn as two bars, the loaded left pan reaching well past the right one',
+    return balance({ heaps: [a, b] }, { heaps: [c] }, {
+      tilt: 'left-down',
+      alt: 'a balance whose loaded left pan hangs lower than its right pan',
     });
   },
 );
@@ -672,9 +671,9 @@ const msThreeOnTheLeft = withFigure(
     },
   }),
   (p) =>
-    barModel([pan('the left pan', [numOf(p, 'initN'), stepN(p, 0), stepN(p, 1)])], {
-      scaleMax: numOf(p, 'initN') + stepN(p, 0) + stepN(p, 1),
-      alt: 'the left pan of a balance, drawn as one bar cut into three heaps',
+    balance({ heaps: [numOf(p, 'initN'), stepN(p, 0), stepN(p, 1)] }, { heaps: [stepN(p, 2)], bags: 1 }, {
+      tilt: 'level',
+      alt: 'a level balance: three heaps on the left pan, and one heap with a closed bag on the right pan',
     }),
 );
 
@@ -792,37 +791,39 @@ export const buildB06 = makeWeekBuilder({
       {
         say: 'Watch me load this scale. Three corks on the left, and four corks beside them. Seven corks in one heap on the right. The bar sits flat. Both sides are worth the same, so the sentence underneath it is a true one.',
         visual: 'A balance: three corks and four corks on the left pan, seven corks on the right pan, the bar level.',
-        figure: barModel([pan('the left pan', [3, 4]), pan('the right pan', [7])], {
-          scaleMax: 7,
+        figure: balance({ heaps: [3, 4] }, { heaps: [7] }, {
+          tilt: 'level',
+          countable: true,
           alt: 'a balance with two heaps on the left pan and one heap on the right, the bar sitting level',
         }),
       },
       {
         say: 'Now watch me read the equals sign as "the answer comes next". I write three and four, then seven. My pencil keeps going. It puts two more on that same side. The left pan still holds seven. The right pan now holds nine. The bar tips. My line is not true any more. Nothing about it looked wrong while I was writing it.',
         visual: 'The same balance after two more corks land on the right pan: the right side hangs lower.',
-        figure: barModel([pan('the left pan', [7]), pan('the right pan', [7, 2])], {
-          scaleMax: 9,
-          alt: 'a balance whose right pan now reaches further than the left, so the bar tips towards it',
+        figure: balance({ heaps: [7] }, { heaps: [7, 2] }, {
+          tilt: 'right-down',
+          countable: true,
+          alt: 'the same balance with two more on the right pan, so the right pan hangs lower',
         }),
       },
       {
         say: 'So before I decide anything, I check the two sides against each other. If one side has plainly more on it, the line cannot be true. I know that without working out the exact amounts.',
         visual: 'Two pans side by side, one plainly fuller than the other — no amounts written on either.',
         // Unlabelled deliberately: the say's whole point is knowing WITHOUT the
-        // exact amounts, so the pans carry no numbers (pan() would print them).
-        figure: barModel(
-          [
-            { label: 'one pan', segments: [{ value: 9 }] },
-            { label: 'the other pan', segments: [{ value: 4 }] },
-          ],
-          { alt: 'two pans drawn to one scale, one plainly fuller than the other, with no amounts written' },
-        ),
+        // exact amounts, so the pans carry no numbers.
+        figure: balance({ heaps: [9] }, { heaps: [4] }, {
+          tilt: 'left-down',
+          countable: true,
+          showCounts: false,
+          alt: 'a balance with one pan plainly fuller than the other and hanging lower, with no amounts written',
+        }),
       },
       {
         say: 'One more, and this one surprises people. Eight on the left, all by itself. Five and three on the right. The bar sits flat, so this line is true as well. The single number may go first. The adding may follow the sign.',
         visual: 'A balance with one heap of eight on the left pan and heaps of five and three on the right, the bar level.',
-        figure: barModel([pan('the left pan', [8]), pan('the right pan', [5, 3])], {
-          scaleMax: 8,
+        figure: balance({ heaps: [8] }, { heaps: [5, 3] }, {
+          tilt: 'level',
+          countable: true,
           alt: 'a balance with one heap on the left pan and two heaps on the right, the bar sitting level',
         }),
       },
@@ -849,8 +850,9 @@ export const buildB06 = makeWeekBuilder({
         },
       ], 'true'),
       visual: 'A balance with heaps of five and two on the left pan and heaps of four and three on the right, the bar level.',
-      figure: barModel([pan('the left pan', [5, 2]), pan('the right pan', [4, 3])], {
-        scaleMax: 7,
+      figure: balance({ heaps: [5, 2] }, { heaps: [4, 3] }, {
+        tilt: 'level',
+        countable: true,
         alt: 'a balance with two heaps on each pan, the bar sitting level',
       }),
     },
@@ -863,9 +865,10 @@ export const buildB06 = makeWeekBuilder({
         { childDo: 'Say what each pan is worth once the box is filled. Check the two amounts.', expected: '5' },
       ], '5'),
       visual: 'A balance: heaps of six and three on the left pan, a heap of four and one unmarked box on the right.',
-      figure: barModel([pan('the left pan', [6, 3]), { label: 'the right pan', segments: [{ value: 4, label: '4' }, { value: 5, label: '?', fill: 'none' }] }], {
-        scaleMax: 9,
-        alt: 'a balance with two heaps on the left pan, and on the right a heap of four beside an unmarked box',
+      figure: balance({ heaps: [6, 3] }, { heaps: [4], bags: 1 }, {
+        tilt: 'level',
+        countable: true,
+        alt: 'a level balance with two heaps on the left pan, and on the right a heap of four beside a closed bag',
       }),
     },
     {
@@ -873,9 +876,9 @@ export const buildB06 = makeWeekBuilder({
         { childDo: 'Match the two pans. Name what the right pan is still short of.', expected: '3' },
       ], '3'),
       visual: 'A balance: eight walnuts on the left pan, five walnuts and a closed bag on the right, the bar level.',
-      figure: barModel([pan('the left pan', [8]), { label: 'the right pan', segments: [{ value: 5, label: '5' }, { value: 3, label: '?', fill: 'none' }] }], {
-        scaleMax: 8,
-        alt: 'a balance with one heap on the left pan, and on the right a heap of five beside an unmarked bag',
+      figure: balance({ heaps: [8] }, { heaps: [5], bags: 1 }, {
+        tilt: 'level',
+        alt: 'a level balance with one heap on the left pan, and on the right a heap of five beside a closed bag',
       }),
     },
     {
@@ -980,9 +983,9 @@ export const buildB06 = makeWeekBuilder({
       title: 'Puzzle Grove: The Two Cards That Balance',
       puzzleType: 'logic',
       prompt: `[image: a balance with ${countNoun(target, noun)} heaped on its left pan and its right pan bare, and four number cards laid out beside it] ${name} has loaded ${countNoun(target, noun)} onto the left pan of a balance. The right pan is bare. Four cards are laid out: ${cards.join(', ')}. Each card says how many ${unitFor(2, noun)} to drop onto the right pan. Choose the TWO cards that make the bar sit level. Say how you knew the other cards could not work.`,
-      figure: barModel([pan('the left pan', [target])], {
-        scaleMax: target,
-        alt: `the left pan of a balance, loaded with ${countNoun(target, noun)}`,
+      figure: balance({ heaps: [target] }, {}, {
+        tilt: 'left-down',
+        alt: `a balance with ${countNoun(target, noun)} heaped on its left pan and its right pan bare, so the left pan hangs lower`,
       }),
       answer: {
         value: `${p} and ${p + 2}`,

@@ -220,6 +220,41 @@ export function numberLine(
 }
 
 /** Bars drawn to a shared scale — the comparison and part-whole anchor. */
+/**
+ * A pan balance (2026-11-17) — for every question that asks the child to look at
+ * one. Week B6 drew its balance stories as bar models (boxes like tens and ones,
+ * one pan only). The tilt is the CALLER's statement of what the words say; QG-13
+ * (checkFigureShape) refuses a level bar over unequal visible pans, and a tipped
+ * bar whose lower side is the lighter one.
+ */
+export function balance(
+  left: { heaps?: number[]; bags?: number },
+  right: { heaps?: number[]; bags?: number },
+  opts: {
+    tilt: 'level' | 'left-down' | 'right-down';
+    alt: string;
+    showCounts?: boolean;
+    cover?: 'bag' | 'dish';
+    /** Countable dots — teaching surfaces only (script, modeled / completion examples). */
+    countable?: boolean;
+    asserts?: FigureAssertion;
+  },
+): BBFigure {
+  return {
+    type: 'balance',
+    alt: opts.alt,
+    params: {
+      left,
+      right,
+      tilt: opts.tilt,
+      ...(opts.showCounts === false ? { showCounts: false } : {}),
+      ...(opts.cover === 'dish' ? { cover: 'dish' as const } : {}),
+      ...(opts.countable ? { countable: true } : {}),
+    },
+    ...(opts.asserts ? { asserts: opts.asserts } : {}),
+  };
+}
+
 export function barModel(
   bars: Array<{ label?: string; segments: Array<{ value: number; label?: string; fill?: 'solid' | 'soft' | 'none' | 'hatch' }>; total?: string }>,
   opts: { scaleMax?: number; brace?: { label: string }; alt: string; asserts?: FigureAssertion },

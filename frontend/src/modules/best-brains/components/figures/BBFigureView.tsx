@@ -30,6 +30,7 @@ import CoordinateGridFig from './CoordinateGridFig';
 import AngleFig from './AngleFig';
 import MathSentenceFig from './MathSentenceFig';
 import ColumnMethodFig from './ColumnMethodFig';
+import BalanceFig from './BalanceFig';
 
 /** Band A gets the biggest drawing: small hands, unpractised eyes, no reading. */
 export function sizeForBand(band: InteractionBand): FigureSize {
@@ -58,6 +59,7 @@ function Primitive({ figure, size, animate }: { figure: BBFigure; size: FigureSi
     case 'angle-figure': return <AngleFig params={figure.params} size={size} />;
     case 'math-sentence': return <MathSentenceFig params={figure.params} size={size} animate={animate} />;
     case 'column-method': return <ColumnMethodFig params={figure.params} size={size} animate={animate} />;
+    case 'balance': return <BalanceFig params={figure.params} size={size} />;
   }
 }
 
