@@ -265,6 +265,8 @@ function retrCountTens(rng: Rng, guard: TupleGuard, difficulty: number): ItemDra
 
 // --- The chart these pages name --------------------------------------------
 //
+// (2026-11-17: these items now say "the 120 chart" — the chart drawn runs to 120,
+// and a page calling it a HUNDRED chart named a different picture.)
 // Four items on this week say "on the hundred chart" and, until now, showed
 // none. A child opened one of them and there was nothing on the screen to look
 // at. The chart below is that missing object. B1 is "Numbers to 120", so it runs
@@ -390,7 +392,7 @@ function chartBelow(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft 
   );
   return {
     type: 'reasoning',
-    prompt: `On the hundred chart, what number sits directly BELOW ${n}?`,
+    prompt: `On the 120 chart, what number sits directly BELOW ${n}?`,
     answer: { value: String(n + 10), acceptableForms: [], validation: 'exact-numeric' },
     // The row BELOW n's is the one left empty, so n is printed and the square
     // under it is not. Built from the same `n` the answer is computed from.
@@ -418,7 +420,7 @@ function chartColumn(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft
   return {
     type: 'reasoning',
     prompt:
-      `${name} shades ${a}, ${a + 10}, ${a + 20}, and ${a + 30} on the hundred chart. ` +
+      `${name} shades ${a}, ${a + 10}, ${a + 20}, and ${a + 30} on the 120 chart. ` +
       'The shaded squares make a straight line going down. What number does the line hit next?',
     answer: { value: String(a + 40), acceptableForms: [], validation: 'exact-numeric' },
     // The four squares the prompt says were shaded ARE shaded — that is the
@@ -452,7 +454,7 @@ function chartWalk(rng: Rng, guard: TupleGuard, difficulty: number): ItemDraft {
   );
   return {
     type: 'reasoning',
-    prompt: `Start at ${n} on the hundred chart. Move DOWN one row, then RIGHT one square. What number are you on?`,
+    prompt: `Start at ${n} on the 120 chart. Move DOWN one row, then RIGHT one square. What number are you on?`,
     answer: { value: String(n + 11), acceptableForms: [], validation: 'exact-numeric' },
     // Down one row and right one square land in the SAME row (n never ends in 9),
     // so one blanked row hides both the halfway square and the finish, and the
@@ -625,6 +627,7 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
       vocabulary: [
         { term: 'number path', kidGloss: 'the counting line where every number has a spot' },
         { term: 'hundred chart', kidGloss: 'the counting song written in rows of ten' },
+        { term: '120 chart', kidGloss: 'the hundred chart with two more rows, so it runs to 120' },
         { term: 'digit', kidGloss: 'one of the symbols 0-9 that build every number' },
       ],
     },
@@ -676,7 +679,7 @@ export function buildB01(packSeed: number, contentVersion: string): WeeklyConcep
       title: 'Puzzle Grove: The Hiding Number',
       puzzleType: 'logic',
       prompt:
-        `I am hiding on the hundred chart. I am bigger than ${riddle.x - 3} and smaller ` +
+        `I am hiding on the 120 chart. I am bigger than ${riddle.x - 3} and smaller ` +
         `than ${riddle.x + 3}. My ones digit is ${riddle.d}. Who am I?`,
       answer: { value: String(riddle.x), acceptableForms: [], validation: 'exact-numeric' },
       // THE ONE ITEM WHERE BLANKING A ROW WOULD BE WRONG IN BOTH DIRECTIONS.

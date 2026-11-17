@@ -13,6 +13,12 @@
  * covered dishes, when the words say dish). What is under a bag or dish is never
  * drawn — it is the question.
  *
+ * NAMED THINGS AND WEIGHTS (change set 2). A pan may also hold labelled weight
+ * blocks ("40 g", E13/E15) and named things of unknown weight — a stone or a
+ * balloon weighed in blocks (A20), a sealed box or tins marked "?" (E13/E15).
+ * All are one fixed size each; the drawing never measures them. With `icon:
+ * 'block'`, countable heaps are squares (A20's blocks) rather than dots.
+ *
  * TWO WAYS TO DRAW A HEAP. By default a heap is one solid pile, the SAME size
  * whatever it holds — its number says how much, the tilt says which side is
  * heavier, and nothing on the page can be counted in place of adding (an assessed
@@ -24,6 +30,7 @@
  */
 import type { ReactElement } from 'react';
 import type { FigurePartProps } from './shared';
+import type { BalanceObject } from '../../figures/types';
 import { FIG, FONT, STROKE, TEXT, r2 } from './shared';
 
 const VW = 360;
@@ -46,8 +53,18 @@ const BAG_H = 38;
 const PILE_W = 38;
 const PILE_H = 22;
 const GAP = 9;
+/** A labelled weight block ("40 g"): one fixed size, whatever it says. */
+const WEIGHT_W = 44;
+const WEIGHT_H = 24;
+/** Named things of unknown weight (A20, E13, E15): fixed sizes, never to scale. */
+const OBJ: Record<BalanceObject, { w: number; h: number }> = {
+  stone: { w: 36, h: 22 },
+  balloon: { w: 34, h: 40 },
+  box: { w: 34, h: 30 },
+  tin: { w: 22, h: 30 },
+};
 
-type Pan = { heaps?: number[]; bags?: number };
+type Pan = { heaps?: number[]; bags?: number; weights?: number[]; objects?: BalanceObject[] };
 
 function heapCols(n: number): number {
   return Math.min(5, Math.max(1, Math.ceil(Math.sqrt(Math.min(n, MAX_DRAWN)))));
@@ -61,6 +78,8 @@ function heapWidth(n: number, countable: boolean): number {
 function panWidthNeeded(pan: Pan, countable: boolean): number {
   const parts = [
     ...(pan.heaps ?? []).map((n) => heapWidth(n, countable)),
+    ...(pan.weights ?? []).map(() => WEIGHT_W),
+    ...(pan.objects ?? []).map((o) => OBJ[o].w),
     ...Array.from({ length: pan.bags ?? 0 }, () => BAG_W),
   ];
   return parts.length ? parts.reduce((a, w) => a + w, 0) + GAP * (parts.length - 1) : 0;
@@ -74,6 +93,8 @@ function PanContents({
   side,
   cover,
   countable,
+  square,
+  unit,
 }: {
   pan: Pan;
   cx: number;
@@ -82,6 +103,9 @@ function PanContents({
   side: 'left' | 'right';
   cover: 'bag' | 'dish';
   countable: boolean;
+  /** Countable heaps drawn as squares (A20's blocks) rather than dots. */
+  square: boolean;
+  unit?: string;
 }): ReactElement {
   const need = panWidthNeeded(pan, countable);
   // Shrink a crowded pan rather than spill over its rim.
@@ -148,6 +172,22 @@ function PanContents({
       const offset = ((cols - inRow) * pitch) / 2;
       const dx = x + offset + col * pitch + pitch / 2;
       const dy = rimY - 4 - r - row * pitch;
+      if (square) {
+        out.push(
+          <rect
+            key={`${side}-h${hi}-d${i}`}
+            x={r2(dx - r)}
+            y={r2(dy - r)}
+            width={r2(2 * r)}
+            height={r2(2 * r)}
+            rx={0.8}
+            fill={FIG.accent}
+            stroke={FIG.accentDeep}
+            strokeWidth={STROKE.hair}
+          />,
+        );
+        continue;
+      }
       out.push(
         <circle
           key={`${side}-h${hi}-d${i}`}
@@ -176,6 +216,93 @@ function PanContents({
         </text>,
       );
     }
+    x += w + GAP * k;
+  });
+  // Labelled weights: a block with a handle, its amount written on it.
+  (pan.weights ?? []).forEach((amount, wi) => {
+    const w = WEIGHT_W * k;
+    const h = WEIGHT_H * Math.max(0.85, k);
+    const base = rimY - 3;
+    out.push(
+      <g key={`${side}-w${wi}`}>
+        <path
+          d={`M ${r2(x + w * 0.38)} ${r2(base - h)} Q ${r2(x + w / 2)} ${r2(base - h - 9)} ${r2(x + w * 0.62)} ${r2(base - h)}`}
+          fill="none"
+          stroke={FIG.inkMuted}
+          strokeWidth={STROKE.base}
+        />
+        <path
+          d={`M ${r2(x)} ${r2(base)} L ${r2(x + w * 0.12)} ${r2(base - h)} L ${r2(x + w * 0.88)} ${r2(base - h)} L ${r2(x + w)} ${r2(base)} Z`}
+          fill={FIG.fill}
+          stroke={FIG.inkMuted}
+          strokeWidth={STROKE.thin}
+          strokeLinejoin="round"
+        />
+        <text
+          x={r2(x + w / 2)}
+          y={r2(base - h / 2 + 4)}
+          textAnchor="middle"
+          fontSize={TEXT.small}
+          fontWeight={700}
+          fill={FIG.ink}
+          fontFamily={FONT}
+        >
+          {unit ? `${amount} ${unit}` : String(amount)}
+        </text>
+      </g>,
+    );
+    x += w + GAP * k;
+  });
+  // Named things of unknown weight. A sealed box or tin carries "?"; a stone or
+  // a balloon is simply there, to be weighed in blocks.
+  (pan.objects ?? []).forEach((o, oi) => {
+    const w = OBJ[o].w * k;
+    const h = OBJ[o].h * Math.max(0.85, k);
+    const base = rimY - 3;
+    const mid = x + w / 2;
+    const mark = (y: number) => (
+      <text x={r2(mid)} y={r2(y)} textAnchor="middle" fontSize={TEXT.body} fontWeight={700} fill={FIG.attention} fontFamily={FONT}>
+        ?
+      </text>
+    );
+    let shape: ReactElement;
+    if (o === 'stone') {
+      shape = (
+        <path
+          d={`M ${r2(x + w * 0.06)} ${r2(base)} C ${r2(x - w * 0.04)} ${r2(base - h * 0.7)}, ${r2(x + w * 0.3)} ${r2(base - h * 1.05)}, ${r2(x + w * 0.58)} ${r2(base - h * 0.95)} C ${r2(x + w * 0.9)} ${r2(base - h * 0.9)}, ${r2(x + w * 1.04)} ${r2(base - h * 0.45)}, ${r2(x + w * 0.94)} ${r2(base)} Z`}
+          fill={FIG.inkFaint}
+          stroke={FIG.inkMuted}
+          strokeWidth={STROKE.thin}
+          strokeLinejoin="round"
+        />
+      );
+    } else if (o === 'balloon') {
+      const ry = h * 0.42;
+      shape = (
+        <g>
+          <ellipse cx={r2(mid)} cy={r2(base - h + ry)} rx={r2(w / 2)} ry={r2(ry)} fill={FIG.primarySoft} stroke={FIG.primary} strokeWidth={STROKE.thin} />
+          <path d={`M ${r2(mid - 3)} ${r2(base - h + 2 * ry + 4)} L ${r2(mid)} ${r2(base - h + 2 * ry)} L ${r2(mid + 3)} ${r2(base - h + 2 * ry + 4)} Z`} fill={FIG.primary} />
+          <path d={`M ${r2(mid)} ${r2(base - h + 2 * ry + 4)} Q ${r2(mid + 4)} ${r2(base - 4)} ${r2(mid)} ${r2(base)}`} fill="none" stroke={FIG.primary} strokeWidth={STROKE.hair} />
+        </g>
+      );
+    } else if (o === 'box') {
+      shape = (
+        <g>
+          <rect x={r2(x)} y={r2(base - h)} width={r2(w)} height={r2(h)} rx={2} fill={FIG.attentionSoft} stroke={FIG.attention} strokeWidth={STROKE.thin} />
+          <line x1={r2(x)} y1={r2(base - h * 0.72)} x2={r2(x + w)} y2={r2(base - h * 0.72)} stroke={FIG.attention} strokeWidth={STROKE.hair} />
+          {mark(base - h * 0.18)}
+        </g>
+      );
+    } else {
+      shape = (
+        <g>
+          <rect x={r2(x)} y={r2(base - h + 3)} width={r2(w)} height={r2(h - 3)} fill={FIG.attentionSoft} stroke={FIG.attention} strokeWidth={STROKE.thin} />
+          <ellipse cx={r2(mid)} cy={r2(base - h + 3)} rx={r2(w / 2)} ry={3} fill={FIG.surface} stroke={FIG.attention} strokeWidth={STROKE.thin} />
+          {mark(base - h * 0.25)}
+        </g>
+      );
+    }
+    out.push(<g key={`${side}-o${oi}`}>{shape}</g>);
     x += w + GAP * k;
   });
   for (let b = 0; b < (pan.bags ?? 0); b++) {
@@ -297,6 +424,8 @@ export default function BalanceFig({ params }: FigurePartProps<'balance'>) {
               side={side}
               cover={params.cover === 'dish' ? 'dish' : 'bag'}
               countable={params.countable === true}
+              square={params.icon === 'block'}
+              unit={params.unit}
             />
             <path
               d={`M ${r2(x0)} ${r2(rimY)} Q ${r2(at.x)} ${r2(rimY + 14)} ${r2(x1)} ${r2(rimY)} Z`}

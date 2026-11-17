@@ -142,6 +142,26 @@ function glyph(icon: Icon, cx: number, cy: number, r: number, ls: number): React
           <circle cx={r2(cx)} cy={r2(cy)} r={r2(r * 0.34)} fill={FIG.accentDeep} />
         </g>
       );
+    case 'wheel':
+      // A bicycle wheel (C7/C8, 2026-11-17 — wheels were drawn as balls): tyre, rim, spokes, hub.
+      return (
+        <g>
+          <circle cx={r2(cx)} cy={r2(cy)} r={r2(r * 0.92)} fill={FIG.surface} stroke={FIG.ink} strokeWidth={r2(sw * 2.2)} />
+          {[0, 1, 2, 3].map((k) => {
+            const a = (k * Math.PI) / 4;
+            return <line key={k} x1={r2(cx - r * 0.78 * Math.cos(a))} y1={r2(cy - r * 0.78 * Math.sin(a))} x2={r2(cx + r * 0.78 * Math.cos(a))} y2={r2(cy + r * 0.78 * Math.sin(a))} stroke={FIG.inkMuted} strokeWidth={sw} />;
+          })}
+          <circle cx={r2(cx)} cy={r2(cy)} r={r2(r * 0.16)} fill={FIG.ink} />
+        </g>
+      );
+    case 'leg':
+      // A chair leg (C8): a turned wooden post, wider at the top.
+      return (
+        <path
+          d={`M ${p(-0.32, -0.95)} L ${p(0.32, -0.95)} L ${p(0.18, 0.95)} L ${p(-0.18, 0.95)} Z`}
+          fill={FIG.accentSoft} stroke={FIG.accentDeep} strokeWidth={sw} strokeLinejoin="round"
+        />
+      );
     case 'ball':
       return (
         <g>

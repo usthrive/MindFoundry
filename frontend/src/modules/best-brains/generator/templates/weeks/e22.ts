@@ -618,7 +618,30 @@ const GAP_STUDIES = [
  * No leak: the gap between the busiest band and the quietest is walked clear of
  * all four heights, so the answer is never a number the display states.
  */
-const sitDisplayGap = situation({
+/**
+ * THE BARS THE WORDS POINT AT (2026-11-17). "Is the order of these bars a free
+ * choice…? … is drawn as a display… The bars stand at 4, 9, 15, 14" had no
+ * bars on the page. Drawn now: the four bars, one scale, each with the height the
+ * prompt prints. The gap asked for is walked clear of every height (above), so
+ * the picture states only givens.
+ */
+function withDisplayBars(base: ItemGen): ItemGen {
+  return (rng, guard, difficulty) => {
+    const d = base(rng, guard, difficulty);
+    const counts = d.generator?.params.counts;
+    if (!Array.isArray(counts) || counts.length === 0) return d;
+    const heights = counts.map(Number);
+    return {
+      ...d,
+      figure: barModel(
+        heights.map((c) => ({ segments: [{ value: c, label: fmtInt(c) }] })),
+        { scaleMax: Math.max(...heights), alt: `a display of four bars, standing at ${heights.map((c) => fmtInt(c)).join(', ')}` },
+      ),
+    };
+  };
+}
+
+const sitDisplayGap = withDisplayBars(situation({
   situationType: 'comparison',
   cognitiveOp: 'display-gap',
   draw: (r) => {
@@ -648,7 +671,7 @@ const sitDisplayGap = situation({
       errorTags: ['task-comprehension', 'representation-misread'],
     };
   },
-});
+}));
 
 const sitDisplayGapEstimate = withEstimateFirst(
   sitDisplayGap,

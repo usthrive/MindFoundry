@@ -31,7 +31,7 @@ import { useFoundrySession } from '../session/FoundrySession';
 import WrenBubble from '../components/WrenBubble';
 import AudioButton from '../components/AudioButton';
 import { PromptFigure } from '../components/figures/BBFigureView';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from '../components/AnswerEntry';
 import type { ErrorTag, PackItem } from '../types';
 
@@ -174,7 +174,7 @@ export default function TreasureChest() {
                 <p className={cn('flex-1 whitespace-pre-line text-text-primary', band === 'A' ? 'text-2xl' : 'text-xl')}>
                   {promptText(openItem.prompt)}
                 </p>
-                <AudioButton text={speakablePrompt(openItem.prompt, openItem.figure?.alt, openItem.statements)} band={band} autoplay={band === 'A'} />
+                <AudioButton text={speakablePrompt(openItem.prompt, figureScene(openItem.figure), openItem.statements)} band={band} autoplay={band === 'A'} />
               </div>
               <PromptFigure prompt={openItem.prompt} figure={openItem.figure} band={band} />
             </section>

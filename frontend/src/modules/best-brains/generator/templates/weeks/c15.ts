@@ -72,7 +72,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, fmtFrac, partitionWord, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { areaGrid, assertsAnswer, assertsParam, barModel, numberLine } from '../lib/figures';
+import { areaGrid, assertsAnswer, assertsParam, barModel, fractionCircle, numberLine } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -123,6 +123,14 @@ const CUT_SCENES = [
 const EDIBLE_SCENES = CUT_SCENES.filter((sc) =>
   ['cake', 'pizza', 'chocolate bar', 'loaf of bread'].includes(sc.whole),
 );
+
+/**
+ * ROUND WHOLES ARE DRAWN ROUND (2026-11-17). "A pizza cut into 3 pieces that are
+ * not all the same size" was drawn as a strip — a pizza is a circle, and whether
+ * its slices match is judged round the centre. A cake or a pizza gets a cut
+ * circle; a ribbon, a strip, a chocolate bar and a loaf keep the strip.
+ */
+const isRoundWhole = (p: Params): boolean => ['cake', 'pizza'].includes(strOf(p, 'whole'));
 
 /** Wholes that are BUILT from parts — the partition is already there to read. */
 const PANEL_SCENES = [
@@ -262,14 +270,12 @@ const sitOnePart = withFigure(
       };
     },
   }),
-  (p) =>
-    areaGrid(
-      { rows: 1, cols: numOf(p, 'd') },
-      {
-        alt: `one ${strOf(p, 'whole')} cut into ${countNoun(numOf(p, 'd'), strOf(p, 'part'))}, with none of them coloured`,
-        asserts: assertsParam('d', 'cells'),
-      },
-    ),
+  (p) => {
+    const alt = `one ${strOf(p, 'whole')} cut into ${countNoun(numOf(p, 'd'), strOf(p, 'part'))}, with none of them coloured`;
+    return isRoundWhole(p)
+      ? fractionCircle(Array.from({ length: numOf(p, 'd') }, () => 1), { alt, asserts: assertsParam('d', 'pieces') })
+      : areaGrid({ rows: 1, cols: numOf(p, 'd') }, { alt, asserts: assertsParam('d', 'cells') });
+  },
 );
 
 /**
@@ -406,6 +412,11 @@ const sitRecut = withFigure(
   }),
   (p) => {
     const plan = planOf(p);
+    if (isRoundWhole(p)) {
+      return fractionCircle(plan, {
+        alt: `one ${strOf(p, 'whole')} cut into ${countNoun(plan.length, 'pieces')} that are not all the same size`,
+      });
+    }
     return barModel(
       [{ segments: plan.map((value) => ({ value })) }],
       {

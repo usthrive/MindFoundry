@@ -102,3 +102,96 @@ change and is noted for later.
 **Battery:** 29/29 pass (2026-11-17 09:46), the new kind gate included. Two tsc runs in
 this change set; the first caught the dead `partWholeBars`. The 40 lint errors in the
 changed scripts are older `any`s; none is on a changed line.
+
+---
+
+# Change set 2 — the rest of the census (2026-11-17, owner: "fix the other issues")
+
+Change set 1 shipped as PR #28 (main `2237a37`, live 15:28Z). Before fixing anything
+here, I checked every census finding against the packs myself.
+
+## B23 read its answers aloud — fixed
+
+A B23 graph's spoken description listed every value. So "How many wrens does the graph
+show?" was heard as "… 11 robins, 3 starlings and 10 wrens. How many wrens…". The check
+screen autoplays at levels A–C, so his check form at B23 would have read its answers out
+without being asked.
+- **Figures now have a `spoken` line**, used by the read-aloud (`figureScene`), alongside
+  the `alt`, used by the screen reader. A B23 graph's spoken line names the graph and its
+  bars ("a bar for robins, wrens and sparrows") with no values. The accessible name keeps
+  every value, because a screen-reader child has no other way to the data. The
+  `[image: …]` text in each prompt also keeps the full description: it is never shown,
+  QG-11 audits values against it, and it is spoken only when no figure is drawn. Every
+  B23 graph item draws one, and the spoken-answer test fails the day one does not.
+- **`bb-spoken-answer-test`:**
+  - it modelled the check screen as autoplaying only at level A; it now autoplays at
+    levels A–C, matching the app since 10-15;
+  - B23 now **fails** the run if it speaks any value (191 leaks over 25 seeds → 0);
+  - every other week's unasked-spoken count may only fall (a ratchet), and a control
+    proves the ratchet fires;
+  - two new fixtures cover a graph with and without a spoken line.
+- **Seen but not changed:** clock-hand descriptions (B12, B17, C18) and number-line
+  endpoints (C2) are also spoken unasked. They describe what a sighted child already sees
+  ("the long hand points at the 3"), so they are held by the ratchet and listed here for
+  a later decision.
+
+## Pictures now match their words
+
+| Week | The words | Was drawn | Now |
+|---|---|---|---|
+| A20 lesson | "A stone sits on one pan. Blocks fill the other pan." | a row of blocks | a balance: a stone against countable blocks; a balloon against two |
+| E13 lesson | "a sealed box and 40 g of weights … 70 g … the beam is level" | two bars to scale | a balance: a "?" box and a 40 g weight against 70 g; five sealed tins against 60 g |
+| E15 lesson | "two pans that are not level … a sealed box and thirty … fifty" | two bars | a balance, left side down |
+| E15 lesson, examples | "shade everything to the right of it" | a hop (one jump) | a shaded ray with an arrow |
+| C7 | "one full tally gate" | five round counters | a tally gate (four strokes and one across) |
+| C7, C8 | bicycle wheels, chair legs | balls | wheels and chair legs |
+| C15 | "a pizza cut into 3 pieces that are not all the same size" | a strip | a cut circle (strips stay for ribbons, paper and bread) |
+| C23 | "A pictograph shows books. Monday has 8 stars…" | a number line | a pictograph with its key. A display the child is building stays undrawn, because its rows are the answer. |
+| B4 | "stands on square 12 of the hopscotch track" | a tick line | numbered squares, a counter on its square, hops square to square |
+| B23 | "Above the 5 there are 8 dots" | nothing | a line plot |
+| E22 | "Is the order of these bars a free choice? … drawn as a display" | nothing | the four bars, at the heights printed |
+| B1 | "On the hundred chart…" over a chart to 120 | — | the words now say "the 120 chart" (it is "Numbers to 120"), and "120 chart" is in the word list |
+
+New picture types:
+- `tally`;
+- `fraction-circle`;
+- `pictograph`;
+- `number-track`;
+- `line-plot`;
+- a shaded `ray` on `number-line`;
+- `balance` gains `objects` (stone, balloon, sealed box, tin), labelled `weights` and a
+  `unit`.
+
+Every new type has render cases at 3 sizes and QG-13 impossibility checks: no skipped
+squares, no dots off the line, a key that is a whole number, and weights alone must
+balance.
+
+**Deliberately left as words:**
+- **D6** (a remainder story): a picture of the shared piles is the answer.
+- **D23** (angles): its triangle is already a triangle, and the rest has no picture.
+
+## The kind gate, extended
+
+`bb-figure-kind-test` now has eight more rules: tally, pictograph, round whole, number
+track, line plot, shaded ray, wheels and legs, and "these bars" with bars on the page.
+That last rule is the first that fires on a **missing** picture. The gate runs over all
+10,634 surfaces of 117 weeks × 2 seeds, and the known debt is now **empty**. 45 checks,
+including 12 new controls (9 must fire, 3 must stay quiet).
+
+## Photographs (change set 2)
+
+`docs/screens-2026-11-17/cs2-*.png`, phone width, each looked at:
+- the C7 tally gate and the C7 wheels;
+- the C15 pizza in unequal pieces;
+- a C23 pictograph with its key;
+- the B4 track (practice and lesson hops);
+- the E22 bars;
+- a B23 line plot;
+- the A20 stone and balloon;
+- the E13 box with weights and the five tins;
+- the E15 pans and the shaded ray.
+
+The photos changed two drawings:
+- **B4:** all 21 squares across a phone left numbers about 7 px tall. The track now
+  shows a stretch: six squares either side of the counters, at least 13 squares.
+- **A20:** the balloon nearly touched the beam, so it was made shorter.

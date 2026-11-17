@@ -61,7 +61,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun, unitFor } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { assertsAnswer, assertsParam, barModel, counters, numberLine } from '../lib/figures';
+import { assertsParam, barModel, counters, numberLine, pictograph } from '../lib/figures';
 import {
   distinctSet,
   graphRead,
@@ -69,7 +69,6 @@ import {
   symbolCountVsValue,
   tallestVsAskedBar,
 } from '../lib/stats';
-import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
 const ge = makeGe('C');
@@ -113,50 +112,51 @@ const CHANGE_FRAMES = [
 ] as const;
 
 // ---------------------------------------------------------------------------
-// withFigure — attach a picture built from the item's OWN generator params.
-//
-// The shipped primitives (situation / multiStep / discrimination) have no figure
-// slot, and lib/ is not ours to edit, so this wrapper does what `withEstimateFirst`
-// does: it works entirely inside the returned closure, takes no new rng draw, and
-// leaves the prompt (and therefore the QG-1/QG-4 surface signature) untouched. It
-// reads the drafted item's `generator.params` — the very numbers the answer was
-// computed from — so the figure law ("built from the item's own drawn values")
-// holds by construction. (Pattern copied from c06/c05, the Level-C exemplars.)
+// Pictures are attached after the draft is made (`withPictograph`, below): the
+// shipped primitives (situation / multiStep / discrimination) have no figure slot,
+// and lib/ is not ours to edit. The wrapper works inside the returned closure,
+// takes no new rng draw and leaves the prompt — and so the QG-1/QG-4 surface
+// signature — untouched. (Pattern from c06/c05, the Level-C exemplars.)
 // ---------------------------------------------------------------------------
 
 type Params = Record<string, unknown>;
 const numOf = (p: Params, k: string): number => Number(p[k]);
 
-function withFigure(base: ItemGen, build: (params: Params) => BBFigure): ItemGen {
+/**
+ * THE DISPLAY THE WORDS NAME (2026-11-17). "A pictograph shows books. Monday has 8
+ * stars…" was drawn as a NUMBER LINE — the key as one step on a ruler. A child
+ * told to read a pictograph now sees one: a row of symbols per day, the key
+ * underneath. Every number on it is a given the prompt already prints (the rows
+ * and the key); the amount asked for is never drawn, so the multiplying is still
+ * the child's. The rows are read back off the prompt itself, so the picture and
+ * the words cannot disagree, and the key is asserted against the item's `key`.
+ *
+ * Only displays that EXIST are drawn. An item where the child builds a row ("is
+ * being drawn", "has to show") stays wordless: drawing that row is the answer.
+ */
+const ROW_RE = /\b(Monday|Tuesday|Wednesday|Thursday|Friday) (?:has|with) (\d+) (star|circle|square|drop)s?\b/g;
+function withPictograph(base: ItemGen): ItemGen {
   return (rng, guard, difficulty) => {
     const d = base(rng, guard, difficulty);
-    return d.generator ? { ...d, figure: build(d.generator.params) } : d;
+    if (!d.generator) return d;
+    const thing = /A pictograph (?:of|shows) ([a-z]+)/.exec(d.prompt)?.[1];
+    const rows = [...d.prompt.matchAll(ROW_RE)].map((m) => ({ label: m[1], count: Number(m[2]), symbol: m[3] }));
+    const key = numOf(d.generator.params, 'key');
+    if (!thing || rows.length < 2 || !Number.isFinite(key)) return d;
+    const symbol = rows[0].symbol as 'star' | 'circle' | 'square' | 'drop';
+    return {
+      ...d,
+      figure: pictograph(
+        rows.map(({ label, count }) => ({ label, count })),
+        symbol,
+        { worth: key, unit: thing },
+        {
+          alt: `a pictograph of ${thing}: ${rows.map((r) => `${countNoun(r.count, `${symbol}s`)} for ${r.label}`).join(', ')}, and the key: each ${symbol} stands for ${countNoun(key, thing)}`,
+          asserts: assertsParam('key'),
+        },
+      ),
+    };
   };
-}
-
-/**
- * The key, drawn as ONE step on an honest ruler: from 0 to what a single symbol
- * is worth. The line's length depends ONLY on the key, never on the row the
- * question names, so it cannot leak the amount the item asks for — it states the
- * given the display already prints at the bottom of the page.
- */
-function keyStepFigure(p: Params): BBFigure {
-  const key = numOf(p, 'key');
-  const max = key * 5;
-  return numberLine(
-    {
-      min: 0,
-      max,
-      step: key,
-      labels: 'majors',
-      marks: [{ at: key, label: String(key), style: 'flag' }],
-      hops: [{ from: 0, to: key, label: 'one symbol' }],
-    },
-    {
-      alt: `a number line from 0 to ${max} counted in steps of ${key}, with the very first step marked — what one symbol on this display is worth`,
-      asserts: assertsParam('key', 'mark:0'),
-    },
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -212,12 +212,12 @@ const wCompare = asWarmup(compareWhole(3), C2);
 /**
  * The anchor read: one named row, turned into its amount. `graphRead` never
  * names the longest row, so the tallest-row misread produces a genuinely
- * different number. Figure = the key's one step (see `keyStepFigure`).
+ * different number. Figure = the pictograph itself (see `withPictograph`).
  */
-const readScaledRow = withFigure(graphRead('value', 'pictograph'), keyStepFigure);
+const readScaledRow = withPictograph(graphRead('value', 'pictograph'));
 
 /** "How many more" — the comparison read, in the key's units rather than symbols. */
-const readHowManyMore = graphRead('difference', 'pictograph');
+const readHowManyMore = withPictograph(graphRead('difference', 'pictograph'));
 
 /**
  * The read run backwards: the amount is stated and the ROW has to be built.
@@ -258,7 +258,7 @@ const buildRowFromTotal = situation({
  * bigger than one, the amount MUST come out above the symbol count, so a child
  * who predicts "fewer" has already caught their own misreading.
  */
-const readWholeDisplay = situation({
+const readWholeDisplay = withPictograph(situation({
   situationType: 'part-whole',
   cognitiveOp: 'graph-total',
   draw: (r) => {
@@ -279,7 +279,7 @@ const readWholeDisplay = situation({
       errorTags: ['task-comprehension', 'representation-misread'],
     };
   },
-});
+}));
 const readWholeDisplayEstimate = withEstimateFirst(
   readWholeDisplay,
   'will the whole display stand for more things than symbols, or fewer?',
@@ -615,17 +615,12 @@ export const buildC23 = makeWeekBuilder({
           expected: '15',
         },
       ], '15'),
-      visual: 'Three strips of five joined into one bar.',
-      figure: barModel(
-        [
-          {
-            label: 'three stars, each worth five books',
-            segments: [{ value: 5, label: '5' }, { value: 5, label: '5' }, { value: 5, label: '5' }],
-            total: '15',
-          },
-        ],
-        { scaleMax: 15, alt: 'a bar built from three strips of five, braced as fifteen books', asserts: assertsAnswer },
-      ),
+      // The pictograph the words name (2026-11-17; it was three strips of five).
+      // The teacher's count by fives is the conversion the strips used to draw.
+      visual: 'The pictograph: Monday\'s row of three stars, and the key underneath.',
+      figure: pictograph([{ label: 'Monday', count: 3 }], 'star', { worth: 5, unit: 'books' }, {
+        alt: 'a pictograph of books: 3 stars for Monday, and the key: each star stands for 5 books',
+      }),
     },
     {
       ...ge(23, 2, 'completion', 'A pictograph of laps shows Tuesday with 4 circles and Thursday with 3 circles. Each circle stands for 10 laps. How many laps do the two days show altogether?', [
@@ -635,18 +630,20 @@ export const buildC23 = makeWeekBuilder({
         },
         { childDo: 'Gather the circles from both rows first. Then let the key turn them into laps.', expected: '70' },
       ], '70'),
-      visual: 'Tuesday\'s row and Thursday\'s row, each drawn as strips of ten.',
-      figure: barModel(
-        [
-          { label: 'Tuesday', segments: [{ value: 10 }, { value: 10 }, { value: 10 }, { value: 10 }], total: '40' },
-          { label: 'Thursday', segments: [{ value: 10 }, { value: 10 }, { value: 10 }], total: '30' },
-        ],
-        { scaleMax: 40, alt: 'a bar of four strips of ten above a bar of three strips of ten', asserts: assertsAnswer },
-      ),
+      visual: 'The pictograph: Tuesday\'s row of four circles, Thursday\'s row of three, and the key.',
+      figure: pictograph([{ label: 'Tuesday', count: 4 }, { label: 'Thursday', count: 3 }], 'circle', { worth: 10, unit: 'laps' }, {
+        alt: 'a pictograph of laps: 4 circles for Tuesday, 3 circles for Thursday, and the key: each circle stands for 10 laps',
+      }),
     },
-    ge(23, 3, 'prompted', 'A pictograph of tickets shows Friday with 6 squares and Monday with 2 squares. Each square stands for 5 tickets. How many more tickets does Friday show than Monday?', [
-      { childDo: 'Read each named row all the way into tickets first. Then compare the two amounts.', expected: '20' },
-    ], '20'),
+    {
+      ...ge(23, 3, 'prompted', 'A pictograph of tickets shows Friday with 6 squares and Monday with 2 squares. Each square stands for 5 tickets. How many more tickets does Friday show than Monday?', [
+        { childDo: 'Read each named row all the way into tickets first. Then compare the two amounts.', expected: '20' },
+      ], '20'),
+      visual: 'The pictograph: Friday\'s six squares, Monday\'s two, and the key.',
+      figure: pictograph([{ label: 'Friday', count: 6 }, { label: 'Monday', count: 2 }], 'square', { worth: 5, unit: 'tickets' }, {
+        alt: 'a pictograph of tickets: 6 squares for Friday, 2 squares for Monday, and the key: each square stands for 5 tickets',
+      }),
+    },
     {
       // Independent stage: the KEY only. Working out how many of those key-sized
       // groups the total holds IS the task here, so drawing the row would hand

@@ -104,6 +104,26 @@ const CASES: Array<[string, BBFigure]> = [
   ['balance · countable, no amounts written (B6 lesson)', F('balance', 'one pan plainly fuller, no amounts', { left: { heaps: [9] }, right: { heaps: [4] }, tilt: 'left-down', showCounts: false, countable: true })],
   ['balance · countable, a crowded pan shrinks, never spills', F('balance', 'two big heaps against a bag', { left: { heaps: [19, 18, 17] }, right: { bags: 2 }, tilt: 'level', countable: true })],
   ['balance · piles, a crowded pan shrinks, never spills', F('balance', 'three piles against three bags', { left: { heaps: [19, 18, 17] }, right: { heaps: [9], bags: 3 }, tilt: 'level' })],
+  // --- change set 2 (2026-11-17): the pictures the census found missing ------
+  ['balance · a stone against countable blocks (A20 lesson)', F('balance', 'a stone on one pan, six blocks on the other', { left: { objects: ['stone'] }, right: { heaps: [6] }, tilt: 'level', countable: true, icon: 'block' })],
+  ['balance · a balloon against two blocks (A20 lesson)', F('balance', 'a balloon on one pan, two blocks on the other', { left: { objects: ['balloon'] }, right: { heaps: [2] }, tilt: 'level', countable: true, icon: 'block' })],
+  ['balance · a sealed box and 40 g against 70 g (E13)', F('balance', 'a sealed box and 40 g against 70 g', { left: { objects: ['box'], weights: [40] }, right: { weights: [70] }, tilt: 'level', unit: 'g' })],
+  ['balance · five tins against 60 g (E13)', F('balance', 'five tins against 60 g', { left: { objects: ['tin', 'tin', 'tin', 'tin', 'tin'] }, right: { weights: [60] }, tilt: 'level', unit: 'g' })],
+  ['balance · box and 30 heavier than 50 (E15)', F('balance', 'box and 30 hang lower than 50', { left: { objects: ['box'], weights: [30] }, right: { weights: [50] }, tilt: 'left-down' })],
+  ['tally · one full gate (C7)', F('tally', 'one full tally gate', { count: 5 })],
+  ['tally · 23 strokes wrap into rows', F('tally', 'four gates and three loose strokes', { count: 23 })],
+  ['fraction-circle · a pizza in 8 equal slices', F('fraction-circle', 'a pizza in 8 equal slices', { parts: [1, 1, 1, 1, 1, 1, 1, 1] })],
+  ['fraction-circle · 3 unequal pieces (C15)', F('fraction-circle', 'a pizza in 3 unequal pieces', { parts: [1, 2, 1] })],
+  ['fraction-circle · 3 of 8 eaten, shaded', F('fraction-circle', 'a cake with 3 of 8 slices coloured', { parts: [1, 1, 1, 1, 1, 1, 1, 1], shaded: [0, 1, 2] })],
+  ['pictograph · three rows of stars with a key (C23)', F('pictograph', 'a pictograph of books', { rows: [{ label: 'Monday', count: 8 }, { label: 'Thursday', count: 4 }, { label: 'Tuesday', count: 3 }], symbol: 'star', key: { worth: 10, unit: 'books' } })],
+  ['pictograph · drops, twelve to a row', F('pictograph', 'a pictograph of litres', { rows: [{ label: 'Wednesday', count: 12 }, { label: 'Friday', count: 5 }], symbol: 'drop', key: { worth: 5, unit: 'litres' } })],
+  ['number-track · a counter on 12 (B4)', F('number-track', 'a track with a counter on 12', { min: 0, max: 20, counters: [12] })],
+  ['number-track · three hops from 12 to a flag on 15 (B4 lesson)', F('number-track', 'three hops from 12 to 15', { min: 0, max: 20, counters: [12], flag: 15, hops: [{ from: 12, to: 13 }, { from: 13, to: 14 }, { from: 14, to: 15 }] })],
+  ['line-plot · peas in a pod (B23)', F('line-plot', 'a line plot', { min: 4, max: 6, dots: [{ at: 4, count: 3 }, { at: 5, count: 8 }, { at: 6, count: 2 }], label: 'peas in a pod — one dot for each pod' })],
+  ['number-line · open circle, shaded ray to the right (E15)', F('number-line', 'open circle at 20, shaded right', { min: 14, max: 26, step: 2, marks: [{ at: 20, label: '20', style: 'open' }], ray: { from: 20, dir: 'right' } })],
+  ['number-line · filled circle, shaded ray to the left (E15)', F('number-line', 'filled circle at 8, shaded left', { min: 2, max: 14, step: 2, marks: [{ at: 8, label: '8', style: 'point' }], ray: { from: 8, dir: 'left' } })],
+  ['counters · bicycle wheels (C7)', F('counters', 'six wheels', { groups: [{ count: 2, icon: 'wheel', label: 'bicycle' }, { count: 2, icon: 'wheel', label: 'bicycle' }, { count: 2, icon: 'wheel', label: 'bicycle' }], arrangement: 'row', relation: 'groups' })],
+  ['counters · chair legs (C8)', F('counters', 'four legs', { groups: [{ count: 4, icon: 'leg' }], arrangement: 'row' })],
 ];
 
 let failures = 0;

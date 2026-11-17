@@ -47,7 +47,7 @@ interface Surface {
   text: string
   /** A guided example's fade level (modeled | completion | prompted | independent). */
   stage?: string
-  figure?: { type: string; alt?: string; countable?: boolean }
+  figure?: { type: string; alt?: string; countable?: boolean; icons?: string[]; ray?: boolean }
 }
 
 /** Every object in a pack that carries a figure, with the words beside it. */
@@ -56,19 +56,30 @@ function surfaces(cell: string, pack: unknown): Surface[] {
   const walk = (o: unknown, path: string) => {
     if (!o || typeof o !== 'object') return
     const rec = o as Record<string, unknown>
-    const fig = rec.figure as { type?: string; alt?: string; params?: { countable?: boolean } } | undefined
+    const fig = rec.figure as
+      | { type?: string; alt?: string; params?: { countable?: boolean; groups?: Array<{ icon?: string }>; ray?: unknown } }
+      | undefined
+    const words = ['prompt', 'say', 'visual', 'question', 'title']
+      .map((k) => rec[k])
+      .filter((v): v is string => typeof v === 'string')
+      .join(' ')
     if (fig && typeof fig.type === 'string') {
-      const words = ['prompt', 'say', 'visual', 'question', 'title']
-        .map((k) => rec[k])
-        .filter((v): v is string => typeof v === 'string')
-        .join(' ')
       out.push({
         cell,
         where: path,
         text: words,
         ...(typeof rec.fadeLevel === 'string' ? { stage: rec.fadeLevel } : {}),
-        figure: { type: fig.type, alt: fig.alt, countable: fig.params?.countable === true },
+        figure: {
+          type: fig.type,
+          alt: fig.alt,
+          countable: fig.params?.countable === true,
+          icons: (fig.params?.groups ?? []).map((g) => g.icon ?? 'dot'),
+          ray: !!fig.params?.ray,
+        },
       })
+    } else if (typeof rec.prompt === 'string' || typeof rec.say === 'string') {
+      // A surface with NO picture: honest unless its words point at one (MISSING rules).
+      out.push({ cell, where: path, text: words, ...(typeof rec.fadeLevel === 'string' ? { stage: rec.fadeLevel } : {}) })
     }
     for (const [k, v] of Object.entries(rec)) if (k !== 'figure') walk(v, `${path}.${k}`)
   }
@@ -81,15 +92,39 @@ const BALANCE = /\b(pans? of a balance|(a|the|level|equal-arm) balance\b|balance
 /** The words point at base-ten blocks. */
 const BASE_TEN = /\b(ten-blocks?|rods? and (cubes|ones)|(\d+|one|two|three|four|five|six|seven|eight|nine) rods?\b|flats? of a hundred)\b/i
 
+type Fig = NonNullable<Surface['figure']>
+type Rule = {
+  name: string
+  re: RegExp
+  /** The picture is the right kind. */
+  ok: (f: Fig) => boolean
+  /** The words themselves name a different, deliberate picture (or forbid one). */
+  unless?: RegExp
+  /** With no picture at all, the words still point at one that is not there. */
+  needsFigure?: boolean
+}
+const is = (type: string) => (f: Fig) => f.type === type
+
 /**
- * `unless`: the words themselves name a different, deliberate picture. B3 compares
- * numbers by LENGTH — "One bar for 39: three long ten-blocks, then nine small single
- * blocks" — so the blocks are laid end to end as a bar, and the words say so. A
- * balance has no such exception: a balance is never a bar.
+ * `unless`: B3 compares numbers by LENGTH — "One bar for 39: three long ten-blocks,
+ * then nine small single blocks" — so its blocks are laid end to end as a bar, and
+ * the words say so. A balance has no such exception: a balance is never a bar.
+ * A pictograph that is BEING BUILT ("is being drawn", "has to show", "should …
+ * show") is never drawn: its rows are the answer, so whatever stands in (the key's
+ * one strip) is excused.
  */
-const RULES: Array<{ name: string; re: RegExp; want: string; unless?: RegExp }> = [
-  { name: 'balance', re: BALANCE, want: 'balance' },
-  { name: 'base-ten', re: BASE_TEN, want: 'base-ten-blocks', unless: /\bbars?\b/i },
+const RULES: Rule[] = [
+  { name: 'balance', re: BALANCE, ok: is('balance') },
+  { name: 'base-ten', re: BASE_TEN, ok: is('base-ten-blocks'), unless: /\bbars?\b/i },
+  // 2026-11-17, change set 2 — each from the census, each fixed in its week.
+  { name: 'tally', re: /\btally (gate|gates|marks?)\b|\btallies\b/i, ok: is('tally') },
+  { name: 'pictograph', re: /\bpictograph\b/i, ok: is('pictograph'), unless: /\bbeing drawn\b|\bhas to show\b|\bshould\b[^.?]{0,40}\bshow\b/i },
+  { name: 'round whole', re: /\b(pizza|cake)\b[^.]*\bcut\b|\bcuts? (a|the|one) (pizza|cake)\b/i, ok: is('fraction-circle') },
+  { name: 'number track', re: /\b(number|hopscotch) track\b/i, ok: is('number-track') },
+  { name: 'line plot', re: /\bline plot\b/i, ok: is('line-plot'), unless: /\bdraw a line plot\b/i },
+  { name: 'shaded ray', re: /\bshade(d)? (everything|the line|from there)\b|\bline shaded from\b/i, ok: (f) => f.type === 'number-line' && !!f.ray },
+  { name: 'wheels and legs', re: /\b(wheels?|legs?)\b/i, ok: (f) => f.type !== 'counters' || !(f.icons ?? []).includes('ball') },
+  { name: 'bars on the page', re: /\bthese bars\b|\bis drawn as a display\b/i, ok: is('bar-model'), needsFigure: true },
 ]
 
 type Finding = { cell: string; rule: string; drawn: string; where: string; text: string }
@@ -97,11 +132,10 @@ type Finding = { cell: string; rule: string; drawn: string; where: string; text:
 function findings(all: Surface[]): Finding[] {
   const out: Finding[] = []
   for (const s of all) {
-    if (!s.figure) continue
     for (const r of RULES) {
-      if (r.re.test(s.text) && s.figure.type !== r.want && !(r.unless && r.unless.test(s.text))) {
-        out.push({ cell: s.cell, rule: r.name, drawn: s.figure.type, where: s.where, text: s.text.slice(0, 110) })
-      }
+      if (!r.re.test(s.text) || (r.unless && r.unless.test(s.text))) continue
+      const wrong = s.figure ? !r.ok(s.figure) : !!r.needsFigure
+      if (wrong) out.push({ cell: s.cell, rule: r.name, drawn: s.figure?.type ?? 'nothing', where: s.where, text: s.text.slice(0, 110) })
     }
   }
   return out
@@ -113,9 +147,8 @@ function findings(all: Surface[]): Finding[] {
  * `balance` figure cannot draw yet — the next change set extends it. Counts may FALL.
  */
 const DEBT: Record<string, number> = {
-  A20: 6, // "A stone sits on one pan. Blocks fill the other pan" — drawn as a row of blocks
-  E13: 4, // "the left arm holds a sealed box and 40 g of weights" — drawn as bars
-  E15: 2, // "two pans that are not level … a sealed box and thirty" — drawn as bars
+  // Empty since change set 2 (2026-11-17): A20 (stone, balloon), E13 (sealed box,
+  // tins, grams) and E15 (box and thirty) draw balances with objects and weights.
 }
 
 /** Where the answer is already on the page: the lesson script, and the modeled / completion examples. */
@@ -148,11 +181,17 @@ const ratchet = (counts: Record<string, Finding[]>, debt: Record<string, number>
   return out
 }
 const over = ratchet(byCell, DEBT)
-say(all.length > 1000, `${all.length} surfaces with a picture, ${AVAILABLE_WEEKS.length} weeks × ${SEEDS.length} seeds`)
+const pictured = all.filter((x) => x.figure).length
+say(pictured > 1000, `${pictured} surfaces with a picture and ${all.length - pictured} without, ${AVAILABLE_WEEKS.length} weeks × ${SEEDS.length} seeds`)
 say(over.length === 0, `no picture of the wrong kind beyond the known debt${over.length ? ':\n       ' + over.join('\n       ') : ''}`)
-for (const cell of ['B6', 'B7', 'B10', 'B2']) {
+for (const cell of ['B6', 'B7', 'B10', 'B2', 'A20', 'E13', 'E15', 'C7', 'C8', 'C15', 'C23', 'B4', 'B23', 'E22']) {
   say(!(byCell[cell]?.length), `${cell} — fixed 2026-11-17 — draws the thing its words name`)
 }
+const kinds = (cell: string, type: string) => all.filter((x) => x.cell === cell && x.figure?.type === type).length
+say(kinds('C23', 'pictograph') >= 6, `C23 reads its pictographs off a pictograph (${kinds('C23', 'pictograph')} surfaces)`)
+say(kinds('B23', 'line-plot') >= 4, `B23 draws its line plots (${kinds('B23', 'line-plot')} surfaces)`)
+say(kinds('B4', 'number-track') >= 10, `B4 draws its track as squares (${kinds('B4', 'number-track')} surfaces)`)
+say(['A20', 'E13', 'E15'].every((c) => kinds(c, 'balance') > 0), 'A20, E13 and E15 draw their balances as balances')
 const balances = all.filter((s) => s.figure?.type === 'balance' && s.cell === 'B6').length
 say(balances >= 40, `B6 draws its balance stories as balances (${balances} surfaces over ${SEEDS.length} seeds)`)
 const leaks = countableWhereAnswering(all)
@@ -183,6 +222,23 @@ console.log('\n# controls (each must be caught)')
   say(countableWhereAnswering([promptedDots]).length > 0, 'control fires: countable heaps on a PROMPTED example (the child answers it)')
   const scriptDots: Surface = { cell: 'B6', where: 'pack.explanation.script.0', text: 'Watch me load this scale.', figure: { type: 'balance', countable: true } }
   say(countableWhereAnswering([scriptDots]).length === 0, 'no false alarm: countable heaps in the lesson script')
+  // Change set 2 controls — each new rule must fire on the picture it replaced.
+  const fire = (name: string, x: Omit<Surface, 'cell' | 'where'>) =>
+    say(findings([{ cell: 'X', where: 'control', ...x }]).length > 0, `control fires: ${name}`)
+  const quiet = (name: string, x: Omit<Surface, 'cell' | 'where'>) =>
+    say(findings([{ cell: 'X', where: 'control', ...x }]).length === 0, `no false alarm: ${name}`)
+  fire('a tally gate drawn as round counters (C7 before)', { text: '[image: one full tally gate] A full tally gate stands for 5 birds.', figure: { type: 'counters', icons: ['dot'] } })
+  fire('a pictograph drawn as a number line (C23 before)', { text: 'A pictograph shows books. Monday has 8 stars.', figure: { type: 'number-line' } })
+  quiet('a pictograph BEING DRAWN with only its key strip', { text: 'A pictograph of litres is being drawn. Each drop stands for 10 litres.', figure: { type: 'bar-model' } })
+  fire('a pizza cut into pieces drawn as a strip (C15 before)', { text: '[image: a pizza cut into 3 pieces that are not all the same size] A pizza has been cut into 3 pieces.', figure: { type: 'bar-model' } })
+  quiet('a ribbon cut into pieces drawn as a strip', { text: 'Ava cuts a ribbon into 4 equal pieces.', figure: { type: 'area-grid' } })
+  fire('a number track drawn as a tick line (B4 before)', { text: 'Noor stands on square 12 of the hopscotch track.', figure: { type: 'number-line' } })
+  fire('a line plot drawn as a bar', { text: 'A line plot counts the peas in each pod.', figure: { type: 'bar-model' } })
+  quiet('"Draw a line plot" with no picture (the child draws it)', { text: 'Six pods held these peas: 4, 6, 5. Draw a line plot for them.' })
+  fire('"shade everything to the right" drawn as a hop (E15 before)', { text: 'I put a circle on twenty and shade everything to the right of it.', figure: { type: 'number-line', ray: false } })
+  fire('bicycle wheels drawn as balls (C7/C8 before)', { text: 'Every bicycle needs 2 wheels.', figure: { type: 'counters', icons: ['ball'] } })
+  quiet('bicycle wheels drawn as wheels', { text: 'Every bicycle needs 2 wheels.', figure: { type: 'counters', icons: ['wheel'] } })
+  fire('"these bars" with NO bars on the page (E22 before)', { text: 'Is the order of these bars a free choice? A sunshine record is drawn as a display.' })
   const rising = { ...byCell, X1: [found[0] ?? { cell: 'X1', rule: 'balance', drawn: 'bar-model', where: 'control', text: 'x' }] }
   say(ratchet(rising as Record<string, Finding[]>, DEBT).length > 0, 'control fires: a NEW week joining the debt')
 }

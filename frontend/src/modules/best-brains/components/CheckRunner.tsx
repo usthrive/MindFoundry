@@ -25,7 +25,7 @@ import type { ErrorTag, PackItem, WeeklyConceptPack } from '../types';
 import WrenBubble from './WrenBubble';
 import AudioButton from './AudioButton';
 import { PromptFigure } from './figures/BBFigureView';
-import { promptText, speakablePrompt } from '../figures/prompt';
+import { promptText, figureScene, speakablePrompt } from '../figures/prompt';
 import AnswerEntry from './AnswerEntry';
 import AnchorPanel from './AnchorPanel';
 import BBScratchPad from './BBScratchPad';
@@ -164,7 +164,7 @@ export default function CheckRunner({
           {/* Every check question reads itself aloud at bands A and B (owner,
               2026-10-15): the check measures the maths, not the reading. The
               child can still replay it or read along. Band C taps to hear. */}
-          <AudioButton text={speakablePrompt(item.prompt, item.figure?.alt, item.statements)} band={band} autoplay={band !== 'C'} />
+          <AudioButton text={speakablePrompt(item.prompt, figureScene(item.figure), item.statements)} band={band} autoplay={band !== 'C'} />
         </div>
         <PromptFigure prompt={item.prompt} figure={item.figure} band={band} />
       </section>

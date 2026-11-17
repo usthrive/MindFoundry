@@ -46,6 +46,54 @@ export interface NumberLineParams {
   labelAs?: 'number' | 'fraction';
   marks?: Array<{ at: number; label?: string; style?: MarkStyle }>;
   hops?: Array<{ from: number; to: number; label?: string }>;
+  /**
+   * A shaded RAY (2026-11-17, E15): the line coloured from `from` to the edge,
+   * with an arrow — "shade everything to the right of it". It was drawn as a hop,
+   * which says "one jump", not "every number from here on".
+   */
+  ray?: { from: number; dir: 'right' | 'left' };
+}
+
+/** Tally marks (C7, 2026-11-17): strokes in gates of five, four upright and one across. */
+export interface TallyParams {
+  count: number;
+}
+
+/** A circle cut into pieces: the pizza / cake fraction model (C15, 2026-11-17). */
+export interface FractionCircleParams {
+  /** Relative size of each piece, in order round the circle; all equal for equal parts. */
+  parts: number[];
+  /** Indices of the pieces coloured in. */
+  shaded?: number[];
+}
+
+/** A pictograph (C23, 2026-11-17): one row of symbols per label, and its key. */
+export interface PictographParams {
+  rows: Array<{ label: string; count: number }>;
+  symbol: 'star' | 'circle' | 'square' | 'drop';
+  /** "Each ★ stands for 10 books." */
+  key: { worth: number; unit: string };
+}
+
+/** A number track (B4, 2026-11-17): numbered squares in a row — not a line of ticks. */
+export interface NumberTrackParams {
+  min: number;
+  max: number;
+  /** Squares a counter stands on. */
+  counters?: number[];
+  /** A flag on the square a journey ends on. */
+  flag?: number;
+  /** Hops from square to square. */
+  hops?: Array<{ from: number; to: number }>;
+}
+
+/** A line plot (B23, 2026-11-17): one dot above a value for every thing that had it. */
+export interface LinePlotParams {
+  min: number;
+  max: number;
+  dots: Array<{ at: number; count: number }>;
+  /** What one dot stands for ("pods"), written under the line. */
+  label?: string;
 }
 
 export type BarFill = 'solid' | 'soft' | 'none' | 'hatch';
@@ -104,7 +152,9 @@ export interface AreaGridParams {
 
 export type CounterIcon =
   | 'dot' | 'star' | 'apple' | 'duck' | 'fish' | 'leaf'
-  | 'block' | 'shell' | 'flower' | 'ball';
+  | 'block' | 'shell' | 'flower' | 'ball'
+  /** 2026-11-17: C7/C8 drew bicycle wheels and chair legs as balls. */
+  | 'wheel' | 'leg';
 
 /** Ten-frame (or five-frame / double frame) — the Level A + B number anchor. */
 export interface TenFrameParams {
@@ -365,15 +415,31 @@ export interface BalancePan {
   heaps?: number[];
   /** Closed bags — an amount nobody can see. Drawn as a sack with "?". Never the answer. */
   bags?: number;
+  /**
+   * Labelled weights ("40 g"), each a fixed-size weight block — the known side
+   * of a balance in grams (E13, E15). Their numbers count toward the pan's sum.
+   */
+  weights?: number[];
+  /**
+   * Named things whose weight is not given (2026-11-17): a stone or a balloon
+   * weighed in blocks (A20), a sealed box or identical tins (E13, E15). A box and
+   * a tin are sealed, so they carry "?"; a stone and a balloon do not. Fixed size —
+   * the drawing never measures them.
+   */
+  objects?: BalanceObject[];
 }
+
+export type BalanceObject = 'stone' | 'balloon' | 'box' | 'tin';
 
 export interface BalanceParams {
   left: BalancePan;
   right: BalancePan;
   /** How the bar sits: level, or the heavier side hanging lower. */
   tilt: 'level' | 'left-down' | 'right-down';
-  /** The thing being counted (a dot by default). */
+  /** The thing being counted (a dot by default; 'block' draws countable squares — A20). */
   icon?: CounterIcon;
+  /** The unit written on each weight block ("g"); none for bare numbers (E15). */
+  unit?: string;
   /** Write each heap's count under it. Default true; false for "which pan is fuller?" without numbers. */
   showCounts?: boolean;
   /** What hides the unknown amount, as the words name it: a closed bag (default) or a covered dish (B7). */
@@ -409,12 +475,18 @@ export type BBFigureType =
   | 'angle-figure'
   | 'math-sentence'
   | 'column-method'
-  | 'balance';
+  | 'balance'
+  | 'tally'
+  | 'fraction-circle'
+  | 'pictograph'
+  | 'number-track'
+  | 'line-plot';
 
 export const FIGURE_TYPES: readonly BBFigureType[] = [
   'number-line', 'bar-model', 'area-grid', 'ten-frame', 'counters',
   'place-value-chart', 'base-ten-blocks', 'clock', 'coin-set', 'coordinate-grid', 'angle-figure',
   'math-sentence', 'column-method', 'balance',
+  'tally', 'fraction-circle', 'pictograph', 'number-track', 'line-plot',
 ] as const;
 
 /**
@@ -439,6 +511,15 @@ interface FigureBase {
    * Never a stage direction to an artist; write what a child would see.
    */
   alt: string;
+  /**
+   * What the READ-ALOUD says about the picture, when it must say less than `alt`
+   * (2026-11-17). Default: `alt`. A data display's accessible name lists every
+   * value — a screen-reader child has no other way to the data — but the same
+   * words spoken in front of "How many wrens does the graph show?" read the
+   * answer out (B23: the check screen autoplays at bands A and B). `spoken`
+   * names the display and its categories, never its values. See `figureScene`.
+   */
+  spoken?: string;
   /** Optional printed caption. Never load-bearing: band A cannot read it. */
   caption?: string;
   asserts?: FigureAssertion;
@@ -458,7 +539,12 @@ export type BBFigure =
   | (FigureBase & { type: 'angle-figure'; params: AngleFigureParams })
   | (FigureBase & { type: 'math-sentence'; params: MathSentenceParams })
   | (FigureBase & { type: 'column-method'; params: ColumnMethodParams })
-  | (FigureBase & { type: 'balance'; params: BalanceParams });
+  | (FigureBase & { type: 'balance'; params: BalanceParams })
+  | (FigureBase & { type: 'tally'; params: TallyParams })
+  | (FigureBase & { type: 'fraction-circle'; params: FractionCircleParams })
+  | (FigureBase & { type: 'pictograph'; params: PictographParams })
+  | (FigureBase & { type: 'number-track'; params: NumberTrackParams })
+  | (FigureBase & { type: 'line-plot'; params: LinePlotParams });
 
 /** Narrow a figure to one type (renderers take the concrete params shape). */
 export type FigureOf<T extends BBFigureType> = Extract<BBFigure, { type: T }>;

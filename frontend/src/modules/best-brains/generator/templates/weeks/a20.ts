@@ -282,7 +282,7 @@ import {
   teenExtra,
   PUPPETS,
 } from '../lib/earlynumber';
-import { assertsAnswer, assertsParam, counterGroups, counters } from '../lib/figures';
+import { assertsAnswer, assertsParam, balance, counterGroups, counters } from '../lib/figures';
 import { countNoun } from '../lib/format';
 import { drawUniqueItem } from '../lib/guard';
 import type { ItemGen } from '../lib/items';
@@ -1582,19 +1582,37 @@ export const buildA20 = makeWeekBuilder({
       {
         say: say('A stone sits on one pan. Blocks fill the other pan.'),
         visual: 'A balance: a stone in one pan, a row of blocks in the other.',
-        figure: counters(6, 'blocks', { arrangement: 'in a row', alt: 'the blocks that balance the stone' }),
+        // Drawn as the balance the words name (2026-11-17; it was a row of blocks
+        // with no balance). Not yet counted, so no number is written.
+        figure: balance({ objects: ['stone'] }, { heaps: [6] }, {
+          tilt: 'level',
+          countable: true,
+          icon: 'block',
+          showCounts: false,
+          alt: 'a balance: a stone on one pan, and a heap of blocks on the other',
+        }),
       },
       {
         say: say('The pans rest level. Six blocks balance this little stone.'),
         visual: 'The same balance, level, with the six blocks counted one by one.',
-        figure: counters(6, 'blocks', { arrangement: 'in a row', alt: 'the same blocks, counted along the row' }),
+        figure: balance({ objects: ['stone'] }, { heaps: [6] }, {
+          tilt: 'level',
+          countable: true,
+          icon: 'block',
+          alt: 'the same balance resting level: the stone on one pan, six blocks on the other',
+        }),
       },
       {
         // The discrimination, TAUGHT where two pictures are available and the
         // answer is already on the page (kit §E2.5).
         say: say('Now the balloon. It is far bigger than the stone. Only two blocks balance it.'),
         visual: 'The balance again, with a huge balloon lifting against just two blocks.',
-        figure: counters(2, 'blocks', { arrangement: 'in a row', alt: 'the blocks that balance the balloon' }),
+        figure: balance({ objects: ['balloon'] }, { heaps: [2] }, {
+          tilt: 'level',
+          countable: true,
+          icon: 'block',
+          alt: 'a balance resting level: a big balloon on one pan, two blocks on the other',
+        }),
       },
       {
         say: say('Big does not mean heavy. Cups tell us who holds more.'),

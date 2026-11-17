@@ -314,6 +314,24 @@ check(
   checkFigureShape({ type: 'balance', alt, params: { left: { heaps: [9] }, right: { heaps: [4] }, tilt: 'left-down', showCounts: false, countable: true } }).length === 0,
   'nine dots against four: the eye compares them',
 );
+// Change set 2 (2026-11-17): the new pictures cannot draw an impossibility either.
+check('a balance with a sealed box may sit level over unequal weights (the box is unknown)',
+  checkFigureShape({ type: 'balance', alt, params: { left: { objects: ['box'], weights: [40] }, right: { weights: [70] }, tilt: 'level', unit: 'g' } }).length === 0, 'box = 30 g, never drawn');
+check('weights alone must balance: 40 g level against 70 g is refused',
+  checkFigureShape({ type: 'balance', alt, params: { left: { weights: [40] }, right: { weights: [70] }, tilt: 'level' } }).length > 0, 'weights are known amounts');
+check('an unknown object kind is refused',
+  checkFigureShape({ type: 'balance', alt, params: { left: { objects: ['anvil' as never] }, right: { heaps: [3] }, tilt: 'level' } }).length > 0, 'stone, balloon, box or tin');
+check('a tally of 2.5 strokes is refused', checkFigureShape({ type: 'tally', alt, params: { count: 2.5 } }).length > 0, 'strokes are whole');
+check('a circle shading a piece it does not have is refused',
+  checkFigureShape({ type: 'fraction-circle', alt, params: { parts: [1, 1, 1], shaded: [3] } }).length > 0, 'pieces 0–2');
+check('a pictograph with no key is refused',
+  checkFigureShape({ type: 'pictograph', alt, params: { rows: [{ label: 'Monday', count: 3 }], symbol: 'star', key: { worth: 0, unit: 'books' } } }).length > 0, 'the key is the week');
+check('a track hop that skips a square is refused',
+  checkFigureShape({ type: 'number-track', alt, params: { min: 0, max: 20, hops: [{ from: 12, to: 14 }] } }).length > 0, 'a hop is one square');
+check('a line plot with dots off its line is refused',
+  checkFigureShape({ type: 'line-plot', alt, params: { min: 4, max: 6, dots: [{ at: 9, count: 2 }] } }).length > 0, '9 is not on 4–6');
+check('a ray that starts off the line is refused',
+  checkFigureShape({ type: 'number-line', alt, params: { min: 14, max: 26, ray: { from: 40, dir: 'right' } } }).length > 0, '40 is not on 14–26');
 check(
   'a figure with NO assertion is checked for possibility only',
   onItem({ type: 'ten-frame', alt, params: { filled: 7 } }, '8').length === 0,
@@ -349,6 +367,13 @@ const values: Array<[string, BBFigure, string, string]> = [
   ['angle-figure reads a plain opening', { type: 'angle-figure', alt, params: { shape: 'angle', degrees: 135 } }, '', '135'],
   ['balance reads its left pan by default', { type: 'balance', alt, params: { left: { heaps: [7, 4, 5] }, right: { heaps: [12], bags: 1 }, tilt: 'level' } }, '', '16'],
   ['balance reads one heap on the right pan (never the bag)', { type: 'balance', alt, params: { left: { heaps: [7, 4, 5] }, right: { heaps: [12], bags: 1 }, tilt: 'level' } }, 'right:0', '12'],
+  ['balance counts labelled weights in a pan', { type: 'balance', alt, params: { left: { objects: ['box'], weights: [40, 40] }, right: { weights: [70, 40] }, tilt: 'level', unit: 'g' } }, 'right', '110'],
+  ['pictograph reads a row as symbols × key', { type: 'pictograph', alt, params: { rows: [{ label: 'Monday', count: 3 }], symbol: 'star', key: { worth: 5, unit: 'books' } } }, 'row:0', '15'],
+  ['pictograph reads its key by default', { type: 'pictograph', alt, params: { rows: [{ label: 'Monday', count: 3 }], symbol: 'star', key: { worth: 5, unit: 'books' } } }, '', '5'],
+  ['number-track reads the flag', { type: 'number-track', alt, params: { min: 0, max: 20, counters: [12], flag: 15 } }, 'flag', '15'],
+  ['tally reads its strokes', { type: 'tally', alt, params: { count: 5 } }, '', '5'],
+  ['fraction-circle reads its pieces, then its shaded ones', { type: 'fraction-circle', alt, params: { parts: [1, 1, 1, 1], shaded: [0] } }, 'shaded', '1'],
+  ['line-plot reads one stack', { type: 'line-plot', alt, params: { min: 4, max: 6, dots: [{ at: 4, count: 3 }, { at: 5, count: 8 }] } }, 'at:5', '8'],
 ];
 for (const [name, fig, of, want] of values) {
   const got = figureValue(fig, of || undefined);

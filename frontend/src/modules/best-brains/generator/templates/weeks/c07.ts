@@ -66,7 +66,7 @@ import { errorAnalysis } from '../lib/erroranalysis';
 import { withEstimateFirst } from '../lib/metacog';
 import { countNoun } from '../lib/format';
 import { makeGe, makeWeekBuilder } from '../lib/assemble';
-import { areaGrid, assertsAnswer, assertsParam, barModel, counterGroups, counters, numberLine } from '../lib/figures';
+import { areaGrid, assertsAnswer, assertsParam, barModel, counterGroups, counters, numberLine, tally } from '../lib/figures';
 import type { BBFigure } from '../../../figures/types';
 import type { Rng } from '../../rng';
 
@@ -209,7 +209,7 @@ const factWheels = withFigure(
     },
   }),
   (p) =>
-    counterGroups([{ count: numOf(p, 'a'), noun: 'balls', label: 'one bicycle' }], {
+    counterGroups([{ count: numOf(p, 'a'), noun: 'wheels', label: 'one bicycle' }], {
       alt: 'the two wheels a single bicycle takes',
       asserts: assertsParam('a'),
     }),
@@ -244,7 +244,8 @@ const factTallyGates = withFigure(
     },
   }),
   (p) =>
-    counters(numOf(p, 'a'), 'buttons', {
+    // A tally gate, drawn as one (2026-11-17; it was five round counters).
+    tally(numOf(p, 'a'), {
       alt: 'one full tally gate: five strokes',
       asserts: assertsParam('a'),
     }),
@@ -645,12 +646,12 @@ export const buildC07 = makeWeekBuilder({
       visual: 'Six bicycles, each with the two wheels it takes.',
       figure: counterGroups(
         [
-          { count: 2, noun: 'balls', label: 'bicycle' },
-          { count: 2, noun: 'balls', label: 'bicycle' },
-          { count: 2, noun: 'balls', label: 'bicycle' },
-          { count: 2, noun: 'balls', label: 'bicycle' },
-          { count: 2, noun: 'balls', label: 'bicycle' },
-          { count: 2, noun: 'balls', label: 'bicycle' },
+          { count: 2, noun: 'wheels', label: 'bicycle' },
+          { count: 2, noun: 'wheels', label: 'bicycle' },
+          { count: 2, noun: 'wheels', label: 'bicycle' },
+          { count: 2, noun: 'wheels', label: 'bicycle' },
+          { count: 2, noun: 'wheels', label: 'bicycle' },
+          { count: 2, noun: 'wheels', label: 'bicycle' },
         ],
         { alt: 'six bicycles, each with two wheels, twelve wheels in all', asserts: assertsAnswer },
       ),
