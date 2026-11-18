@@ -1,0 +1,73 @@
+TEST-PREP-SUBTRACTION generator check · 2026-11-18T14:33:47.669Z
+page: design/experience/TEST-PREP-SUBTRACTION.html
+
+1. Exam values
+  read from EXAM-READING.md (+ his written answers): 40 values: 14, 15, 17, 23, 24, 27, 49, 53, 56, 60, 63, 66, 67, 73, 100, 127, 173, 197, 240, 267, 305, 326, 348, 355, 413, 426, 433, 455, 497, 515, 523, 615, 635, 652, 700, 738, 800, 810, 823, 839
+  page list covers every value; broken controls caught: key-always-second, exam operand
+
+2. Generators (2000 draws each, seeds 1..2000)
+  3-digit, no trade: 2000/2000 draws clean
+  3-digit, open a ten only: 2000/2000 draws clean
+  3-digit, open a hundred only: 2000/2000 draws clean
+  3-digit, two trades: 2000/2000 draws clean
+  3-digit, across zeros: 2000/2000 draws clean
+  2-digit in the head, across a ten: 2000/2000 draws clean
+  missing part (a + □ = c): 2000/2000 draws clean
+  missing number taken away (c − □ = d): 2000/2000 draws clean
+  missing start (□ − b = d): 2000/2000 draws clean
+  find the mistake, rule "smaller digit from larger in each column": 2000/2000 draws clean
+  find the mistake, rule "trade made, but the digit it came from not reduced": 2000/2000 draws clean
+  find the mistake, rule "zero gives nothing (0 − n written as n; no trade through a zero)": 2000/2000 draws clean
+  choice: subtract in your head: 2000/2000 clean · key place 24%/27%/25%/25% · key rank (smallest→largest) 26%/30%/29%/16%
+  choice: 3-digit ones: 2000/2000 clean · key place 25%/26%/25%/25% · key rank (smallest→largest) 24%/28%/27%/20%
+  choice: 3-digit tens: 2000/2000 clean · key place 24%/25%/25%/26% · key rank (smallest→largest) 27%/28%/28%/17%
+  choice: 3-digit both: 2000/2000 clean · key place 25%/25%/26%/23% · key rank (smallest→largest) 25%/28%/26%/20%
+  choice: 3-digit zero: 2000/2000 clean · key place 25%/25%/25%/25% · key rank (smallest→largest) 31%/29%/29%/12%
+  choice: which needs a ten opened: 2000/2000 clean · key place 25%/24%/26%/25%
+  choice: which needs a hundred opened: 2000/2000 clean · key place 24%/23%/26%/27%
+  choice: which needs no trade: 2000/2000 clean · key place 26%/24%/25%/25%
+  choice: which is the same (the trade): 2000/2000 clean · key place 26%/24%/25%/26%
+  decide first, then subtract: 8000/8000 clean · 3 choices: key place 35%/32%/33%/0% · 4 choices: key place 25%/24%/26%/25%
+  column item, none (with adding back): 2000/2000 clean
+  column item, ones (with true/false rows): 2000/2000 clean
+  column item, tens (with true/false rows): 2000/2000 clean
+  column item, both (with adding back): 2000/2000 clean
+  column item, zero (with adding back): 2000/2000 clean
+  column item for the test (marks scored): 2000/2000 clean
+  number line, in the head: 2000/2000 clean
+  open one ten (unit words): 2000/2000 clean
+  open one hundred (unit words): 2000/2000 clean
+  ones into a ten: 2000/2000 clean
+  how many tens: 2000/2000 clean
+  tens into ones across a zero: 2000/2000 clean
+  chart: build, then open a ten: 2000/2000 clean
+  chart: build, then open a hundred: 2000/2000 clean
+  find the mistake item, sfl: 2000/2000 clean
+  find the mistake item, noReduce: 2000/2000 clean
+  find the mistake item, zero: 2000/2000 clean
+  missing number item, part: 2000/2000 clean
+  missing number item, sub: 2000/2000 clean
+  missing number item, start: 2000/2000 clean
+  story item, sold (test form): 2000/2000 clean
+  story item, beads (test form): 2000/2000 clean
+  story item, start (test form): 2000/2000 clean
+
+3. Sessions (counters 0..149 each; session 12 with and without misses)
+  session 1 (Thu 19 Nov, Numbers to 1,000: review day 1): items per draw 8×150 · 150/150 clean
+  session 2 (Fri 20 Nov, Numbers to 1,000: review day 2): items per draw 10×150 · 150/150 clean
+  session 3 (Sat 21 Nov, The trade: a ten is ten ones): items per draw 10×150 · 150/150 clean
+  session 4 (Sun 22 Nov, In your head, and adding back): items per draw 10×150 · 150/150 clean
+  session 5 (Mon 23 Nov, Open a ten): items per draw 9×150 · 150/150 clean
+  session 6 (Tue 24 Nov, Open a hundred): items per draw 9×150 · 150/150 clean
+  session 7 (Wed 25 Nov, Trade or no trade?): items per draw 10×150 · 150/150 clean
+  session 8 (Fri 27 Nov, Two trades): items per draw 9×150 · 150/150 clean
+  session 9 (Sat 28 Nov, Across zeros): items per draw 9×150 · 150/150 clean
+  session 10 (Sun 29 Nov, Find the mistake, find the missing number): items per draw 10×150 · 150/150 clean
+  session 11 (Mon 30 Nov, Practice test): items per draw 7×150 · 150/150 clean
+  session 12 (Tue 1 Dec, Practice from the test): items per draw 8×11 10×139 · 150/150 clean
+
+4. Fixed items copied from G2-U01-REVIEW-2DAY.md (answers computed here)
+  18/18 fixed items match their computed answers (and the same on 29 more display shuffles)
+
+Checks run: 3733398 · failed: 0
+RESULT: PASS
