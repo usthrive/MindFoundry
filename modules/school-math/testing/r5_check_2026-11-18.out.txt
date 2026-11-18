@@ -1,0 +1,148 @@
+== Proposal 5: G2-U01 L2 (how many tens; the noun dropped)
+  OK  tens in 380: got 38, stated 38
+  OK  'the tens digit is all the tens' on 380: got 8, stated 8
+  OK  50 + 70: got 120, stated 120
+  OK  '5 + 7' with the noun dropped: got 12, stated 12
+  OK  120 is 12 tens: got 12, stated 12
+  OK  text present [U01 L2 row]: got True, stated True
+  OK  text present [U01 L2 row]: got True, stated True
+== Proposal 2: G2-U01 L3 (parts in any order)
+  OK  6 ones + 2 hundreds + 4 tens: got 246, stated 246
+  OK  digits in the order heard (6, 2, 4): got 624, stated 624
+  OK  text present [U01 L3 row]: got True, stated True
+== Proposal 2: G2-U01 L6 (split another way; take one part away)
+  OK  628 = 600 + 28: got 628, stated 628
+  OK  628 = 500 + 128: got 628, stated 628
+  OK  628 = 620 + 8: got 628, stated 628
+  OK  628 = 500 + [] key: got 128, stated 128
+  OK  'a split keeps the other digits' -> 28 (and 500 + 28 is not 628): got (28, True), stated (28, True)
+  OK  5 hundreds 12 tens 8 ones = 628: got 628, stated 628
+  OK  628 - 20 (take the 2 tens): got 608, stated 608
+  OK  'take 2 ones' 628 - 2: got 626, stated 626
+  OK  text present [U01 L6 row]: got True, stated True
+  OK  text present [U01 L6 row]: got True, stated True
+  OK  U04-EC pair: 405 = 3 hundreds 10 tens 5 ones: got 405, stated 405
+== Proposal 8: G2-U01 L7 (number line to 1,000)
+  OK  538: tens before / after: got (530, 540), stated (530, 540)
+  OK  538: hundreds before / after: got (500, 600), stated (500, 600)
+  OK  'add a ten' rule on 538: got 548, stated 548
+  OK  bridge demo: 52 on 0-100 sits where 520 sits on 0-1,000: got True, stated True
+  OK  pool value 47 from its rule: got 47, stated 47
+  OK  pool value 407 from its rule: got 407, stated 407
+  OK  pool value 430 from its rule: got 430, stated 430
+  OK  pool value 480 from its rule: got 480, stated 480
+  OK  pool value 500 from its rule: got 500, stated 500
+  OK  pool value 570 from its rule: got 570, stated 570
+  OK  pool sides (below, above) -> key rank rotates: got (3, 3), stated (3, 3)
+  OK  pool values all different from the key and each other: got 7, stated 7
+  OK  text present [U01 L7 pool]: got True, stated True
+  OK  text present [U01 L7 row]: got True, stated True
+== Proposal 5 / 6: G2-U02 noun lines
+  OK  U02 L4 example 453 + 281, tens 5 + 8: got 13, stated 13
+  OK  U02 L5 example 487 + 365, ones 7 + 5: got 12, stated 12
+  OK  §4.1 line 8 ones + 8 ones: got 16, stated 16
+  OK  text present [§4.1 noun line]: got True, stated True
+== Proposal 7: G2-U02 L6 tens first inside the ones column
+  OK  ones digits of 21, 18, 38, 19: got [1, 8, 8, 9], stated [1, 8, 8, 9]
+  OK  1 + 9: got 10, stated 10
+  OK  8 + 8: got 16, stated 16
+  OK  10 + 16 = ones total: got 26, stated 26
+  OK  sum 21 + 18 + 38 + 19: got 96, stated 96
+  OK  text present [U02 L6 row]: got True, stated True
+== Proposal 10: G2-U02 L7 and G2-U04 L7 routes, G2-U04 L1 count up
+  OK  359 + 41: got 400, stated 400
+  OK  59 + 41 make a hundred: got 100, stated 100
+  OK  359 + 241: got 600, stated 600
+  OK  'ones make a ten: write 0, forget it' on 359 + 241: got 590, stated 590
+  OK  120 + 130 as tens: got (25, 250, 250), stated (25, 250, 250)
+  OK  500 - 359: got 141, stated 141
+  OK  count-up jumps 359 -> 400 -> 500: got (41, 100, 141), stated (41, 100, 141)
+  OK  smaller from larger on 500 - 359: got 259, stated 259
+  OK  91 - 87: got 4, stated 4
+  OK  count up 87 -> 90 -> 91: got (3, 1), stated (3, 1)
+  OK  smaller from larger on 91 - 87: got 16, stated 16
+  OK  text present [U02 L7]: got True, stated True
+  OK  text present [U04 L7]: got True, stated True
+  OK  text present [U04 L1]: got True, stated True
+== Proposals 1 / 9: G2-U03 L2 and L6
+  OK  L2 bond 356 + 175 = 531: got 531, stated 531
+  OK  four true forms with = last (two +, two -): got (4, 2), stated (4, 2)
+  OK  each true form holds: got True, stated True
+  OK  L6 821 - [] = 364 key: got 457, stated 457
+  OK  L6 check 821 - 457: got 364, stated 364
+  OK  L6 smaller from larger on 821, 364: got 543, stated 543
+  OK  L6 [] - 247 = 385 key: got 632, stated 632
+  OK  L6 check 632 - 247: got 385, stated 385
+  OK  L6 'subtract the two numbers I see' 385 - 247: got 138, stated 138
+  OK  L5 noun row 7 + 6 + 8 ones: got 21, stated 21
+  OK  text present [U03 L6 row]: got True, stated True
+  OK  text present [U03 L6 row]: got True, stated True
+== Proposals 5 / 11: G2-U04 noun lines
+  OK  L3 452: 5 tens 2 ones = 4 tens 12 ones: got True, stated True
+  OK  L4 528: 5 hundreds 2 tens = 4 hundreds 12 tens: got True, stated True
+  OK  L4 needs a hundred opened (tens 2 < 6): got True, stated True
+  OK  L5 623: 2 tens 3 ones = 1 ten 13 ones: got True, stated True
+  OK  L5 623 after the first trade: 6 hundreds 1 ten = 5 hundreds 11 tens: got True, stated True
+  OK  L5 623 - 258: got 365, stated 365
+  OK  L6 300 = 30 tens = 29 tens + 10 ones: got (30, 300), stated (30, 300)
+  OK  L2 574 - 231 (whole on top): got 343, stated 343
+== Proposal 4: bars within 20 / 100 first (U05 L1-L2, U06 L1)
+  OK  U05 L1 8 + 5: got 13, stated 13
+  OK  U05 L2 43 + 26: got 69, stated 69
+  OK  U05 L2 236 + 148: got 384, stated 384
+  OK  U06 L1 12 - 7: got 5, stated 5
+  OK  U06 L1 64 - 38: got 26, stated 26
+== Proposals 3 / 6: probe F and W rows (GRADE-2 §0.2)
+  OK  F sums: got [12, 13], stated [12, 13]
+  OK  F: both cross ten (ones total in the teens): got True, stated True
+  OK  W sums: got [77, 65, 423], stated [77, 65, 423]
+  OK  W ladder trades (no / one / two): got [0, 1, 2], stated [0, 1, 2]
+  OK  seventeen probe answers, all different: got (17, 17), stated (17, 17)
+  OK  no P6 answer within 1 of a W answer: got False, stated False
+  OK  text present [F row]: got True, stated True
+  OK  text present [W row]: got True, stated True
+== Counts (CURRICULUM-MAP §3, GRADE-2 §2)
+  OK  CURRICULUM-MAP Grade 2 unit lesson counts sum: got 71, stated 71
+  OK  U01, U03 counts: got (7, 6), stated (7, 6)
+  OK  text present [map header]: got True, stated True
+  OK  text present [GRADE-2 header]: got True, stated True
+  OK  GRADE-2 lesson rows counted per unit (sum): got 71, stated 71
+  OK  GRADE-2 lesson rows U01 / U03: got (7, 6), stated (7, 6)
+== METHOD-LEDGER rows and link sentences
+  OK  A12 link sentence carries no number: got False, stated False
+  OK  A13 link sentence carries no number: got False, stated False
+  OK  B18 link sentence carries no number: got False, stated False
+== Reuse rule (CURRICULUM-MAP §7.12) for the new lesson numbers
+  OK  no check / mock key is a new lesson number: got [], stated []
+  note: new lesson numbers equal to a probe value (lesson vs probe is not restricted): [25]
+  OK  no new G2-U01 lesson number is a number of the 2-day review (round hundreds exempt): got [], stated []
+== Exam-value list (read from EXAM-READING.md at run time)
+  list values (>= 10): [14, 15, 17, 23, 24, 27, 49, 53, 56, 60, 63, 66, 67, 73, 100, 127, 173, 197, 240, 267, 305, 326, 348, 355, 413, 433, 455, 497, 523, 615, 635, 652, 738, 810, 823]
+== Tier 1 (three-digit list values, round hundreds excepted): every changed file
+  GRADE-2.md: none
+  GRADE-1.md: none
+  DESIGN-DEFAULTS.md: none
+  CURRICULUM-MAP.md: none
+  EXAM-COVERAGE.md: none
+  METHOD-LEDGER.md: none
+  G2-U01-REVIEW-2DAY.md: none
+  meta/LICENCE-LOG.md: none
+  EVIDENCE-LEDGER-FINAL.md (P3.1 block): none
+  IMPROVEMENTS-FROM-R5.md (Applied section): none
+  OK  tier-1 hits in changed files: got 0, stated 0
+== Tier 2 (every list value) over the changed rows and new text
+  allowed  GRADE-2 G2-U01 L2: 100  …tens and ones on a chart, say 100 as ten tens…  [pre-existing U01 L2: place word (§4 'ten tens is 100')]
+  allowed  GRADE-2 G2-U01 L7: 100  …it | teacher's demo only: a 0–100 line with 5…  [range word: the label of a 0 to 100 line (R5 C12 bridge), never an operand, key or choice]
+  allowed  GRADE-2 G2-U01 L7: 100  …and 600. On asked items the 0–100 line is nev…  [range word: the label of a 0 to 100 line (R5 C12 bridge), never an operand, key or choice]
+  allowed  GRADE-2 G2-U01 L7: 100  …ODOLOGY §7): 47 = read as a 0–100 line; 407 =…  [range word: the label of a 0 to 100 line (R5 C12 bridge), never an operand, key or choice]
+  allowed  GRADE-2 G2-U01 L7: 100  …"read a 0–1,000 line like a 0–100 line"): eac…  [range word: the label of a 0 to 100 line (R5 C12 bridge), never an operand, key or choice]
+  allowed  GRADE-2 G2-U03 L2: 100  …400 → 500 → 531, jumps of 44, 100 and 31; N-I…  [pre-existing U03 L2: a jump of 100 (step size)]
+  allowed  GRADE-2 G2-U04 L1: 100  …| L1 | subtract within 100 in my head …  [range word (§4 'within 100')]
+  allowed  GRADE-2 G2-U05 L2: 100  …tories within 20, then within 100 (43 and 26)…  [range word (§4 'within 100')]
+  allowed  GRADE-2 G2-U06 L1: 100  …in 20 (12 and 7), then within 100 (64 and 38)…  [range word (§4 'within 100')]
+  allowed  GRADE-2 **Entry check G2-U04-EC**: 100  …r the zero) · subtract within 100 across a te…  [range word (§4 'within 100')]
+  allowed  METHOD-LEDGER A13: 100  …and round to the nearest 10 / 100 on the numb…  [place word in a sister-module description (METHOD-LEDGER A13)]
+  allowed  METHOD-LEDGER A13: 100  … hundreds on each side; the 0–100 line set ab…  [range word: the label of a 0 to 100 line (R5 C12 bridge), never an operand, key or choice]
+  OK  tier-2 hits not allowed: got 0, stated 0
+
+TOTAL checks 105, mismatches 0
