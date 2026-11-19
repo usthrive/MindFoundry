@@ -218,7 +218,7 @@ export function StackedMultiplicationLesson({
     <div className="flex flex-col items-center gap-3 text-center" data-lesson-phase="done">
       <p className="text-4xl" aria-hidden="true">🎉</p>
       <p className="text-lg font-semibold text-gray-800">You did it, one column at a time.</p>
-      <p className="text-sm text-gray-600">On the worksheet: start with the ones, and add the carry after you multiply.</p>
+      <p className="text-sm text-gray-600">On the worksheet: start with the ones, add the carry after you multiply, and type the last number the way you say it.</p>
       <button type="button" onClick={onDone} className="min-h-[48px] rounded-full bg-green-500 px-6 font-semibold text-white">
         Let's practice!
       </button>

@@ -89,7 +89,10 @@ function stepSentence(s: ColumnStep): string {
     return head + add + write
   }
   if (s.total >= 10) {
-    return `${head}${add} Write ${s.total}: the ${s.total % 10} in the ${place} box and the ${Math.floor(s.total / 10)} in the ${next} box.`
+    // Typed the way it is said (columnEntry, 2026-11-19): tens digit first.
+    const t = Math.floor(s.total / 10)
+    const o = s.total % 10
+    return `${head}${add} Last step: write the whole ${s.total}, the way you say it: ${t}, then ${o}. The ${o} goes in the ${place} box, the ${t} in the ${next} box.`
   }
   return `${head}${add} Write the ${s.total} in the ${place} box. No carry left, so the ${next} box stays empty.`
 }

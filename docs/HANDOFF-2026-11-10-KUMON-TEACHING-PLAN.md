@@ -191,7 +191,7 @@ bb-animation-test · bb-broken-promise-scan · bb-readability-test · `bb-guessa
 bb-lesson-audio-test · kumon-sheet-coverage-test · `bb-screen-contract-test --selftest` ·
 kumon-attempt-evidence-test · kumon-help-ladder-test · bb-check-review-test · bb-fresh-form-test ·
 bb-comeback-test · bb-week-status-test · kumon-stacked-multiplication-test · kumon-pass-rule-test
-· bb-figure-kind-test (all in `scripts/`) · `src/qa/concept-intro-audit.ts` — 28 runs since 2026-11-10, 29 since 2026-11-17 (bb-figure-kind-test: the picture is the thing the words name). By-hand photo drivers:
+· bb-figure-kind-test · kumon-last-step-entry-test (all in `scripts/`) · `src/qa/concept-intro-audit.ts` — 28 runs since 2026-11-10, 29 since 2026-11-17 (bb-figure-kind-test: the picture is the thing the words name), 30 since 2026-11-19 (kumon-last-step-entry-test: the last step's number is typed the way it is said). By-hand photo drivers:
 `scripts/kumon-pass-rule-visual.ts`, `kumon-stacked-visual.ts`, `bb-moving-on-visual.ts`, `bb-check-review-visual.ts`,
 `kumon-evidence-visual.ts`, `kumon-help-ladder-visual.ts`, `bb-screen-visual.ts`; harness
 `scripts/screen-harness/` (screens include `kumon-study` — the REAL StudyPage over an in-memory

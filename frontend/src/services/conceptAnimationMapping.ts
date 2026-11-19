@@ -552,6 +552,8 @@ export const CONCEPT_INTRO_CONFIG: Record<string, ConceptIntroConfig> = {
   // v2 (2026-11-09): was an array animation and "break apart: 23 × 4 = (20 × 4) +
   // (3 × 4)" — a different method from the stacked sheets. Now the column method:
   // two worked examples, then a guided "your turn" (StackedMultiplicationLesson).
+  // v3 (2026-11-19): the last step's number is typed whole, the way it is said
+  // (28 is 2, then 8). The lesson says so, and shows once more to every child.
   multiplication_2digit_by_1digit: {
     animationId: 'stacked-multiplication',
     title: 'Stacked Multiplication',
@@ -559,7 +561,7 @@ export const CONCEPT_INTRO_CONFIG: Record<string, ConceptIntroConfig> = {
     demoOperands: [23, 4],
     minViewTime: 10,
     showMode: 'mandatory',
-    version: 2,
+    version: 3,
   },
   multiplication_3digit_by_1digit: {
     animationId: 'stacked-multiplication',
@@ -568,7 +570,7 @@ export const CONCEPT_INTRO_CONFIG: Record<string, ConceptIntroConfig> = {
     demoOperands: [123, 4],
     minViewTime: 10,
     showMode: 'mandatory',
-    version: 2,
+    version: 3,
   },
   division: {
     animationId: 'fair-sharing',

@@ -96,7 +96,10 @@ fluency time**. Anything less is "learning", and the app must say so.
 17. **A new input format inherits old habits; design for them.** Enter-after-each-
     digit from the times tables, left-to-right typing into right-to-left boxes, an
     empty highlighted box read as "a digit is missing". Read the tried answers for
-    stray single digits and reversals before reading the misses as maths.
+    stray single digits and reversals before reading the misses as maths. A number
+    the child says goes in the way it is said: the last step of a stacked answer
+    ("28") is typed 2 then 8, filling its boxes from the right, never ones first
+    inside one number (2026-11-19; paper writes it that way too).
 18. **Speed is the half of mastery that accuracy hides — and a pass rule needs a way
     out.** A sheet passes on first-try accuracy (no help opened) AND time against the
     standard for its run, both measured on the sheet; the time allowed starts generous on

@@ -190,6 +190,7 @@ console.log('\nsheet — the quiet box, the Enter rule, the backwards note, the 
   }
   const shimSrc = [
     "import type { Problem } from '../src/services/generators/types'",
+    "import { getLastStepColumn } from '../src/services/columnEntry'",
     body('getAnswerColumnCount'),
     body('getPartialRowCount'),
     body('getOptionalAnswerColumn'),
@@ -204,9 +205,10 @@ console.log('\nsheet — the quiet box, the Enter rule, the backwards note, the 
     [H.getOptionalAnswerColumn(mk('multiplication', 23, 4)), 2],
     [H.getOptionalAnswerColumn(mk('multiplication', 258, 6)), 3],
     [H.getOptionalAnswerColumn(mk('multiplication', 81, 63)), undefined],
-    [H.getOptionalAnswerColumn(mk('addition', 147, 58)), undefined],
+    [H.getOptionalAnswerColumn(mk('addition', 147, 58)), 3],
+    [H.getOptionalAnswerColumn(mk('subtraction', 147, 58)), undefined],
   ]
-  say(shapes.every(([g, w]) => g === w), `the "only if needed" column: 23 × 4 → 2, 258 × 6 → 3, 81 × 63 and addition → none (${shapes.map(([g]) => String(g)).join(', ')})`)
+  say(shapes.every(([g, w]) => g === w), `the "only if needed" column: 23 × 4 → 2, 258 × 6 → 3, 147 + 58 → 3 (2026-11-19), 81 × 63 and subtraction → none (${shapes.map(([g]) => String(g)).join(', ')})`)
   let traps = 0
   for (let a = 10; a <= 999; a++) for (let b = 2; b <= 9; b++) if (H.getMinAnswerDigits(mk('multiplication', a, b)) > width(a * b)) traps++
   for (let a = 1; a <= 999; a += 3) for (let b = 1; b <= 999; b += 11) if (H.getMinAnswerDigits(mk('addition', a, b)) > width(a + b)) traps++
@@ -226,7 +228,7 @@ console.log('\nsheet — the quiet box, the Enter rule, the backwards note, the 
     const out: string[] = []
     if (!/written > 0 && written < getMinAnswerDigits\(activeProblem\)/.test(v)) out.push('Enter can still jump off a stacked answer being written')
     if (!/optionalColumn=\{getOptionalAnswerColumn\(problem\)\}/.test(v)) out.push('the worksheet never marks the optional column')
-    if ((v.match(/reversedNotes\[problem\.id\] \? REVERSED_NOTE : hintData\.text/g) ?? []).length !== 2) out.push('the backwards note does not reach both the first and second hint')
+    if ((v.match(/\(problem\.id && reversedNotes\[problem\.id\]\) \|\| hintData\.text/g) ?? []).length !== 2) out.push('the backwards note does not reach both the first and second hint')
     if (!/if \(manualCarry && pageHasStackedAddition\)/.test(v) || !/if \(manualRegroup && pageHasStackedSubtraction\)/.test(v) || !/regroupMode === 'optional' && pageHasStackedSubtraction/.test(v)) out.push('a Level B pop-up can open on a page without that kind of problem')
     if (!/quietOptional\s*\? \(isActiveCol\s*\? 'border-dashed/.test(pv)) out.push('the optional box is not drawn quiet')
     if (!/data-optional-caption/.test(pv)) out.push('no caption when the cursor is in the optional box')

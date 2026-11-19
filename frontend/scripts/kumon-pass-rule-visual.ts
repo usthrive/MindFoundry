@@ -30,6 +30,8 @@ import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 import { chromium, type Browser, type Page } from 'playwright-core'
+import { getLastStepColumn } from '../src/services/columnEntry'
+import type { Problem } from '../src/services/generators/types'
 
 const DIST = process.argv[2]
 const OUT = process.argv[3] ?? '/tmp/kumon-pass-rule-visual'
@@ -67,7 +69,7 @@ const shot = async (p: Page, name: string) => fs.writeFileSync(`${OUT}/${name}.p
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ev = <T = any>(p: Page, js: string) => p.evaluate(js) as Promise<T>
 
-interface Prob { operands: number[]; correctAnswer: number; displayFormat: string; question: string }
+interface Prob { type: string; operands: number[]; correctAnswer: number; displayFormat: string; question: string }
 const session = (p: Page) => ev(p, `JSON.parse(localStorage.getItem('mindfoundry_active_session') || 'null')`)
 const pageState = async (p: Page) => (await session(p))?.worksheetPageState
 const problems = async (p: Page): Promise<Prob[]> => (await pageState(p))?.problems ?? []
@@ -90,9 +92,19 @@ const click = async (p: Page, label: string) => {
 const tapCard = async (p: Page, i: number) => { await ev(p, `document.querySelectorAll('[data-testid="wp-card"]')[${i}].click()`); await wait(p, 150) }
 const right = (pr: Prob) => String(pr.correctAnswer)
 const wrong = (pr: Prob) => String(pr.correctAnswer + 1)
-/** Stacked answers are written from the ONES (as on paper); answers across the line, as read. */
+/**
+ * Stacked answers are written as worked, as on paper: from the ONES, one box at a
+ * time, then the last step's number the way it is said (columnEntry, 2026-11-19:
+ * 282 is 2, then 2, 8). Answers across the line, as read.
+ */
 async function write(p: Page, pr: Prob, answer: string, via: 'pad' | 'keys') {
-  const digits = pr.displayFormat === 'vertical' ? answer.split('').reverse() : answer.split('')
+  const last = pr.displayFormat === 'vertical' ? getLastStepColumn(pr as unknown as Problem) : undefined
+  const cut = Math.max(0, answer.length - (last ?? answer.length))
+  const digits = pr.displayFormat !== 'vertical'
+    ? answer.split('')
+    : last === undefined
+      ? answer.split('').reverse()
+      : [...answer.slice(cut).split('').reverse(), ...answer.slice(0, cut).split('')]
   for (const d of digits) {
     if (via === 'pad') await pad(p, d)
     else { await p.keyboard.press(d); await wait(p, 80) }
