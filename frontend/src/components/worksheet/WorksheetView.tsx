@@ -6,6 +6,7 @@ import WorksheetProblem from './WorksheetProblem'
 import { MicroHint, VisualHint, FullTeaching } from '@/components/hints'
 import CarryTransitionModal from './CarryTransitionModal'
 import { isReversedAnswer, REVERSED_NOTE } from '@/services/stackedMultiplication'
+import { diagnoseEntryOrder, enterColumnKey, getLastStepColumn, LAST_STEP_NOTE, normalizeActiveColumn } from '@/services/columnEntry'
 import RegroupTransitionModal from './RegroupTransitionModal'
 import RegroupGraduationModal from './RegroupGraduationModal'
 import {
@@ -238,18 +239,18 @@ export function getAnswerColumnCount(problem: Problem): number {
 /**
  * The answer column that is used only SOMETIMES: the place a stacked
  * multiplication by one digit reaches only when the last column carries
- * (23 × 4 = 92 leaves it empty; 28 × 5 = 140 fills it). The worksheet keeps the
- * box — its width must not give the answer's size away — but draws it quiet,
- * dashed, "only if needed", instead of as one more box to fill (owner, 2026-11-09:
- * the empty third box looked like a digit was missing; his son typed "665" for
- * 13 × 5 = 65). Undefined for every other problem shape.
+ * (23 × 4 = 92 leaves it empty; 28 × 5 = 140 fills it), and the place a sum
+ * reaches only when its last column does (47 + 25 = 72; 55 + 67 = 122). The
+ * worksheet keeps the box — its width must not give the answer's size away — but
+ * draws it quiet, dashed, "only if needed", instead of as one more box to fill
+ * (owner, 2026-11-09: the empty third box looked like a digit was missing; his son
+ * typed "665" for 13 × 5 = 65). It is the left half of the last step, which takes
+ * its whole number at once (columnEntry, 2026-11-19). Undefined for every other
+ * problem shape.
  */
 export function getOptionalAnswerColumn(problem: Problem): number | undefined {
-  if (problem.type !== 'multiplication' || problem.displayFormat !== 'vertical') return undefined
-  if (getPartialRowCount(problem) > 0 || !problem.operands?.length) return undefined
-  const columns = getAnswerColumnCount(problem)
-  const top = String(Math.abs(problem.operands[0])).length
-  return columns > top ? columns - 1 : undefined
+  const last = getLastStepColumn(problem)
+  return last === undefined ? undefined : last + 1
 }
 
 /**
@@ -376,10 +377,14 @@ export function computeCarries(problem: Problem, columns: (string | null)[]): (s
 
   const operandDigits = String(Math.abs(num1)).length
   const carries: (string | null)[] = none()
+  // The last step writes its whole number ("28"), so nothing is carried out of it:
+  // a carry drawn there would be the answer's leading digit (2026-11-19).
+  const lastStep = getLastStepColumn(problem)
 
   let carry = 0
   for (let col = 0; col < columns.length; col++) {
     if (columns[col] === null) break // Stop computing past where child has entered
+    if (lastStep !== undefined && col >= lastStep) break
     // Past the top number's own digits there is nothing left to carry out of.
     if (!isAddition && col >= operandDigits) break
     const d1 = getDigitAtPlace(num1, col)
@@ -701,8 +706,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
   const [carryNudgeIndex, setCarryNudgeIndex] = useState<number | null>(null)
   /** "Keep going" when Enter is pressed on a stacked answer still being written. */
   const [entryNudge, setEntryNudge] = useState<string | null>(null)
-  /** Problems (by id) whose last checked answer was the right digits written from the left. */
-  const [reversedNotes, setReversedNotes] = useState<Record<string, boolean>>({})
+  /** Problems (by id) whose last checked answer had the right digits in the wrong order: the note to show. */
+  const [reversedNotes, setReversedNotes] = useState<Record<string, string | null>>({})
 
   // Subtraction regroup helpers ramp: auto-demo → manual → optional.
   // The phase is resolved from three inputs: the worksheet-number baseline, the parent
@@ -1262,12 +1267,19 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       const isCorrect = checkAnswer(problem, answer)
       checkedAnswers[index] = answer
 
-      // The right digits written from the left (the boxes fill from the ones): say
-      // so, instead of a hint about the maths he got right (2026-11-09).
+      // The right digits in the wrong order: say so, instead of a hint about the
+      // maths he got right (2026-11-09). Either the whole answer typed from the left
+      // (the boxes fill from the ones), or the last step's number typed ones first,
+      // the old habit (8 then 2 for 28; it goes in the way it is said, 2026-11-19).
       if (problem.id && problem.displayFormat === 'vertical' && typeof problem.correctAnswer === 'number') {
-        const reversed = !isCorrect && isReversedAnswer(answer, problem.correctAnswer)
+        const order = isCorrect ? null : diagnoseEntryOrder(problem, getAnswerColumnCount(problem), answer, problem.correctAnswer)
+        const note = order === 'last-step'
+          ? LAST_STEP_NOTE
+          : order === 'from-left' || (!isCorrect && isReversedAnswer(answer, problem.correctAnswer))
+            ? REVERSED_NOTE
+            : null
         const id = problem.id
-        setReversedNotes(prev => (reversed === !!prev[id] ? prev : { ...prev, [id]: reversed }))
+        setReversedNotes(prev => ((prev[id] ?? null) === note ? prev : { ...prev, [id]: note }))
       }
 
       // Every checked answer is kept in order: the first is the first try, and a
@@ -1532,7 +1544,9 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       const activeCol = currentPageState.activeColumns[activeIndex] ?? 0
       if (columns && columns[activeCol] !== null) {
         const columnCount = getAnswerColumnCount(activeProblem)
-        if (activeCol < columnCount - 1) {
+        // On the last step Enter means "done": its number may fill the box to its
+        // left too, so there is no further box to move to (2026-11-19).
+        if (activeCol < (getLastStepColumn(activeProblem) ?? columnCount - 1)) {
           // Advance to next column (child confirmed entry for this column)
           setPageStates(prev => ({
             ...prev,
@@ -1704,29 +1718,23 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
       if (isVertical && activeProblem) {
         const columnCount = getAnswerColumnCount(activeProblem)
         const currentColumns = currentState.columnDigits[activeIndex] || new Array(columnCount).fill(null)
-        const currentActiveCol = currentState.activeColumns[activeIndex] ?? 0
+        // The last step takes its whole number, typed the way it is said (columnEntry).
+        const lastStep = getLastStepColumn(activeProblem)
+        const currentActiveCol = normalizeActiveColumn(currentState.activeColumns[activeIndex] ?? 0, lastStep)
         let newColumns = [...currentColumns]
         // Ensure array length matches expected column count
         while (newColumns.length < columnCount) newColumns.push(null)
         let newActiveCol = currentActiveCol
 
         if (num === 'backspace') {
-          const currentDigit = newColumns[newActiveCol]
-          if (currentDigit !== null && currentDigit.length > 1) {
-            // Multi-digit in last column: remove last character
-            newColumns[newActiveCol] = currentDigit.slice(0, -1)
-          } else if (currentDigit !== null) {
-            newColumns[newActiveCol] = null
-          } else if (newActiveCol > 0) {
-            newActiveCol = newActiveCol - 1
-            newColumns[newActiveCol] = null
-          }
+          const next = enterColumnKey({ columns: newColumns, active: newActiveCol }, 'backspace', lastStep)
+          newColumns = next.columns
+          newActiveCol = next.active
         } else if (num === 'clear') {
           newColumns = new Array(columnCount).fill(null)
           newActiveCol = 0
         } else if (typeof num === 'number' || (typeof num === 'string' && /^\d$/.test(num))) {
           const digit = String(num)
-          const isLastColumn = newActiveCol === columnCount - 1
 
           // ── Subtraction regroup gate ──
           // Behaviour depends on the regroup phase for this worksheet:
@@ -1774,11 +1782,13 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
             }
           }
 
-          // One digit per place-value column, always. The grid is now wide enough for
-          // every place the answer can reach (see getAnswerColumnCount), so a column
-          // never has to swallow two digits.
-          newColumns[newActiveCol] = digit
-          if (!isLastColumn) newActiveCol = newActiveCol + 1
+          // One digit per place-value box, always (the grid has a box for every
+          // place the answer can reach, see getAnswerColumnCount). Before the last
+          // step the cursor moves left one box per digit; on the last step the
+          // number is typed the way it is said and fills its boxes from the right.
+          const next = enterColumnKey({ columns: newColumns, active: newActiveCol }, digit, lastStep)
+          newColumns = next.columns
+          newActiveCol = next.active
         }
         // Ignore 'negative', 'decimal', 'fraction' for vertical problems
 
@@ -2018,7 +2028,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
               answers: newAnswers,
               columnDigits: { ...currentState.columnDigits, [activeIndex]: newColumns },
               carries: { ...currentState.carries, [activeIndex]: newCarries },
-              activeColumns: { ...currentState.activeColumns, [activeIndex]: Math.min(digits.length, columnCount - 1) },
+              activeColumns: { ...currentState.activeColumns, [activeIndex]: normalizeActiveColumn(Math.min(digits.length, columnCount - 1), getLastStepColumn(activeProblem)) },
             },
           }
         }
@@ -2167,7 +2177,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 compact={problemsPerPage > 3}
                 columnDigits={problem.displayFormat === 'vertical' ? currentPageState.columnDigits[index] : undefined}
                 optionalColumn={getOptionalAnswerColumn(problem)}
-                activeColumn={isActive && problem.displayFormat === 'vertical' ? (currentPageState.activeColumns[index] ?? 0) : undefined}
+                lastStepColumn={getLastStepColumn(problem)}
+                activeColumn={isActive && problem.displayFormat === 'vertical' ? normalizeActiveColumn(currentPageState.activeColumns[index] ?? 0, getLastStepColumn(problem)) : undefined}
                 carries={problem.displayFormat === 'vertical' ? currentPageState.carries[index] : undefined}
                 onColumnClick={isActive && problem.displayFormat === 'vertical' ? (col: number) => {
                   setPageStates(prev => ({
@@ -2176,7 +2187,8 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                       ...prev[currentPage],
                       activeColumns: {
                         ...prev[currentPage].activeColumns,
-                        [index]: col,
+                        // The "only if needed" box is part of the last step.
+                        [index]: normalizeActiveColumn(col, getLastStepColumn(problem)),
                       },
                       // Tapping the answer row means "I'm on the total now", so digits
                       // stop going into the partial-product working.
@@ -2247,7 +2259,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
               {/* Micro hint - shown as inline toast below problem */}
               {hintLevel === 'micro' && hintData && (
                 <MicroHint
-                  text={problem.id && reversedNotes[problem.id] ? REVERSED_NOTE : hintData.text}
+                  text={(problem.id && reversedNotes[problem.id]) || hintData.text}
                   show={true}
                   position="inline"
                   onDismiss={() => dismissHint(index)}
@@ -2258,7 +2270,7 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
               {/* Visual hint - shown inline with animation */}
               {hintLevel === 'visual' && hintData && (
                 <VisualHint
-                  text={problem.id && reversedNotes[problem.id] ? REVERSED_NOTE : hintData.text}
+                  text={(problem.id && reversedNotes[problem.id]) || hintData.text}
                   animationId={hintData.animationId}
                   show={true}
                   problemData={{

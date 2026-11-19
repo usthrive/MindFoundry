@@ -26,6 +26,12 @@ export interface WorksheetProblemProps {
    * and quiet while empty, never as one more box to fill (2026-11-09).
    */
   optionalColumn?: number
+  /**
+   * The last step's column (columnEntry.getLastStepColumn): its whole number is
+   * typed at once, the way it is said, and may also fill the box to its left. While
+   * the cursor is on it, both boxes are drawn as one step (2026-11-19).
+   */
+  lastStepColumn?: number
   // ── Partial products (multiplication by a 2-digit-or-wider multiplier, Level D) ──
   /** partialProducts[row][col] — row 0 is the ones-digit product, row 1 the tens-digit
    *  product (written one place further left), and so on. Undefined for single-digit
@@ -87,6 +93,7 @@ export default function WorksheetProblem({
   manualCarryMode = false,
   answerColumnCount,
   optionalColumn,
+  lastStepColumn,
   partialProducts,
   partialRowShift,
   partialRowSpanTo,
@@ -571,7 +578,10 @@ export default function WorksheetProblem({
           {Array.from({ length: maxDigits }, (_, visualIdx) => {
             const colIndex = maxDigits - 1 - visualIdx // Visual L→R to column index (ones=0)
             const digit = columnDigits[colIndex]
-            const isActiveCol = activeColumn === colIndex && isActive
+            // On the last step its two boxes light up together: the number goes in whole.
+            const onLastStep = isActive && lastStepColumn !== undefined && activeColumn === lastStepColumn
+            const isActiveCol = (activeColumn === colIndex && isActive) ||
+              (onLastStep && colIndex === lastStepColumn + 1)
             // The "only if needed" place: while empty it stays dashed and quiet,
             // even with the cursor in it, so it never reads as a missing digit.
             const quietOptional = colIndex === optionalColumn && digit === null
@@ -616,10 +626,9 @@ export default function WorksheetProblem({
             )
           })}
         </div>
-        {isActive && !isSubmitted && optionalColumn !== undefined && activeColumn === optionalColumn &&
-          columnDigits[optionalColumn] === null && (
-          <p className="mt-1 text-[11px] font-medium text-gray-500" data-optional-caption>
-            Only if a carry is left. If not, you're done.
+        {isActive && !isSubmitted && lastStepColumn !== undefined && activeColumn === lastStepColumn && (
+          <p className="mt-1 text-[11px] font-medium text-gray-500" data-optional-caption data-last-step-caption>
+            Last step: type the whole number, the way you say it.
           </p>
         )}
       </div>

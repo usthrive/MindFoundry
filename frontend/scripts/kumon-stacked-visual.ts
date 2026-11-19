@@ -10,7 +10,10 @@
  *            "your turn" on 17 × 4: a miss gets a nudge, never the number, and the
  *            add-the-carry step is asked on its own;
  *   sheet    a C51 page opens with no Level B pop-up; after a two-digit answer the
- *            third box stays quiet with "only if a carry is left"; a digit + Enter
+ *            third box stays quiet, the last step lit with "type the whole number";
+ *            a three-digit answer's last number goes in the way it is said (2, then
+ *            8 for 282) and checks right; the old order (8, then 2) gets its own
+ *            note (2026-11-19); a digit + Enter
  *            keeps him on the problem; digits typed left to right get the
  *            "you wrote it from the left" note;
  *   hints    after a miss on his own problem: where to start, never the answer;
@@ -82,7 +85,7 @@ say((await said(p)).includes('Ones: 5 × 8 = 40. Write the 0 in the ones box. Ca
 await click(p, 'Next step')
 t = await said(p)
 await shot(p, '3-lesson-hundreds')
-say(t.includes('Write 14: the 4 in the tens box and the 1 in the hundreds box'), 'the last carry makes the hundreds digit')
+say(t.includes('Last step: write the whole 14, the way you say it: 1, then 4. The 4 goes in the tens box, the 1 in the hundreds box.'), 'the last step: the whole 14, the way you say it (1, then 4)')
 await click(p, 'Next step'); await click(p, 'Done')
 
 console.log('  — his turn: 17 × 4')
@@ -131,7 +134,46 @@ t = await text(p)
 await shot(p, '7-quiet-third-box')
 const optStyle = await p.evaluate(`(() => { const cards = [...document.querySelectorAll('[data-optional-col="true"]')]; const c = cards.find(e => e.closest('[class*="ring"], [class*="border-primary"]')) || cards[${a.i}]; return c ? getComputedStyle(c).borderStyle + '|' + c.innerText.trim() : 'none' })()`) as string
 say(optStyle.startsWith('dashed|'), `after ${a.ans}, the third box stays dashed and empty (${optStyle})`)
-say(/Only if a carry is left\. If not, you're done\./.test(t), 'the caption says when it is used')
+say(/Last step: type the whole number, the way you say it\./.test(t), 'the caption: "Last step: type the whole number, the way you say it."')
+const lit = await p.evaluate(`(() => { const c = document.querySelectorAll('[data-testid="wp-card"]')[${a.i}]; return [...c.querySelectorAll('[data-testid="wp-answer-cell"]')].map(e => /ring-primary|border-primary/.test(e.className) ? 'lit' : '-').join('') })()`) as string
+say(lit === 'lit' + 'lit' + '-', `the last step's two boxes light up together, the ones box does not (${lit})`)
+
+await p.close()
+p = await open('?screen=kumon&level=C&ws=58')
+// A three-digit answer: the ones, then the last number the way it is said.
+const box = (i: number) => p.evaluate(`[...document.querySelectorAll('[data-testid="wp-card"]')[${i}].querySelectorAll('[data-testid="wp-answer-cell"]')].map(e => e.innerText.trim() || '·').join('')`) as Promise<string>
+const lastTotal = (ops: number[]) => Math.floor(ops[0] / 10) * ops[1] + Math.floor(((ops[0] % 10) * ops[1]) / 10)
+let c3 = await active()
+for (let k = 0; k < 6 && !(c3.ans >= 100 && lastTotal(c3.ops) % 10 !== Math.floor(lastTotal(c3.ops) / 10)); k++) { await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(200); c3 = await active() }
+if (c3.ans >= 100) {
+  const L = String(lastTotal(c3.ops))
+  console.log(`  three-digit problem: ${c3.ops.join(' × ')} = ${c3.ans} (last step ${L})`)
+  await input(String(c3.ans % 10)); await input(L[0])
+  const half = await box(c3.i)
+  await shot(p, '7b-last-step-first-digit')
+  await input(L[1])
+  const whole = await box(c3.i)
+  await shot(p, '7c-last-step-whole')
+  say(half === `·${L[0]}${c3.ans % 10}` && whole === `${c3.ans}`, `${c3.ops.join(' × ')}: ${c3.ans % 10}, then ${L[0]}, ${L[1]} → boxes "${half}" then "${whole}" (the ${L[0]} moves left as the ${L[1]} comes)`)
+  await input('submit'); await p.waitForTimeout(600)
+  const ok = await p.evaluate(`document.querySelectorAll('[data-testid="wp-card"]')[${c3.i}].className.includes('border-green-500')`) as boolean
+  say(ok, `${c3.ans} typed the way it is worked checks right`)
+} else say(false, 'no three-digit answer on the page to photograph')
+
+// The old order on another problem: 8, then 2, for 28 → its own note.
+await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(200)
+let c4 = await active()
+for (let k = 0; k < 6 && !(c4.ans >= 100 && lastTotal(c4.ops) % 10 !== Math.floor(lastTotal(c4.ops) / 10)); k++) { await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(200); c4 = await active() }
+if (c4.ans >= 100) {
+  for (const d of String(c4.ans).split('').reverse()) await input(d)
+  const typed = await box(c4.i)
+  await input('submit'); await p.waitForTimeout(600)
+  t = await text(p)
+  await shot(p, '7d-old-order-note')
+  say(/The last number goes in the way you say it: the first digit you say goes in first\./.test(t), `${c4.ops.join(' × ')} typed the old way (ones first throughout → "${typed}") gets the last-step note`)
+} else say(false, 'no three-digit answer for the old-order note')
+await p.close()
+p = await open('?screen=kumon&level=C&ws=51')
 
 // Enter after one digit stays on the problem.
 const nextIdx = (a.i + 1) % 5
@@ -156,13 +198,19 @@ await shot(p, '9-backwards-note')
 say(/You wrote it from the left\. Stacked problems start with the ones box on the right, then the tens\./.test(t), `typed ${b.ans} left to right → the "from the left" note`)
 
 // The hints on his own problem: second miss → where to start; third → a worked similar problem.
+// Each miss is a NEW wrong answer: an unchanged answer is not a new try (since 2026-11-10).
+// 2-digit × 1-digit: the ones box, then the last step's number as said (282 → 2, then 2, 8).
+const worked = (n: number) => { const w = String(n); return [w.slice(-1), ...w.slice(0, -1).split('')] }
+const retype = async (n: number) => { await input('clear'); for (const d of worked(n)) await input(d) }
+await retype(b.ans + 1)
 await input('submit'); await p.waitForTimeout(700)
 t = await text(p)
 await shot(p, '10-visual-hint')
 const rev = String(b.ans).split('').reverse().join('').replace(/^0+(?=\d)/, '')
 const first = `${b.ops[1]} × ${b.ops[0] % 10}`
 say(/Work one column at a time|Start with the ones, on the right/.test(t) && t.includes(`what is ${first}?`), `the second hint: his problem, "what is ${first}?"`)
-say(!new RegExp(`(^|[^0-9])${b.ans}([^0-9]|$)`).test(t.replace(rev, '')), `no ${b.ans} on screen`)
+say(!new RegExp(`(^|[^0-9])${b.ans}([^0-9]|$)`).test(t.replace(rev, '').replace(String(b.ans + 1), '')), `no ${b.ans} on screen`)
+await retype(b.ans + 2)
 await input('submit'); await p.waitForTimeout(1500)
 t = await text(p)
 await shot(p, '11-full-teaching')
