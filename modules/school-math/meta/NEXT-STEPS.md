@@ -1,6 +1,7 @@
 # NEXT STEPS — `school-math` (state 2026-11-18)
 
 Start here (any model). No child's name anywhere; the exam photos are never in the repo.
+**The full build (Grade 1 first) starts from `docs/HANDOFF-2026-11-20-SINGAPORE-METHOD-FULL-BUILD.md`.**
 
 ## Done
 - Research R1–R5, frozen evidence ledger (E1–E269 + P3.1 E270–E291): `research/`.
