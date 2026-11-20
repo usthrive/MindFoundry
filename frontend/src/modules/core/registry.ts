@@ -143,7 +143,10 @@ const bestBrainsModule: MindFoundryModule = {
  */
 const schoolMathModule: MindFoundryModule = {
   id: 'school-math',
-  displayName: 'School Math',
+  // User-facing label for this private build (owner, 2026-11-20), matching "Kumon Method" and
+  // "Best Brains Method". "Singapore Math" is a trademark of Singapore Math Inc.: for any
+  // public/commercial release revert to a neutral name. The module id stays 'school-math'.
+  displayName: 'Singapore Method',
   description:
     'Practice that matches the school\'s math: models he builds (bars, bonds, place-value ' +
     'charts), questions in the school\'s test formats, and test prep timed to the next test.',

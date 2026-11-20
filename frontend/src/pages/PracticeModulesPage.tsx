@@ -263,7 +263,7 @@ export default function PracticeModulesPage() {
             <ModuleCard
               icon="📐"
               title={getModule('school-math').displayName}
-              description="Practice that matches your school math — subtraction test prep and your scorecard"
+              description="Bar models, number bonds and school-style questions — test prep and your scorecard"
               path="/school-math"
               badge="New"
               badgeColor="bg-emerald-100 text-emerald-700"

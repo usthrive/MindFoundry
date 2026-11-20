@@ -12,6 +12,16 @@ Start here (any model). No child's name anywhere; the exam photos are never in t
   `design/experience/TEST-PREP-SUBTRACTION.html` (12 sessions to 1 Dec; check: `testing/test_prep_check.js`).
 - Decisions M1–M18: `meta/DECISIONS.md`. Lessons S1–S5: `meta/LEARNINGS.md`.
 
+## Shipped
+- v1 LIVE 2026-11-20 (PR #32, then the rename): module `school-math`, shown as **"Singapore Method"**;
+  /school-math home → Subtraction Test Prep (page served from `frontend/public/school-math/`,
+  regenerate with `node frontend/scripts/sm-sync-test-prep.mjs`) + My Scorecard; device records.
+
+## Owner direction for v2 (DECISIONS M20)
+One customizable module: My path (placement → all Grade 1–5 units) · Test prep as an option
+(chapter + test date) · My scorecard · parent Settings (grade, school chapter, questions/day,
+days/week, test date).
+
 ## Next (in order)
 1. **Fast track (owner wants it in the app):** BUILD-PLAN stage 0 (register `school-math`, card
    "School Math" behind a dev/allow-list flag, `sm_` tables as a migration file — applied only on
