@@ -28,6 +28,8 @@ import CohortPage from '@/pages/CohortPage'
 
 // Best Brains-inspired module ("Foundry Method") — lazy chunk, route base /foundry
 const FoundryRoutes = lazy(() => import('@/modules/best-brains/FoundryRoutes'))
+// School Math (Singapore-style, school-aligned) — lazy chunk, route base /school-math
+const SchoolMathRoutes = lazy(() => import('@/modules/school-math/SchoolMathRoutes'))
 
 // Developer and QA surfaces. No child ever opens these, so they have no business
 // in the bundle every child downloads — and FoundryPreviewPage was the reason the
@@ -189,6 +191,23 @@ function App() {
             element={
               <ProtectedRoute>
                 <ExamPrepPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* School Math module (version 1: Grade 2 subtraction test prep + scorecard) */}
+          <Route
+            path="/school-math/*"
+            element={
+              <ProtectedRoute>
+                <Suspense
+                  fallback={
+                    <div className="flex min-h-screen items-center justify-center bg-background">
+                      <p className="text-lg text-gray-600">Setting up…</p>
+                    </div>
+                  }
+                >
+                  <SchoolMathRoutes />
+                </Suspense>
               </ProtectedRoute>
             }
           />

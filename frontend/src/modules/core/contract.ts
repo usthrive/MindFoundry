@@ -14,7 +14,7 @@
  */
 
 /** Stable module identifier. Also used as prefix conventions elsewhere (e.g. `bb_` tables). */
-export type ModuleId = 'kumon' | 'best-brains';
+export type ModuleId = 'kumon' | 'best-brains' | 'school-math';
 
 export type ModuleStatus = 'live' | 'in-development' | 'paused';
 
@@ -30,7 +30,7 @@ export interface LevelDescriptor {
   /** 0-based position in the ladder (lower = earlier). */
   ordinal: number;
   /** What one unit of progress is inside this level. */
-  unitKind: 'worksheet' | 'week';
+  unitKind: 'worksheet' | 'week' | 'chapter-unit';
   /** How many units the level contains (Kumon: 200 worksheets; Best Brains: 24 weeks). */
   unitCount: number;
 }
@@ -67,7 +67,7 @@ export interface SessionGeneratorDescriptor {
    * 'worksheet-generator'  — per-level problem generators assembling worksheets (Kumon).
    * 'weekly-pack-generator'— seeded WeeklyConceptPack generation (Best Brains).
    */
-  kind: 'worksheet-generator' | 'weekly-pack-generator';
+  kind: 'worksheet-generator' | 'weekly-pack-generator' | 'chapter-unit-generator';
   /** Source location of the generator entry point (documentation pointer, not a dynamic import). */
   entry: string;
   /** True when the same inputs (template + params + seed) reproduce byte-identical content. */
@@ -81,7 +81,7 @@ export interface ProgressSchemaDescriptor {
    * 'bb-week-state'            — bb_-prefixed tables keyed on (child, level, week) with the
    *                              DD1 mastery state machine.
    */
-  kind: 'kumon-worksheet-progress' | 'bb-week-state';
+  kind: 'kumon-worksheet-progress' | 'bb-week-state' | 'sm-device-local';
   /** Supabase tables owned/used by the module for progress. */
   tables: string[];
 }
@@ -92,7 +92,7 @@ export interface ParentReportSchemaDescriptor {
    * 'dashboard-metrics'   — charts/streaks/accuracy dashboard (Kumon ProgressDashboard).
    * 'bb-weekly-narrative' — weekly narrative report + acknowledge ritual (Best Brains DD6/E102).
    */
-  kind: 'dashboard-metrics' | 'bb-weekly-narrative';
+  kind: 'dashboard-metrics' | 'bb-weekly-narrative' | 'sm-scorecard';
   /** Cadence the parent-facing artifact is produced on. */
   cadence: 'continuous' | 'weekly';
   /** Whether the parent explicitly acknowledges each report (Best Brains sign-off ritual). */

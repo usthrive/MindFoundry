@@ -1,4 +1,4 @@
-TEST-PREP-SUBTRACTION generator check · 2026-11-18T14:33:47.669Z
+TEST-PREP-SUBTRACTION generator check · 2026-11-20T22:07:35.054Z
 page: design/experience/TEST-PREP-SUBTRACTION.html
 
 1. Exam values
@@ -69,5 +69,5 @@ page: design/experience/TEST-PREP-SUBTRACTION.html
 4. Fixed items copied from G2-U01-REVIEW-2DAY.md (answers computed here)
   18/18 fixed items match their computed answers (and the same on 29 more display shuffles)
 
-Checks run: 3733398 · failed: 0
+Checks run: 3733758 · failed: 0
 RESULT: PASS

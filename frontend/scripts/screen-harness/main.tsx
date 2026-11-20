@@ -14,6 +14,7 @@
  * happened.
  */
 import { createRoot } from 'react-dom/client';
+import SchoolMathRoutes from '@/modules/school-math/SchoolMathRoutes';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { generatePack } from '@/modules/best-brains/generator/packGenerator';
 import { FoundrySessionContext, type FoundrySessionValue } from '@/modules/best-brains/session/FoundrySession';
@@ -318,7 +319,15 @@ function KumonParentHarness() {
   );
 }
 
-if (screen === 'kumon-study') {
+if (screen === 'school-math') {
+  // School Math v1 home (2026-11-20): a signed-in child, the module's two cards.
+  (window as any).__harnessChild = { id: 'harness-child', name: 'Harness' };
+  createRoot(document.getElementById('root')!).render(
+    <MemoryRouter initialEntries={['/school-math']}>
+      <Routes><Route path="/school-math/*" element={<SchoolMathRoutes />} /></Routes>
+    </MemoryRouter>,
+  );
+} else if (screen === 'kumon-study') {
   kumonStudyFixture();
   createRoot(document.getElementById('root')!).render(<KumonStudyHarness />);
 } else if (screen === 'kumon-parent') {

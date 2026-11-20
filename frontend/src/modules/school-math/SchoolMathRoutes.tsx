@@ -1,0 +1,107 @@
+/**
+ * School Math (module id `school-math`), version 1.
+ *
+ * The Grade 2 subtraction test prep runs as a static page served by the app
+ * (public/school-math/test-prep.html, generated from
+ * modules/school-math/design/experience/TEST-PREP-SUBTRACTION.html). The app passes
+ * the child's id so each child's records are kept apart on a shared tablet; the
+ * scorecard is the same page in its scorecard view. Records stay on the device in
+ * version 1; version 2 moves them to `sm_` tables (modules/school-math/design/engine/BUILD-PLAN.md).
+ */
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
+import { getModule } from '@/modules/core/registry'
+import { enableSchoolMath } from './access'
+
+const PAGE = '/school-math/test-prep.html'
+
+function useChildId(): string | null {
+  const { currentChild } = useAuth()
+  return currentChild?.id ?? null
+}
+
+function TopBar({ title }: { title: string }) {
+  const navigate = useNavigate()
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-2 bg-white border-b border-gray-200">
+      <button
+        type="button"
+        onClick={() => navigate('/school-math')}
+        className="min-h-[44px] px-3 rounded-lg text-blue-700 font-medium hover:bg-blue-50"
+      >
+        ‹ School Math
+      </button>
+      <span className="text-sm font-semibold text-gray-700">{title}</span>
+      <span className="w-[110px]" aria-hidden="true" />
+    </div>
+  )
+}
+
+function PageFrame({ view, title }: { view?: 'scorecard'; title: string }) {
+  const childId = useChildId()
+  if (!childId) return <Navigate to="/select-child" replace />
+  const src = `${PAGE}?c=${encodeURIComponent(childId)}${view ? `&view=${view}` : ''}`
+  return (
+    <div className="flex flex-col h-[100dvh] bg-white">
+      <TopBar title={title} />
+      <iframe key={src} src={src} title={title} className="flex-1 w-full border-0" />
+    </div>
+  )
+}
+
+function SchoolMathHome() {
+  const navigate = useNavigate()
+  const childId = useChildId()
+  useEffect(() => {
+    enableSchoolMath()
+  }, [])
+  if (!childId) return <Navigate to="/select-child" replace />
+  const name = getModule('school-math').displayName
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-emerald-50 to-white p-4 sm:p-8">
+      <div className="max-w-3xl mx-auto">
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          className="min-h-[44px] px-3 rounded-lg text-blue-700 font-medium hover:bg-blue-50 mb-4"
+        >
+          ‹ All practice
+        </button>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">{name}</h1>
+        <p className="text-gray-600 mb-8">Practice that matches your school math.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <button
+            type="button"
+            onClick={() => navigate('/school-math/test-prep')}
+            className="w-full p-6 bg-white rounded-2xl shadow-md hover:shadow-xl text-left border border-gray-100 min-h-[140px]"
+          >
+            <div className="text-4xl mb-3" aria-hidden="true">➖</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Subtraction Test Prep</h2>
+            <p className="text-gray-600 text-sm">12 short sessions before the chapter test, with a practice test.</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/school-math/scorecard')}
+            className="w-full p-6 bg-white rounded-2xl shadow-md hover:shadow-xl text-left border border-gray-100 min-h-[140px]"
+          >
+            <div className="text-4xl mb-3" aria-hidden="true">⭐</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">My Scorecard</h2>
+            <p className="text-gray-600 text-sm">Sessions done, skills you have got, and your practice test.</p>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function SchoolMathRoutes() {
+  return (
+    <Routes>
+      <Route index element={<SchoolMathHome />} />
+      <Route path="test-prep" element={<PageFrame title="Subtraction Test Prep" />} />
+      <Route path="scorecard" element={<PageFrame view="scorecard" title="My Scorecard" />} />
+      <Route path="*" element={<Navigate to="/school-math" replace />} />
+    </Routes>
+  )
+}

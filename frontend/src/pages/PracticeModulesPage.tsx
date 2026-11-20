@@ -15,6 +15,7 @@ import { getCohortForChild } from '@/services/cohorts/cohortService'
 import { countUnread } from '@/services/cohorts/stickerService'
 import ParentInviteBanner from '@/components/cohorts/ParentInviteBanner'
 import { getModule } from '@/modules/core/registry'
+import { isSchoolMathEnabled } from '@/modules/school-math/access'
 import type { Cohort } from '@/types/cohort'
 
 interface ModuleCardProps {
@@ -254,6 +255,18 @@ export default function PracticeModulesPage() {
               path="/foundry"
               badge="Weekly"
               badgeColor="bg-teal-100 text-teal-700"
+            />
+          )}
+
+          {/* School Math (in development): shown on a device after a grown-up opens /school-math there */}
+          {isSchoolMathEnabled() && (
+            <ModuleCard
+              icon="📐"
+              title={getModule('school-math').displayName}
+              description="Practice that matches your school math — subtraction test prep and your scorecard"
+              path="/school-math"
+              badge="New"
+              badgeColor="bg-emerald-100 text-emerald-700"
             />
           )}
 

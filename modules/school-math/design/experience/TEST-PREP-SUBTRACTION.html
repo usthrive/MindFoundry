@@ -154,7 +154,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 .bond-c.empty { stroke-dasharray: 6 5; }
 .bond-t { fill: var(--ink); font-family: var(--body); font-size: 24px; font-weight: 500; }
 .bond-h { fill: var(--muted); font-family: var(--body); font-size: 13px; font-weight: 600; letter-spacing: .04em; }
-.bond3-in { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 360px; justify-items: center; }
+.op3 { padding: 0 2px; }
+.bond3-in { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; width: 100%; max-width: 420px; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 .work { font-family: var(--body); font-size: 1.6rem; font-variant-numeric: tabular-nums; display: inline-grid; grid-template-columns: 1.6rem repeat(3, 2rem); justify-items: center; gap: 0 4px; padding: 10px 16px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); }
 .work .wl { grid-column: 1 / -1; border-top: 2.5px solid var(--ink); width: 100%; }
 .tf { display: grid; gap: 8px; }
@@ -227,10 +228,12 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px 
 
 <div class="wrap">
   <header id="top">
-    <span class="eyebrow">MindFoundry · school-math · Grade 2, beside Chapter 3</span>
+    <span class="eyebrow">School Math · Grade 2 · beside Chapter 3</span>
     <h1>Subtraction Test Prep</h1>
     <p class="lede">Twelve short sessions before the Chapter 3 test, subtraction within 1,000: 8 to 10 questions each, with a practice test on day 11. Every question can be read aloud. The numbers are made fresh by the page, and none is from the school's tests.</p>
   </header>
+
+  <section id="scorecard" aria-label="My scorecard" style="display:grid;gap:14px" hidden></section>
 
   <section id="home" aria-label="Sessions">
     <div class="sessions" id="sessions"></div>
@@ -833,7 +836,7 @@ var GEN = (function () {
       { skill: "place", prompt: "Build 904 on the chart. Then fill the three parts of the bond.", say: "Build 904 on the chart. Then fill the three parts of the bond.",
         steps: [
           { type: "chart", label: "Build it on the chart.", charts: [{ start: [0, 0, 0], target: [9, 0, 4] }], acts: ["add"], hints: ["Flats are hundreds. Rods are tens. Cubes are ones.", "Are there any tens in 904?", "Use + and − under each column."] },
-          { type: "bond3", label: "Fill the bond.", whole: 904, answers: [900, 0, 4], hints: ["Each part is one place: hundreds, tens, ones.", "The tens part is how many tens, as a number.", "An empty place still needs a 0."] }
+          { type: "bond3", label: "Fill the bond.", whole: 904, answers: [900, 0, 4], hints: ["Add your three parts. Together they must make 904.", "Each part is what its digit is worth. 2 hundreds are worth 200.", "A place with no tens is worth 0."] }
         ],
         meta: { gen: "review", fixed: "D1-Q3", nums: [904], choices: [], shown: [] } },
       (function () {
@@ -906,11 +909,11 @@ var GEN = (function () {
       { skill: "place", prompt: "Build 390 on the chart. Then fill the three parts of the bond.", say: "Build 390 on the chart. Then fill the three parts of the bond.",
         steps: [
           { type: "chart", label: "Build it on the chart.", charts: [{ start: [0, 0, 0], target: [3, 9, 0] }], acts: ["add"], pts: 1, hints: ["Flats are hundreds. Rods are tens. Cubes are ones.", "Are there any ones in 390?", "Use + and − under each column."] },
-          { type: "bond3", label: "Fill the bond.", whole: 390, answers: [300, 90, 0], pts: 1, gate: true, hints: ["Each part is one place: hundreds, tens, ones.", "The tens part is how many tens, as a number.", "An empty place still needs a 0."] }
+          { type: "bond3", label: "Fill the bond.", whole: 390, answers: [300, 90, 0], pts: 1, gate: true, hints: ["Add your three parts. Together they must make 390.", "Each part is what its digit is worth. 2 hundreds are worth 200.", "A place with no ones is worth 0."] }
         ],
         meta: { gen: "review", fixed: "D2-Q9", nums: [390], choices: [], shown: [] } },
-      { skill: "compare", prompt: "The red barn has 709 eggs. The blue barn has 790 eggs. Which barn has more eggs? Build both numbers. Then tap true or false.",
-        say: "The red barn has 709 eggs. The blue barn has 790 eggs. Which barn has more eggs? Build both numbers. Then tap true or false.",
+      { skill: "compare", prompt: "The red barn has 709 eggs. The blue barn has 790 eggs. Which barn has more eggs?",
+        say: "The red barn has 709 eggs. The blue barn has 790 eggs. Which barn has more eggs?",
         steps: [
           { type: "chart", label: "Build both numbers.", charts: [{ label: "Red barn", start: [0, 0, 0], target: [7, 0, 9] }, { label: "Blue barn", start: [0, 0, 0], target: [7, 9, 0] }], acts: ["add"], pts: 1, hints: ["Build each number with flats, rods and cubes.", "Look at the tens digit of each.", "One has 0 tens. One has 0 ones."] },
           { type: "pick", label: "Which barn has more eggs?", choices: barns.choices, key: barns.key, pts: 1, gate: true, hints: ["Look at the hundreds first.", "The hundreds are the same. Look at the tens.", "More tens means more eggs."] },
@@ -1048,7 +1051,13 @@ var GEN = (function () {
       return { right: !wrong.length, rule: hit2 ? hit2.rule : "", msg: msg, look: wrong };
     }
     if (t === "chart") return { right: step.charts.every(function (c, i) { return same(v[i], c.target); }), rule: "", msg: "" };
-    if (t === "bond3") return { right: step.answers.every(function (a, i) { return n(v[i]) === a; }), rule: "", msg: "" };
+    if (t === "bond3") {
+      var digs = String(step.whole).split("").map(Number), vals = v.map(n);
+      var gaveDigits = digs.length === 3 && vals.every(function (x, i) { return x === digs[i]; }) && !step.answers.every(function (a, i) { return a === digs[i]; });
+      var dsum = vals.reduce(function (t2, x) { return t2 + (isNaN(x) ? 0 : x); }, 0);
+      return { right: step.answers.every(function (a, i) { return n(v[i]) === a; }), rule: gaveDigits ? "digit for value" : "",
+        msg: gaveDigits ? vals.join(" + ") + " makes " + dsum + ", not " + step.whole + ". Each part is what its digit is worth." : "" };
+    }
     if (t === "tf") { d = 0; step.rows.forEach(function (row, i) { if (v[i] === row.truth) d += 1; }); return { right: d === step.rows.length, rule: "", msg: d + " of " + step.rows.length + " rows are right.", rowsRight: d }; }
     if (t === "order") return { right: same(v.map(Number), step.answer), rule: "", msg: "" };
     if (t === "bar") {
@@ -1087,7 +1096,11 @@ var GEN = (function () {
 (function () {
   "use strict";
   var G = window.GEN;
-  var KEY = "mf-g2-subtraction-prep-v1";
+  var QS = (function () { try { return new URLSearchParams(window.location.search); } catch (e) { return null; } })();
+  var CHILD = ((QS && QS.get("c")) || "").replace(/[^A-Za-z0-9-]/g, "").slice(0, 64);
+  var VIEW = (QS && QS.get("view")) || "";
+  /* records are kept per child when the app passes ?c=<child id>; siblings on one tablet never mix */
+  var KEY = "mf-g2-subtraction-prep-v1" + (CHILD ? ":" + CHILD : "");
   var DB = null;
 
   /* records: localStorage when it works, memory when it does not */
@@ -1390,7 +1403,11 @@ var GEN = (function () {
       '<text class="bond-h" x="60" y="198" text-anchor="middle">HUNDREDS</text><text class="bond-h" x="180" y="198" text-anchor="middle">TENS</text><text class="bond-h" x="300" y="198" text-anchor="middle">ONES</text></svg>';
     wrap.appendChild(d);
     var row = h("div", "bond3-in"), boxes = [];
-    ["hundreds", "tens", "ones"].forEach(function (p) { var b = input(3, "the " + p + " part"); boxes.push(b); row.appendChild(b); });
+    ["hundreds", "tens", "ones"].forEach(function (p, i) {
+      if (i) { var plus = h("span", "op3"); plus.textContent = "+"; row.appendChild(plus); }
+      var b = input(3, "what the " + p + " are worth"); boxes.push(b); row.appendChild(b);
+    });
+    var eq = h("span", "op3"); eq.textContent = "= " + st.whole; row.appendChild(eq);
     d.appendChild(row);
     return {
       boxes: boxes,
@@ -1716,9 +1733,10 @@ var GEN = (function () {
     $("qcount").textContent = "Question " + (i + 1) + " of " + N;
     $("sessname").textContent = "Session " + P.s + " · " + P.b.info.title + (it.section ? " · Section " + it.section : "");
     var ban = $("banner");
-    if (mode === "held" && P.s === 11) { ban.hidden = false; ban.textContent = "Practice test, Section " + it.section + ". No marks until you hand it in."; }
+    if (mode === "held" && P.s === 11) { ban.hidden = false; ban.textContent = "Practice test, Section " + it.section + ". Tap Save, then Next. No marks until you hand it in."; }
     else if (mode === "held" && it.banner) { ban.hidden = false; ban.textContent = it.banner; }
-    else if (mode === "held") { ban.hidden = false; ban.textContent = "Check question. I will tell you after."; }
+    else if (mode === "held") { ban.hidden = false; ban.textContent = "Mini test: type your answer, tap Save, then Next. I mark it at the end."; }
+    if (mode === "held" && nSegs(it) > 1) ban.textContent += " Part " + ((x.seg || 0) + 1) + " of " + nSegs(it) + ".";
     else if (mode === "review") { ban.hidden = false; ban.textContent = "Review. Try any orange part again. The score stays " + P.r.score + " of " + P.r.max + "."; }
     else ban.hidden = true;
     $("prompt").textContent = it.prompt;
@@ -1819,7 +1837,12 @@ var GEN = (function () {
   /* ---------- Check ---------- */
   function onCheck() {
     if (!R) return;
-    if (R.mode === "held") { fb("No marks until you hand it in. Go on when you are ready.", "info"); return; }
+    if (R.mode === "held") {
+      saveHeld();
+      var more = (R.x.seg || 0) < nSegs(R.it) - 1;
+      fb("Saved. I will mark it when you hand it in. " + (more ? "Tap Next part." : R.i === P.b.items.length - 1 ? "Tap Hand it in when you are ready." : "Tap Next question."), "good");
+      return;
+    }
     var j = activeStep();
     if (j < 0) { fb("This one is done. Tap Next question.", "good"); return; }
     var st = R.it.steps[j], w = R.w[j];
@@ -1832,7 +1855,7 @@ var GEN = (function () {
     if (rd.kind === "blank") { fb(rd.msg || "Type your answer first. An empty box is “not yet”, never wrong.", "info"); return; }
     if (rd.kind === "partial") { fb(rd.msg || "So far so good. Fill the other boxes, then Check.", "info"); return; }
     if (st.almost && !ss.almostSaid && JSON.stringify(rd.value[0]) === JSON.stringify(st.almost.state)) { ss.almostSaid = true; fb("Almost. " + st.almost.msg, "info"); return; }
-    if (rd.key === ss.last) { fb("That is the same answer as last time. Change something, then Check.", "info"); return; }
+    if (rd.key === ss.last) { fb("That is the same answer as last time. " + (ss.lastTip ? "Remember: " + ss.lastTip + " " : "") + "Change something, then Check.", "info"); return; }
     var g = G.grade(st, rd.value);
     if (w.mark) w.mark(g, rd.value);
     var show = rd.show;
@@ -1841,7 +1864,7 @@ var GEN = (function () {
   }
   function result(j, right, key, show, msg, rule) {
     var st = R.it.steps[j], ss = R.ss[j], x = R.x;
-    if (key === ss.last) { fb("That is the same answer as last time. Change something, then Check.", "info"); return; }
+    if (key === ss.last) { fb("That is the same answer as last time. " + (ss.lastTip ? "Remember: " + ss.lastTip + " " : "") + "Change something, then Check.", "info"); return; }
     ss.last = key; ss.tries += 1;
     if (R.mode === "review") {
       x.rv = x.rv || { tries: 0, fixed: [], ans: [] };
@@ -1869,7 +1892,8 @@ var GEN = (function () {
         ss.rung = Math.min(ss.rung + 1, hints.length);
         if (R.mode === "practice") x.rung = Math.max(x.rung || 0, ss.rung);
       }
-      fb("Not yet. " + (msg ? msg + " " : "") + hint, "warn");
+      ss.lastTip = (msg ? msg + " " : "") + hint;
+      fb("Not yet. " + ss.lastTip, "warn");
       if (st.revealOnCommit && R.wraps[j + 1] && R.wraps[j + 1].hidden) { showStep(j + 1); }
     }
     persist(); recLine();
@@ -1935,6 +1959,16 @@ var GEN = (function () {
     fb("That part is saved. Now the next part.", "info");
   }
   function heldItems() { var out = []; for (var i = P.b.heldFrom; i < P.b.items.length; i++) out.push(i); return out; }
+  function unfinishedList() {
+    var out = [];
+    heldItems().forEach(function (i) {
+      var it = P.b.items[i], x = irec(i), why = null;
+      it.steps.forEach(function (st, j) { if (!why && segOf(it, j) <= (x.seg || 0) && (st.pts || st.markPts) && blankValue(st, x.vals[j])) why = "box"; });
+      if (!why && (x.seg || 0) < nSegs(it) - 1) why = "part";
+      if (why) out.push({ i: i, why: why });
+    });
+    return out;
+  }
   function unfinishedCount() {
     var n = 0;
     heldItems().forEach(function (i) {
@@ -1950,10 +1984,16 @@ var GEN = (function () {
     var n = unfinishedCount(), box = $("handConfirm");
     if (!n) { handIn(); return; }
     box.innerHTML = "";
-    box.appendChild(h("p", null, (n === 1 ? "1 question is" : n + " questions are") + " not finished. Hand it in anyway?"));
-    var row = h("div", "row"), yes = btn("btn", "Hand it in"), no = btn("btn quiet", "Go back");
+    var list = unfinishedList(), names = list.map(function (u) { return "question " + (u.i + 1); });
+    box.appendChild(h("p", null, (n === 1 ? "One question is" : n + " questions are") + " not finished: " + names.join(", ") + ". Hand it in anyway?"));
+    var row = h("div", "row"), yes = btn("btn", "Hand it in"), no = btn("btn quiet", "Go to " + (names[0] || "it"));
     yes.addEventListener("click", function () { box.hidden = true; handIn(); });
-    no.addEventListener("click", function () { box.hidden = true; });
+    no.addEventListener("click", function () {
+      box.hidden = true;
+      var u = list[0]; if (!u) return;
+      renderItem(u.i);
+      fb(u.why === "part" ? "This question has another part. Tap Next part to see it." : "One box here is empty. Fill it, tap Save, then go on.", "info");
+    });
     row.appendChild(yes); row.appendChild(no); box.appendChild(row); box.hidden = false;
   }
   function handIn() {
@@ -1990,12 +2030,15 @@ var GEN = (function () {
   function configNav() {
     var i = R.i, N = P.b.items.length, mode = R.mode;
     var hf = P.b.heldFrom;
-    $("checkKey").hidden = mode === "held";
+    $("checkKey").hidden = false;
+    $("checkKey").textContent = mode === "held" ? "Save" : "Check";
     $("helpBtn").hidden = mode === "held";
-    $("partBtn").hidden = !(mode === "held" && (R.x.seg || 0) < nSegs(R.it) - 1);
+    var partsLeft = mode === "held" && (R.x.seg || 0) < nSegs(R.it) - 1;
+    $("partBtn").hidden = true;
     $("backBtn").hidden = !((mode === "held" || mode === "review") && i > hf);
     var nb = $("nextBtn");
-    if (mode === "held" && i === N - 1) nb.textContent = "Hand it in";
+    if (partsLeft) nb.textContent = "Next part ›";
+    else if (mode === "held" && i === N - 1) nb.textContent = "Hand it in";
     else if (i === N - 1) nb.textContent = "Finish";
     else nb.textContent = "Next question ›";
   }
@@ -2003,6 +2046,7 @@ var GEN = (function () {
     if (!R) return;
     var i = R.i, N = P.b.items.length;
     if (R.mode === "held") saveHeld();
+    if (R.mode === "held" && (R.x.seg || 0) < nSegs(R.it) - 1) { onNextPart(); return; }
     if (R.mode === "held" && i === N - 1) { askHandIn(); return; }
     if (i === N - 1) { finish(); return; }
     renderItem(i + 1);
@@ -2165,6 +2209,51 @@ var GEN = (function () {
     });
   }
 
+  /* ---------- the child's scorecard (counts, never percentages) ---------- */
+  function renderScorecard() {
+    var box = $("scorecard"); box.innerHTML = "";
+    var done = 0, sk = {};
+    G.SESSIONS.forEach(function (info) {
+      var r = srec(info.n); if (!r) return;
+      if (r.done) done += 1;
+      Object.keys(r.items || {}).forEach(function (k) {
+        var x = r.items[k]; if (!x || !x.skill) return;
+        var f = x.handedFirst !== undefined ? x.handedFirst : firstFromRec(x);
+        if (f === null || f === undefined) return;
+        var e = sk[x.skill] = sk[x.skill] || { tried: 0, right: {} };
+        e.tried += 1; if (f === true) e.right[info.n] = true;
+      });
+    });
+    var top = h("div", "card");
+    top.appendChild(h("h3", null, "Sessions done: " + done + " of " + G.SESSIONS.length));
+    var t11 = srec(11);
+    top.appendChild(h("p", "state", t11 && t11.handed ? "Practice test: " + t11.score + " of " + t11.max + " points" : "Practice test: not yet"));
+    box.appendChild(top);
+    var skills = h("div", "card"); skills.appendChild(h("h3", null, "My skills"));
+    var got = [], prac = [], next = [];
+    Object.keys(G.SKILLS).forEach(function (id) {
+      var e = sk[id], name = String(G.SKILLS[id]).replace(/\s*\(U\d+\)/g, "");
+      if (e && Object.keys(e.right).length >= 2) got.push(name);
+      else if (e) prac.push(name);
+      else next.push(name);
+    });
+    [["Got it", got], ["Practising", prac], ["Coming up", next]].forEach(function (g) {
+      if (!g[1].length) return;
+      skills.appendChild(h("p", "state" + (g[0] === "Got it" ? " done" : ""), g[0] + ": " + g[1].join(", ")));
+    });
+    skills.appendChild(h("p", "note", "Got it = right on the first try in two different sessions."));
+    box.appendChild(skills);
+    var list = h("div", "card"); list.appendChild(h("h3", null, "Each session"));
+    G.SESSIONS.forEach(function (info) {
+      var r = srec(info.n), c = counts(info.n), line;
+      if (r && r.done) line = "Done · first try " + c.first + " of " + c.n + (r.handed ? " · " + r.score + " of " + r.max + " points" : "");
+      else if (r && (c.tried || r.idx)) line = "Started · first try " + c.first + " of " + c.tried;
+      else line = "Not yet";
+      list.appendChild(h("p", "state" + (r && r.done ? " done" : ""), "Session " + info.n + " · " + info.title + " · " + line));
+    });
+    box.appendChild(list);
+  }
+
   /* ---------- wiring ---------- */
   function init() {
     setupPad();
@@ -2184,6 +2273,12 @@ var GEN = (function () {
     });
     window.addEventListener("pagehide", function () { if (R && R.mode === "held") saveHeld(); });
     renderHome();
+    if (VIEW === "scorecard") {
+      $("home").hidden = true; $("scorecard").hidden = false;
+      var h1 = document.querySelector("#top h1"); if (h1) h1.textContent = "My scorecard";
+      var lede = document.querySelector("#top .lede"); if (lede) lede.textContent = "What you have done so far in Subtraction Test Prep.";
+      renderScorecard();
+    }
   }
   init();
 })();
