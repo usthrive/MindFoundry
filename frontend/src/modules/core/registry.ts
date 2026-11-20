@@ -133,6 +133,56 @@ const bestBrainsModule: MindFoundryModule = {
   },
 };
 
+/**
+ * School Math (working id `school-math`): the Singapore-style, school-aligned module.
+ * Curriculum, specs and decisions: modules/school-math/ (start at meta/NEXT-STEPS.md).
+ * Version 1 (2026-11-20) is the Grade 2 subtraction test prep served as a static page
+ * inside the app (public/school-math/test-prep.html) with a scorecard view; records stay
+ * on the device, keyed per child. Version 2 moves records to `sm_` tables.
+ * Program names are used only descriptively in docs; the card shows a neutral name.
+ */
+const schoolMathModule: MindFoundryModule = {
+  id: 'school-math',
+  displayName: 'School Math',
+  description:
+    'Practice that matches the school\'s math: models he builds (bars, bonds, place-value ' +
+    'charts), questions in the school\'s test formats, and test prep timed to the next test.',
+  entryRoute: '/school-math',
+  // Shown on a device once the parent opens /school-math there (see SchoolMathRoutes).
+  status: 'in-development',
+  levels: [1, 2, 3, 4, 5].map((g, ordinal) => ({
+    id: `G${g}`,
+    displayName: `Grade ${g}`,
+    ordinal,
+    unitKind: 'chapter-unit' as const,
+    unitCount: [13, 14, 12, 10, 10][ordinal],
+  })),
+  placement: {
+    kind: 'parent-selected',
+    recheckSupported: true,
+    description:
+      'Version 1: the parent opens the test prep. The placement test (DD25) arrives with ' +
+      'version 2.',
+  },
+  conceptCatalog(): ConceptRef[] {
+    return [];
+  },
+  sessionGenerator: {
+    kind: 'chapter-unit-generator',
+    entry: 'frontend/public/school-math/test-prep.html', // seeded generators; answers computed by code
+    deterministic: true,
+  },
+  progressSchema: {
+    kind: 'sm-device-local',
+    tables: [],
+  },
+  parentReportSchema: {
+    kind: 'sm-scorecard',
+    cadence: 'continuous',
+    requiresAcknowledgement: false,
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -140,6 +190,7 @@ const bestBrainsModule: MindFoundryModule = {
 export const MODULE_REGISTRY: Record<ModuleId, MindFoundryModule> = {
   kumon: kumonModule,
   'best-brains': bestBrainsModule,
+  'school-math': schoolMathModule,
 };
 
 export function getModule(id: ModuleId): MindFoundryModule {
