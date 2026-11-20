@@ -30,7 +30,7 @@ function TopBar({ title }: { title: string }) {
         onClick={() => navigate('/school-math')}
         className="min-h-[44px] px-3 rounded-lg text-blue-700 font-medium hover:bg-blue-50"
       >
-        ‹ School Math
+        ‹ {getModule('school-math').displayName}
       </button>
       <span className="text-sm font-semibold text-gray-700">{title}</span>
       <span className="w-[110px]" aria-hidden="true" />
