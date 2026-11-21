@@ -2176,7 +2176,6 @@ const WorksheetView = forwardRef<WorksheetViewRef, WorksheetViewProps>(({
                 onClick={() => handleProblemClick(index)}
                 compact={problemsPerPage > 3}
                 columnDigits={problem.displayFormat === 'vertical' ? currentPageState.columnDigits[index] : undefined}
-                optionalColumn={getOptionalAnswerColumn(problem)}
                 lastStepColumn={getLastStepColumn(problem)}
                 activeColumn={isActive && problem.displayFormat === 'vertical' ? normalizeActiveColumn(currentPageState.activeColumns[index] ?? 0, getLastStepColumn(problem)) : undefined}
                 carries={problem.displayFormat === 'vertical' ? currentPageState.carries[index] : undefined}

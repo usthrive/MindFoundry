@@ -1,6 +1,6 @@
 /**
  * StackedMultiplicationSteps — the column method, drawn the way the worksheet
- * draws it (same boxes, same small red carries, same quiet "only if needed" box),
+ * draws it (same boxes, same small red carries, the last step as one wide box),
  * so what the child watches here is what he then does on the sheet.
  * Words and frames: services/stackedMultiplication.ts.
  *
@@ -77,28 +77,29 @@ export function StackedGrid({
         ))}
       </div>
       <div className="my-1 h-0.5 self-stretch bg-orange-400" />
+      {/* The answer row as the worksheet draws it: one box per place, and the last
+          step (the top number's leftmost column) as ONE wide box over its two places. */}
       <div className="flex gap-1.5">
         <div className="w-7" />
-        {order.map((c) => {
-          const digit = frame.written[c]
-          const quiet = c === optional && digit === null
+        {order.filter((c) => c !== optional).map((c) => {
+          const last = c === optional - 1
+          const box = (d: string | null, k: number) => (
+            <div key={k} data-answer-col={last && k === 0 ? optional : c} data-optional={last && k === 0 ? 'true' : undefined} className="relative flex h-12 w-11 items-center justify-center text-2xl">
+              {d ?? ''}
+            </div>
+          )
+          const digits = last ? [frame.written[optional], frame.written[c]] : [frame.written[c]]
+          const filled = digits.some((d) => d !== null)
           return (
-            <div
-              key={`a${c}`}
-              data-answer-col={c}
-              data-optional={c === optional ? 'true' : undefined}
-              className={cn(
-                'flex h-12 w-11 items-center justify-center rounded-md border-2 text-2xl',
-                quiet
-                  ? 'border-dashed border-gray-300 bg-transparent'
-                  : frame.focus === c
-                    ? 'border-primary bg-blue-50 text-gray-900'
-                    : digit !== null
-                      ? 'border-gray-400 bg-gray-50 text-gray-900'
-                      : 'border-gray-300 bg-white',
-              )}
-            >
-              {digit ?? ''}
+            <div key={`a${c}`} data-last-step-box={last ? 'true' : undefined} className="relative flex gap-1.5 text-gray-900">
+              {/* The border is drawn over the places, so the boxes stay under their columns. */}
+              <div
+                className={cn(
+                  'pointer-events-none absolute inset-0 rounded-md border-2',
+                  frame.focus === c ? 'border-primary bg-blue-50' : filled ? 'border-gray-400 bg-gray-50' : 'border-gray-300 bg-white',
+                )}
+              />
+              {digits.map(box)}
             </div>
           )
         })}

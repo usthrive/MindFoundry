@@ -98,8 +98,10 @@ fluency time**. Anything less is "learning", and the app must say so.
     empty highlighted box read as "a digit is missing". Read the tried answers for
     stray single digits and reversals before reading the misses as maths. A number
     the child says goes in the way it is said: the last step of a stacked answer
-    ("28") is typed 2 then 8, filling its boxes from the right, never ones first
-    inside one number (2026-11-19; paper writes it that way too).
+    ("28") is typed 2 then 8, never ones first inside one number (2026-11-19; paper
+    writes it that way too). Give that number ONE box and let it fill from the left
+    while he types; nothing he typed may move (two boxes that shifted his first digit
+    confused him, 2026-11-21). Line it up under its places only after he checks.
 18. **Speed is the half of mastery that accuracy hides — and a pass rule needs a way
     out.** A sheet passes on first-try accuracy (no help opened) AND time against the
     standard for its run, both measured on the sheet; the time allowed starts generous on
