@@ -23,7 +23,7 @@ One customizable module: My path (placement → all Grade 1–5 units) · Test p
 (chapter + test date) · My scorecard · parent Settings (grade, school chapter, questions/day,
 days/week, test date).
 
-## State (2026-11-21 11:43 EST)
+## State (2026-11-21 15:19 EST; shipped since: PR #37 switch, #38 stage 1, #39 service-worker fix; Bar Models page this commit)
 - Stage A (plan v2) + stage 0 (`sm_` tables, applied, migration 20261120000001) — merged, PR #35.
 - Stage 1 run 1 — engine + G1-U02 exemplar — committed 6af7314 on the branch, NOT pushed.
 - **Stage 1 run 2 — DONE, uncommitted** (waits for the owner's read of the dump and his commit word):
@@ -49,15 +49,15 @@ days/week, test date).
   tagging and every recompute (adversarial re-check merged with the teacher run).
 
 ## Next (in order)
-1. Owner reads `testing/dump-g1u02-stage1-run2.txt` (one lesson day, one practice day, look again, the check, at two
-   seeds) → commit word for stage 1 run 2 → push → PR → squash-merge → sync the branch by a normal merge
-   (the switch branch merges first or after; the battery-count line in the KUMON handoff will need a one-line merge).
-2. Owner decision on his path while Grade 1 is built (options A/B/C in the 11-21 session: B = his Grade 2 units
-   right after stages 2–6; C = a stopgap page for his class's next chapter after the 1 Dec test).
-3. Stage 2a: G1-U02's figures and inputs (touch + keyboard, harness photos); then stages 3–6 and the Grade 1
-   fan-out (BUILD-PLAN §7), with the authoring kit written from what G1-U02 taught (M23–M27, S7).
+1. Grade 1 queue, one agent at a time (M28): authoring kit (Opus) → Fable kit review → validation wave G1-U01 + G1-U04
+   (Opus build → Fable verdict → Opus re-check) → stage 2a (G1-U02 figures and inputs) → waves U05+U06, U08+U10,
+   U11+U03, U07+U09, U12+U13 alternating with stages 2b–6 → stage 8 personas → owner's Grade 1 GO-LIVE.
+   Heavy runs never in the weekday windows 08:45–09:45 / 15:30–16:50 ET or the S12 slots of 23–27 Nov.
+2. Owner reads `testing/dump-g1u02-stage1-run2.txt` when convenient (stage 1 shipped on his word, PR #38).
+3. Before 15 Dec: decide whether he needs another stopgap for January (comparison bars, G2-U06) until Grade 2 is live.
 - Owed to stage 5: "=" voiced "is the same as", a speech form for − and □ with a gate; the say/type-the-
-  sentence step after error rows; the comeback source 'practice' migration.
+  sentence step after error rows; the comeback source 'practice' migration; records on the server (ends the
+  Safari / home-screen split).
 - Owed with Grade 2: Fable sign-off on the review's N1 fix and on the proposed G2-U04 chapter check.
 
 ## Owner decisions still open

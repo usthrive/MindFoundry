@@ -1,0 +1,66 @@
+BAR-MODELS-PRACTICE generator check · 2026-11-21T20:13:09.290Z
+page: design/experience/BAR-MODELS-PRACTICE.html · forms per session: 2000
+
+1. Exam list (read at run time; values never printed)
+  values read: 40 (gate section 35; written answers found; subtraction page list found); tier 1: 23
+  page mask covers 40 of 40 listed values; numbers 1-999 masked: 147
+  tier-1 values written in the page, spec or dump: 0
+
+1b. The story bank (72 frames, 16 settings)
+  every setting on both sides, every frame's text = its tag, a plain frame for every kind, left and more on both sides: yes
+
+2. Sessions 1-13 × 2000 forms (each with its twins and look-agains)
+  session 1: 42000 items checked
+  session 2: 42000 items checked
+  session 3: 42000 items checked
+  session 4: 42000 items checked
+  session 5: 42000 items checked
+  session 6: 42000 items checked
+  session 7: 30000 items checked
+  session 8: 30000 items checked
+  session 9: 42000 items checked
+  session 10: 14000 items checked
+  session 11: 42000 items checked
+  session 12: 42000 items checked
+  session 13: 42000 items checked
+  within-20 draws that stepped up to within 100 (twins and look-agains only, recorded): 21
+  share of whole-asked stories per setting (all sessions): bakery 43%, camp 34%, class 54%, cook 68%, ferry 42%, garden 62%, gardener 55%, jar 24%, kit 62%, library 40%, lot 32%, pack 73%, shelf 27%, stand 63%, train 47%, zoo 49%
+  494000 items, 0 throws, 88.0 s; exam hits: tier 1 0, tier 2 0
+
+3. Choice order (key place ≤ 40 %, numeric rank ≤ 40 %, two-way ≤ 60 %)
+  ckValue value place 25%/25%/25%/26% (n 2000)
+  match match place 33%/34%/33% (n 33500)
+  rank ckValue 27%/28%/28%/17% (n 2000)
+  read sentence place 25%/25%/25%/25% (n 35000)
+  read whole place 33%/33%/33% (n 33000)
+  story sentence place 25%/25%/25%/25% (n 202500)
+  story shape place 34%/33%/33% (n 31500)
+  bond decide whole/part 45%/55% (n 46500)
+  box decide whole/part 47%/53% (n 53000)
+  story decide whole/part 49%/51% (n 60000)
+
+4. Broken controls (each must fire)
+  fired: a corrupted key
+  fired: a review value whose rule gives another number
+  fired: a pool value whose rule gives another number
+  fired: a filled asked slot
+  fired: an 11-word sentence
+  fired: “altogether means add”
+  fired: a fixture item carrying a tier-1 value (built at run time from the list)
+  fired: a wrong sentence that is true
+  fired: a G1-U02 setting
+  fired: a number in rung 2
+  fired: a read-aloud line tying “part” to the numbers before the tap
+  fired: a story help line naming the ? before any bar is on the screen
+  fired: a help line naming the bar before it is drawn
+  fired: “left” only in whole-asked stories (part-side “left” removed)
+  fired: a setting whose stories all ask for the same side
+  fired: a twin whose key is the answer just shown
+  fired: two questions with the same key in one session
+  fired: a mask with one listed value's bit cleared (coverage 39 of 40)
+  fired: a key always in the first place
+  fired: a session with a repeated tuple
+  fired: a re-sit that repeats the form before (same lane and draw)
+  fired: an extra-practice form built without its exclusion list
+
+PASS bar_models_check: 85569599 assertions, 0 failures; 494000 items over 13 sessions × 2000 forms (with twins and look-agains); exam values shown: tier 1 0, tier 2 0; broken controls fired 22 of 22
