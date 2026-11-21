@@ -15,6 +15,8 @@
  */
 import { createRoot } from 'react-dom/client';
 import SchoolMathRoutes from '@/modules/school-math/SchoolMathRoutes';
+import PracticeModulesPage from '@/pages/PracticeModulesPage';
+import { SettingsBottomSheet } from '@/components/settings';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { generatePack } from '@/modules/best-brains/generator/packGenerator';
 import { FoundrySessionContext, type FoundrySessionValue } from '@/modules/best-brains/session/FoundrySession';
@@ -319,7 +321,22 @@ function KumonParentHarness() {
   );
 }
 
-if (screen === 'school-math') {
+if (screen === 'sm-settings') {
+  // The "Singapore Method on this device" switch (2026-11-21): Settings open in parent mode.
+  createRoot(document.getElementById('root')!).render(
+    <MemoryRouter initialEntries={['/dashboard']}>
+      <SettingsBottomSheet isOpen onClose={() => {}} />
+    </MemoryRouter>,
+  );
+} else if (screen === 'sm-dashboard') {
+  // The child's dashboard: the Singapore Method card shows only when the switch is on.
+  (window as any).__harnessChild = { id: 'harness-child', name: 'Harness' };
+  createRoot(document.getElementById('root')!).render(
+    <MemoryRouter initialEntries={['/dashboard']}>
+      <Routes><Route path="/dashboard" element={<PracticeModulesPage />} /></Routes>
+    </MemoryRouter>,
+  );
+} else if (screen === 'school-math') {
   // School Math v1 home (2026-11-20): a signed-in child, the module's two cards.
   (window as any).__harnessChild = { id: 'harness-child', name: 'Harness' };
   createRoot(document.getElementById('root')!).render(
