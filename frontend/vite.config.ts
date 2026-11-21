@@ -91,6 +91,15 @@ export default defineConfig({
         // With content split per level and behind /foundry, nothing comes close,
         // so the default is once again a working tripwire rather than a formality.
         maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
+        // The Singapore Method pages are static HTML opened in an iframe with
+        // ?c=<child id> (and &view=…). The query means the precache entry does not
+        // match, so the SPA navigation fallback answered with index.html and the app
+        // inside the frame redirected to /school-math — in the home-screen app every
+        // tap on Test Prep or My Scorecard came back to the module home (owner,
+        // 2026-11-21). These pages are never the SPA: let them go to the network.
+        // Checked by scripts/sm-sw-fallback-test.ts.
+        // workbox tests pathname + search, so the pattern must allow ?c=… after .html
+        navigateFallbackDenylist: [/^\/school-math\/[^/?#]+\.html(?:[?#]|$)/],
         // Cache strategies for the PWA
         runtimeCaching: [
           {
