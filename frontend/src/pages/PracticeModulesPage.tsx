@@ -15,7 +15,7 @@ import { getCohortForChild } from '@/services/cohorts/cohortService'
 import { countUnread } from '@/services/cohorts/stickerService'
 import ParentInviteBanner from '@/components/cohorts/ParentInviteBanner'
 import { getModule } from '@/modules/core/registry'
-import { isSchoolMathEnabled } from '@/modules/school-math/access'
+import { useSchoolMathEnabled } from '@/modules/school-math/access'
 import type { Cohort } from '@/types/cohort'
 
 interface ModuleCardProps {
@@ -160,6 +160,7 @@ export default function PracticeModulesPage() {
 
   const [cohort, setCohort] = useState<Cohort | null>(null)
   const [unreadStickers, setUnreadStickers] = useState(0)
+  const schoolMathOn = useSchoolMathEnabled()
 
   useEffect(() => {
     let cancelled = false
@@ -258,8 +259,9 @@ export default function PracticeModulesPage() {
             />
           )}
 
-          {/* School Math (in development): shown on a device after a grown-up opens /school-math there */}
-          {isSchoolMathEnabled() && (
+          {/* School Math (in development): shown on a device after a grown-up opens /school-math there,
+              or turns on "Singapore Method on this device" in Settings */}
+          {schoolMathOn && (
             <ModuleCard
               icon="📐"
               title={getModule('school-math').displayName}

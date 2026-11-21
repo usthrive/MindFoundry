@@ -154,4 +154,4 @@ export function diagnoseEntryOrder(
 }
 
 export const LAST_STEP_NOTE =
-  'The last number goes in the way you say it: the first digit you say goes in first.'
+  'In the big box, type the number the way you say it: the first digit you say goes first.'

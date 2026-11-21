@@ -12,6 +12,8 @@ import PinSettingsModal from './PinSettingsModal'
 import ChildrenSettings from './ChildrenSettings'
 import SubscriptionSettings from './SubscriptionSettings'
 import HelpSupport from './HelpSupport'
+import { getModule } from '@/modules/core/registry'
+import { disableSchoolMath, enableSchoolMath, useSchoolMathEnabled } from '@/modules/school-math/access'
 
 interface SettingsBottomSheetProps {
   isOpen: boolean
@@ -25,6 +27,10 @@ export default function SettingsBottomSheet({ isOpen, onClose }: SettingsBottomS
   const { logout } = useAuth()
   const [currentView, setCurrentView] = useState<SettingsView>('main')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  // Singapore Method is in development: a grown-up turns its card on per device
+  // (a home-screen web app keeps its own storage, apart from the browser).
+  const schoolMathOn = useSchoolMathEnabled()
+  const schoolMathLive = getModule('school-math').status === 'live'
 
   const handleSignOut = async () => {
     setIsLoggingOut(true)
@@ -136,6 +142,30 @@ export default function SettingsBottomSheet({ isOpen, onClose }: SettingsBottomS
                         <span className="text-gray-400">›</span>
                       </button>
                     ))}
+
+                    {!schoolMathLive && (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={schoolMathOn}
+                        data-testid="sm-device-switch"
+                        onClick={() => (schoolMathOn ? disableSchoolMath() : enableSchoolMath())}
+                        className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      >
+                        <span className="text-2xl">📐</span>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">{getModule('school-math').displayName} on this device</p>
+                          <p className="text-sm text-gray-500">Shows its card on the home screen</p>
+                        </div>
+                        <span
+                          aria-hidden="true"
+                          className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition-colors ${schoolMathOn ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                        >
+                          <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${schoolMathOn ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </span>
+                        <span className="w-8 text-sm font-medium text-gray-600">{schoolMathOn ? 'On' : 'Off'}</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Divider */}

@@ -21,7 +21,9 @@
  *   carries    no carry is drawn above the last step's left box (it would be the
  *              answer's leading digit);
  *   screen     the worksheet's digit, ⌫, Enter, tap and restore paths all use the rule;
- *              both boxes light up together with a caption that names no number;
+ *              the last step is ONE box over its two places (2026-11-21: two boxes made
+ *              the first digit jump) that fills from the left while he types (the
+ *              owner's pick, way C), with a caption that names no number;
  *   lesson     the worked example says the last number the way it is typed, and the
  *              lesson shows once more to every child (intro version 3).
  *
@@ -247,7 +249,9 @@ console.log('\nscreen — every input path uses the rule; the two boxes light up
     if ((v.match(/normalizeActiveColumn\(/g) ?? []).length < 4) out.push('a tap, a restore or the scratch pad can put the cursor in the "only if needed" box')
     if (!/lastStepColumn=\{getLastStepColumn\(problem\)\}/.test(v)) out.push('the worksheet never tells the card where the last step is')
     if (/newColumns\[newActiveCol\] = digit/.test(v)) out.push('a digit is still written straight into the active box')
-    if (!/\(onLastStep && colIndex === lastStepColumn \+ 1\)/.test(p)) out.push('the left box does not light up with the last step')
+    if (!/if \(lastStepColumn !== undefined && colIndex === lastStepColumn \+ 1\) return null/.test(p)) out.push('the last step\'s left place is a box of its own (the first digit jumps between boxes)')
+    if (!/data-last-step-box[\s\S]{0,400}absolute inset-0 rounded-md border-2/.test(p)) out.push('the last step is not one box with one border')
+    if (!/const editing = isActiveCol && !isSubmitted\n\s+const shown = editing \? \[typed\[0\] \?\? null, typed\[1\] \?\? null\] : \[left, digit\]/.test(p) || !/\{shown\.map\(/.test(p)) out.push('while he types, the number does not fill the box from the left (his first digit moves)')
     const cap = p.match(/data-last-step-caption>\s*([^<]+)</)
     if (!cap) out.push('no caption on the last step')
     else if (/\d/.test(cap[1])) out.push(`the caption names a number: "${cap[1].trim()}"`)
@@ -261,8 +265,10 @@ console.log('\nscreen — every input path uses the rule; the two boxes light up
   say(direct !== view && screenFindings(direct, pv).length > 0, 'control fires: digits written straight into the box again')
   const enterJumps = view.replace('activeCol < (getLastStepColumn(activeProblem) ?? columnCount - 1)', 'activeCol < columnCount - 1')
   say(enterJumps !== view && screenFindings(enterJumps, pv).length > 0, 'control fires: Enter moves into the "only if needed" box')
-  const lonely = pv.replace('(onLastStep && colIndex === lastStepColumn + 1)', '(false)')
-  say(lonely !== pv && screenFindings(view, lonely).length > 0, 'control fires: only one of the last step\'s boxes lit')
+  const slides = pv.replace('{shown.map((d, k) => (', '{[left, digit].map((d, k) => (')
+  say(slides !== pv && screenFindings(view, slides).length > 0, 'control fires: the number fills from the right while he types (the first digit slides over)')
+  const twoBoxes = pv.replace('if (lastStepColumn !== undefined && colIndex === lastStepColumn + 1) return null', '')
+  say(twoBoxes !== pv && screenFindings(view, twoBoxes).length > 0, 'control fires: the last step drawn as two boxes again (the jumping digit)')
 }
 
 // ---------------------------------------------------------------------------

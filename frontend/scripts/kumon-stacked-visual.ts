@@ -10,7 +10,8 @@
  *            "your turn" on 17 × 4: a miss gets a nudge, never the number, and the
  *            add-the-carry step is asked on its own;
  *   sheet    a C51 page opens with no Level B pop-up; after a two-digit answer the
- *            third box stays quiet, the last step lit with "type the whole number";
+ *            last step is ONE big box (no empty third box), lit with "type the whole
+ *            number in the big box";
  *            a three-digit answer's last number goes in the way it is said (2, then
  *            8 for 282) and checks right; the old order (8, then 2) gets its own
  *            note (2026-11-19); a digit + Enter
@@ -76,8 +77,8 @@ say((await said(p)).includes('Ones: 4 × 3 = 12. Write the 2 in the ones box. Ca
 await click(p, 'Next step')
 t = await said(p)
 await shot(p, '2-lesson-carry-added')
-say(t.includes('Add the 1 you carried: 8 + 1 = 9') && t.includes('No carry left, so the hundreds box stays empty'), 'tens: the carry ADDED out loud; the hundreds box stays empty')
-say(await p.evaluate(`!!document.querySelector('[data-optional="true"]') && getComputedStyle(document.querySelector('[data-optional="true"]')).borderStyle === 'dashed'`) as boolean, 'the empty hundreds box is drawn dashed, as on the sheet')
+say(t.includes('Add the 1 you carried: 8 + 1 = 9') && t.includes('Last step: write the 9 in the big box. No carry left, so it is just one digit.'), 'tens: the carry ADDED out loud; the 9 goes in the big box')
+say(await p.evaluate(`document.querySelectorAll('[data-last-step-box]').length === 1`) as boolean, 'the last step is one big box, as on the sheet')
 await click(p, 'Next step'); await click(p, 'Done')
 say((await said(p)).includes('28 × 5. Start with the ones'), 'example 2: 28 × 5')
 await click(p, 'Next step')
@@ -85,7 +86,7 @@ say((await said(p)).includes('Ones: 5 × 8 = 40. Write the 0 in the ones box. Ca
 await click(p, 'Next step')
 t = await said(p)
 await shot(p, '3-lesson-hundreds')
-say(t.includes('Last step: write the whole 14, the way you say it: 1, then 4. The 4 goes in the tens box, the 1 in the hundreds box.'), 'the last step: the whole 14, the way you say it (1, then 4)')
+say(t.includes('Last step: write the whole 14 in the big box, the way you say it: 1, then 4.'), 'the last step: the whole 14 in the big box (1, then 4)')
 await click(p, 'Next step'); await click(p, 'Done')
 
 console.log('  — his turn: 17 × 4')
@@ -126,23 +127,36 @@ const input = async (v: string) => { await p.evaluate(`window.__kumon.ref.curren
 const goTo = async (i: number) => { for (let k = 0; k < 6 && (await active()).i !== i; k++) { await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(150) } }
 
 // The quiet third box: find a two-digit answer, write it ones first.
+const box = (i: number) => p.evaluate(`[...document.querySelectorAll('[data-testid="wp-card"]')[${i}].querySelectorAll('[data-testid="wp-answer-cell"]')].map(e => e.innerText.trim() || '·').join('')`) as Promise<string>
 let a = await active()
 for (let k = 0; k < 5 && a.ans >= 100; k++) { await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(200); a = await active() }
 console.log(`  two-digit problem: ${a.ops.join(' × ')} = ${a.ans}`)
-await input(String(a.ans % 10)); await input(String(Math.floor(a.ans / 10)))
+await input(String(a.ans % 10))
 t = await text(p)
-await shot(p, '7-quiet-third-box')
-const optStyle = await p.evaluate(`(() => { const cards = [...document.querySelectorAll('[data-optional-col="true"]')]; const c = cards.find(e => e.closest('[class*="ring"], [class*="border-primary"]')) || cards[${a.i}]; return c ? getComputedStyle(c).borderStyle + '|' + c.innerText.trim() : 'none' })()`) as string
-say(optStyle.startsWith('dashed|'), `after ${a.ans}, the third box stays dashed and empty (${optStyle})`)
-say(/Last step: type the whole number, the way you say it\./.test(t), 'the caption: "Last step: type the whole number, the way you say it."')
-const lit = await p.evaluate(`(() => { const c = document.querySelectorAll('[data-testid="wp-card"]')[${a.i}]; return [...c.querySelectorAll('[data-testid="wp-answer-cell"]')].map(e => /ring-primary|border-primary/.test(e.className) ? 'lit' : '-').join('') })()`) as string
-say(lit === 'lit' + 'lit' + '-', `the last step's two boxes light up together, the ones box does not (${lit})`)
+await shot(p, '7a-ones-done-cursor-in-big-box')
+await input(String(Math.floor(a.ans / 10)))
+await shot(p, '7-two-digit-in-big-box')
+const boxes = await p.evaluate(`(() => { const c = document.querySelectorAll('[data-testid="wp-card"]')[${a.i}]; const big = c.querySelector('[data-last-step-box]'); const ring = big && big.firstElementChild; return { big: !!big, lit: !!ring && /border-primary/.test(ring.className), text: big ? big.innerText.replace(/\\s+/g, '') : '', ones: c.querySelectorAll('[data-testid="wp-answer-cell"]').length } })()`) as { big: boolean; lit: boolean; text: string; ones: number }
+say(boxes.big && boxes.lit && boxes.text === String(Math.floor(a.ans / 10)), `after ${a.ans} (ones, then ${Math.floor(a.ans / 10)}), the ${Math.floor(a.ans / 10)} sits in ONE lit big box — no separate empty third box (${JSON.stringify(boxes)})`)
+say(/Type the whole number in the big box\./.test(t), 'the caption: "Type the whole number in the big box."')
+const editingCells = await box(a.i)
+await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(250)
+const settledCells = await box(a.i)
+await shot(p, '7e-one-digit-settled')
+say(editingCells === `${Math.floor(a.ans / 10)}·${a.ans % 10}` && settledCells === `·${a.ans}`, `a one-digit last number fills from the left while he types ("${editingCells}") and sits under the tens once he moves on ("${settledCells}")`)
 
-await p.close()
-p = await open('?screen=kumon&level=C&ws=58')
-// A three-digit answer: the ones, then the last number the way it is said.
-const box = (i: number) => p.evaluate(`[...document.querySelectorAll('[data-testid="wp-card"]')[${i}].querySelectorAll('[data-testid="wp-answer-cell"]')].map(e => e.innerText.trim() || '·').join('')`) as Promise<string>
+// A page with a three-digit answer whose last number has two different digits (the
+// pages are random: try a few sheets, and keep the page with the most such problems).
 const lastTotal = (ops: number[]) => Math.floor(ops[0] / 10) * ops[1] + Math.floor(((ops[0] % 10) * ops[1]) / 10)
+const fits = (pr: { operands: number[]; correctAnswer: number }) => pr.correctAnswer >= 100 && lastTotal(pr.operands) % 10 !== Math.floor(lastTotal(pr.operands) / 10)
+for (const ws of [58, 60, 62, 64, 66, 68]) {
+  await p.close()
+  p = await open(`?screen=kumon&level=C&ws=${ws}`)
+  const probs = await p.evaluate(`(() => { const out = []; for (let k = 0; k < 5; k++) { const a = window.__kumon.ref.current.getActiveProblem(); out.push({ operands: a.problem.operands, correctAnswer: a.problem.correctAnswer }); window.__kumon.ref.current.navigateToNextProblem() } return out })()`) as Array<{ operands: number[]; correctAnswer: number }>
+  await p.waitForTimeout(200)
+  if (probs.filter(fits).length >= 2) break
+}
+// A three-digit answer: the ones, then the last number the way it is said.
 let c3 = await active()
 for (let k = 0; k < 6 && !(c3.ans >= 100 && lastTotal(c3.ops) % 10 !== Math.floor(lastTotal(c3.ops) / 10)); k++) { await p.evaluate(`window.__kumon.ref.current.navigateToNextProblem()`); await p.waitForTimeout(200); c3 = await active() }
 if (c3.ans >= 100) {
@@ -154,7 +168,7 @@ if (c3.ans >= 100) {
   await input(L[1])
   const whole = await box(c3.i)
   await shot(p, '7c-last-step-whole')
-  say(half === `·${L[0]}${c3.ans % 10}` && whole === `${c3.ans}`, `${c3.ops.join(' × ')}: ${c3.ans % 10}, then ${L[0]}, ${L[1]} → boxes "${half}" then "${whole}" (the ${L[0]} moves left as the ${L[1]} comes)`)
+  say(half === `${L[0]}·${c3.ans % 10}` && whole === `${c3.ans}`, `${c3.ops.join(' × ')}: ${c3.ans % 10}, then ${L[0]}, ${L[1]} → boxes "${half}" then "${whole}" (the ${L[0]} stays put; the ${L[1]} goes beside it)`)
   await input('submit'); await p.waitForTimeout(600)
   const ok = await p.evaluate(`document.querySelectorAll('[data-testid="wp-card"]')[${c3.i}].className.includes('border-green-500')`) as boolean
   say(ok, `${c3.ans} typed the way it is worked checks right`)
@@ -170,7 +184,7 @@ if (c4.ans >= 100) {
   await input('submit'); await p.waitForTimeout(600)
   t = await text(p)
   await shot(p, '7d-old-order-note')
-  say(/The last number goes in the way you say it: the first digit you say goes in first\./.test(t), `${c4.ops.join(' × ')} typed the old way (ones first throughout → "${typed}") gets the last-step note`)
+  say(/In the big box, type the number the way you say it: the first digit you say goes first\./.test(t), `${c4.ops.join(' × ')} typed the old way (ones first throughout → "${typed}") gets the last-step note`)
 } else say(false, 'no three-digit answer for the old-order note')
 await p.close()
 p = await open('?screen=kumon&level=C&ws=51')
