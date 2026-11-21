@@ -100,6 +100,12 @@ day's items (not per template): no more than 60 % of a day's missing-part items.
 "Knows" is earned only on practice days and returns (TAD §2). "Question k of 8" on every screen; a
 rest offered after 8, never a stop.
 
+**Reviewing wrong work (BUILD-PLAN §13).** After any item whose ladder reached rung 4, a same-template
+twin at a fresh seed follows at once (W1; never "knows" evidence). The practice day closes with
+**"Look again"**: up to 2 of the day's first-try misses, his own answer shown, the question read
+again, one more go (W2; role `review`; not in N; skipped if he takes the rest). First-try misses that
+needed rung 3 or 4 join the comeback pool (W3).
+
 **Check day:** G1-U02-CK (§7), feedback held; the **review of misses** follows at once (or first
 thing next day if the child rests); every miss enters the 2 / 7 / 21 comeback pool.
 
