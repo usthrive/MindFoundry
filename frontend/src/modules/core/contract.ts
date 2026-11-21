@@ -40,8 +40,10 @@ export interface PlacementDescriptor {
   /**
    * 'diagnostic-adaptive' — an in-app adaptive placement walk (Best Brains DD5).
    * 'parent-selected'    — parent/onboarding picks the starting level (current Kumon flow).
+   * 'placement-ladder'   — a held-feedback ladder test through a grade's units with early stop;
+   *                        placed-out units are confirmed later by returns (school-math DD25).
    */
-  kind: 'diagnostic-adaptive' | 'parent-selected';
+  kind: 'diagnostic-adaptive' | 'parent-selected' | 'placement-ladder';
   /** Route of the placement experience, if the module has a dedicated one. */
   route?: string;
   /** Honest expected duration of placement, in minutes. */
@@ -80,8 +82,11 @@ export interface ProgressSchemaDescriptor {
    * 'kumon-worksheet-progress' — sessions/attempts/worksheet_progress/mastery_status tables.
    * 'bb-week-state'            — bb_-prefixed tables keyed on (child, level, week) with the
    *                              DD1 mastery state machine.
+   * 'sm-device-local'          — school-math v1: records on the device only (the interim page).
+   * 'sm-skill-state'           — school-math v2: sm_-prefixed tables; per-skill states are a
+   *                              rebuildable projection of the append-only attempt log.
    */
-  kind: 'kumon-worksheet-progress' | 'bb-week-state' | 'sm-device-local';
+  kind: 'kumon-worksheet-progress' | 'bb-week-state' | 'sm-device-local' | 'sm-skill-state';
   /** Supabase tables owned/used by the module for progress. */
   tables: string[];
 }
