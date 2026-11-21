@@ -76,7 +76,7 @@ function methodFindings(build: Build, tops: number[] = Array.from({ length: 990 
         if (!s.last && s.carryOut > 0 && f.carries[s.col + 1] !== String(s.carryOut)) out.push(`${a} × ${b} col ${s.col}: carry ${s.carryOut} not shown above the next column`)
       })
       const empty = width(a * b) === width(a)
-      if (empty !== /stays empty/.test(frames[frames.length - 2].say)) out.push(`${a} × ${b}: "stays empty" said ${!empty ? 'wrongly' : 'nowhere'}`)
+      if (empty !== /just one digit/.test(frames[frames.length - 2].say)) out.push(`${a} × ${b}: "just one digit" said ${!empty ? 'wrongly' : 'nowhere'}`)
       if (frames.some((fr) => /%|wrong|groups of/i.test(fr.say))) out.push(`${a} × ${b}: a frame says %, "wrong" or "groups of"`)
       if (out.length > 20) return out
     }
@@ -84,7 +84,7 @@ function methodFindings(build: Build, tops: number[] = Array.from({ length: 990 
   return out
 }
 const mReal = methodFindings(stackedFrames)
-say(mReal.length === 0, `7,920 problems: the frames write the product, add every carry, say "stays empty" only when it does${mReal.length ? ': ' + mReal.slice(0, 4).join('; ') : ''}`)
+say(mReal.length === 0, `7,920 problems: the frames write the product, add every carry, say "just one digit" only when it is${mReal.length ? ': ' + mReal.slice(0, 4).join('; ') : ''}`)
 {
   // Control: his own mistake — the carried digit COPIED instead of added (17 × 9 → "163").
   const copiesCarry: Build = (a, b) => {
@@ -227,19 +227,19 @@ console.log('\nsheet — the quiet box, the Enter rule, the backwards note, the 
   const sheetFindings = (v: string, pv: string): string[] => {
     const out: string[] = []
     if (!/written > 0 && written < getMinAnswerDigits\(activeProblem\)/.test(v)) out.push('Enter can still jump off a stacked answer being written')
-    if (!/optionalColumn=\{getOptionalAnswerColumn\(problem\)\}/.test(v)) out.push('the worksheet never marks the optional column')
+    if (!/lastStepColumn=\{getLastStepColumn\(problem\)\}/.test(v)) out.push('the worksheet never tells the card where the last step is')
     if ((v.match(/\(problem\.id && reversedNotes\[problem\.id\]\) \|\| hintData\.text/g) ?? []).length !== 2) out.push('the backwards note does not reach both the first and second hint')
     if (!/if \(manualCarry && pageHasStackedAddition\)/.test(v) || !/if \(manualRegroup && pageHasStackedSubtraction\)/.test(v) || !/regroupMode === 'optional' && pageHasStackedSubtraction/.test(v)) out.push('a Level B pop-up can open on a page without that kind of problem')
-    if (!/quietOptional\s*\? \(isActiveCol\s*\? 'border-dashed/.test(pv)) out.push('the optional box is not drawn quiet')
-    if (!/data-optional-caption/.test(pv)) out.push('no caption when the cursor is in the optional box')
+    if (!/if \(lastStepColumn !== undefined && colIndex === lastStepColumn \+ 1\) return null/.test(pv)) out.push('the "only if needed" place is drawn as a box of its own (an empty box reads as a missing digit)')
+    if (!/data-last-step-box/.test(pv)) out.push('the last step is not one box')
     return out
   }
   const sf = sheetFindings(view, problemView)
   say(sf.length === 0, `worksheet sources${sf.length ? ': ' + sf.join('; ') : ''}`)
   const jumpy = view.replace('written > 0 && written < getMinAnswerDigits(activeProblem)', 'false')
   say(jumpy !== view && sheetFindings(jumpy, problemView).length > 0, 'control fires: Enter allowed to jump off a half-written answer')
-  const loud = problemView.replace("quietOptional\n                    ? (isActiveCol\n                      ? 'border-dashed", "false\n                    ? (isActiveCol\n                      ? 'border-dashed")
-  say(loud !== problemView && sheetFindings(view, loud).length > 0, 'control fires: the third box drawn like any other')
+  const loud = problemView.replace('if (lastStepColumn !== undefined && colIndex === lastStepColumn + 1) return null', '')
+  say(loud !== problemView && sheetFindings(view, loud).length > 0, 'control fires: the third box drawn as a box of its own')
   const popups = view.replace('if (manualRegroup && pageHasStackedSubtraction)', 'if (manualRegroup)')
   say(popups !== view && sheetFindings(popups, problemView).length > 0, 'control fires: the subtraction pop-up back on multiplication pages')
 }

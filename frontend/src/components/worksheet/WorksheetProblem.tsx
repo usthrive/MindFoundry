@@ -22,14 +22,10 @@ export interface WorksheetProblemProps {
    *  May exceed the operand digit count (e.g. 3 for a 2-digit × 1-digit product). */
   answerColumnCount?: number
   /**
-   * The answer column used only SOMETIMES (getOptionalAnswerColumn): drawn dashed
-   * and quiet while empty, never as one more box to fill (2026-11-09).
-   */
-  optionalColumn?: number
-  /**
-   * The last step's column (columnEntry.getLastStepColumn): its whole number is
-   * typed at once, the way it is said, and may also fill the box to its left. While
-   * the cursor is on it, both boxes are drawn as one step (2026-11-19).
+   * The last step's column (columnEntry.getLastStepColumn). Its place and the one to
+   * its left are drawn as ONE wide box: the step's whole number is typed into it the
+   * way it is said and fills it from the left, as on paper; after a check it sits under
+   * its places (2026-11-21; it was two boxes, and the first digit jumped between them).
    */
   lastStepColumn?: number
   // ── Partial products (multiplication by a 2-digit-or-wider multiplier, Level D) ──
@@ -92,7 +88,6 @@ export default function WorksheetProblem({
   onColumnClick,
   manualCarryMode = false,
   answerColumnCount,
-  optionalColumn,
   lastStepColumn,
   partialProducts,
   partialRowShift,
@@ -571,54 +566,82 @@ export default function WorksheetProblem({
           </>
         )}
 
-        {/* Answer row - individual digit boxes */}
+        {/* Answer row - individual digit boxes. The last step is ONE box spanning its
+            two places (2026-11-21): the child types its number into it the way he
+            types a times-table answer, and the number lines up under its places. */}
         <div className={cn('flex justify-end', cellGap)}>
           {/* Empty space for operator column */}
           <div className={operatorWidthClass} />
           {Array.from({ length: maxDigits }, (_, visualIdx) => {
             const colIndex = maxDigits - 1 - visualIdx // Visual L→R to column index (ones=0)
             const digit = columnDigits[colIndex]
-            // On the last step its two boxes light up together: the number goes in whole.
-            const onLastStep = isActive && lastStepColumn !== undefined && activeColumn === lastStepColumn
-            const isActiveCol = (activeColumn === colIndex && isActive) ||
-              (onLastStep && colIndex === lastStepColumn + 1)
-            // The "only if needed" place: while empty it stays dashed and quiet,
-            // even with the cursor in it, so it never reads as a missing digit.
-            const quietOptional = colIndex === optionalColumn && digit === null
+            const isActiveCol = activeColumn === colIndex && isActive
+            const stateClass = (filled: boolean, lit: boolean) => isSubmitted
+              ? (isCorrect
+                ? 'border-green-500 bg-green-50 text-green-700'
+                : lit
+                  ? 'border-orange-500 bg-orange-100 text-red-700 ring-2 ring-orange-400/50 shadow-sm'
+                  : 'border-red-500 bg-red-50 text-red-700')
+              : lit
+                ? 'border-primary bg-blue-100 ring-2 ring-primary/50 text-gray-900 shadow-sm'
+                : filled
+                  ? 'border-gray-400 bg-gray-50 text-gray-900'
+                  : isActive
+                    ? 'border-gray-300 bg-white text-gray-400'
+                    : 'border-gray-200 bg-gray-50 text-gray-400'
+            const tap = (e: { stopPropagation: () => void }) => {
+              e.stopPropagation()
+              onClick()                  // Activate this problem card
+              onColumnClick?.(colIndex)  // Focus the tapped column
+            }
+
+            // The last step's left place is drawn inside the box below, not on its own.
+            if (lastStepColumn !== undefined && colIndex === lastStepColumn + 1) return null
+
+            if (lastStepColumn !== undefined && colIndex === lastStepColumn) {
+              const left = columnDigits[lastStepColumn + 1]
+              const filled = digit !== null || left !== null
+              // While he types, the number fills the box from the left, as on paper:
+              // nothing he typed moves (owner's pick, 2026-11-21, tryout way C). Once he
+              // checks or moves on, it sits under its places (a one-digit 9 under the tens).
+              const typed = (left ?? '') + (digit ?? '')
+              const editing = isActiveCol && !isSubmitted
+              const shown = editing ? [typed[0] ?? null, typed[1] ?? null] : [left, digit]
+              return (
+                <div
+                  key={`ans-${visualIdx}`}
+                  data-last-step-box
+                  onClick={tap}
+                  className={cn('relative flex cursor-pointer touch-manipulation select-none', cellGap)}
+                >
+                  {/* One border around both places: one box, one number. */}
+                  <div className={cn('pointer-events-none absolute inset-0 rounded-md border-2 transition-all', stateClass(filled, isActiveCol))} />
+                  {shown.map((d, k) => (
+                    <div
+                      key={k}
+                      data-testid="wp-answer-cell"
+                      data-optional-col={k === 0 ? 'true' : undefined}
+                      className={cn(cellSize, 'relative flex items-center justify-center font-mono font-bold tabular-nums text-center')}
+                    >
+                      {d ?? ''}
+                    </div>
+                  ))}
+                </div>
+              )
+            }
 
             return (
               <div
                 key={`ans-${visualIdx}`}
                 data-testid="wp-answer-cell"
-                data-optional-col={colIndex === optionalColumn ? 'true' : undefined}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onClick()                  // Activate this problem card
-                  onColumnClick?.(colIndex)  // Focus the tapped column
-                }}
+                onClick={tap}
                 className={cn(
                   cellSize,
                   'flex items-center justify-center',
                   'font-mono font-bold tabular-nums text-center',
                   'border-2 rounded-md cursor-pointer transition-all',
                   'touch-manipulation select-none',
-                  quietOptional
-                    ? (isActiveCol
-                      ? 'border-dashed border-primary/60 bg-transparent'
-                      : 'border-dashed border-gray-300 bg-transparent')
-                    : isSubmitted
-                    ? (isCorrect
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : isActiveCol
-                        ? 'border-orange-500 bg-orange-100 text-red-700 ring-2 ring-orange-400/50 shadow-sm'
-                        : 'border-red-500 bg-red-50 text-red-700')
-                    : isActiveCol
-                      ? 'border-primary bg-blue-100 ring-2 ring-primary/50 text-gray-900 shadow-sm'
-                      : digit !== null
-                        ? 'border-gray-400 bg-gray-50 text-gray-900'
-                        : isActive
-                          ? 'border-gray-300 bg-white text-gray-400'
-                          : 'border-gray-200 bg-gray-50 text-gray-400'
+                  stateClass(digit !== null, isActiveCol)
                 )}
               >
                 {digit ?? ''}
@@ -627,8 +650,8 @@ export default function WorksheetProblem({
           })}
         </div>
         {isActive && !isSubmitted && lastStepColumn !== undefined && activeColumn === lastStepColumn && (
-          <p className="mt-1 text-[11px] font-medium text-gray-500" data-optional-caption data-last-step-caption>
-            Last step: type the whole number, the way you say it.
+          <p className="mt-1.5 text-xs font-semibold text-primary" data-last-step-caption>
+            Type the whole number in the big box.
           </p>
         )}
       </div>
