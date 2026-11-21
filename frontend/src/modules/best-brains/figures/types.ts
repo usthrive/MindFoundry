@@ -548,3 +548,86 @@ export type BBFigure =
 
 /** Narrow a figure to one type (renderers take the concrete params shape). */
 export type FigureOf<T extends BBFigureType> = Extract<BBFigure, { type: T }>;
+
+// ---------------------------------------------------------------------------
+// Part-whole figures for the Singapore Method module (`school-math`), added
+// 2026-11-21 (BUILD-PLAN v2 stage 1a; ENGINE-SPEC §3.1). TYPES ONLY, added
+// additively: Best Brains never emits them, and they are deliberately NOT in
+// `BBFigure` or `FIGURE_TYPES`, so no Best Brains renderer, pack or gate sees a
+// new member. `checkFigureShape`, `figureValue` and `partWholeSpoken` accept
+// them; their renderers arrive in stage 2, when they join `BBFigureView`.
+//
+// The same law as above: a figure is built from the item's own drawn values.
+// One more rule for these: an ASKED number is never drawn — the asked bond
+// circle is `'empty'`, a story's unknown is `'?'`, the asked track square is
+// `null`, and a split list's open row has `second: null` (L33).
+// ---------------------------------------------------------------------------
+
+/** A bond circle: a number, empty (the asked circle), or "?" (a story's unknown). */
+export type BondCell = number | 'empty' | '?';
+
+export interface BondShape {
+  whole: BondCell;
+  parts: [BondCell, BondCell];
+}
+
+/** N-F1: a number bond, one whole circle above two part circles. */
+export interface NumberBondParams {
+  bond: BondShape;
+  /**
+   * A child's own bond, shown in an error-analysis item as the mistake to find
+   * (CURRICULUM-MAP §7.15). Only then may a filled bond be false.
+   */
+  childWork?: boolean;
+}
+
+/** Fixed shapes, each CARRYING its number; nothing countable (L33). */
+export interface GroupsParams {
+  shape: string;
+  groups: number[];
+}
+
+/** "Make a list": the ways to split a whole, in order; an open row has `second: null`. */
+export interface SplitListParams {
+  whole: number;
+  rows: Array<{ first: number; second: number | null }>;
+}
+
+/** N-F8: two rows matched one to one; nothing ringed, no threads drawn. */
+export interface MatchRowsParams {
+  top: { count: number; spread: boolean };
+  bottom: { count: number; spread: boolean };
+}
+
+/** A story's picture: the setting, with fixed shapes carrying the story's given numbers. */
+export interface SceneParams {
+  setting: string;
+  shape: string;
+  groups: number[];
+}
+
+/** A window of a number track; the asked square is `null` (printed empty). */
+export interface TrackWindowParams {
+  cells: Array<number | null>;
+}
+
+export type PartWholeFigureType = 'number-bond' | 'groups' | 'split-list' | 'match-rows' | 'scene' | 'track-window';
+
+export const PART_WHOLE_FIGURE_TYPES: readonly PartWholeFigureType[] = [
+  'number-bond', 'groups', 'split-list', 'match-rows', 'scene', 'track-window',
+] as const;
+
+export type PartWholeFigure =
+  | (FigureBase & { type: 'number-bond'; params: NumberBondParams })
+  | (FigureBase & { type: 'groups'; params: GroupsParams })
+  | (FigureBase & { type: 'split-list'; params: SplitListParams })
+  | (FigureBase & { type: 'match-rows'; params: MatchRowsParams })
+  | (FigureBase & { type: 'scene'; params: SceneParams })
+  | (FigureBase & { type: 'track-window'; params: TrackWindowParams });
+
+/** Every figure the library can check: Best Brains' renderable ones and the part-whole ones. */
+export type LibraryFigure = BBFigure | PartWholeFigure;
+
+export function isPartWholeFigure(fig: LibraryFigure): fig is PartWholeFigure {
+  return (PART_WHOLE_FIGURE_TYPES as readonly string[]).includes(fig.type);
+}

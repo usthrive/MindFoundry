@@ -411,6 +411,12 @@ taking any blueprint (a test-prep mock is a fresh-form chapter check); the `prep
 roles in `SMItem.role`; the exam-value gate's enablement list ready to take test-prep surfaces. The
 v1 page is retired, archived with a README, only when the engine serves its sessions.
 
+**Another future idea, saved, not planned (owner, 2026-11-21):** a Mind Foundry **daily plan** of
+about 30 minutes that combines Kumon sheets, Best Brains and Singapore Method in one day, each with
+fewer questions, the three approaches taught in parallel — possibly a distinctive Mind Foundry
+approach. Written up in `docs/FUTURE-MIND-FOUNDRY-DAILY-PLAN.md`; nothing in this build depends on it,
+but the build keeps it possible (a day is a question count per module; the time per day is recorded).
+
 ---
 
 ## 12. Mapping from BUILD-PLAN v1 (2026-11-18)
@@ -426,6 +432,42 @@ v1 page is retired, archived with a README, only when the engine serves its sess
 | 6 test prep | **future** (§11) |
 | 7 fan-out of Grade 2 | stage 7 for Grade 1; Grade 2's with Grade 2 |
 | 8 persona tests | stage 8, per grade |
+
+---
+
+## 13. Reviewing wrong work — what this module takes from Best Brains (owner, 2026-11-21; DECISIONS M22)
+
+The owner: "think about incorporating best practices from Best Brains enhancements like reviewing
+wrong material." Best Brains earned each of these from a real miss of the first learner's (the
+code files say which). The Singapore Method takes every one, and applies them on **every** day kind,
+not only after a check. Built in stage 5 (5a day flow, 5b check and review) unless named otherwise.
+
+| # | Practice | Best Brains source | In this module | Records |
+|---|---|---|---|---|
+| W1 | **Fix-it after a shown answer.** When the ladder reaches rung 4 (the answer shown), the day does not just move on: the next screen is a **same-structure twin** with new numbers (the same template at a fresh seed), or, where the template has no twin, an explain-back (tap the true rows about the answer just shown) | `session/fixit.ts` | every lesson-step, practice, return and comeback item | role `review` (id marked `-FX-`): never "knows" evidence (same-minute success is working memory, TAD §2); the skill goes to the comeback pool (W3) |
+| W2 | **"Look again" at the end of a practice day.** After the day's N, up to **2** (Grade 1) / **3** (Grades 2–5) of the day's first-try misses come back one at a time: the question read again, **his own answer shown**, rung 1 of the ladder, one more go; "Show me how" replays the lesson demo. Short, kind, never "wrong"; skipped if the child takes the rest | `CheckReview.tsx` (going over the paper), widened from the weekly check to every practice day | practice days; lesson days use W1 only (the lesson is the teaching) | role `review` (id `-LA-`); the score of the day never changes |
+| W3 | **Misses come back with new numbers at 2, 7 and 21 days** until right unaided three times in a row | `session/comebacks.ts` (check misses only) | from chapter checks (as Best Brains) **and** from practice-day items missed on the first try that needed rung 3 or 4; check misses first; at most 2 a day in Grade 1, 3 from Grade 2 | `sm_comebacks`; stage 5 adds `'practice'` to its `source` check (a small migration, on the owner's word) |
+| W4 | **Going over the paper after every check**: each miss with his own answer, the ladder, one re-attempt; the score never changes | `session/checkReview.ts` | chapter checks, cumulative checks, mocks (already ENGINE §4.8). Placement is the exception: its misses are units not yet taught, so they are taught in the path, not reviewed (the grown-up sees them) | `review:` answers never count |
+| W5 | **Fresh questions on every second look**: a re-sit or a comeback is never a question he has already seen answered | `session/freshForm.ts` | re-sits, comebacks, the W1 twin, W2 never re-serves the shown answer's numbers after rung 4 | gate `sm-check-runner-test` |
+| W6 | **The same answer twice gets the clue again**, and a third time "You wrote 7 again. Let's read it together." | owner's Best Brains leftover (KUMON handoff); S6 | every surface | the repeat is recorded, not a new try |
+| W7 | **Re-teach the skill, worked example first**, before the comebacks of a skill missed on a check | `screens/MicroReteach.tsx` | the next lesson day after a check opens with that skill's demo ("Show me how") if two or more check parts on it were missed | demo seen, per content version |
+| W8 | **"Where the unit is at"** when a unit is waiting (check due, a skill stuck): what happened in counts, what moving on needs, what comes next and when; then a grown-up part with the misses and his own answers and one thing to do together | `session/weekStatus.ts` | module home and the parent view (stage 6) | — |
+| W9 | **His working kept for the grown-up** (the scratch pad's strokes, the paper items' "I drew it") — never marked | `services/bbNotebookStore.ts` | from Grade 2, when the column and bar items bring the scratch pad (Grade 1 builds on screen) | IndexedDB on the device, as Best Brains |
+
+**Gate additions** (stage 5): `sm-day-flow-test` asserts W1 (a twin follows every rung-4 item; it is
+never mastery evidence), W2 (the look-again list is the day's first-try misses, capped, his answers
+shown, the score unchanged; broken control: a look-again that re-serves an item answered right), W3
+(practice misses scheduled; the daily cap; broken control: a comeback that counts a `review` answer
+as clean), W6 (the third same answer gets the read-together line).
+
+## 14. The first learner's day budget (owner, 2026-11-21; DECISIONS M22)
+
+"For my son for now, he will be doing Kumon at 15-20 min (2 sheets - 20 questions), Best Brains at
+10-15 min, and Singapore at 15 min. I don't want to overwhelm him, so I have reduced the workload and
+diversified." So, when his Grade 2 path starts: **lesson day 6, practice day 8 plus up to 2
+"look again"**, aiming at 15 minutes; the parent view shows his **typical day length** (median
+minutes over his last five days, grown-up only, never a clock for him) so the owner can move N up or
+down. The module never asks for more time (METHODOLOGY §5).
 
 ---
 

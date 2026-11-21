@@ -1,4 +1,4 @@
-# NEXT STEPS — `school-math` (state 2026-11-20)
+# NEXT STEPS — `school-math` (state 2026-11-21)
 
 Start here (any model). No child's name anywhere; the exam photos are never in the repo.
 **The full build (Grade 1 first) starts from `docs/HANDOFF-2026-11-20-SINGAPORE-METHOD-FULL-BUILD.md`.**
@@ -23,15 +23,42 @@ One customizable module: My path (placement → all Grade 1–5 units) · Test p
 (chapter + test date) · My scorecard · parent Settings (grade, school chapter, questions/day,
 days/week, test date).
 
-## Next (in order) — BUILD-PLAN v2 (2026-11-20, owner delegation M21)
-Follow `design/engine/BUILD-PLAN.md` (v2; Fable design review REFINE, its 7 fixes applied) and
-`design/engine/EXEMPLAR-G1-U02.md`. Grade 1 first, complete and live, then Grades 2–5.
-1. Stage 0: `sm_` tables + RLS, contract kinds (migration applied only on the owner's word).
-2. Stage 1: engine + G1-U02 (and its four outside templates) through both gates.
-3. Stage 2a: G1-U02's figures and inputs; then Settings + move path (3), Placement (4), My path +
-   chapter check + review (5), My scorecard + parent view (6), Grade 1 fan-out (7), personas (8),
-   Grade 1 GO-LIVE.
-4. Owed (with Grade 2): Fable sign-off on the review's N1 fix and on the proposed G2-U04 chapter check.
+## State (2026-11-21 11:43 EST)
+- Stage A (plan v2) + stage 0 (`sm_` tables, applied, migration 20261120000001) — merged, PR #35.
+- Stage 1 run 1 — engine + G1-U02 exemplar — committed 6af7314 on the branch, NOT pushed.
+- **Stage 1 run 2 — DONE, uncommitted** (waits for the owner's read of the dump and his commit word):
+  lesson / practice days, W1 fix-it, W2 look again, blind-habit balance, rotation by practice day
+  (`engine/assemble.ts`); scheduler (weakness, comebacks 2/7/21 from check + practice misses, previews);
+  mastery; part-whole figure types added additively to the Best Brains library (packs hashed identical);
+  9 new gates → battery 42 runs, 41 green, **sm-no-name fails closed until the owner sets
+  `MF_NO_NAME_LIST`**; sm-verify-units 119/119. tsc 6 runs on this change set (over the house limit of
+  2, disclosed each time).
+- **Gates on G1-U02 (seeds 29 / 9001 / 70001, checked independent):** Fable authenticity REJECT → fixes
+  (M24) → fresh Fable ACCEPT (M25; hard gates all PASS, weighted 4.1, depth 3.8) → follow-ups → Fable
+  planted-defect control REJECT with all three defects cited (M26: the gate is trusted; not repeated per
+  unit) → merged Opus re-check + teacher read: 7,626 values, 2 mismatches, both fixed with 13 more
+  teacher fixes (M27). Packs: `testing/gate-g1u02-2026-11-21/`; notes: `testing/STAGE1-RUN2-NOTES.md`;
+  owner's dump: `testing/dump-g1u02-stage1-run2.txt`.
+- **Device switch (separate branch `sm-device-switch`, worktree `../MindFoundry-sm-switch`, from main
+  2eb35be):** "Singapore Method on this device" in Settings (iPad home-screen apps keep their own
+  storage); gate sm-device-switch-test 8/8, battery 33/33 there, tsc 1 run, photos in
+  `testing/photos-2026-11-21-device-switch/`. Uncommitted; waits for the owner's words.
+- Owner additions 11-21 (DECISIONS M22): Best Brains wrong-work practices W1–W9 (BUILD-PLAN §13),
+  his day budget (§14), the future 30-minute combined daily plan (`docs/FUTURE-MIND-FOUNDRY-DAILY-PLAN.md`).
+- Model use (owner, M25): Fable for verdicts / design sign-offs / the control once; Opus for builds, PASS 1
+  tagging and every recompute (adversarial re-check merged with the teacher run).
+
+## Next (in order)
+1. Owner reads `testing/dump-g1u02-stage1-run2.txt` (one lesson day, one practice day, look again, the check, at two
+   seeds) → commit word for stage 1 run 2 → push → PR → squash-merge → sync the branch by a normal merge
+   (the switch branch merges first or after; the battery-count line in the KUMON handoff will need a one-line merge).
+2. Owner decision on his path while Grade 1 is built (options A/B/C in the 11-21 session: B = his Grade 2 units
+   right after stages 2–6; C = a stopgap page for his class's next chapter after the 1 Dec test).
+3. Stage 2a: G1-U02's figures and inputs (touch + keyboard, harness photos); then stages 3–6 and the Grade 1
+   fan-out (BUILD-PLAN §7), with the authoring kit written from what G1-U02 taught (M23–M27, S7).
+- Owed to stage 5: "=" voiced "is the same as", a speech form for − and □ with a gate; the say/type-the-
+  sentence step after error rows; the comeback source 'practice' migration.
+- Owed with Grade 2: Fable sign-off on the review's N1 fix and on the proposed G2-U04 chapter check.
 
 ## Owner decisions still open
 Teaching decisions T-1..T-8 were made under the delegation (BUILD-PLAN §2). Still the owner's:

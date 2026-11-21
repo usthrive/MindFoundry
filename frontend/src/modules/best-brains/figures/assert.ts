@@ -18,7 +18,8 @@
  * the React renderers can all use them.
  */
 
-import type { BBFigure } from './types';
+import type { LibraryFigure, PartWholeFigure } from './types';
+import { isPartWholeFigure } from './types';
 
 // ---------------------------------------------------------------------------
 // Small numeric helpers (kept local: this module must stay dependency-free)
@@ -58,7 +59,7 @@ function withCommas(digits: string): string {
 // ---------------------------------------------------------------------------
 
 /** Human-readable problems with the figure itself; empty array = well-formed. */
-export function checkFigureShape(fig: BBFigure): string[] {
+export function checkFigureShape(fig: LibraryFigure): string[] {
   const e: string[] = [];
   const bad = (m: string) => e.push(m);
 
@@ -66,6 +67,12 @@ export function checkFigureShape(fig: BBFigure): string[] {
   if (fig.asserts && !fig.asserts.equals) bad('asserts.equals is required when asserts is present');
   if (fig.asserts && !/^(answer|param:.+)$/.test(fig.asserts.equals)) {
     bad(`asserts.equals "${fig.asserts.equals}" must be "answer" or "param:<key>"`);
+  }
+  // Part-whole figures (school-math, 2026-11-21) are checked by their own branch;
+  // every Best Brains figure takes the switch below exactly as before.
+  if (isPartWholeFigure(fig)) {
+    for (const m of partWholeShape(fig)) bad(m);
+    return e;
   }
 
   switch (fig.type) {
@@ -448,13 +455,14 @@ export function checkFigureShape(fig: BBFigure): string[] {
  *   angle-figure      angle | sum | missing
  *   balance           left | right | left:k | right:k   (the visible heaps; a bag is never a value)
  */
-export function figureValue(fig: BBFigure, selector?: string): string[] | null {
+export function figureValue(fig: LibraryFigure, selector?: string): string[] | null {
   const of = selector ?? fig.asserts?.of;
   // An UNRECOGNISED selector returns null rather than falling through to the
   // default. A typo must fail loudly: silently auditing a different quantity
   // than the author asked for is the figure twin of an unregistered templateId
   // skipping the QG-5 audit.
   if (of !== undefined && !SELECTORS[fig.type].some((re) => re.test(of))) return null;
+  if (isPartWholeFigure(fig)) return partWholeValue(fig, of);
   const idx = (prefix: string): number | null => {
     if (!of || !of.startsWith(`${prefix}:`)) return null;
     const n = Number(of.slice(prefix.length + 1));
@@ -697,7 +705,7 @@ function sentenceEquation(
 }
 
 /** The selectors each figure type answers to; anything else is an authoring typo. */
-const SELECTORS: Record<BBFigure['type'], RegExp[]> = {
+const SELECTORS: Record<LibraryFigure['type'], RegExp[]> = {
   'number-line': [/^mark$/, /^mark:\d+$/],
   'bar-model': [/^total$/, /^bar:\d+$/],
   'area-grid': [/^shaded$/, /^cells$/, /^shaded-fraction$/],
@@ -717,7 +725,127 @@ const SELECTORS: Record<BBFigure['type'], RegExp[]> = {
   pictograph: [/^key$/, /^symbols:\d+$/, /^row:\d+$/],
   'number-track': [/^counter$/, /^counter:\d+$/, /^flag$/],
   'line-plot': [/^total$/, /^at:\d+$/],
+  // part-whole figures (school-math)
+  'number-bond': [/^whole$/, /^part:[01]$/],
+  groups: [/^total$/, /^group:\d+$/],
+  'split-list': [/^whole$/, /^row:\d+$/],
+  'match-rows': [/^more$/, /^top$/, /^bottom$/],
+  scene: [/^total$/, /^group:\d+$/],
+  'track-window': [/^cell:\d+$/],
 };
+
+// ---------------------------------------------------------------------------
+// Part-whole figures (school-math, 2026-11-21; types.ts "Part-whole figures")
+// ---------------------------------------------------------------------------
+
+const isCellNum = (c: unknown): c is number => typeof c === 'number';
+
+/** Well-formedness of a part-whole figure; empty = well-formed. */
+function partWholeShape(fig: PartWholeFigure): string[] {
+  const e: string[] = [];
+  const bad = (m: string) => e.push(m);
+  switch (fig.type) {
+    case 'number-bond': {
+      const { whole, parts } = fig.params.bond;
+      const cells = [whole, ...parts];
+      if (parts.length !== 2) bad('a number bond has exactly two part circles');
+      for (const c of cells) {
+        if (isCellNum(c) ? !isInt(c) || c < 0 : c !== 'empty' && c !== '?') bad(`bond circle "${String(c)}" must be a whole number, 'empty' or '?'`);
+      }
+      if (cells.filter((c) => c === '?').length > 1) bad('a bond has at most one "?" (one unknown)');
+      // A shown bond must be true — except a child's own bond in an error item
+      // (`childWork`), which is the mistake the child is asked to find.
+      if (isCellNum(whole) && !fig.params.childWork) {
+        for (const p of parts) if (isCellNum(p) && p > whole) bad(`part ${p} is bigger than the whole ${whole}`);
+        if (isCellNum(parts[0]) && isCellNum(parts[1]) && parts[0] + parts[1] !== whole) {
+          bad(`parts ${parts[0]} and ${parts[1]} do not make the whole ${whole}`);
+        }
+      }
+      break;
+    }
+    case 'groups':
+    case 'scene': {
+      const p = fig.params;
+      if (!p.shape || !p.shape.trim()) bad('a group needs the shape its number is drawn on');
+      if (fig.type === 'scene' && (!fig.params.setting || !fig.params.setting.trim())) bad('a scene needs its setting');
+      if (!p.groups.length || p.groups.length > 3) bad('one to three groups');
+      for (const g of p.groups) if (!isInt(g) || g < 0 || g > 100) bad(`group number ${g} must be a whole number 0–100`);
+      break;
+    }
+    case 'split-list': {
+      const { whole, rows } = fig.params;
+      if (!isInt(whole) || whole < 2) bad('a split list needs a whole of at least 2');
+      let last = 0;
+      for (const r of rows) {
+        if (!isInt(r.first) || r.first < 1 || r.first >= whole) bad(`row first part ${r.first} must be 1 to ${whole - 1}`);
+        if (r.first <= last) bad('rows run in order, smallest first part first');
+        last = r.first;
+        if (r.second !== null && r.second !== whole - r.first) bad(`row ${r.first} and ${r.second} does not make ${whole}`);
+      }
+      break;
+    }
+    case 'match-rows': {
+      for (const [name, row] of [['top', fig.params.top], ['bottom', fig.params.bottom]] as const) {
+        if (!isInt(row.count) || row.count < 1 || row.count > 20) bad(`${name} row count must be 1–20`);
+      }
+      if (fig.params.top.count === fig.params.bottom.count) bad('matched rows of equal length have no "more"');
+      break;
+    }
+    case 'track-window': {
+      const cells = fig.params.cells;
+      if (cells.length < 3 || cells.length > 12) bad('a track window shows 3–12 squares');
+      // The printed squares are consecutive: square i is first + i.
+      const firstNum = cells.findIndex(isCellNum);
+      if (firstNum < 0) bad('a track window prints at least one number');
+      else {
+        const start = (cells[firstNum] as number) - firstNum;
+        cells.forEach((c, i) => { if (isCellNum(c) && c !== start + i) bad(`square ${i} reads ${c}, not ${start + i}`); });
+        if (start < 0) bad('a track window starts at 0 or above');
+      }
+      break;
+    }
+  }
+  return e;
+}
+
+/** The quantity a part-whole figure shows; null for an asked (empty) circle or square. */
+function partWholeValue(fig: PartWholeFigure, of: string | undefined): string[] | null {
+  const one = (n: unknown) => (isCellNum(n) ? [String(n)] : null);
+  const idx = (prefix: string): number | null => {
+    const m = of ? new RegExp(`^${prefix}:(\\d+)$`).exec(of) : null;
+    return m ? Number(m[1]) : null;
+  };
+  switch (fig.type) {
+    case 'number-bond': {
+      // Default: the whole. An empty or "?" circle has no value: it is the question.
+      const b = fig.params.bond;
+      const k = idx('part');
+      return k === null ? one(b.whole) : one(b.parts[k]);
+    }
+    case 'groups':
+    case 'scene': {
+      const g = fig.params.groups;
+      const k = idx('group');
+      return k === null ? [String(g.reduce((a, x) => a + x, 0))] : one(g[k]);
+    }
+    case 'split-list': {
+      const k = idx('row');
+      if (k === null) return [String(fig.params.whole)];
+      const r = fig.params.rows[k];
+      return r ? one(r.second) : null;
+    }
+    case 'match-rows': {
+      const { top, bottom } = fig.params;
+      if (of === 'top') return [String(top.count)];
+      if (of === 'bottom') return [String(bottom.count)];
+      return [String(Math.max(top.count, bottom.count))];
+    }
+    case 'track-window': {
+      const k = idx('cell');
+      return k === null ? null : one(fig.params.cells[k]);
+    }
+  }
+}
 
 const PLACE_WORTH: Record<string, number> = {
   millions: 1e6, 'hundred-thousands': 1e5, 'ten-thousands': 1e4, thousands: 1e3,
