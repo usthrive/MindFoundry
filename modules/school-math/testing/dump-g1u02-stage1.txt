@@ -7,7 +7,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 --- sm.g1u02.l1.split_any  (lesson G1-U02-L1; served as step, practice)
   sm.g1u02.l1.split_any@3/main  [step; N-I4; build; skills G1-U02-K1]  validator: clean
     prompt: Split 8 counters into two parts.
-    figure: counters: 8, two-circles, tappable
+    figure: counters: 8, row; he drags them into two circles
     part p1: "Move the counters into the two circles." — N-I4 drag 8 counters into two circles
       key: any two parts (≥ 1) that make 8
     part p2 (after-part:p1): "Now fill in the sentence." — N-I8 sentence "8 is □ and □." (pad)
@@ -21,7 +21,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
   sm.g1u02.l1.split_any@16/main  [step; N-I4; build; skills G1-U02-K1]  validator: clean
     prompt: Split 10 counters into two parts.
-    figure: counters: 10, two-circles, tappable
+    figure: counters: 10, row; he drags them into two circles
     part p1: "Move the counters into the two circles." — N-I4 drag 10 counters into two circles
       key: any two parts (≥ 1) that make 10
     part p2 (after-part:p1): "Now fill in the sentence." — N-I8 sentence "10 is □ and □." (pad)
@@ -35,32 +35,36 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
 --- sm.g1u02.l1.split_another_way  (lesson G1-U02-L1; served as step, practice)
   sm.g1u02.l1.split_another_way@3/main  [step; N-I4; build; skills G1-U02-K1]  validator: clean
-    prompt: Here is one way to split 8. Use different numbers.
+    prompt: Here is one way to split 8. Guess a new way. Do not use 6 and 2 again. Then check: do both circles make 8?
     figure: groups (fixed counter shapes carrying numbers): 6 and 2
-    figure: counters: 8, two-circles, tappable
+    figure: counters: 8, row; he drags them into two circles
     part p1: "Move the counters another way." — N-I4 drag 8 counters into two circles
       key: any two parts (≥ 1) that make 8, not 6 and 2 in either order
       if he answers 2,6: split.same-pair — "That way is shown already. Try other numbers."
+    part p2 (after-part:p1): "Now fill in the sentence." — N-I8 sentence "8 is □ and □." (pad)
+      key: any two parts (≥ 1) that make 8, the same split as p1
     ladder (split):
       1. "How many in all? Move some to the other circle."
       2. "Look at the two circles." [screen: light-both-circles]
       3. "Both circles together must still have all of them."
       4. "Here is one way. Let us read it together." [screen: show-one-split-and-bond]
-    spoken: "Here is one way to split 8." · "Use different numbers." · "two groups" · "counters and two circles" · "Move the counters another way." · "That way is shown already." · "Try other numbers." · "How many in all?" · "Move some to the other circle." · "Look at the two circles." · "Both circles together must still have all of them." · "Here is one way." · "Let us read it together."
+    spoken: "Here is one way to split 8." · "Guess a new way." · "Do not use 6 and 2 again." · "Then check: do both circles make 8?" · "two groups" · "counters and two circles" · "Move the counters another way." · "That way is shown already." · "Try other numbers." · "Now fill in the sentence." · "8 is □ and □." · "How many in all?" · "Move some to the other circle." · "Look at the two circles." · "Both circles together must still have all of them." · "Here is one way." · "Let us read it together."
 
   sm.g1u02.l1.split_another_way@16/main  [step; N-I4; build; skills G1-U02-K1]  validator: clean
-    prompt: Here is one way to split 10. Use different numbers.
+    prompt: Here is one way to split 10. Guess a new way. Do not use 8 and 2 again. Then check: do both circles make 10?
     figure: groups (fixed counter shapes carrying numbers): 8 and 2
-    figure: counters: 10, two-circles, tappable
+    figure: counters: 10, row; he drags them into two circles
     part p1: "Move the counters another way." — N-I4 drag 10 counters into two circles
       key: any two parts (≥ 1) that make 10, not 8 and 2 in either order
       if he answers 2,8: split.same-pair — "That way is shown already. Try other numbers."
+    part p2 (after-part:p1): "Now fill in the sentence." — N-I8 sentence "10 is □ and □." (pad)
+      key: any two parts (≥ 1) that make 10, the same split as p1
     ladder (split):
       1. "How many in all? Move some to the other circle."
       2. "Look at the two circles." [screen: light-both-circles]
       3. "Both circles together must still have all of them."
       4. "Here is one way. Let us read it together." [screen: show-one-split-and-bond]
-    spoken: "Here is one way to split 10." · "Use different numbers." · "two groups" · "counters and two circles" · "Move the counters another way." · "That way is shown already." · "Try other numbers." · "How many in all?" · "Move some to the other circle." · "Look at the two circles." · "Both circles together must still have all of them." · "Here is one way." · "Let us read it together."
+    spoken: "Here is one way to split 10." · "Guess a new way." · "Do not use 8 and 2 again." · "Then check: do both circles make 10?" · "two groups" · "counters and two circles" · "Move the counters another way." · "That way is shown already." · "Try other numbers." · "Now fill in the sentence." · "10 is □ and □." · "How many in all?" · "Move some to the other circle." · "Look at the two circles." · "Both circles together must still have all of them." · "Here is one way." · "Let us read it together."
 
 --- sm.g1u02.l1.list_splits  (lesson G1-U02-L1; served as step, practice)
   sm.g1u02.l1.list_splits@3/main  [step; L16; build; skills G1-U02-K2]  validator: clean
@@ -68,33 +72,33 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     figure: list for 7: 1 and □ · 2 and □ · 3 and 4 · 4 and □ · 5 and 2 · 6 and 1
     part p1: — pad "1 and □"
       key: 6
-      if he answers 5: count.stop-short — "Count on again. Stop when you say the whole."
+      if he answers 5: count.stop-short-split — "Count on again. Stop at the number we split."
       if he answers 7: count.start-counted — "Start at the part. Do not count it again."
     part p2: — pad "2 and □"
       key: 5
-      if he answers 4: count.stop-short — "Count on again. Stop when you say the whole."
+      if he answers 4: count.stop-short-split — "Count on again. Stop at the number we split."
       if he answers 6: count.start-counted — "Start at the part. Do not count it again."
     part p3: — pad "4 and □"
       key: 3
-      if he answers 2: count.stop-short — "Count on again. Stop when you say the whole."
+      if he answers 2: count.stop-short-split — "Count on again. Stop at the number we split."
       if he answers 4: count.start-counted — "Start at the part. Do not count it again."
     ladder (list):
       1. "What number are we splitting? Read the list in order."
       2. "Look at the rows that are done." [screen: light-done-rows]
-      3. "Each row makes the whole. Count on from the first number."
+      3. "Each row makes the number we split. Count on from the first."
       4. "Here is the full list. Let us read it." [screen: show-full-list]
-    spoken: "Make a list of the ways to split 7." · "a list of the ways to split" · "1 and □" · "Count on again." · "Stop when you say the whole." · "Start at the part." · "Do not count it again." · "2 and □" · "4 and □" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the whole." · "Count on from the first number." · "Here is the full list." · "Let us read it."
+    spoken: "Make a list of the ways to split 7." · "a list of the ways to split 7" · "1 and □" · "Count on again." · "Stop at the number we split." · "Start at the part." · "Do not count it again." · "2 and □" · "4 and □" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the number we split." · "Count on from the first." · "Here is the full list." · "Let us read it."
 
   sm.g1u02.l1.list_splits@16/main  [step; L16; build; skills G1-U02-K2]  validator: clean
     prompt: Make a list of the ways to split 5.
     figure: list for 5: 1 and □ · 2 and □ · 3 and 2 · 4 and □
     part p1: — pad "1 and □"
       key: 4
-      if he answers 3: count.stop-short — "Count on again. Stop when you say the whole."
+      if he answers 3: count.stop-short-split — "Count on again. Stop at the number we split."
       if he answers 5: count.start-counted — "Start at the part. Do not count it again."
     part p2: — pad "2 and □"
       key: 3
-      if he answers 2: count.stop-short — "Count on again. Stop when you say the whole."
+      if he answers 2: count.stop-short-split — "Count on again. Stop at the number we split."
       if he answers 4: count.start-counted — "Start at the part. Do not count it again."
     part p3: — pad "4 and □"
       key: 1
@@ -102,9 +106,9 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     ladder (list):
       1. "What number are we splitting? Read the list in order."
       2. "Look at the rows that are done." [screen: light-done-rows]
-      3. "Each row makes the whole. Count on from the first number."
+      3. "Each row makes the number we split. Count on from the first."
       4. "Here is the full list. Let us read it." [screen: show-full-list]
-    spoken: "Make a list of the ways to split 5." · "a list of the ways to split" · "1 and □" · "Count on again." · "Stop when you say the whole." · "Start at the part." · "Do not count it again." · "2 and □" · "4 and □" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the whole." · "Count on from the first number." · "Here is the full list." · "Let us read it."
+    spoken: "Make a list of the ways to split 5." · "a list of the ways to split 5" · "1 and □" · "Count on again." · "Stop at the number we split." · "Start at the part." · "Do not count it again." · "2 and □" · "4 and □" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the number we split." · "Count on from the first." · "Here is the full list." · "Let us read it."
 
 --- sm.g1u02.l1.missing_split_choice  (lesson G1-U02-L1; served as practice, exit)
   sm.g1u02.l1.missing_split_choice@3/main  [practice; T1; read; skills G1-U02-K2]  validator: clean
@@ -119,9 +123,9 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     ladder (list):
       1. "What number are we splitting? Read the list in order."
       2. "Look at the rows that are done." [screen: light-done-rows]
-      3. "Each row makes the whole. Count on from the first number."
+      3. "Each row makes the number we split. Count on from the first."
       4. "Here is the full list. Let us read it." [screen: show-full-list]
-    spoken: "Here is a list of ways to split 8." · "Which way is missing?" · "a list of the ways to split" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the whole." · "Count on from the first number." · "Here is the full list." · "Let us read it."
+    spoken: "Here is a list of ways to split 8." · "Which way is missing?" · "a list of the ways to split 8" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the number we split." · "Count on from the first." · "Here is the full list." · "Let us read it."
 
   sm.g1u02.l1.missing_split_choice@16/main  [practice; T1; read; skills G1-U02-K2]  validator: clean
     prompt: Here is a list of ways to split 7. Which way is missing?
@@ -135,14 +139,14 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     ladder (list):
       1. "What number are we splitting? Read the list in order."
       2. "Look at the rows that are done." [screen: light-done-rows]
-      3. "Each row makes the whole. Count on from the first number."
+      3. "Each row makes the number we split. Count on from the first."
       4. "Here is the full list. Let us read it." [screen: show-full-list]
-    spoken: "Here is a list of ways to split 7." · "Which way is missing?" · "a list of the ways to split" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the whole." · "Count on from the first number." · "Here is the full list." · "Let us read it."
+    spoken: "Here is a list of ways to split 7." · "Which way is missing?" · "a list of the ways to split 7" · "What number are we splitting?" · "Read the list in order." · "Look at the rows that are done." · "Each row makes the number we split." · "Count on from the first." · "Here is the full list." · "Let us read it."
 
 --- sm.g1u02.l2.bond_from_split  (lesson G1-U02-L2; served as step, practice, return)
   sm.g1u02.l2.bond_from_split@3/main  [step; N-I2; build; skills G1-U02-K3]  validator: clean
     prompt: Split 10 counters into two parts. Then build the bond.
-    figure: counters: 10, two-circles, tappable
+    figure: counters: 10, row; he drags them into two circles
     part p1: "Move the counters into the two circles." — N-I4 drag 10 counters into two circles
       key: any two parts (≥ 1) that make 10
     part p2 (after-part:p1): "Tap the whole circle. Then fill in the bond." — N-I2 bond (build) starting whole [ ]; parts [ ] and [ ]
@@ -157,7 +161,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
   sm.g1u02.l2.bond_from_split@16/main  [step; N-I2; build; skills G1-U02-K3]  validator: clean
     prompt: Split 4 counters into two parts. Then build the bond.
-    figure: counters: 4, two-circles, tappable
+    figure: counters: 4, row; he drags them into two circles
     part p1: "Move the counters into the two circles." — N-I4 drag 4 counters into two circles
       key: any two parts (≥ 1) that make 4
     part p2 (after-part:p1): "Tap the whole circle. Then fill in the bond." — N-I2 bond (build) starting whole [ ]; parts [ ] and [ ]
@@ -206,12 +210,12 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
         C. 8 on top; 5 and 4 below   ← bond.sum-off-by-one
         D. 8 on top; 5 and 2 below   ← bond.sum-off-by-one
       key: choice B
-    ladder (bond-build):
-      1. "Which circle holds everything?"
-      2. "This is the whole circle." [screen: light-whole-circle]
-      3. "The whole goes here. Now fill the parts." [screen: place-whole]
-      4. "Here is the bond. Let us read it together." [screen: fill-bond]
-    spoken: "Which bond shows 8?" · "Which circle holds everything?" · "This is the whole circle." · "The whole goes here." · "Now fill the parts." · "Here is the bond." · "Let us read it together."
+    ladder (bond-choice):
+      1. "Which number is the whole? Do the parts make it?"
+      2. "Look at the whole circle of each bond." [screen: light-whole-circles]
+      3. "Both parts together must make the whole. Check each one."
+      4. "Here is the bond. Let us read it." [screen: ring-answer-bond]
+    spoken: "Which bond shows 8?" · "Which number is the whole?" · "Do the parts make it?" · "Look at the whole circle of each bond." · "Both parts together must make the whole." · "Check each one." · "Here is the bond." · "Let us read it."
 
   sm.g1u02.l2.which_bond@16/main  [practice; T1; read; skills G1-U02-K4]  validator: clean
     prompt: Which bond shows 9?
@@ -221,12 +225,12 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
         C. 9 on top; 4 and 4 below   ← bond.sum-off-by-one
         D. 9 on top; 4 and 6 below   ← bond.sum-off-by-one
       key: choice B
-    ladder (bond-build):
-      1. "Which circle holds everything?"
-      2. "This is the whole circle." [screen: light-whole-circle]
-      3. "The whole goes here. Now fill the parts." [screen: place-whole]
-      4. "Here is the bond. Let us read it together." [screen: fill-bond]
-    spoken: "Which bond shows 9?" · "Which circle holds everything?" · "This is the whole circle." · "The whole goes here." · "Now fill the parts." · "Here is the bond." · "Let us read it together."
+    ladder (bond-choice):
+      1. "Which number is the whole? Do the parts make it?"
+      2. "Look at the whole circle of each bond." [screen: light-whole-circles]
+      3. "Both parts together must make the whole. Check each one."
+      4. "Here is the bond. Let us read it." [screen: ring-answer-bond]
+    spoken: "Which bond shows 9?" · "Which number is the whole?" · "Do the parts make it?" · "Look at the whole circle of each bond." · "Both parts together must make the whole." · "Check each one." · "Here is the bond." · "Let us read it."
 
 --- sm.g1u02.l2.whole_part_truth  (lesson G1-U02-L2; served as exit, practice)
   sm.g1u02.l2.whole_part_truth@3/main  [exit; truth; read; skills G1-U02-K3]  validator: clean
@@ -272,8 +276,6 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       if he answers 2: add.stop-short — "Count on all of the other part."
     part p2 (after-part:p1): "Now make the sentence." — N-I8 sentence "□ □ □ = □" (chips; chips 2 1 3 + − =)
       key: "2 + 1 = 3" or "1 + 2 = 3"
-      if he answers 4: add.count-first-twice — "Count the first part once. Then count on."
-      if he answers 2: add.stop-short — "Count on all of the other part."
     ladder (add):
       1. "Are we putting together or taking away?"
       2. "Look at the bond with both parts." [screen: show-empty-bond-with-parts]
@@ -291,8 +293,6 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       if he answers 8: add.stop-short — "Count on all of the other part."
     part p2 (after-part:p1): "Now make the sentence." — N-I8 sentence "□ □ □ = □" (chips; chips 7 2 9 + − =)
       key: "7 + 2 = 9" or "2 + 7 = 9"
-      if he answers 10: add.count-first-twice — "Count the first part once. Then count on."
-      if he answers 8: add.stop-short — "Count on all of the other part."
     ladder (add):
       1. "Are we putting together or taking away?"
       2. "Look at the bond with both parts." [screen: show-empty-bond-with-parts]
@@ -363,29 +363,29 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 --- sm.g1u02.l4.take_away  (lesson G1-U02-L4; served as step)
   sm.g1u02.l4.take_away@3/main  [step; L1; build; skills G1-U02-K6; lesson-only]  validator: clean
     prompt: Take away 3 counters. How many are left?
-    figure: counters: 4, row, tappable
-    part p1: "Tap the ones you take away. Then type how many." — pad
+    figure: counters: 4, row; he taps the ones he takes away
+    part p1: "Tap the ones you take away. Then finish the sentence." — N-I8 sentence "4 − 3 = □" (pad)
       key: 1
-      if he answers 7: sub.added — "Look at the sign. Taking away leaves less."
-    ladder (missing-part):
-      1. "What is the whole? Which part is hidden?"
-      2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
-      3. "Start at the part you know. Count on to the whole."
-      4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Take away 3 counters." · "How many are left?" · "a row of counters" · "Tap the ones you take away." · "Then type how many." · "Look at the sign." · "Taking away leaves less." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+      if he answers 7: take.added — "We take some away. Fewer are left."
+    ladder (take-away):
+      1. "How many at the start? How many go away?"
+      2. "Tap the ones that go away." [screen: light-counters-to-take]
+      3. "Count the ones still here."
+      4. "Here is what is left. Let us read the sentence." [screen: dim-taken-read-sentence]
+    spoken: "Take away 3 counters." · "How many are left?" · "a row of counters" · "Tap the ones you take away." · "Then finish the sentence." · "4 − 3 = □" · "We take some away." · "Fewer are left." · "How many at the start?" · "How many go away?" · "Tap the ones that go away." · "Count the ones still here." · "Here is what is left." · "Let us read the sentence."
 
   sm.g1u02.l4.take_away@16/main  [step; L1; build; skills G1-U02-K6; lesson-only]  validator: clean
     prompt: Take away 2 counters. How many are left?
-    figure: counters: 5, row, tappable
-    part p1: "Tap the ones you take away. Then type how many." — pad
+    figure: counters: 5, row; he taps the ones he takes away
+    part p1: "Tap the ones you take away. Then finish the sentence." — N-I8 sentence "5 − 2 = □" (pad)
       key: 3
-      if he answers 7: sub.added — "Look at the sign. Taking away leaves less."
-    ladder (missing-part):
-      1. "What is the whole? Which part is hidden?"
-      2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
-      3. "Start at the part you know. Count on to the whole."
-      4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Take away 2 counters." · "How many are left?" · "a row of counters" · "Tap the ones you take away." · "Then type how many." · "Look at the sign." · "Taking away leaves less." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+      if he answers 7: take.added — "We take some away. Fewer are left."
+    ladder (take-away):
+      1. "How many at the start? How many go away?"
+      2. "Tap the ones that go away." [screen: light-counters-to-take]
+      3. "Count the ones still here."
+      4. "Here is what is left. Let us read the sentence." [screen: dim-taken-read-sentence]
+    spoken: "Take away 2 counters." · "How many are left?" · "a row of counters" · "Tap the ones you take away." · "Then finish the sentence." · "5 − 2 = □" · "We take some away." · "Fewer are left." · "How many at the start?" · "How many go away?" · "Tap the ones that go away." · "Count the ones still here." · "Here is what is left." · "Let us read the sentence."
 
 --- sm.g1u02.l4.empty_part_bond  (lesson G1-U02-L4; served as step, practice, return, placement)
   sm.g1u02.l4.empty_part_bond@3/main  [step; N-I2; build; skills G1-U02-K6]  validator: clean
@@ -394,11 +394,13 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     part p1: "What goes in the empty circle?" — N-I2 bond (fill) starting whole 5; parts 1 and [ ]
       key: whole 5; parts 1 and 4; graded: part
       if he answers 1: bond.repeat-shown — "That part is shown. Find the hidden part."
-      if he answers 6: sub.added — "Look at the sign. Taking away leaves less."
+      if he answers 5: bond.whole-as-part — "The whole circle holds everything."
+      if he answers 6: bond.added — "We are finding a part. A part is smaller."
       if he answers 3: count.stop-short — "Count on again. Stop when you say the whole."
     part p2 (after-part:p1): "Now finish the sentence." — N-I8 sentence "5 − 1 = □" (pad)
       key: 4
       if he answers 1: bond.repeat-shown — "That part is shown. Find the hidden part."
+      if he answers 5: bond.whole-as-part — "The whole circle holds everything."
       if he answers 6: sub.added — "Look at the sign. Taking away leaves less."
       if he answers 3: count.stop-short — "Count on again. Stop when you say the whole."
     ladder (missing-part):
@@ -406,23 +408,27 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "That part is shown." · "Find the hidden part." · "Look at the sign." · "Taking away leaves less." · "Count on again." · "Stop when you say the whole." · "Now finish the sentence." · "5 − 1 = □" · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "That part is shown." · "Find the hidden part." · "The whole circle holds everything." · "We are finding a part." · "A part is smaller." · "Count on again." · "Stop when you say the whole." · "Now finish the sentence." · "5 − 1 = □" · "Look at the sign." · "Taking away leaves less." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
   sm.g1u02.l4.empty_part_bond@16/main  [step; N-I2; build; skills G1-U02-K6]  validator: clean
     prompt: Find the missing part.
     figure: number bond: whole 3; parts [ ] and 1
     part p1: "What goes in the empty circle?" — N-I2 bond (fill) starting whole 3; parts [ ] and 1
       key: whole 3; parts 1 and 2; graded: part
-      if he answers 4: sub.added — "Look at the sign. Taking away leaves less."
+      if he answers 1: bond.repeat-shown — "That part is shown. Find the hidden part."
+      if he answers 3: bond.whole-as-part — "The whole circle holds everything."
+      if he answers 4: bond.added — "We are finding a part. A part is smaller."
     part p2 (after-part:p1): "Now finish the sentence." — N-I8 sentence "3 − 1 = □" (pad)
       key: 2
+      if he answers 1: bond.repeat-shown — "That part is shown. Find the hidden part."
+      if he answers 3: bond.whole-as-part — "The whole circle holds everything."
       if he answers 4: sub.added — "Look at the sign. Taking away leaves less."
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "Look at the sign." · "Taking away leaves less." · "Now finish the sentence." · "3 − 1 = □" · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "That part is shown." · "Find the hidden part." · "The whole circle holds everything." · "We are finding a part." · "A part is smaller." · "Now finish the sentence." · "3 − 1 = □" · "Look at the sign." · "Taking away leaves less." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
 --- sm.g1u02.l4.sub_pad  (lesson G1-U02-L4; served as practice, return, check)
   sm.g1u02.l4.sub_pad@3/main  [practice; T8; unaided; skills G1-U02-K6]  validator: clean
@@ -452,12 +458,12 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 --- sm.g1u02.l4.missing_part_choice  (lesson G1-U02-L4; served as practice, exit, check, placement)
   sm.g1u02.l4.missing_part_choice@3/main  [practice; T1; read; skills G1-U02-K6]  validator: clean
     prompt: What is the missing part?
-    figure: number bond: whole 9; parts 2 and [ ]
+    figure: number bond: whole 8; parts 3 and [ ]
     part p1: — T1 4 choices (numbers)
-        A. 6   ← count.stop-short
-        B. 11   ← bond.added
-        C. 8   ← count.start-counted
-        D. 7   ← KEY
+        A. 11   ← bond.added
+        B. 6   ← count.start-counted
+        C. 4   ← count.stop-short
+        D. 5   ← KEY
       key: choice D
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
@@ -468,13 +474,13 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
   sm.g1u02.l4.missing_part_choice@16/main  [practice; T1; read; skills G1-U02-K6]  validator: clean
     prompt: What is the missing part?
-    figure: number bond: whole 6; parts 2 and [ ]
+    figure: number bond: whole 10; parts 2 and [ ]
     part p1: — T1 4 choices (numbers)
-        A. 5   ← count.start-counted
-        B. 4   ← KEY
-        C. 3   ← count.stop-short
-        D. 2   ← bond.repeat-shown
-      key: choice B
+        A. 8   ← KEY
+        B. 2   ← bond.repeat-shown
+        C. 7   ← count.stop-short
+        D. 9   ← count.start-counted
+      key: choice A
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
@@ -510,16 +516,16 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 --- sm.g1u02.l4.error_take_away  (lesson G1-U02-L4; served as step, practice, check)
   sm.g1u02.l4.error_take_away@3/main  [step; T12; read; skills G1-U02-K10]  validator: clean
     prompt: A child wrote 8 − 6 = 8.
-    figure: number bond: whole 8; parts 6 and 8
+    figure: number bond (a child's own bond, shown as the mistake): whole 8; parts 6 and 8
     part p1: "Fix it. What is the right answer?" — pad "8 − 6 = □"
       key: 2
       if he answers 14: sub.added — "Look at the sign. Taking away leaves less."
     part p2 (after-part:p1): "Now tap true or false for each row." — truth rows (6)
         T  Taking away leaves less than 8.
-        F  8 is a part.
-        F  6 is the whole.
-        T  8 is the whole.
         F  The − sign means put together.
+        F  Taking away 6 leaves 8.
+        T  8 is the whole.
+        F  6 is the whole.
         T  6 and 8 together make more than 8.
       key: TFFTFT
     ladder (error):
@@ -527,11 +533,11 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       2. "Look at the whole and the part taken away." [screen: show-empty-bond-whole-and-taken]
       3. "What is left must be less than the whole."
       4. "Here is the right answer and its bond." [screen: show-answer-and-bond]
-    spoken: "A child wrote 8 − 6 = 8." · "a child's number bond" · "Fix it." · "What is the right answer?" · "8 − 6 = □" · "Look at the sign." · "Taking away leaves less." · "Now tap true or false for each row." · "Taking away leaves less than 8." · "8 is a part." · "6 is the whole." · "8 is the whole." · "The − sign means put together." · "6 and 8 together make more than 8." · "What was the whole?" · "What was taken away?" · "Look at the whole and the part taken away." · "What is left must be less than the whole." · "Here is the right answer and its bond."
+    spoken: "A child wrote 8 − 6 = 8." · "a child's number bond" · "Fix it." · "What is the right answer?" · "8 − 6 = □" · "Look at the sign." · "Taking away leaves less." · "Now tap true or false for each row." · "Taking away leaves less than 8." · "The − sign means put together." · "Taking away 6 leaves 8." · "8 is the whole." · "6 is the whole." · "6 and 8 together make more than 8." · "What was the whole?" · "What was taken away?" · "Look at the whole and the part taken away." · "What is left must be less than the whole." · "Here is the right answer and its bond."
 
   sm.g1u02.l4.error_take_away@16/main  [step; T12; read; skills G1-U02-K10]  validator: clean
     prompt: A child wrote 5 − 2 = 4.
-    figure: number bond: whole 5; parts 2 and 4
+    figure: number bond (a child's own bond, shown as the mistake): whole 5; parts 2 and 4
     part p1: "Fix it. What is the right answer?" — pad "5 − 2 = □"
       key: 3
       if he answers 7: sub.added — "Look at the sign. Taking away leaves less."
@@ -552,7 +558,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
 --- sm.g1u02.l5.four_facts  (lesson G1-U02-L5; served as step, practice, return)
   sm.g1u02.l5.four_facts@3/main  [step; N-I8; read; skills G1-U02-K7]  validator: clean
-    prompt: Write the four facts of the bond.
+    prompt: Finish the four facts of the bond.
     figure: number bond: whole 9; parts 2 and 7
     part p1: — N-I8 sentence "2 + 7 = □" (pad)
       key: 9
@@ -560,18 +566,19 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       key: 9
     part p3 (after-part:p2): — N-I8 sentence "9 − 2 = □" (pad)
       key: 7
-      if he answers 2 − 9 = 7: fact.order-swapped — "In a take-away, the whole comes first."
+      if he answers 11: sub.added — "Look at the sign. Taking away leaves less."
     part p4 (after-part:p3): — N-I8 sentence "9 − 7 = □" (pad)
       key: 2
+      if he answers 16: sub.added — "Look at the sign. Taking away leaves less."
     ladder (four-facts):
       1. "Read the bond: the whole, then the parts. Which is the whole?"
       2. "Look at the bond beside the sentence." [screen: light-bond-beside-sentence]
       3. "Two parts make the whole. Take a part from the whole."
       4. "Here is the sentence. Let us read it together." [screen: fill-sentence]
-    spoken: "Write the four facts of the bond." · "a number bond: a whole and two parts" · "2 + 7 = □" · "7 + 2 = □" · "9 − 2 = □" · "In a take-away, the whole comes first." · "9 − 7 = □" · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
+    spoken: "Finish the four facts of the bond." · "a number bond: a whole and two parts" · "2 + 7 = □" · "7 + 2 = □" · "9 − 2 = □" · "Look at the sign." · "Taking away leaves less." · "9 − 7 = □" · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
 
   sm.g1u02.l5.four_facts@16/main  [step; N-I8; read; skills G1-U02-K7]  validator: clean
-    prompt: Write the four facts of the bond.
+    prompt: Finish the four facts of the bond.
     figure: number bond: whole 9; parts 8 and 1
     part p1: — N-I8 sentence "8 + 1 = □" (pad)
       key: 9
@@ -579,15 +586,16 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       key: 9
     part p3 (after-part:p2): — N-I8 sentence "9 − 8 = □" (pad)
       key: 1
-      if he answers 8 − 9 = 1: fact.order-swapped — "In a take-away, the whole comes first."
+      if he answers 17: sub.added — "Look at the sign. Taking away leaves less."
     part p4 (after-part:p3): — N-I8 sentence "9 − 1 = □" (pad)
       key: 8
+      if he answers 10: sub.added — "Look at the sign. Taking away leaves less."
     ladder (four-facts):
       1. "Read the bond: the whole, then the parts. Which is the whole?"
       2. "Look at the bond beside the sentence." [screen: light-bond-beside-sentence]
       3. "Two parts make the whole. Take a part from the whole."
       4. "Here is the sentence. Let us read it together." [screen: fill-sentence]
-    spoken: "Write the four facts of the bond." · "a number bond: a whole and two parts" · "8 + 1 = □" · "1 + 8 = □" · "9 − 8 = □" · "In a take-away, the whole comes first." · "9 − 1 = □" · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
+    spoken: "Finish the four facts of the bond." · "a number bond: a whole and two parts" · "8 + 1 = □" · "1 + 8 = □" · "9 − 8 = □" · "Look at the sign." · "Taking away leaves less." · "9 − 1 = □" · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
 
 --- sm.g1u02.l5.equals_truth  (lesson G1-U02-L5; served as step, practice, exit)
   sm.g1u02.l5.equals_truth@3/main  [step; truth; read; skills G1-U02-K8]  validator: clean
@@ -628,41 +636,42 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     part p1: — N-I8 sentence "□ − 1 = 4" (pad; shape hint "8 − 2 = 6")
       key: 5
       if he answers 1: box.copy-seen — "That number is in the sentence already."
-      if he answers 3: sub.subtracted-seen — "The box is the start. It is the biggest."
-    ladder (four-facts):
-      1. "Read the bond: the whole, then the parts. Which is the whole?"
-      2. "Look at the bond beside the sentence." [screen: light-bond-beside-sentence]
-      3. "Two parts make the whole. Take a part from the whole."
+      if he answers 3: sub.subtracted-seen — "The box is the whole. The whole is the biggest."
+    ladder (box):
+      1. "Is the box a part, or the whole?"
+      2. "Look at the bond for this sentence." [screen: show-empty-bond-with-known]
+      3. "To find a part, take away. To find the whole, add."
       4. "Here is the sentence. Let us read it together." [screen: fill-sentence]
-    spoken: "What number goes in the box?" · "□ − 1 = 4" · "That number is in the sentence already." · "The box is the start." · "It is the biggest." · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
+    spoken: "What number goes in the box?" · "□ − 1 = 4" · "That number is in the sentence already." · "The box is the whole." · "The whole is the biggest." · "Is the box a part, or the whole?" · "Look at the bond for this sentence." · "To find a part, take away." · "To find the whole, add." · "Here is the sentence." · "Let us read it together."
 
   sm.g1u02.l5.box_any_place@16/main  [step; N-I8; unaided; skills G1-U02-K6, G1-U02-K8]  validator: clean
     prompt: What number goes in the box?
     part p1: — N-I8 sentence "□ − 4 = 1" (pad; shape hint "10 − 7 = 3")
       key: 5
       if he answers 4: box.copy-seen — "That number is in the sentence already."
-    ladder (four-facts):
-      1. "Read the bond: the whole, then the parts. Which is the whole?"
-      2. "Look at the bond beside the sentence." [screen: light-bond-beside-sentence]
-      3. "Two parts make the whole. Take a part from the whole."
+      if he answers 3: sub.subtracted-seen — "The box is the whole. The whole is the biggest."
+    ladder (box):
+      1. "Is the box a part, or the whole?"
+      2. "Look at the bond for this sentence." [screen: show-empty-bond-with-known]
+      3. "To find a part, take away. To find the whole, add."
       4. "Here is the sentence. Let us read it together." [screen: fill-sentence]
-    spoken: "What number goes in the box?" · "□ − 4 = 1" · "That number is in the sentence already." · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
+    spoken: "What number goes in the box?" · "□ − 4 = 1" · "That number is in the sentence already." · "The box is the whole." · "The whole is the biggest." · "Is the box a part, or the whole?" · "Look at the bond for this sentence." · "To find a part, take away." · "To find the whole, add." · "Here is the sentence." · "Let us read it together."
 
 --- sm.g1u02.l5.missing_addend_choice  (lesson G1-U02-L5; served as practice, check)
   sm.g1u02.l5.missing_addend_choice@3/main  [practice; T1; unaided; skills G1-U02-K8]  validator: clean
-    prompt: Which number makes 2 + □ = 8 true?
+    prompt: Which number makes 3 + □ = 9 true?
     part p1: — T1 4 choices (numbers)
-        A. 8   ← bond.whole-as-part
+        A. 9   ← bond.whole-as-part
         B. 6   ← KEY
         C. 5   ← count.stop-short
-        D. 2   ← box.copy-seen
+        D. 3   ← box.copy-seen
       key: choice B
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Which number makes 2 + □ = 8 true?" · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Which number makes 3 + □ = 9 true?" · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
   sm.g1u02.l5.missing_addend_choice@16/main  [practice; T1; unaided; skills G1-U02-K8]  validator: clean
     prompt: Which number makes 2 + □ = 6 true?
@@ -681,7 +690,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
 --- sm.g1u02.l6.join_story  (lesson G1-U02-L6; served as step, practice, check)
   sm.g1u02.l6.join_story@3/main  [step; T17; build; skills G1-U02-K9, G1-U02-K5]  validator: clean
-    prompt: There are 5 apples in the bowl. 3 more apples are put in. How many apples are in the bowl now?
+    prompt: The bowl has 5 apples. Then 3 more apples are put in. How many apples are in the bowl now?
     figure: scene (apples): fixed apple shapes carrying 5 and 3
     part p0: "Tell the story back." — ack button "I know what it says" (never graded)
       key: (not graded)
@@ -691,13 +700,15 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       key: "5 + 3 = □" or "3 + 5 = □"
     part p3 (after-part:p2): "Now answer the question." — pad
       key: 8
-      if he answers 2: story.wrong-operation — "Read the story again. What do we want to find?"
+      if he answers 2: story.wrong-operation — "Look at the bond. Is the whole missing, or a part?"
+    part p4 (after-part:p3): "Check it in the story. Does your answer fit?" — buttons "Yes, it fits" / "Let me look again" (the second re-opens p3; never graded, never a new try)
+      key: (not graded)
     ladder (story):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 5 apples in the bowl." · "3 more apples are put in." · "How many apples are in the bowl now?" · "two groups" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Read the story again." · "What do we want to find?" · "Let us hear the story again." · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "The bowl has 5 apples." · "Then 3 more apples are put in." · "How many apples are in the bowl now?" · "two groups" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Look at the bond." · "Is the whole missing, or a part?" · "Check it in the story." · "Does your answer fit?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 
   sm.g1u02.l6.join_story@16/main  [step; T17; build; skills G1-U02-K9, G1-U02-K5]  validator: clean
     prompt: There are 3 stickers on the page. 5 more stickers are stuck on. How many stickers are on the page now?
@@ -710,13 +721,15 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       key: "3 + 5 = □" or "5 + 3 = □"
     part p3 (after-part:p2): "Now answer the question." — pad
       key: 8
-      if he answers 2: story.wrong-operation — "Read the story again. What do we want to find?"
+      if he answers 2: story.wrong-operation — "Look at the bond. Is the whole missing, or a part?"
+    part p4 (after-part:p3): "Check it in the story. Does your answer fit?" — buttons "Yes, it fits" / "Let me look again" (the second re-opens p3; never graded, never a new try)
+      key: (not graded)
     ladder (story):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 3 stickers on the page." · "5 more stickers are stuck on." · "How many stickers are on the page now?" · "two groups" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Read the story again." · "What do we want to find?" · "Let us hear the story again." · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "There are 3 stickers on the page." · "5 more stickers are stuck on." · "How many stickers are on the page now?" · "two groups" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Look at the bond." · "Is the whole missing, or a part?" · "Check it in the story." · "Does your answer fit?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 
 --- sm.g1u02.l6.takeaway_story  (lesson G1-U02-L6; served as step, practice, check)
   sm.g1u02.l6.takeaway_story@3/main  [step; T17; build; skills G1-U02-K9, G1-U02-K6]  validator: clean
@@ -730,13 +743,15 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       key: "5 − 2 = □"
     part p3 (after-part:p2): "Now answer the question." — pad
       key: 3
-      if he answers 7: story.wrong-operation — "Read the story again. What do we want to find?"
+      if he answers 7: story.wrong-operation — "Look at the bond. Is the whole missing, or a part?"
+    part p4 (after-part:p3): "Check it in the story. Does your answer fit?" — buttons "Yes, it fits" / "Let me look again" (the second re-opens p3; never graded, never a new try)
+      key: (not graded)
     ladder (story):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 5 fish in the tank." · "2 fish are taken out." · "How many fish are in the tank now?" · "one group" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Read the story again." · "What do we want to find?" · "Let us hear the story again." · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "There are 5 fish in the tank." · "2 fish are taken out." · "How many fish are in the tank now?" · "one group" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Look at the bond." · "Is the whole missing, or a part?" · "Check it in the story." · "Does your answer fit?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 
   sm.g1u02.l6.takeaway_story@16/main  [step; T17; build; skills G1-U02-K9, G1-U02-K6]  validator: clean
     prompt: There are 7 balloons at the party. 4 balloons pop. How many balloons are at the party now?
@@ -749,50 +764,52 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       key: "7 − 4 = □"
     part p3 (after-part:p2): "Now answer the question." — pad
       key: 3
-      if he answers 11: story.wrong-operation — "Read the story again. What do we want to find?"
+      if he answers 11: story.wrong-operation — "Look at the bond. Is the whole missing, or a part?"
+    part p4 (after-part:p3): "Check it in the story. Does your answer fit?" — buttons "Yes, it fits" / "Let me look again" (the second re-opens p3; never graded, never a new try)
+      key: (not graded)
     ladder (story):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 7 balloons at the party." · "4 balloons pop." · "How many balloons are at the party now?" · "one group" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Read the story again." · "What do we want to find?" · "Let us hear the story again." · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "There are 7 balloons at the party." · "4 balloons pop." · "How many balloons are at the party now?" · "one group" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Look at the bond." · "Is the whole missing, or a part?" · "Check it in the story." · "Does your answer fit?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 
 --- sm.g1u02.l6.which_bond_story  (lesson G1-U02-L6; served as practice, exit)
   sm.g1u02.l6.which_bond_story@3/main  [practice; T1; read; skills G1-U02-K9]  validator: clean
-    prompt: There are 10 birds on the fence. 8 birds fly away. How many birds are on the fence now?
+    prompt: 10 birds are on the fence. Then 3 birds fly away. How many birds are there now?
     figure: scene (birds): fixed bird shapes carrying 10
     part p1: "Which bond fits the story?" — T1 4 choices
-        A. 11 on top; 8 and ? below   ← bond.sum-off-by-one
-        B. 10 on top; 8 and ? below   ← KEY
-        C. ? on top; 10 and 8 below   ← story.unknown-in-wrong-circle
-        D. 9 on top; 8 and ? below   ← bond.sum-off-by-one
-      key: choice B
-    ladder (story):
+        A. 11 on top; 3 and ? below   ← bond.whole-off-by-one
+        B. 3 on top; 10 and ? below   ← bond.whole-as-part
+        C. 9 on top; 3 and ? below   ← bond.whole-off-by-one
+        D. 10 on top; 3 and ? below   ← KEY
+      key: choice D
+    ladder (story-choice):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
-      2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
-      3. "The numbers we know go in the bond." [screen: place-known-numbers]
+      2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond]
+      3. "Find the bonds with both story numbers. Then check where the question mark is."
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 10 birds on the fence." · "8 birds fly away." · "How many birds are on the fence now?" · "one group" · "Which bond fits the story?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "10 birds are on the fence." · "Then 3 birds fly away." · "How many birds are there now?" · "one group" · "Which bond fits the story?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "Find the bonds with both story numbers." · "Then check where the question mark is." · "Here are the bond and the sentence."
 
   sm.g1u02.l6.which_bond_story@16/main  [practice; T1; read; skills G1-U02-K9]  validator: clean
-    prompt: There are 9 balloons at the party. 2 balloons pop. How many balloons are at the party now?
-    figure: scene (balloons): fixed balloon shapes carrying 9
+    prompt: 5 balloons are at the party. Then 3 balloons pop. How many balloons are there now?
+    figure: scene (balloons): fixed balloon shapes carrying 5
     part p1: "Which bond fits the story?" — T1 4 choices
-        A. 9 on top; 2 and ? below   ← KEY
-        B. 2 on top; 9 and ? below   ← bond.whole-as-part
-        C. ? on top; 9 and 2 below   ← story.unknown-in-wrong-circle
-        D. 8 on top; 2 and ? below   ← bond.sum-off-by-one
-      key: choice A
-    ladder (story):
+        A. 3 on top; 5 and ? below   ← bond.whole-as-part
+        B. 6 on top; 3 and ? below   ← bond.whole-off-by-one
+        C. 4 on top; 3 and ? below   ← bond.whole-off-by-one
+        D. 5 on top; 3 and ? below   ← KEY
+      key: choice D
+    ladder (story-choice):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
-      2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
-      3. "The numbers we know go in the bond." [screen: place-known-numbers]
+      2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond]
+      3. "Find the bonds with both story numbers. Then check where the question mark is."
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 9 balloons at the party." · "2 balloons pop." · "How many balloons are at the party now?" · "one group" · "Which bond fits the story?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "5 balloons are at the party." · "Then 3 balloons pop." · "How many balloons are there now?" · "one group" · "Which bond fits the story?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "Find the bonds with both story numbers." · "Then check where the question mark is." · "Here are the bond and the sentence."
 
 --- sm.g1u02.l6.paper_bond  (lesson G1-U02-L6; served as practice)
   sm.g1u02.l6.paper_bond@3/main  [practice; N-I11; build; skills G1-U02-K9]  validator: clean
-    prompt: There are 4 fish in the tank. 3 more fish are put in. How many fish are in the tank now?
+    prompt: The tank has 4 fish. Then 3 more fish are put in. How many fish are in the tank now?
     figure: scene (fish): fixed fish shapes carrying 4 and 3
     part p1: "Draw a bond for this story on paper. Then make the sentence." — N-I11 paper: button "I drew it", then chips 4 3 7 + − =
       key: the sentence "4 + 3 = 7" or "3 + 4 = 7"
@@ -801,10 +818,10 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 4 fish in the tank." · "3 more fish are put in." · "How many fish are in the tank now?" · "two groups" · "Draw a bond for this story on paper." · "Then make the sentence." · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "The tank has 4 fish." · "Then 3 more fish are put in." · "How many fish are in the tank now?" · "two groups" · "Draw a bond for this story on paper." · "Then make the sentence." · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 
   sm.g1u02.l6.paper_bond@16/main  [practice; N-I11; build; skills G1-U02-K9]  validator: clean
-    prompt: There are 3 boats at the dock. 7 more boats sail in. How many boats are at the dock now?
+    prompt: 3 boats are at the dock. 7 more boats sail in. How many boats are there now?
     figure: scene (boats): fixed boat shapes carrying 3 and 7
     part p1: "Draw a bond for this story on paper. Then make the sentence." — N-I11 paper: button "I drew it", then chips 3 7 10 + − =
       key: the sentence "3 + 7 = 10" or "7 + 3 = 10"
@@ -813,12 +830,12 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 3 boats at the dock." · "7 more boats sail in." · "How many boats are at the dock now?" · "two groups" · "Draw a bond for this story on paper." · "Then make the sentence." · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "3 boats are at the dock." · "7 more boats sail in." · "How many boats are there now?" · "two groups" · "Draw a bond for this story on paper." · "Then make the sentence." · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 
 --- sm.g1u01.l1.count_set  (lesson G1-U01-L1; served as entry, return, starter, warm)
   sm.g1u01.l1.count_set@3/main  [entry; T2; build; skills G1-U01-K1]  validator: clean
     prompt: Touch each counter once. How many counters are there?
-    figure: counters: 7, scattered, tappable
+    figure: counters: 7, scatter; he taps each one (it dims)
     part p1: — pad
       key: 7
       if he answers 8: count.double-touch — "Touch each one only once."
@@ -832,7 +849,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 
   sm.g1u01.l1.count_set@16/main  [entry; T2; build; skills G1-U01-K1]  validator: clean
     prompt: Touch each counter once. How many counters are there?
-    figure: counters: 4, scattered, tappable
+    figure: counters: 4, scatter; he taps each one (it dims)
     part p1: — pad
       key: 4
       if he answers 5: count.double-touch — "Touch each one only once."
@@ -879,26 +896,26 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
     figure: number track: 6 7 8 □ 10
     part p1: — pad
       key: 9
-      if he answers 7: order.before-after-swap — "Before is on the left of the track."
+      if he answers 7: order.before-after-swap — "Before is on the left. After is on the right."
     ladder (order):
       1. "Where is the number on the track?"
       2. "Look at the track around it." [screen: light-track-window]
       3. "Before is on the left. After is on the right."
       4. "Here is the number. Let us read it." [screen: fill-track-cell]
-    spoken: "What number comes just after 8?" · "a number track" · "Before is on the left of the track." · "Where is the number on the track?" · "Look at the track around it." · "Before is on the left." · "After is on the right." · "Here is the number." · "Let us read it."
+    spoken: "What number comes just after 8?" · "a number track" · "Before is on the left." · "After is on the right." · "Where is the number on the track?" · "Look at the track around it." · "Here is the number." · "Let us read it."
 
   sm.g1u01.l4.one_more_less@16/main  [entry; T8; read; skills G1-U01-K4]  validator: clean
     prompt: What number comes just after 3?
     figure: number track: 1 2 3 □ 5
     part p1: — pad
       key: 4
-      if he answers 2: order.before-after-swap — "Before is on the left of the track."
+      if he answers 2: order.before-after-swap — "Before is on the left. After is on the right."
     ladder (order):
       1. "Where is the number on the track?"
       2. "Look at the track around it." [screen: light-track-window]
       3. "Before is on the left. After is on the right."
       4. "Here is the number. Let us read it." [screen: fill-track-cell]
-    spoken: "What number comes just after 3?" · "a number track" · "Before is on the left of the track." · "Where is the number on the track?" · "Look at the track around it." · "Before is on the left." · "After is on the right." · "Here is the number." · "Let us read it."
+    spoken: "What number comes just after 3?" · "a number track" · "Before is on the left." · "After is on the right." · "Where is the number on the track?" · "Look at the track around it." · "Here is the number." · "Let us read it."
 
 --- sm.preview.g1u04.ten_and_some  (lesson G1-U04-L1; served as preview)
   sm.preview.g1u04.ten_and_some@3/main  [preview; T2; read; skills G1-U04-K1; "try a new one"]  validator: clean
@@ -936,7 +953,7 @@ Seeds 3 and 16 for every template; entry check, placement pair and chapter check
 pair: count a set to 10 (a failed pair opens G1-U01-L1)
   sm.g1u01.l1.count_set@3/EC:sm.g1u01.l1.count_set:0#0  [entry; T2; build; skills G1-U01-K1]  validator: clean
     prompt: Touch each counter once. How many counters are there?
-    figure: counters: 8, scattered, tappable
+    figure: counters: 8, scatter; he taps each one (it dims)
     part p1: — pad
       key: 8
       if he answers 9: count.double-touch — "Touch each one only once."
@@ -950,7 +967,7 @@ pair: count a set to 10 (a failed pair opens G1-U01-L1)
 
   sm.g1u01.l1.count_set@3/EC:sm.g1u01.l1.count_set:1#0  [entry; T2; build; skills G1-U01-K1]  validator: clean
     prompt: Touch each counter once. How many counters are there?
-    figure: counters: 5, scattered, tappable
+    figure: counters: 5, scatter; he taps each one (it dims)
     part p1: — pad
       key: 5
       if he answers 6: count.double-touch — "Touch each one only once."
@@ -968,35 +985,35 @@ pair: one more and one less (a failed pair opens G1-U01-L4)
     figure: number track: 6 □ 8 9 10
     part p1: — pad
       key: 7
-      if he answers 9: order.before-after-swap — "Before is on the left of the track."
+      if he answers 9: order.before-after-swap — "Before is on the left. After is on the right."
     ladder (order):
       1. "Where is the number on the track?"
       2. "Look at the track around it." [screen: light-track-window]
       3. "Before is on the left. After is on the right."
       4. "Here is the number. Let us read it." [screen: fill-track-cell]
-    spoken: "What number comes just before 8?" · "a number track" · "Before is on the left of the track." · "Where is the number on the track?" · "Look at the track around it." · "Before is on the left." · "After is on the right." · "Here is the number." · "Let us read it."
+    spoken: "What number comes just before 8?" · "a number track" · "Before is on the left." · "After is on the right." · "Where is the number on the track?" · "Look at the track around it." · "Here is the number." · "Let us read it."
 
   sm.g1u01.l4.one_more_less@3/EC:sm.g1u01.l4.one_more_less:1#0  [entry; T8; read; skills G1-U01-K4]  validator: clean
     prompt: What number comes just before 7?
     figure: number track: 5 □ 7 8 9
     part p1: — pad
       key: 6
-      if he answers 8: order.before-after-swap — "Before is on the left of the track."
+      if he answers 8: order.before-after-swap — "Before is on the left. After is on the right."
     ladder (order):
       1. "Where is the number on the track?"
       2. "Look at the track around it." [screen: light-track-window]
       3. "Before is on the left. After is on the right."
       4. "Here is the number. Let us read it." [screen: fill-track-cell]
-    spoken: "What number comes just before 7?" · "a number track" · "Before is on the left of the track." · "Where is the number on the track?" · "Look at the track around it." · "Before is on the left." · "After is on the right." · "Here is the number." · "Let us read it."
+    spoken: "What number comes just before 7?" · "a number track" · "Before is on the left." · "After is on the right." · "Where is the number on the track?" · "Look at the track around it." · "Here is the number." · "Let us read it."
 
 pair: more or fewer by matching (a failed pair opens G1-U01-L3)
   sm.g1u01.l3.match_more@3/EC:sm.g1u01.l3.match_more:0#0  [entry; N-F8; read; skills G1-U01-K3]  validator: clean
     prompt: Which row has more?
-    figure: two rows matched one to one: top 6, bottom 8 (spread out); nothing ringed
+    figure: two rows matched one to one: top 8 (spread out), bottom 6; nothing ringed
     part p1: — T1 2 choices
-        A. the top row   ← match.more-fewer-swap
-        B. the bottom row   ← KEY
-      key: choice B
+        A. the top row   ← KEY
+        B. the bottom row   ← match.more-fewer-swap
+      key: choice A
     ladder (match):
       1. "Which row has some with no partner?"
       2. "Look at the lines that match them." [screen: light-matching-lines]
@@ -1020,21 +1037,22 @@ pair: more or fewer by matching (a failed pair opens G1-U01-L3)
 
 === PLACEMENT PAIR for U02 (seed 3; typed, part 1 only) ===
 
-  sm.g1u02.l4.empty_part_bond@3/PL:0#0  [placement; N-I2; build; skills G1-U02-K6]  validator: clean
+  sm.g1u02.l4.empty_part_bond@3/PL:0#1  [placement; N-I2; build; skills G1-U02-K6]  validator: clean
     prompt: Find the missing part.
-    figure: number bond: whole 4; parts 2 and [ ]
-    part p1: "What goes in the empty circle?" — N-I2 bond (fill) starting whole 4; parts 2 and [ ]
-      key: whole 4; parts 2 and 2; graded: part
-      if he answers 4: bond.whole-as-part — "The whole circle holds everything."
-      if he answers 6: sub.added — "Look at the sign. Taking away leaves less."
-      if he answers 1: count.stop-short — "Count on again. Stop when you say the whole."
-      if he answers 3: count.start-counted — "Start at the part. Do not count it again."
+    figure: number bond: whole 10; parts [ ] and 6
+    part p1: "What goes in the empty circle?" — N-I2 bond (fill) starting whole 10; parts [ ] and 6
+      key: whole 10; parts 6 and 4; graded: part
+      if he answers 6: bond.repeat-shown — "That part is shown. Find the hidden part."
+      if he answers 10: bond.whole-as-part — "The whole circle holds everything."
+      if he answers 16: bond.added — "We are finding a part. A part is smaller."
+      if he answers 3: count.stop-short — "Count on again. Stop when you say the whole."
+      if he answers 5: count.start-counted — "Start at the part. Do not count it again."
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "The whole circle holds everything." · "Look at the sign." · "Taking away leaves less." · "Count on again." · "Stop when you say the whole." · "Start at the part." · "Do not count it again." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "That part is shown." · "Find the hidden part." · "The whole circle holds everything." · "We are finding a part." · "A part is smaller." · "Count on again." · "Stop when you say the whole." · "Start at the part." · "Do not count it again." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
   sm.g1u02.l4.empty_part_bond@3/PL:1#0  [placement; N-I2; build; skills G1-U02-K6]  validator: clean
     prompt: Find the missing part.
@@ -1043,7 +1061,7 @@ pair: more or fewer by matching (a failed pair opens G1-U01-L3)
       key: whole 7; parts 5 and 2; graded: part
       if he answers 5: bond.repeat-shown — "That part is shown. Find the hidden part."
       if he answers 7: bond.whole-as-part — "The whole circle holds everything."
-      if he answers 12: sub.added — "Look at the sign. Taking away leaves less."
+      if he answers 12: bond.added — "We are finding a part. A part is smaller."
       if he answers 1: count.stop-short — "Count on again. Stop when you say the whole."
       if he answers 3: count.start-counted — "Start at the part. Do not count it again."
     ladder (missing-part):
@@ -1051,20 +1069,20 @@ pair: more or fewer by matching (a failed pair opens G1-U01-L3)
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "That part is shown." · "Find the hidden part." · "The whole circle holds everything." · "Look at the sign." · "Taking away leaves less." · "Count on again." · "Stop when you say the whole." · "Start at the part." · "Do not count it again." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Find the missing part." · "a number bond: a whole and two parts" · "What goes in the empty circle?" · "That part is shown." · "Find the hidden part." · "The whole circle holds everything." · "We are finding a part." · "A part is smaller." · "Count on again." · "Stop when you say the whole." · "Start at the part." · "Do not count it again." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
 === CHAPTER CHECK G1-U02-CK (seed 3; 15 points; feedback held; review after) ===
 
 § A1 · 2 pt · concepts and procedures · five-value pool, three ranks
   sm.g1u02.l4.missing_part_choice@3/CK:A:A1#0  [check; T1; read; skills G1-U02-K6]  validator: clean
     prompt: What is the missing part?
-    figure: number bond: whole 7; parts 2 and [ ]
+    figure: number bond: whole 10; parts 4 and [ ]
     part p1 · 2 pt: — T1 4 choices (numbers)
-        A. 2   ← bond.repeat-shown
-        B. 5   ← KEY
-        C. 4   ← count.stop-short
-        D. 9   ← bond.added
-      key: choice B
+        A. 10   ← bond.whole-as-part
+        B. 14   ← bond.added
+        C. 6   ← KEY
+        D. 7   ← count.start-counted
+      key: choice C
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
@@ -1091,33 +1109,31 @@ pair: more or fewer by matching (a failed pair opens G1-U01-L3)
 
 § A3 · 2 pt · concepts and procedures · five-value pool, three ranks
   sm.g1u02.l5.missing_addend_choice@3/CK:A:A3#0  [check; T1; unaided; skills G1-U02-K8]  validator: clean
-    prompt: Which number makes 3 + □ = 9 true?
+    prompt: Which number makes 3 + □ = 10 true?
     part p1 · 2 pt: — T1 4 choices (numbers)
-        A. 6   ← KEY
-        B. 9   ← bond.whole-as-part
-        C. 7   ← count.start-counted
-        D. 12   ← bond.added
-      key: choice A
+        A. 8   ← count.start-counted
+        B. 7   ← KEY
+        C. 13   ← bond.added
+        D. 10   ← bond.whole-as-part
+      key: choice B
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Which number makes 3 + □ = 9 true?" · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Which number makes 3 + □ = 10 true?" · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
 § B4 · 2 pt · concepts and procedures · 1 the whole, 1 the sentence
   sm.g1u02.l3.join_bond@3/CK:A:B4#0  [check; L7; build; skills G1-U02-K3, G1-U02-K5]  validator: clean
     prompt: Put the two groups together. Fill in the bond.
-    figure: groups (fixed counter shapes carrying numbers): 7 and 3
-    figure: number bond: whole [ ]; parts 7 and 3
-    part p1 · 1 pt: "What goes in the whole circle?" — N-I2 bond (fill) starting whole [ ]; parts 7 and 3
-      key: whole 10; parts 7 and 3; graded: whole
-      if he answers 11: add.count-first-twice — "Count the first part once. Then count on."
-      if he answers 9: add.stop-short — "Count on all of the other part."
-    part p2 (after-part:p1) · 1 pt: "Now make the sentence." — N-I8 sentence "□ □ □ = □" (chips; chips 7 3 10 + − =)
-      key: "7 + 3 = 10" or "3 + 7 = 10"
-      if he answers 11: add.count-first-twice — "Count the first part once. Then count on."
-      if he answers 9: add.stop-short — "Count on all of the other part."
+    figure: groups (fixed counter shapes carrying numbers): 2 and 5
+    figure: number bond: whole [ ]; parts 2 and 5
+    part p1 · 1 pt: "What goes in the whole circle?" — N-I2 bond (fill) starting whole [ ]; parts 2 and 5
+      key: whole 7; parts 2 and 5; graded: whole
+      if he answers 8: add.count-first-twice — "Count the first part once. Then count on."
+      if he answers 6: add.stop-short — "Count on all of the other part."
+    part p2 (after-part:p1) · 1 pt: "Now make the sentence." — N-I8 sentence "□ □ □ = □" (chips; chips 2 5 7 + − =)
+      key: "2 + 5 = 7" or "5 + 2 = 7"
     ladder (add):
       1. "Are we putting together or taking away?"
       2. "Look at the bond with both parts." [screen: show-empty-bond-with-parts]
@@ -1126,56 +1142,56 @@ pair: more or fewer by matching (a failed pair opens G1-U01-L3)
     spoken: "Put the two groups together." · "Fill in the bond." · "two groups" · "a number bond: a whole and two parts" · "What goes in the whole circle?" · "Count the first part once." · "Then count on." · "Count on all of the other part." · "Now make the sentence." · "Are we putting together or taking away?" · "Look at the bond with both parts." · "Start at the bigger part." · "Count on the other part." · "Here is the whole." · "Let us read the sentence."
 
 § B5a · 1 pt · concepts and procedures · take away
-  sm.g1u02.l4.sub_pad@3/CK:A:B5a#0  [check; T8; unaided; skills G1-U02-K6]  validator: clean
+  sm.g1u02.l4.sub_pad@3/CK:A:B5a:p1#0  [check; T8; unaided; skills G1-U02-K6]  validator: clean
     prompt: Take away.
-    part p1 · 1 pt: — pad "3 − 2 = □"
-      key: 1
-      if he answers 5: sub.added — "Look at the sign. Taking away leaves less."
+    part p1 · 1 pt: — pad "10 − 1 = □"
+      key: 9
+      if he answers 11: sub.added — "Look at the sign. Taking away leaves less."
     ladder (missing-part):
       1. "What is the whole? Which part is hidden?"
       2. "Look at the bond with the numbers we know." [screen: show-empty-bond-with-known]
       3. "Start at the part you know. Count on to the whole."
       4. "Here is the bond. Let us read the sentence." [screen: fill-bond-read-sentence]
-    spoken: "Take away." · "3 − 2 = □" · "Look at the sign." · "Taking away leaves less." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
+    spoken: "Take away." · "10 − 1 = □" · "Look at the sign." · "Taking away leaves less." · "What is the whole?" · "Which part is hidden?" · "Look at the bond with the numbers we know." · "Start at the part you know." · "Count on to the whole." · "Here is the bond." · "Let us read the sentence."
 
 § B5b · 1 pt · concepts and procedures · unknown start: □ − p = k
-  sm.g1u02.l5.box_any_place@3/CK:A:B5b#0  [check; N-I8; unaided; skills G1-U02-K6, G1-U02-K8]  validator: clean
+  sm.g1u02.l5.box_any_place@3/CK:A:B5b#5  [check; N-I8; unaided; skills G1-U02-K6, G1-U02-K8]  validator: clean
     prompt: What number goes in the box?
-    part p1 · 1 pt: — N-I8 sentence "□ − 7 = 1" (pad; shape hint "6 − 2 = 4")
-      key: 8
-      if he answers 7: box.copy-seen — "That number is in the sentence already."
-    ladder (four-facts):
-      1. "Read the bond: the whole, then the parts. Which is the whole?"
-      2. "Look at the bond beside the sentence." [screen: light-bond-beside-sentence]
-      3. "Two parts make the whole. Take a part from the whole."
+    part p1 · 1 pt: — N-I8 sentence "□ − 3 = 6" (pad; shape hint "7 − 5 = 2")
+      key: 9
+      if he answers 3: box.copy-seen — "That number is in the sentence already."
+    ladder (box):
+      1. "Is the box a part, or the whole?"
+      2. "Look at the bond for this sentence." [screen: show-empty-bond-with-known]
+      3. "To find a part, take away. To find the whole, add."
       4. "Here is the sentence. Let us read it together." [screen: fill-sentence]
-    spoken: "What number goes in the box?" · "□ − 7 = 1" · "That number is in the sentence already." · "Read the bond: the whole, then the parts." · "Which is the whole?" · "Look at the bond beside the sentence." · "Two parts make the whole." · "Take a part from the whole." · "Here is the sentence." · "Let us read it together."
+    spoken: "What number goes in the box?" · "□ − 3 = 6" · "That number is in the sentence already." · "Is the box a part, or the whole?" · "Look at the bond for this sentence." · "To find a part, take away." · "To find the whole, add." · "Here is the sentence." · "Let us read it together."
 
 § B6 · 2 pt · reasoning · 1 the fix, 1 the rows (all six right = 1 point)
   sm.g1u02.l4.error_take_away@3/CK:A:B6#0  [check; T12; read; skills G1-U02-K10]  validator: clean
     prompt: A child wrote 8 − 6 = 8.
-    figure: number bond: whole 8; parts 6 and 8
+    figure: number bond (a child's own bond, shown as the mistake): whole 8; parts 6 and 8
     part p1 · 1 pt: "Fix it. What is the right answer?" — pad "8 − 6 = □"
       key: 2
       if he answers 14: sub.added — "Look at the sign. Taking away leaves less."
     part p2 (after-part:p1) · 1 pt: "Now tap true or false for each row." — truth rows (6)
         T  Taking away leaves less than 8.
+        F  6 is the whole.
         F  The − sign means put together.
-        F  8 is a part.
         T  8 is the whole.
         T  6 and 8 together make more than 8.
-        F  6 is the whole.
+        F  Taking away 6 leaves 8.
       key: TFFTTF
     ladder (error):
       1. "What was the whole? What was taken away?"
       2. "Look at the whole and the part taken away." [screen: show-empty-bond-whole-and-taken]
       3. "What is left must be less than the whole."
       4. "Here is the right answer and its bond." [screen: show-answer-and-bond]
-    spoken: "A child wrote 8 − 6 = 8." · "a child's number bond" · "Fix it." · "What is the right answer?" · "8 − 6 = □" · "Look at the sign." · "Taking away leaves less." · "Now tap true or false for each row." · "Taking away leaves less than 8." · "The − sign means put together." · "8 is a part." · "8 is the whole." · "6 and 8 together make more than 8." · "6 is the whole." · "What was the whole?" · "What was taken away?" · "Look at the whole and the part taken away." · "What is left must be less than the whole." · "Here is the right answer and its bond."
+    spoken: "A child wrote 8 − 6 = 8." · "a child's number bond" · "Fix it." · "What is the right answer?" · "8 − 6 = □" · "Look at the sign." · "Taking away leaves less." · "Now tap true or false for each row." · "Taking away leaves less than 8." · "6 is the whole." · "The − sign means put together." · "8 is the whole." · "6 and 8 together make more than 8." · "Taking away 6 leaves 8." · "What was the whole?" · "What was taken away?" · "Look at the whole and the part taken away." · "What is left must be less than the whole." · "Here is the right answer and its bond."
 
 § C7 · 3 pt · concepts and procedures · 1 the bond, 1 the sentence, 1 the answer
   sm.g1u02.l6.join_story@3/CK:A:C7#0  [check; T17; build; skills G1-U02-K9, G1-U02-K5]  validator: clean
-    prompt: There are 8 shells in the bucket. 2 more shells are put in. How many shells are in the bucket now?
+    prompt: The bucket has 8 shells. Then 2 more shells are put in. How many shells are in the bucket now?
     figure: scene (shells): fixed shell shapes carrying 8 and 2
     part p0: "Tell the story back." — ack button "I know what it says" (never graded)
       key: (not graded)
@@ -1185,11 +1201,13 @@ pair: more or fewer by matching (a failed pair opens G1-U01-L3)
       key: "8 + 2 = □" or "2 + 8 = □"
     part p3 (after-part:p2) · 1 pt: "Now answer the question." — pad
       key: 10
-      if he answers 6: story.wrong-operation — "Read the story again. What do we want to find?"
+      if he answers 6: story.wrong-operation — "Look at the bond. Is the whole missing, or a part?"
+    part p4 (after-part:p3): "Check it in the story. Does your answer fit?" — buttons "Yes, it fits" / "Let me look again" (the second re-opens p3; never graded, never a new try)
+      key: (not graded)
     ladder (story):
       1. "Let us hear the story again. What do we want to find?" [screen: reread-story]
       2. "Here is a bond. Where does the question mark go?" [screen: show-empty-bond-with-question-mark]
       3. "The numbers we know go in the bond." [screen: place-known-numbers]
       4. "Here are the bond and the sentence." [screen: fill-bond-and-sentence]
-    spoken: "There are 8 shells in the bucket." · "2 more shells are put in." · "How many shells are in the bucket now?" · "two groups" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Read the story again." · "What do we want to find?" · "Let us hear the story again." · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
+    spoken: "The bucket has 8 shells." · "Then 2 more shells are put in." · "How many shells are in the bucket now?" · "two groups" · "Tell the story back." · "Build the bond." · "Put the question mark in." · "Make the sentence." · "Now answer the question." · "Look at the bond." · "Is the whole missing, or a part?" · "Check it in the story." · "Does your answer fit?" · "Let us hear the story again." · "What do we want to find?" · "Here is a bond." · "Where does the question mark go?" · "The numbers we know go in the bond." · "Here are the bond and the sentence."
 

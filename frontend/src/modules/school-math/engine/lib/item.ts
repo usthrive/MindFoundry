@@ -53,18 +53,31 @@ export function blocked(ctx: SMBuildCtx, fact: SMFact | undefined): boolean {
 }
 
 /**
- * Review lines for a typed answer: one per rule that gives an honest value on this draw.
- * A value equal to the key, or shared by two rules (the rule could not be named), is
- * dropped — never patched.
+ * Review lines for a typed answer: one per rule that gives an honest value on this draw. A value
+ * equal to the key is dropped. When two rules give the same value, ONE line is kept by a fixed
+ * priority (Opus re-check: dropping both left the commonest slips with no line at all):
+ * bond.repeat-shown > bond.whole-as-part > box.copy-seen > count.* > the rest (list order).
+ * `collide: 'drop-both'` is run 1's behaviour, kept only for the gate's broken control.
  */
-export function reviewRules(args: RuleArgs, key: number, rules: string[]): SMReviewRule[] {
+export const REVIEW_PRIORITY = ['bond.repeat-shown', 'bond.whole-as-part', 'box.copy-seen']
+const priorityOf = (rule: string) => {
+  const i = REVIEW_PRIORITY.indexOf(rule)
+  return i >= 0 ? i : rule.startsWith('count.') ? REVIEW_PRIORITY.length : REVIEW_PRIORITY.length + 1
+}
+
+export function reviewRules(args: RuleArgs, key: number, rules: string[], collide: 'priority' | 'drop-both' = 'priority'): SMReviewRule[] {
   const drafts: SMReviewRule[] = []
   for (const rule of rules) {
     const v = ruleValue(rule, args)
     if (v === null || v < 0 || v === key) continue
     drafts.push({ rule, value: v, line: getRule(rule).line })
   }
-  return drafts.filter((d) => drafts.filter((e) => e.value === d.value).length === 1)
+  if (collide === 'drop-both') return drafts.filter((d) => drafts.filter((e) => e.value === d.value).length === 1)
+  return drafts.filter((d) => {
+    const same = drafts.filter((e) => e.value === d.value)
+    const best = same.reduce((x, y) => (priorityOf(y.rule) < priorityOf(x.rule) ? y : x))
+    return best === d
+  })
 }
 
 /** A review line whose value is a pair or a sentence (checked by the rule's content check). */

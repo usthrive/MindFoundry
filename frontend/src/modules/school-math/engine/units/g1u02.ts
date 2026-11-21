@@ -20,9 +20,10 @@ import type {
 } from '../../types'
 import { contentCanon, orderChoices, pickNumeric, type Draft, type PoolValue } from '../lib/choices'
 import { add, sub, MINUS, ruleValue } from '../lib/misconceptions'
-import { BOND_SPOKEN, blocked, drawInt, makeItem, num, option, redraw, reviewRules, reviewText, str } from '../lib/item'
-import { G1U02_SETTINGS, getSetting, joinStory, takeawayStory, thereAre, someLeave } from '../lib/contexts'
+import { blocked, drawInt, makeItem, num, option, redraw, reviewRules, reviewText, str } from '../lib/item'
+import { G1U02_SETTINGS, STORY_FRAMES, getSetting, joinStory, takeawayStory, thereAre, someLeave } from '../lib/contexts'
 import { evalSentence, thing } from '../lib/text'
+import { bondFig, countersFig, groupsFig, sceneFig, splitListFig } from '../lib/figures'
 
 const UNIT = 'G1-U02'
 const LES = (n: number) => `G1-U02-L${n}`
@@ -45,9 +46,6 @@ function part(
 }
 
 const bond = (whole: BondShape['whole'], x: BondShape['parts'][0], y: BondShape['parts'][1]): BondShape => ({ whole, parts: [x, y] })
-const bondFig = (b: BondShape, spoken = BOND_SPOKEN): SMFigure => ({ kind: 'number-bond', bond: b, spoken })
-const groupsFig = (groups: number[], shape = 'counter'): SMFigure =>
-  ({ kind: 'groups', shape, groups, spoken: groups.length === 1 ? 'one group' : 'two groups' })
 const truthValue = (rows: SMTruthRow[]) => rows.map((r) => (r.truth ? 'T' : 'F')).join('')
 const keyOf = (choices: { key: string; rule: string | null }[]) => {
   const k = choices.find((c) => c.rule === null)
@@ -71,6 +69,21 @@ function drawShownPart(rng: Rng, ctx: SMBuildCtx, w: number, asked: 'smaller' | 
   return cands.length ? rng.pick(cands) : null
 }
 
+/**
+ * The shown part of the two pooled choice items (2 ≤ p, 2p ≤ w − 2, so p is 2, 3 or 4). Drawn
+ * part first, about in thirds (31 / 34 / 35; family clashes on a check push p = 2 up), then the whole: drawn whole-first, p = 2 came up on 62 %
+ * of forms (Fable ACCEPT follow-up: no check part value on > 40 % of forms). The price is the
+ * one p = 4 fact (10 and 4) on about a quarter of forms (two rows share the pool). `ctx.force` still wins.
+ */
+function drawShownSmall(rng: Rng, ctx: SMBuildCtx, name: 'p' | 'a'): { w: number; p: number; a: number } {
+  const forcedW = ctx.force?.w, forcedP = ctx.force?.[name]
+  let x: number
+  if (typeof forcedP === 'number') x = forcedP
+  else { const r = rng.float(); x = r < 0.39 ? 2 : r < 0.82 ? 3 : 4 }
+  const w = typeof forcedW === 'number' ? forcedW : rng.int(2 * x + 2, 10)
+  return { w, p: x, a: x }
+}
+
 /** Truth rows: two true and two false from a pool, shuffled (L51). */
 function pickRows(rng: Rng, trues: SMTruthRow[], falses: SMTruthRow[], nTrue: number, nFalse: number): SMTruthRow[] {
   return rng.shuffle([...rng.shuffle(trues).slice(0, nTrue), ...rng.shuffle(falses).slice(0, nFalse)])
@@ -87,7 +100,7 @@ const l1SplitAny: SMTemplateDef = {
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(1), ctx, skillIds: [K(1)], modelRung: 'build', formatCode: 'N-I4',
       prompt: `Split ${thing(w, 'counter')} into two parts.`,
-      figures: [{ kind: 'counters', count: w, layout: 'two-circles', tappable: true, spoken: 'counters and two circles' }],
+      figures: [countersFig(w, 'row', 'drag-into-two-circles', 'counters and two circles')],
       parts: [
         part('p1', { kind: 'counter-split', id: 'N-I4', whole: w }, { kind: 'split', whole: w }, [K(1)],
           { prompt: 'Move the counters into the two circles.' }),
@@ -113,16 +126,25 @@ const l1SplitAnotherWay: SMTemplateDef = {
     const lo = Math.min(a, b), hi = Math.max(a, b)
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(1), ctx, skillIds: [K(1)], modelRung: 'build', formatCode: 'N-I4',
-      prompt: `Here is one way to split ${w}. Use different numbers.`,
-      figures: [groupsFig([a, b]), { kind: 'counters', count: w, layout: 'two-circles', tappable: true, spoken: 'counters and two circles' }],
+      // guess and check, named (the unit's heuristic; Fable gate fix)
+      // "Use different numbers" read as "two numbers that differ" (w 4, shown 3 and 1: only 2 and 2
+      // were left); name the pair instead (Opus re-check)
+      prompt: `Here is one way to split ${w}. Guess a new way. Do not use ${a} and ${b} again. Then check: do both circles make ${w}?`,
+      figures: [groupsFig([a, b]), countersFig(w, 'row', 'drag-into-two-circles', 'counters and two circles')],
       parts: [
         part('p1', { kind: 'counter-split', id: 'N-I4', whole: w }, { kind: 'split', whole: w, notPair: [a, b] }, [K(1)],
           { prompt: 'Move the counters another way.', review: [reviewText('split.same-pair', `${lo},${hi}`)] }),
+        // every picture he acts on ends in a number sentence (SM-H2; Fable gate fix)
+        part('p2', { kind: 'sentence', id: 'N-I8', text: `${w} is □ and □.`, input: 'pad' },
+          { kind: 'split', whole: w, sameAsPart: 'p1' }, [K(1)], { prompt: 'Now fill in the sentence.', after: 'p1' }),
       ],
       ladderFamily: 'split', params: { w, a, b }, givens: [w, a, b], fact: fact(w, a, b),
     })
   },
-  answerFor: (p) => ({ p1: { kind: 'split', whole: num(p, 'w'), notPair: [num(p, 'a'), num(p, 'b')] } }),
+  answerFor: (p) => ({
+    p1: { kind: 'split', whole: num(p, 'w'), notPair: [num(p, 'a'), num(p, 'b')] },
+    p2: { kind: 'split', whole: num(p, 'w'), sameAsPart: 'p1' },
+  }),
   verifyFor: (p) => ({ args: { w: num(p, 'w'), sa: num(p, 'a'), sb: num(p, 'b') } }),
 }
 
@@ -137,13 +159,13 @@ const l1ListSplits: SMTemplateDef = {
     const parts = open.map((f, i) => {
       const k = w - f
       return part(`p${i + 1}`, { kind: 'pad', id: 'T8', text: `${f} and □` }, { kind: 'number', value: k }, [K(2)],
-        { review: reviewRules({ k }, k, ['count.stop-short', 'count.start-counted']) })
+        { review: reviewRules({ k }, k, ['count.stop-short-split', 'count.start-counted']) })
     })
     const givens = [w, ...rows.flatMap((r) => (r.second === null ? [r.first] : [r.first, r.second]))]
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(1), ctx, skillIds: [K(2)], modelRung: 'build', formatCode: 'L16',
       prompt: `Make a list of the ways to split ${w}.`,
-      figures: [{ kind: 'split-list', whole: w, rows, spoken: 'a list of the ways to split' }],
+      figures: [splitListFig(w, rows)],
       parts, ladderFamily: 'list', params: { w, open }, givens,
     })
   },
@@ -175,7 +197,7 @@ const l1MissingSplitChoice: SMTemplateDef = {
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(1), ctx, skillIds: [K(2)], modelRung: 'read', formatCode: 'T1',
       prompt: `Here is a list of ways to split ${w}. Which way is missing?`,
-      figures: [{ kind: 'split-list', whole: w, rows, spoken: 'a list of the ways to split' }],
+      figures: [splitListFig(w, rows)],
       parts: [part('p1', { kind: 'choices', id: 'T1', choices, numeric: false, pictures: false }, { kind: 'choice-key', key: keyOf(choices) }, [K(2)])],
       ladderFamily: 'list', params: { w, m }, givens: [w, ...rows.flatMap((r) => [r.first, r.second])],
     })
@@ -197,7 +219,7 @@ const l2BondFromSplit: SMTemplateDef = {
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(2), ctx, skillIds: [K(3)], modelRung: 'build', formatCode: 'N-I2',
       prompt: `Split ${thing(w, 'counter')} into two parts. Then build the bond.`,
-      figures: [{ kind: 'counters', count: w, layout: 'two-circles', tappable: true, spoken: 'counters and two circles' }],
+      figures: [countersFig(w, 'row', 'drag-into-two-circles', 'counters and two circles')],
       parts: [
         part('p1', { kind: 'counter-split', id: 'N-I4', whole: w }, { kind: 'split', whole: w }, [K(3)],
           { prompt: 'Move the counters into the two circles.' }),
@@ -238,7 +260,7 @@ const l2BondGiven: SMTemplateDef = {
 const bondText = (b: BondShape) => `${b.whole} on top; ${b.parts[0]} and ${b.parts[1]} below`
 
 const l2WhichBond: SMTemplateDef = {
-  id: ID('l2.which_bond'), unitId: UNIT, lessonId: LES(2), skillIds: [K(4)], uses: ['practice', 'exit', 'check'], ladderFamily: 'bond-build',
+  id: ID('l2.which_bond'), unitId: UNIT, lessonId: LES(2), skillIds: [K(4)], uses: ['practice', 'exit', 'check'], ladderFamily: 'bond-choice',
   build(rng, ctx) {
     const { w, a, b } = redraw(this.id, () => {
       const w = drawInt(rng, ctx, 'w', 4, 10)
@@ -256,7 +278,7 @@ const l2WhichBond: SMTemplateDef = {
       templateId: this.id, unitId: UNIT, lessonId: LES(2), ctx, skillIds: [K(4)], modelRung: 'read', formatCode: 'T1',
       prompt: `Which bond shows ${w}?`, figures: [],
       parts: [part('p1', { kind: 'choices', id: 'T1', choices, numeric: false, pictures: false }, { kind: 'choice-key', key: keyOf(choices) }, [K(4)], { points: pts(ctx, 2) })],
-      ladderFamily: 'bond-build', params: { w, a }, givens: [w], fact: fact(w, a, b),
+      ladderFamily: 'bond-choice', params: { w, a }, givens: [w], fact: fact(w, a, b),
     })
   },
   answerFor: (p) => ({ p1: { kind: 'choice-key', content: contentCanon({ kind: 'bond', bond: bond(num(p, 'w'), num(p, 'a'), num(p, 'w') - num(p, 'a')) }) } }),
@@ -328,7 +350,8 @@ const ADD_REVIEW = ['add.count-first-twice', 'add.stop-short']
 const l3JoinBond: SMTemplateDef = {
   id: ID('l3.join_bond'), unitId: UNIT, lessonId: LES(3), skillIds: [K(5)], uses: ['step', 'practice', 'return', 'check'], ladderFamily: 'add',
   build(rng, ctx) {
-    const { a, b, w } = drawAddends(rng, ctx, this.id)
+    // the add ladder says "start at the bigger part": no doubles here (doubles are U05's route)
+    const { a, b, w } = drawAddends(rng, ctx, this.id, true)
     const review = reviewRules({ a, b }, w, ADD_REVIEW)
     const check = isCheck(ctx)
     return makeItem({
@@ -341,7 +364,8 @@ const l3JoinBond: SMTemplateDef = {
           { prompt: 'What goes in the whole circle?', review, points: pts(ctx, 1) }),
         part('p2', { kind: 'sentence', id: 'N-I8', text: '□ □ □ = □', input: 'chips', chips: [String(a), String(b), String(w), '+', MINUS, '='] },
           { kind: 'sentence-match', accepts: bothOrders(a, b, w) }, [K(5)],
-          { prompt: 'Now make the sentence.', after: 'p1', review, points: pts(ctx, 1) }),
+          // the chips are a, b and w: a counting slip's number cannot be built here (enterable check)
+          { prompt: 'Now make the sentence.', after: 'p1', points: pts(ctx, 1) }),
       ],
       ladderFamily: 'add', params: { a, b }, givens: [a, b], fact: fact(w, a, b),
     })
@@ -356,7 +380,7 @@ const l3JoinBond: SMTemplateDef = {
 const l3AddPad: SMTemplateDef = {
   id: ID('l3.add_pad'), unitId: UNIT, lessonId: LES(3), skillIds: [K(5)], uses: ['step', 'practice', 'return', 'exit', 'check'], ladderFamily: 'add',
   build(rng, ctx) {
-    const { a, b, w } = drawAddends(rng, ctx, this.id)
+    const { a, b, w } = drawAddends(rng, ctx, this.id, true)  // no doubles: the add ladder
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(3), ctx, skillIds: [K(5)], modelRung: 'unaided', formatCode: 'T8',
       prompt: 'Add.', figures: [],
@@ -400,18 +424,23 @@ const l3WhichSentence: SMTemplateDef = {
 const MISSING_REVIEW = ['bond.repeat-shown', 'bond.whole-as-part', 'sub.added', 'count.stop-short', 'count.start-counted']
 
 const l4TakeAway: SMTemplateDef = {
-  id: ID('l4.take_away'), unitId: UNIT, lessonId: LES(4), skillIds: [K(6)], uses: ['step'], ladderFamily: 'missing-part',
+  id: ID('l4.take_away'), unitId: UNIT, lessonId: LES(4), skillIds: [K(6)], uses: ['step'], ladderFamily: 'take-away',
   build(rng, ctx) {
-    const w = drawInt(rng, ctx, 'w', 4, 10)
-    const p = drawInt(rng, ctx, 'p', 1, w - 1)
+    // honours ctx.minPart (lesson days ask parts of 2 or more); without it the draw is run 1's
+    const { w, p } = redraw(this.id, () => {
+      const w = drawInt(rng, ctx, 'w', 4, 10)
+      const p = drawInt(rng, ctx, 'p', 1, w - 1)
+      return blocked(ctx, fact(w, p, w - p)) ? null : { w, p }
+    })
     const k = w - p
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(4), ctx, skillIds: [K(6)], modelRung: 'build', formatCode: 'L1',
       prompt: `Take away ${thing(p, 'counter')}. How many are left?`,
-      figures: [{ kind: 'counters', count: w, layout: 'row', tappable: true, spoken: 'a row of counters' }],
-      parts: [part('p1', { kind: 'pad', id: 'T8' }, { kind: 'number', value: k }, [K(6)],
-        { prompt: 'Tap the ones you take away. Then type how many.', review: reviewRules({ w, p }, k, ['sub.added']) })],
-      ladderFamily: 'missing-part', params: { w, p }, givens: [w, p], fact: fact(w, p, k), lessonOnly: true,
+      figures: [countersFig(w, 'row', 'tap-to-take-away', 'a row of counters')],
+      // the picture ends in its number sentence on the same screen (SM-H2; Fable gate fix)
+      parts: [part('p1', { kind: 'sentence', id: 'N-I8', text: sub(w, p, '□'), input: 'pad' }, { kind: 'number', value: k }, [K(6)],
+        { prompt: 'Tap the ones you take away. Then finish the sentence.', review: reviewRules({ w, p }, k, ['take.added']) })],
+      ladderFamily: 'take-away', params: { w, p }, givens: [w, p], fact: fact(w, p, k), lessonOnly: true,
     })
   },
   answerFor: (p) => ({ p1: { kind: 'number', value: num(p, 'w') - num(p, 'p') } }),
@@ -434,13 +463,16 @@ const l4EmptyPartBond: SMTemplateDef = {
     const shownLeft = rng.chance(0.5)
     const start = shownLeft ? bond(w, p, 'empty') : bond(w, 'empty', p)
     const review = reviewRules({ w, p, k }, k, MISSING_REVIEW)
+    // On the bond there is no sign, so w + p there is "a part is smaller" (bond.added), not
+    // "look at the sign" (teacher's read of the run-2 dump); the sentence keeps sub.added.
+    const bondReview = reviewRules({ w, p, k }, k, MISSING_REVIEW.map((r) => (r === 'sub.added' ? 'bond.added' : r)))
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(4), ctx, skillIds: [K(6)], modelRung: 'build', formatCode: 'N-I2',
       prompt: 'Find the missing part.',
       figures: [bondFig(start)],
       parts: [
         part('p1', { kind: 'bond', id: 'N-I2', mode: 'fill', start }, { kind: 'bond-parts', whole: w, parts: [p, k], asked: ['part'] }, [K(6)],
-          { prompt: 'What goes in the empty circle?', review }),
+          { prompt: 'What goes in the empty circle?', review: bondReview }),
         part('p2', { kind: 'sentence', id: 'N-I8', text: sub(w, p, '□'), input: 'pad' }, { kind: 'number', value: k }, [K(6)],
           { prompt: 'Now finish the sentence.', after: 'p1', review }),
       ],
@@ -502,8 +534,7 @@ const l4MissingPartChoice: SMTemplateDef = {
   id: ID('l4.missing_part_choice'), unitId: UNIT, lessonId: LES(4), skillIds: [K(6)], uses: ['practice', 'exit', 'check', 'placement'], ladderFamily: 'missing-part',
   build(rng, ctx) {
     const built = redraw(this.id, () => {
-      const w = drawInt(rng, ctx, 'w', 6, 10)
-      const p = drawInt(rng, ctx, 'p', 2, Math.floor((w - 2) / 2))
+      const { w, p } = drawShownSmall(rng, ctx, 'p')
       if (p < 2 || 2 * p > w - 2) return null
       const k = w - p
       if (blocked(ctx, fact(w, p, k))) return null
@@ -536,10 +567,13 @@ const l4SignDecides: SMTemplateDef = {
         ladderFamily: 'sign', params: { op, a, b }, givens: [a, b], fact: fact(w, a, b),
       })
     }
+    // `asked` (smaller / larger missing part) is set by the day assembler's blind-habit
+    // balance (EXEMPLAR §3); without it the draw is exactly run 1's.
+    const askedSub = option(ctx, 'asked', ASKED)
     const { w, p, k } = redraw(this.id, () => {
       const w = drawInt(rng, ctx, 'w', 2, 10)
-      const p = drawInt(rng, ctx, 'p', 1, w - 1)
-      return p >= 1 && p < w && !blocked(ctx, fact(w, p, w - p)) ? { w, p, k: w - p } : null
+      const p = askedSub ? drawShownPart(rng, ctx, w, askedSub) : drawInt(rng, ctx, 'p', 1, w - 1)
+      return p !== null && p >= 1 && p < w && !blocked(ctx, fact(w, p, w - p)) ? { w, p, k: w - p } : null
     })
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(4), ctx, skillIds: [K(6)], modelRung: 'unaided', formatCode: 'T8',
@@ -556,6 +590,8 @@ const l4SignDecides: SMTemplateDef = {
 }
 
 const ERROR_RULES = ['sub.added', 'count.start-counted', 'bond.whole-as-part'] as const
+/** "Taking away p leaves w": recomputed by arithmetic (true only if p were 0). */
+const s1 = (w: number, p: number) => w - p === w
 
 /** The six error rows (EXEMPLAR §4 l4.error_take_away): id → text, truth. */
 function errorRows(w: number, p: number, X: number): Record<string, { text: string; truth: boolean }> {
@@ -566,6 +602,13 @@ function errorRows(w: number, p: number, X: number): Record<string, { text: stri
     'part-w': { text: `${w} is a part.`, truth: false },
     'minus-joins': { text: `The ${MINUS} sign means put together.`, truth: false },
     'whole-p': { text: `${p} is the whole.`, truth: p === w },
+  }
+  // When the child wrote the whole as what is left (X = w, bond.whole-as-part), his bond shows w
+  // in a part circle, so "w is a part" would be true of the picture and false of the bond: a
+  // two-faced row (LEARNINGS S6). That draw uses "Taking away p leaves w." instead (false, p ≥ 2).
+  if (X === w) {
+    delete rows['part-w']
+    rows['leaves-w'] = { text: `Taking away ${p} leaves ${w}.`, truth: w - p === w }
   }
   if (X > w) rows['x-too-big'] = { text: `${X} is more than ${w}. It cannot be what is left.`, truth: X > w }
   else rows['together-more'] = { text: `${p} and ${X} together make more than ${w}.`, truth: p + X > w }
@@ -596,8 +639,8 @@ const l4ErrorTakeAway: SMTemplateDef = {
     const rows: SMTruthRow[] = rowIds.map((id) => ({ id, text: all[id].text, truth: all[id].truth, }))
     const wrote = `A child wrote ${sub(w, p, X)}.`
     const prompt = setting ? `${thereAre(setting, w)} ${someLeave(setting, p)} ${wrote}` : wrote
-    const figures: SMFigure[] = [bondFig(bond(w, p, X), "a child's number bond")]
-    if (setting) figures.unshift({ kind: 'scene', setting: setting.id, shape: setting.shape, groups: [w], spoken: 'one group' })
+    const figures: SMFigure[] = [bondFig(bond(w, p, X), { spoken: "a child's number bond", childWork: true })]
+    if (setting) figures.unshift(sceneFig(setting.id, setting.shape, [w]))
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(4), ctx, skillIds: [K(10)], modelRung: 'read', formatCode: 'T12',
       prompt, figures,
@@ -625,6 +668,7 @@ const l4ErrorTakeAway: SMTemplateDef = {
       'whole-w': true,
       'leaves-less': w - s < w,
       'part-w': false,
+      'leaves-w': s1(w, s),
       'minus-joins': false,
       'whole-p': s === w,
       'x-too-big': X > w,
@@ -654,10 +698,12 @@ const l5FourFacts: SMTemplateDef = {
     const { w, a, b } = drawBondDistinct(rng, ctx, this.id, 3)
     const sentences: Array<[string, number]> = [[add(a, b, '□'), w], [add(b, a, '□'), w], [sub(w, a, '□'), b], [sub(w, b, '□'), a]]
     const parts = sentences.map(([text, key], i) => part(`p${i + 1}`, { kind: 'sentence', id: 'N-I8', text, input: 'pad' }, { kind: 'number', value: key }, [K(7)],
-      { after: i ? `p${i}` : undefined, review: i === 2 ? [reviewText('fact.order-swapped', sub(a, w, b))] : [] }))
+      // a pad takes one number, so the reachable slip on "w − a = □" is adding (w + a), not
+      // writing "a − w" (fact.order-swapped lives on l5.equals_truth's rows, where it is reachable)
+      { after: i ? `p${i}` : undefined, review: i === 2 ? reviewRules({ w, p: a }, b, ['sub.added']) : i === 3 ? reviewRules({ w, p: b }, a, ['sub.added']) : [] }))
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(5), ctx, skillIds: [K(7)], modelRung: 'read', formatCode: 'N-I8',
-      prompt: 'Write the four facts of the bond.',
+      prompt: 'Finish the four facts of the bond.',
       figures: [bondFig(bond(w, a, b))],
       parts, ladderFamily: 'four-facts', params: { w, a }, givens: [w, a, b], fact: fact(w, a, b),
     })
@@ -666,7 +712,10 @@ const l5FourFacts: SMTemplateDef = {
     const w = num(p, 'w'), a = num(p, 'a'), b = w - a
     return { p1: { kind: 'number', value: w }, p2: { kind: 'number', value: w }, p3: { kind: 'number', value: b }, p4: { kind: 'number', value: a } }
   },
-  verifyFor: (p) => ({ args: { w: num(p, 'w'), a: num(p, 'a'), b: num(p, 'w') - num(p, 'a') } }),
+  verifyFor: (p) => {
+    const w = num(p, 'w'), a = num(p, 'a'), b = w - a
+    return { args: { w, a, b }, partArgs: { p3: { w, p: a }, p4: { w, p: b } } }
+  },
 }
 
 function equalsRows(w: number, a: number, b: number): Record<string, { text: string; truth: boolean; rule?: string }> {
@@ -744,7 +793,7 @@ function hintText(place: Place, x: number, y: number, z: number): string {
 }
 
 const l5BoxAnyPlace: SMTemplateDef = {
-  id: ID('l5.box_any_place'), unitId: UNIT, lessonId: LES(5), skillIds: [K(6), K(8)], uses: ['step', 'practice', 'check'], ladderFamily: 'four-facts',
+  id: ID('l5.box_any_place'), unitId: UNIT, lessonId: LES(5), skillIds: [K(6), K(8)], uses: ['step', 'practice', 'check'], ladderFamily: 'box',
   build(rng, ctx) {
     const place: Place = option(ctx, 'place', PLACES) ?? rng.pick(PLACES)
     const asked = place === '4' ? undefined : (option(ctx, 'asked', ASKED) ?? (rng.chance(0.5) ? 'smaller' : 'larger'))
@@ -767,7 +816,7 @@ const l5BoxAnyPlace: SMTemplateDef = {
       prompt: 'What number goes in the box?', figures: [],
       parts: [part('p1', { kind: 'sentence', id: 'N-I8', text: bp.text, input: 'pad', shapeHint: hintText(place, ...hint) },
         { kind: 'number', value: bp.key }, [K(6), K(8)], { review: reviewRules(bp.args, bp.key, bp.rules), points: pts(ctx, 1) })],
-      ladderFamily: 'four-facts', params: { w, a, place, hint }, givens: place === '4' ? [a, b] : [w, bp.shown], fact: fact(w, a, b),
+      ladderFamily: 'box', params: { w, a, place, hint }, givens: place === '4' ? [a, b] : [w, bp.shown], fact: fact(w, a, b),
     })
   },
   answerFor: (p) => {
@@ -786,8 +835,7 @@ const l5MissingAddendChoice: SMTemplateDef = {
   id: ID('l5.missing_addend_choice'), unitId: UNIT, lessonId: LES(5), skillIds: [K(8)], uses: ['practice', 'check'], ladderFamily: 'missing-part',
   build(rng, ctx) {
     const { w, a, k, pc } = redraw(this.id, () => {
-      const w = drawInt(rng, ctx, 'w', 6, 10)
-      const a = drawInt(rng, ctx, 'a', 2, Math.floor((w - 2) / 2))
+      const { w, a } = drawShownSmall(rng, ctx, 'a')
       if (a < 2 || 2 * a > w - 2) return null
       const k = w - a
       if (blocked(ctx, fact(w, a, k))) return null
@@ -809,6 +857,7 @@ const l5MissingAddendChoice: SMTemplateDef = {
 // ===========================================================================
 
 const ACK = { kind: 'ack', label: 'I know what it says' } as const
+const STORY_CHECK = { kind: 'ack', label: 'Yes, it fits', lookAgain: { label: 'Let me look again', reopens: 'p3' } } as const
 
 function pickSetting(rng: Rng, ctx: SMBuildCtx) {
   return ctx.options?.setting ? getSetting(String(ctx.options.setting)) : rng.pick(G1U02_SETTINGS)
@@ -823,11 +872,12 @@ const l6JoinStory: SMTemplateDef = {
     const ctx = storyCtx(ctx0)
     const s = pickSetting(rng, ctx)
     const { a, b, w } = drawAddends(rng, ctx, this.id)
+    const frame = rng.int(0, STORY_FRAMES - 1)
     const chips = [String(a), String(b), '+', MINUS, '=', '□']
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(6), ctx, skillIds: [K(9), K(5)], modelRung: 'build', formatCode: 'T17',
-      prompt: joinStory(s, a, b),
-      figures: [{ kind: 'scene', setting: s.id, shape: s.shape, groups: [a, b], spoken: 'two groups' }],
+      prompt: joinStory(s, a, b, frame),
+      figures: [sceneFig(s.id, s.shape, [a, b])],
       parts: [
         part('p0', { ...ACK }, { kind: 'ack' }, [], { prompt: 'Tell the story back.' }),
         part('p1', { kind: 'bond', id: 'N-I2', mode: 'label', start: EMPTY_BOND }, { kind: 'bond-parts', whole: '?', parts: [a, b], asked: ['unknown-place', 'part'] }, [K(9)],
@@ -836,8 +886,11 @@ const l6JoinStory: SMTemplateDef = {
           { prompt: 'Make the sentence.', after: 'p1', points: pts(ctx, 1) }),
         part('p3', { kind: 'pad', id: 'T8' }, { kind: 'number', value: w }, [K(5)],
           { prompt: 'Now answer the question.', after: 'p2', points: pts(ctx, 1), review: reviewRules({ story: 0, a, b }, w, ['story.wrong-operation']) }),
+        // DD17's last step, the check in the story: never graded; "Let me look again" re-opens
+        // the answer (recorded, never a new try, never scored). Fable gate fix.
+        part('p4', { ...STORY_CHECK }, { kind: 'ack' }, [], { prompt: 'Check it in the story. Does your answer fit?', after: 'p3' }),
       ],
-      ladderFamily: 'story', params: { setting: s.id, a, b }, givens: [a, b], fact: fact(w, a, b),
+      ladderFamily: 'story', params: { setting: s.id, a, b, frame }, givens: [a, b], fact: fact(w, a, b),
     })
   },
   answerFor: (p) => {
@@ -847,6 +900,7 @@ const l6JoinStory: SMTemplateDef = {
       p1: { kind: 'bond-parts', whole: '?', parts: [a, b], asked: ['unknown-place', 'part'] },
       p2: { kind: 'sentence-match', accepts: bothOrders(a, b, '□') },
       p3: { kind: 'number', value: a + b },
+      p4: { kind: 'ack' },
     }
   },
   verifyFor: (p) => ({ args: { story: 0, a: num(p, 'a'), b: num(p, 'b') } }),
@@ -857,16 +911,18 @@ const l6TakeawayStory: SMTemplateDef = {
   build(rng, ctx0) {
     const ctx = storyCtx(ctx0)
     const s = pickSetting(rng, ctx)
+    const askedStory = option(ctx, 'asked', ASKED)
     const { w, p, k } = redraw(this.id, () => {
       const w = drawInt(rng, ctx, 'w', 4, 10)
-      const p = drawInt(rng, ctx, 'p', 1, w - 1)
-      return blocked(ctx, fact(w, p, w - p)) ? null : { w, p, k: w - p }
+      const p = askedStory ? drawShownPart(rng, ctx, w, askedStory) : drawInt(rng, ctx, 'p', 1, w - 1)
+      return p === null || blocked(ctx, fact(w, p, w - p)) ? null : { w, p, k: w - p }
     })
+    const frame = rng.int(0, STORY_FRAMES - 1)
     const chips = [String(w), String(p), '+', MINUS, '=', '□']
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(6), ctx, skillIds: [K(9), K(6)], modelRung: 'build', formatCode: 'T17',
-      prompt: takeawayStory(s, w, p),
-      figures: [{ kind: 'scene', setting: s.id, shape: s.shape, groups: [w], spoken: 'one group' }],
+      prompt: takeawayStory(s, w, p, frame),
+      figures: [sceneFig(s.id, s.shape, [w])],
       parts: [
         part('p0', { ...ACK }, { kind: 'ack' }, [], { prompt: 'Tell the story back.' }),
         part('p1', { kind: 'bond', id: 'N-I2', mode: 'label', start: EMPTY_BOND }, { kind: 'bond-parts', whole: w, parts: [p, '?'], asked: ['whole', 'part', 'unknown-place'] }, [K(9)],
@@ -875,8 +931,11 @@ const l6TakeawayStory: SMTemplateDef = {
           { prompt: 'Make the sentence.', after: 'p1', points: pts(ctx, 1) }),
         part('p3', { kind: 'pad', id: 'T8' }, { kind: 'number', value: k }, [K(6)],
           { prompt: 'Now answer the question.', after: 'p2', points: pts(ctx, 1), review: reviewRules({ story: 1, w, p }, k, ['story.wrong-operation']) }),
+        // DD17's last step, the check in the story: never graded; "Let me look again" re-opens
+        // the answer (recorded, never a new try, never scored). Fable gate fix.
+        part('p4', { ...STORY_CHECK }, { kind: 'ack' }, [], { prompt: 'Check it in the story. Does your answer fit?', after: 'p3' }),
       ],
-      ladderFamily: 'story', params: { setting: s.id, w, p }, givens: [w, p], fact: fact(w, p, k),
+      ladderFamily: 'story', params: { setting: s.id, w, p, frame }, givens: [w, p], fact: fact(w, p, k),
     })
   },
   answerFor: (p) => {
@@ -886,6 +945,7 @@ const l6TakeawayStory: SMTemplateDef = {
       p1: { kind: 'bond-parts', whole: w, parts: [s, '?'], asked: ['whole', 'part', 'unknown-place'] },
       p2: { kind: 'sentence-match', accepts: [sub(w, s, '□')] },
       p3: { kind: 'number', value: w - s },
+      p4: { kind: 'ack' },
     }
   },
   verifyFor: (p) => ({ args: { story: 1, w: num(p, 'w'), p: num(p, 'p') } }),
@@ -894,11 +954,12 @@ const l6TakeawayStory: SMTemplateDef = {
 const STORY_KINDS = ['join', 'takeaway'] as const
 
 const l6WhichBondStory: SMTemplateDef = {
-  id: ID('l6.which_bond_story'), unitId: UNIT, lessonId: LES(6), skillIds: [K(9)], uses: ['practice', 'exit'], ladderFamily: 'story',
+  id: ID('l6.which_bond_story'), unitId: UNIT, lessonId: LES(6), skillIds: [K(9)], uses: ['practice', 'exit'], ladderFamily: 'story-choice',
   build(rng, ctx0) {
     const ctx = storyCtx(ctx0)
     const kind = option(ctx, 'kind', STORY_KINDS) ?? (rng.chance(0.5) ? 'join' : 'takeaway')
     const s = pickSetting(rng, ctx)
+    const frame = rng.int(0, STORY_FRAMES - 1)
     const d = (bd: BondShape, rule: string | null): Draft => ({ text: bondText(bd), content: { kind: 'bond', bond: bd }, rule })
     const canon = (x: Draft) => contentCanon(x.content)
     const built = redraw(this.id, () => {
@@ -913,23 +974,23 @@ const l6WhichBondStory: SMTemplateDef = {
         else if (a >= 2) pool.push(d(bond('?', a - 1, b), 'bond.sum-off-by-one'))
         const uniq = pool.filter((x, i) => pool.findIndex((y) => canon(y) === canon(x)) === i && canon(x) !== canon(key))
         if (uniq.length < 3) return null
-        return { key, others: rng.shuffle(uniq).slice(0, 3), params: { kind, setting: s.id, a, b }, prompt: joinStory(s, a, b), groups: [a, b], givens: [a, b], fact: fact(a + b, a, b) }
+        return { key, others: rng.shuffle(uniq).slice(0, 3), params: { kind, setting: s.id, a, b, frame }, prompt: joinStory(s, a, b, frame), groups: [a, b], givens: [a, b], fact: fact(a + b, a, b) }
       }
       const w = drawInt(rng, ctx, 'w', 4, 10), p = drawInt(rng, ctx, 'p', 1, w - 1)
       if (blocked(ctx, fact(w, p, w - p))) return null
       const key = d(bond(w, p, '?'), null)
-      const pool: Draft[] = [d(bond('?', w, p), 'story.unknown-in-wrong-circle'), d(bond(p, w, '?'), 'bond.whole-as-part'), d(bond(w + 1, p, '?'), 'bond.sum-off-by-one')]
-      if (w - 1 > p) pool.push(d(bond(w - 1, p, '?'), 'bond.sum-off-by-one'))
-      return { key, others: rng.shuffle(pool).slice(0, 3), params: { kind, setting: s.id, w, p }, prompt: takeawayStory(s, w, p), groups: [w], givens: [w, p], fact: fact(w, p, w - p) }
+      const pool: Draft[] = [d(bond('?', w, p), 'story.unknown-in-wrong-circle'), d(bond(p, w, '?'), 'bond.whole-as-part'), d(bond(w + 1, p, '?'), 'bond.whole-off-by-one')]
+      if (w - 1 > p) pool.push(d(bond(w - 1, p, '?'), 'bond.whole-off-by-one'))
+      return { key, others: rng.shuffle(pool).slice(0, 3), params: { kind, setting: s.id, w, p, frame }, prompt: takeawayStory(s, w, p, frame), groups: [w], givens: [w, p], fact: fact(w, p, w - p) }
     })
     const choices = orderChoices(ctx.seed, `${this.id}:${ctx.stream}`, built.key, built.others)
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(6), ctx, skillIds: [K(9)], modelRung: 'read', formatCode: 'T1',
       prompt: built.prompt,
-      figures: [{ kind: 'scene', setting: s.id, shape: s.shape, groups: built.groups, spoken: built.groups.length === 1 ? 'one group' : 'two groups' }],
+      figures: [sceneFig(s.id, s.shape, built.groups)],
       parts: [part('p1', { kind: 'choices', id: 'T1', choices, numeric: false, pictures: false }, { kind: 'choice-key', key: keyOf(choices) }, [K(9)],
         { prompt: 'Which bond fits the story?' })],
-      ladderFamily: 'story', params: built.params, givens: built.givens, fact: built.fact,
+      ladderFamily: 'story-choice', params: built.params, givens: built.givens, fact: built.fact,
     })
   },
   answerFor: (p) => {
@@ -947,14 +1008,15 @@ const l6PaperBond: SMTemplateDef = {
     const ctx = storyCtx(ctx0)
     const s = pickSetting(rng, ctx)
     const { a, b, w } = drawAddends(rng, ctx, this.id)
+    const frame = rng.int(0, STORY_FRAMES - 1)
     return makeItem({
       templateId: this.id, unitId: UNIT, lessonId: LES(6), ctx, skillIds: [K(9)], modelRung: 'build', formatCode: 'N-I11',
-      prompt: joinStory(s, a, b),
-      figures: [{ kind: 'scene', setting: s.id, shape: s.shape, groups: [a, b], spoken: 'two groups' }],
+      prompt: joinStory(s, a, b, frame),
+      figures: [sceneFig(s.id, s.shape, [a, b])],
       parts: [part('p1', { kind: 'paper', id: 'N-I11', button: 'I drew it', chips: [String(a), String(b), String(w), '+', MINUS, '='] },
         { kind: 'paper-ack', accepts: bothOrders(a, b, w) }, [K(9)],
         { prompt: 'Draw a bond for this story on paper. Then make the sentence.' })],
-      ladderFamily: 'story', params: { setting: s.id, a, b }, givens: [a, b], fact: fact(w, a, b),
+      ladderFamily: 'story', params: { setting: s.id, a, b, frame }, givens: [a, b], fact: fact(w, a, b),
     })
   },
   answerFor: (p) => {

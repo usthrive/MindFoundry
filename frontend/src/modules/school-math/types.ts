@@ -14,6 +14,7 @@
  */
 
 import type { Rng } from '../best-brains/generator/rng'
+import type { BondShape, FigureOf, PartWholeFigure } from '../best-brains/figures/types'
 
 // ---------------------------------------------------------------------------
 // Catalogue
@@ -100,23 +101,20 @@ export type ModelRung = 'read' | 'label' | 'build' | 'unaided'
 // Figures (plain data; renderers come in stage 2)
 // ---------------------------------------------------------------------------
 
-/** A bond circle: a number, empty (the asked circle), or "?" (a story's unknown). */
-export type BondCell = number | 'empty' | '?'
+/**
+ * The figure shapes are defined ONCE, in the shared figure library
+ * (best-brains/figures/types.ts): Best Brains' `counters`, and the part-whole kinds
+ * added there for this module (`number-bond`, `groups`, `split-list`, `match-rows`,
+ * `scene`, `track-window`). The library's `checkFigureShape`, `figureValue` and
+ * `partWholeSpoken` read them. This module adds only what the CHILD does with a figure
+ * (`interaction`), which is input behaviour, not picture, and a required `spoken`.
+ */
+export type { BondCell, BondShape } from '../best-brains/figures/types'
 
-export interface BondShape {
-  whole: BondCell
-  parts: [BondCell, BondCell]
-}
+/** What the child does with the counters (the input surface reads it; stage 2 renders it). */
+export type SMInteraction = 'tap-to-count' | 'tap-to-take-away' | 'drag-into-two-circles'
 
-export type SMFigure =
-  | { kind: 'counters'; count: number; layout: 'scattered' | 'row' | 'two-circles'; tappable: boolean; spoken: string }
-  | { kind: 'number-bond'; bond: BondShape; spoken: string }
-  /** Fixed shapes each carrying its number; nothing countable (L33). */
-  | { kind: 'groups'; shape: string; groups: number[]; spoken: string }
-  | { kind: 'split-list'; whole: number; rows: Array<{ first: number; second: number | null }>; spoken: string }
-  | { kind: 'match-rows'; top: { count: number; spread: boolean }; bottom: { count: number; spread: boolean }; spoken: string }
-  | { kind: 'number-track'; cells: Array<number | null>; spoken: string }
-  | { kind: 'scene'; setting: string; shape: string; groups: number[]; spoken: string }
+export type SMFigure = (FigureOf<'counters'> | PartWholeFigure) & { spoken: string; interaction?: SMInteraction }
 
 // ---------------------------------------------------------------------------
 // Choices and truth rows
@@ -161,8 +159,11 @@ export type SMSurface =
   | { kind: 'choices'; id: 'T1'; choices: SMChoice[]; numeric: boolean; pictures: boolean }
   | { kind: 'truth'; id: 'N-I10'; rows: SMTruthRow[] }
   | { kind: 'paper'; id: 'N-I11'; button: string; chips: string[] }
-  /** DD17's "tell it back": never graded. */
-  | { kind: 'ack'; label: string }
+  /**
+   * DD17's "tell it back", and its last step "check it in the story": never graded. The story
+   * check has a second button that re-opens an earlier part (recorded; never a new try, never scored).
+   */
+  | { kind: 'ack'; label: string; lookAgain?: { label: string; reopens: string } }
 
 // ---------------------------------------------------------------------------
 // Answers (one validation per part; each kind is on the validator's QG-5 list)
@@ -263,6 +264,12 @@ export interface SMItem {
   lessonOnly: boolean
   /** "try a new one" on previews (DD24). */
   label?: string
+  /**
+   * The sister-module link sentence the item says (DD14; METHOD-LEDGER row). Said only
+   * when the child is enrolled in that module (decision T-6), which is read at day start
+   * in stage 5; no template emits one yet. `sm-ledgers-test` holds it to its row's text.
+   */
+  methodLink?: { row: string; sentence: string }
 }
 
 // ---------------------------------------------------------------------------
@@ -344,4 +351,92 @@ export interface SMPlacementPair {
   kind: 'placement-pair'
   seed: number
   items: [SMItem, SMItem]
+}
+
+// ---------------------------------------------------------------------------
+// Days, attempts and skill states (stage 1 run 2; BUILD-PLAN §5.2 records, in memory)
+// ---------------------------------------------------------------------------
+
+/** BUILD-PLAN §5.2 `sm_day_state.day kind`. */
+export type SMDayKind = 'lesson' | 'practice' | 'entry' | 'check' | 'placement'
+
+/** One answered item: the in-memory shape of an `sm_item_attempts` row (append-only). */
+export interface SMAttempt {
+  itemId: string
+  templateId: string
+  unitId: string
+  lessonId: string
+  role: SMRole
+  skillIds: string[]
+  /** Right on the first try (all graded parts). */
+  firstTryCorrect: boolean
+  tries: number
+  /** Every answer tried, in order (the first is the one "look again" shows). */
+  answers: string[]
+  /** First-try time in ms (monotonic, paused while hidden). */
+  firstTryMs: number
+  /** A scaffold was visible on the first try (a demo replay, a lit circle, …). */
+  scaffoldVisible: boolean
+  /** Highest ladder rung reached on this item, 0 (none) to 4 (the answer shown). */
+  ladderRung: 0 | 1 | 2 | 3 | 4
+  dayKind: SMDayKind
+  /** The DEVICE's calendar day, YYYY-MM-DD (comebacks.ts `localDay()`); never the UTC date. */
+  localDay: string
+  /** ISO instant (UTC). Never used to count days. */
+  createdAt: string
+  /** The item's surface signature (validator `operandSignature`), for fresh draws (W5). */
+  signature: string
+  /** The item's structural options (box place, story kind…), so a comeback keeps the structure. */
+  options?: Record<string, unknown>
+  /** Set on a comeback answer: which comeback entry it answers. */
+  comebackKey?: string
+}
+
+export type SMSkillState = 'not-started' | 'learning' | 'known' | 'stuck' | 'parked'
+
+/** A role inside a day's manifest: an item role, or the lesson demo (never an attempt). */
+export type SMSlotRole = SMRole | 'demo'
+
+/** One slot of a frozen day manifest (`sm_day_state.manifest`). */
+export interface SMDaySlot {
+  /** 0-based position in the day. */
+  index: number
+  role: SMSlotRole
+  /** Counted in the day's N ("Question k of N"). The demo and review items never are. */
+  inN: boolean
+  templateId?: string
+  seed: number
+  stream: string
+  options?: Record<string, unknown>
+  /** Why this slot holds this template (e.g. `entry-line`, `prev-exit`, `cpa:1`, `comeback:<key>`, `weakest:<skill>`). */
+  source: string
+  /** Stall rule: the model rung the re-opened concrete step is served at (one lower, DD6). */
+  modelRung?: ModelRung
+  /** Stall rule: the stuck skill this slot re-opens. */
+  reopens?: string
+  /** A comeback slot's entry key. */
+  comebackKey?: string
+  /** Smallest part the slot's fact may have (lesson steps and exits, and a forced smaller part: 2). */
+  minPart?: number
+}
+
+export interface SMDayManifest {
+  unitId: string
+  dayKind: SMDayKind
+  lessonId: string
+  dayKey: string
+  seed: number
+  /** The question count shown to the child (items with `inN`). */
+  n: number
+  slots: SMDaySlot[]
+}
+
+export interface SMDay {
+  manifest: SMDayManifest
+  /** Items by slot index (the demo slot has none). */
+  items: Array<SMItem | null>
+  /** The lesson demo, on lesson days (authored, fixed; never an attempt). */
+  demo?: SMDemo
+  /** `dayManifestHash(manifest)`: a reload must reproduce it byte for byte. */
+  hash: string
 }

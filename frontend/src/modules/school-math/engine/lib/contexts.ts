@@ -30,7 +30,7 @@ export const G1U02_SETTINGS: readonly StorySetting[] = [
   { id: 'shells', ledgerName: 'shells in a bucket', noun: 'shell', shape: 'shell', place: 'in the bucket', join: { one: 'is put in', many: 'are put in' }, leave: { one: 'falls out', many: 'fall out' } },
   { id: 'fish', ledgerName: 'fish in a tank', noun: 'fish', shape: 'fish', place: 'in the tank', join: { one: 'is put in', many: 'are put in' }, leave: { one: 'is taken out', many: 'are taken out' } },
   { id: 'stickers', ledgerName: 'stickers on a page', noun: 'sticker', shape: 'sticker', place: 'on the page', join: { one: 'is stuck on', many: 'are stuck on' }, leave: { one: 'is peeled off', many: 'are peeled off' } },
-  { id: 'balloons', ledgerName: 'balloons at a party', noun: 'balloon', shape: 'balloon', place: 'at the party', join: { one: 'is blown up', many: 'are blown up' }, leave: { one: 'pops', many: 'pop' } },
+  { id: 'balloons', ledgerName: 'balloons at a party', noun: 'balloon', shape: 'balloon', place: 'at the party', join: { one: 'is tied on', many: 'are tied on' }, leave: { one: 'pops', many: 'pop' } },
 ]
 
 export function getSetting(id: string): StorySetting {
@@ -61,10 +61,31 @@ export function howManyNow(s: StorySetting): string {
   return `How many ${nounFor(2, s.noun)} are ${s.place} now?`
 }
 
-export function joinStory(s: StorySetting, a: number, b: number): string {
-  return `${thereAre(s, a)} ${moreCome(s, b)} ${howManyNow(s)}`
+/** "the bowl", from "in the bowl" (the place's own noun, for "The bowl has 8 apples."). */
+function container(s: StorySetting): string {
+  return `the ${s.place.split(' ').pop()}`
+}
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+
+/**
+ * Three frames per story kind (Fable ACCEPT follow-up: one skeleton read the same every day).
+ * Each is two story sentences and one question (DD17), ≤ 10 words a sentence, the result
+ * unknown, nouns through `thing` / `nounFor`, and no cue words ("altogether", "left", "in all").
+ */
+export const STORY_FRAMES = 3
+
+export function joinStory(s: StorySetting, a: number, b: number, frame = 0): string {
+  switch (frame % STORY_FRAMES) {
+    case 1: return `${cap(thing(a, s.noun))} ${a === 1 ? 'is' : 'are'} ${s.place}. ${moreCome(s, b)} How many ${nounFor(2, s.noun)} are there now?`
+    case 2: return `${cap(container(s))} has ${thing(a, s.noun)}. Then ${moreCome(s, b)} ${howManyNow(s)}`
+    default: return `${thereAre(s, a)} ${moreCome(s, b)} ${howManyNow(s)}`
+  }
 }
 
-export function takeawayStory(s: StorySetting, w: number, p: number): string {
-  return `${thereAre(s, w)} ${someLeave(s, p)} ${howManyNow(s)}`
+export function takeawayStory(s: StorySetting, w: number, p: number, frame = 0): string {
+  switch (frame % STORY_FRAMES) {
+    case 1: return `${cap(container(s))} has ${thing(w, s.noun)}. ${someLeave(s, p)} ${howManyNow(s)}`
+    case 2: return `${cap(thing(w, s.noun))} ${w === 1 ? 'is' : 'are'} ${s.place}. Then ${someLeave(s, p)} How many ${nounFor(2, s.noun)} are there now?`
+    default: return `${thereAre(s, w)} ${someLeave(s, p)} ${howManyNow(s)}`
+  }
 }

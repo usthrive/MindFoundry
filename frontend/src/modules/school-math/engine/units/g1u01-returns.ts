@@ -11,6 +11,7 @@
 import type { SMPart, SMTemplateDef } from '../../types'
 import { contentCanon, orderChoices, type Draft } from '../lib/choices'
 import { drawInt, makeItem, num, option, reviewRules, str } from '../lib/item'
+import { countersFig, matchRowsFig, trackFig } from '../lib/figures'
 
 const ID1 = (s: string) => `sm.g1u01.${s}`
 
@@ -26,7 +27,7 @@ const countSet: SMTemplateDef = {
     return makeItem({
       templateId: this.id, unitId: 'G1-U01', lessonId: 'G1-U01-L1', ctx, skillIds: ['G1-U01-K1'], modelRung: 'build', formatCode: 'T2',
       prompt: 'Touch each counter once. How many counters are there?',
-      figures: [{ kind: 'counters', count: n, layout: 'scattered', tappable: true, spoken: 'some counters' }],
+      figures: [countersFig(n, 'scatter', 'tap-to-count', 'some counters')],
       parts: [onePart({ surface: { kind: 'pad', id: 'T8' }, answer: { kind: 'number', value: n }, skillIds: ['G1-U01-K1'],
         reviewRules: reviewRules({ n }, n, ['count.double-touch', 'count.skip']) })],
       ladderFamily: 'count', params: { n }, givens: [],
@@ -44,7 +45,10 @@ const matchMore: SMTemplateDef = {
     const fewer = more - drawInt(rng, ctx, 'gap', 1, 3)
     // L51: the spread-out row is the bigger on half the draws, and on top on half the draws.
     const spreadIsMore = rng.chance(0.5)
-    const spreadTop = rng.chance(0.5)
+    // `keyRow` (entry-check pairs: the row with more is on top on one item, below on the other);
+    // without it the draw is run 1's
+    const wantKeyRow = option(ctx, 'keyRow', ['top', 'bottom'] as const)
+    const spreadTop = wantKeyRow ? (wantKeyRow === 'top') === spreadIsMore : rng.chance(0.5)
     const spreadCount = spreadIsMore ? more : fewer
     const compactCount = spreadIsMore ? fewer : more
     const top = spreadTop ? spreadCount : compactCount
@@ -60,7 +64,7 @@ const matchMore: SMTemplateDef = {
     return makeItem({
       templateId: this.id, unitId: 'G1-U01', lessonId: 'G1-U01-L3', ctx, skillIds: ['G1-U01-K3'], modelRung: 'read', formatCode: 'N-F8',
       prompt: 'Which row has more?',
-      figures: [{ kind: 'match-rows', top: { count: top, spread: spreadTop }, bottom: { count: bottom, spread: !spreadTop }, spoken: 'two rows of counters' }],
+      figures: [matchRowsFig({ count: top, spread: spreadTop }, { count: bottom, spread: !spreadTop })],
       parts: [onePart({ surface: { kind: 'choices', id: 'T1', choices, numeric: false, pictures: false }, answer: { kind: 'choice-key', key }, skillIds: ['G1-U01-K3'] })],
       ladderFamily: 'match', params: { top, bottom, spreadTop: spreadTop ? 1 : 0 }, givens: [],
     })
@@ -81,7 +85,7 @@ const oneMoreLess: SMTemplateDef = {
     return makeItem({
       templateId: this.id, unitId: 'G1-U01', lessonId: 'G1-U01-L4', ctx, skillIds: ['G1-U01-K4'], modelRung: 'read', formatCode: 'T8',
       prompt: `What number comes just ${dir} ${n}?`,
-      figures: [{ kind: 'number-track', cells, spoken: 'a number track' }],
+      figures: [trackFig(cells)],
       parts: [onePart({ surface: { kind: 'pad', id: 'T8' }, answer: { kind: 'number', value: key }, skillIds: ['G1-U01-K4'],
         reviewRules: reviewRules({ n, before: dir === 'before' ? 1 : 0 }, key, ['order.before-after-swap']) })],
       ladderFamily: 'order', params: { n, dir }, givens: [n, ...cells.filter((c): c is number => c !== null)],

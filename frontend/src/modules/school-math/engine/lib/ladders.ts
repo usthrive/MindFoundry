@@ -33,7 +33,7 @@ export const LADDERS: Record<string, Ladder> = {
   list: L(
     ['What number are we splitting? Read the list in order.', 'none'],
     ['Look at the rows that are done.', 'light-done-rows'],
-    ['Each row makes the whole. Count on from the first number.', 'none'],
+    ['Each row makes the number we split. Count on from the first.', 'none'],
     ['Here is the full list. Let us read it.', 'show-full-list'],
   ),
   'bond-build': L(
@@ -79,6 +79,43 @@ export const LADDERS: Record<string, Ladder> = {
     ['Here is the right answer and its bond.', 'show-answer-and-bond'],
   ),
   // --- authored (not in EXEMPLAR §6) -----------------------------------------
+  // l2.which_bond is a CHOICE of four bonds: nothing can be placed (bond-build's "the whole goes
+  // here" had no circle to fill), and the question that separates the key from the
+  // bond.sum-off-by-one bonds is "do the parts make the whole?" (Fable ACCEPT follow-up).
+  'bond-choice': L(
+    ['Which number is the whole? Do the parts make it?', 'none'],
+    ['Look at the whole circle of each bond.', 'light-whole-circles'],
+    ['Both parts together must make the whole. Check each one.', 'none'],
+    ['Here is the bond. Let us read it.', 'ring-answer-bond'],
+  ),
+  // l6.which_bond_story is a CHOICE of bonds: placing the known numbers (the story ladder's
+  // rung 3) draws the key, so only one choice matches (Fable gate SM-H10). Nothing is placed for
+  // him below rung 4; rung 3 says how to choose. ("question mark" is spelled out: a "?" inside a
+  // sentence would split it in two for the read-aloud.)
+  'story-choice': L(
+    ['Let us hear the story again. What do we want to find?', 'reread-story'],
+    ['Here is a bond. Where does the question mark go?', 'show-empty-bond'],
+    ['Find the bonds with both story numbers. Then check where the question mark is.', 'none'],
+    ['Here are the bond and the sentence.', 'fill-bond-and-sentence'],
+  ),
+  // l4.take_away is counters tapped away (the concrete step): counting on to a whole does not fit
+  // (main session's read of the run-2 dump).
+  'take-away': L(
+    ['How many at the start? How many go away?', 'none'],
+    ['Tap the ones that go away.', 'light-counters-to-take'],
+    ['Count the ones still here.', 'none'],
+    ['Here is what is left. Let us read the sentence.', 'dim-taken-read-sentence'],
+  ),
+  // l5.box_any_place shows a sentence and no bond, so "read the bond" (four-facts rung 1)
+  // named a thing the screen does not have; and with the box first (□ − p = k) the box is the
+  // whole, so "take a part from the whole" pointed the wrong way (teacher's read of the
+  // run-2 dump). Rung 2 brings the bond in, as the missing-part ladder does.
+  box: L(
+    ['Is the box a part, or the whole?', 'none'],
+    ['Look at the bond for this sentence.', 'show-empty-bond-with-known'],
+    ['To find a part, take away. To find the whole, add.', 'none'],
+    ['Here is the sentence. Let us read it together.', 'fill-sentence'],
+  ),
   sign: L(
     ['Look at the sign. Are we putting together or taking away?', 'none'],
     ['Look at the bond with the numbers we know.', 'show-empty-bond-with-known'],

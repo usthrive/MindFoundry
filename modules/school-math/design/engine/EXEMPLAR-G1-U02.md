@@ -104,7 +104,13 @@ rest offered after 8, never a stop.
 twin at a fresh seed follows at once (W1; never "knows" evidence). The practice day closes with
 **"Look again"**: up to 2 of the day's first-try misses, his own answer shown, the question read
 again, one more go (W2; role `review`; not in N; skipped if he takes the rest). First-try misses that
-needed rung 3 or 4 join the comeback pool (W3).
+needed rung 3 or 4 join the comeback pool (W3). A miss whose W1 fix-it twin he answered right first
+try is not a "look again" candidate (he has just shown it; a third serving in one day teaches
+nothing); look again moves on to the next miss (2026-11-21).
+
+**Across days (2026-11-21, Fable gate):** the box place, the sign of `l4.sign_decides` and the story
+kind rotate by the child's count of practice days in the unit, so over any four practice days from L5
+the box takes all four places; a W1 twin never repeats a fact family already in the day.
 
 **Check day:** G1-U02-CK (§7), feedback held; the **review of misses** follows at once (or first
 thing next day if the child rests); every miss enters the 2 / 7 / 21 comeback pool.
@@ -124,7 +130,7 @@ are never served on practice, return, check or placement days.
 | Template | Parts · surface · figure | Draw | Key / grading | Pool or claim rules | Skill · use |
 |---|---|---|---|---|---|
 | `l1.split_any` | (1) N-I4 on `counters` w; (2) N-I8 "w is □ and □" | w 3–10 | (1) both parts ≥ 1 and sum to w (any split); (2) his own split | — | K1 · step, practice |
-| `l1.split_another_way` | N-I4; one split already shown as `groups` (a, b); prompt "Use different numbers." | w 4–10; shown a ≠ b | a pair ≠ {a, b} in either order, summing to w | review line names `split.same-pair` when he repeats {a, b} | K1 · step, practice |
+| `l1.split_another_way` | N-I4; one split already shown as `groups` (a, b); prompt "Here is one way to split w. Guess a new way. Use different numbers. Then check: do both circles make w?" (names guess and check, DD15); (2) N-I8 "w is □ and □." — the same split (2026-11-21, Fable gate) | w 4–10; shown a ≠ b | a pair ≠ {a, b} in either order, summing to w | review line names `split.same-pair` when he repeats {a, b} | K1 · step, practice |
 | `l1.list_splits` | "Make a list": rows 1 and □ … (w−1) and □, two to three rows open, pad per row | w 4–7 | each open row = w − first part | `count.stop-short`, `count.start-counted` (review line) | K2 · step, practice |
 | `l1.missing_split_choice` | T1: the ordered list with one row missing; "Which way is missing?" four pair choices | w 5–8 | the missing pair | distractors: a pair summing to w − 1, one summing to w + 1 (`bond.sum-off-by-one`), a pair already listed (`split.same-pair`) | K2 · practice, exit |
 
@@ -134,14 +140,14 @@ are never served on practice, return, check or placement days.
 |---|---|---|---|---|---|
 | `l2.bond_from_split` | (1) N-I4 split; (2) N-I2 **build**: three empty circles, he taps which is the whole, then fills all three | w 3–10 | (1) as L1; (2) orientation (the whole circle chosen) + whole = w + parts = his split | `bond.whole-as-part` (orientation miss, named in review) | K3 · step, practice, return (the K3 evidence item) |
 | `l2.bond_given` | words "w things: a here, b there" + `groups` a, b; N-I2 build | w 3–10, a + b = w | orientation + three values | `bond.whole-as-part` | K3 · step only (the numbers are given, so it is weak "knows" evidence) |
-| `l2.which_bond` | T1: "Which bond shows w?" four drawn bonds | w 4–10 | whole w at the top, parts summing to w | `bond.whole-as-part` (w in a part circle), `bond.sum-off-by-one` (parts sum w ± 1, whole w) — sentence-type choices, display order only | K4 · practice, exit, check |
+| `l2.which_bond` | T1: "Which bond shows w?" four drawn bonds; ladder family `bond-choice` (§6) (2026-11-21, Fable gate) | w 4–10 | whole w at the top, parts summing to w | `bond.whole-as-part` (w in a part circle), `bond.sum-off-by-one` (parts sum w ± 1, whole w) — sentence-type choices, display order only | K4 · practice, exit, check |
 | `l2.whole_part_truth` | `truth`, 4 rows from a pool of 6 ("w is the whole", "a is a part", "a is the whole", "w is a part" …), 2 true + 2 false, shuffled | w 4–10, **a ≠ b** (else "a is the whole" = "b is the whole" and the pool collapses) | each row by rule | L51 balance | K3 · exit, practice |
 
 ### L3 — add by putting the parts together
 
 | Template | Parts · surface · figure | Draw | Key / grading | Pool or claim rules | Skill · use |
 |---|---|---|---|---|---|
-| `l3.join_bond` | `groups` a, b; (1) N-I2 bond, whole empty (the asked circle empty, N-F1); (2) N-I8 "a + b = □" built from chips | a + b ≤ 10, a, b ≥ 1 | whole = a + b; the sentence matches the bond (either order) | `add.count-first-twice` (a + b + 1), `add.stop-short` (a + b − 1) review lines | K5 · step, practice, return |
+| `l3.join_bond` | `groups` a, b; (1) N-I2 bond, whole empty (the asked circle empty, N-F1); (2) N-I8 "a + b = □" built from chips | a + b ≤ 10, a, b ≥ 1 | whole = a + b; the sentence matches the bond (either order) | `add.count-first-twice` (a + b + 1), `add.stop-short` (a + b − 1) review lines on (1) only: the sentence (2) is built from chips a, b, w, so a counting slip cannot be entered there (SM-ENTER; 2026-11-21) | K5 · step, practice, return |
 | `l3.add_pad` | T8 `pad` "a + b = □" | as above | a + b | as above | K5 · step, practice, return, exit, check |
 | `l3.which_sentence` | T1 (CK A2 shape): bond w (a, b); four sentences | a ≠ b | "a + b = w" | `bond.whole-as-part` ("w + a = b"), `sub.bigger-than-whole` ("larger − smaller = w", e.g. GRADE-1's "5 − 3 = 8"), `add.part-from-sum` ("b + w = a") | K4 · practice, check |
 
@@ -149,18 +155,18 @@ are never served on practice, return, check or placement days.
 
 | Template | Parts · surface · figure | Draw | Key / grading | Pool or claim rules | Skill · use |
 |---|---|---|---|---|---|
-| `l4.take_away` | `counters` w; he taps p to take away (they dim); `pad` "how many are left?" | w 4–10, p 1..w−1 | w − p | `sub.added` (w + p) review line | K6 · step (lesson-only: counting is the step) |
+| `l4.take_away` | `counters` w; he taps p to take away (they dim); N-I8 "w − p = □" on the same screen (SM-H2: the picture ends in a sentence) (2026-11-21, Fable gate) | w 4–10, p 1..w−1 | w − p | `take.added` (w + p) review line "We take some away. Fewer are left." — the screen has counters and no sign, so `sub.added`'s "look at the sign" pointed at nothing (2026-11-21); ladder family `take-away` (§6) | K6 · step (lesson-only: counting is the step) |
 | `l4.empty_part_bond` | `bond` w with part p, the other part empty; (1) N-I2 the part; (2) N-I8 "w − p = □" | w 3–10 | w − p | `bond.repeat-shown`, `bond.whole-as-part`, `sub.added`, `count.stop-short`, `count.start-counted` (review lines) | K6 · step, practice, return, placement |
 | `l4.sub_pad` | T8 `pad` "w − p = □" | w 3–10 | w − p | `sub.added` | K6 · practice, return, check |
 | `l4.missing_part_choice` | T1 (CK A1 shape): `bond` w, p, empty; four number choices | **p is the smaller part: 2 ≤ p, 2p ≤ w − 2** (so two honest values sit below the key; w 6–10) | k = w − p | pool (five honest values): p (`bond.repeat-shown`), k − 1 (`count.stop-short`), k + 1 (`count.start-counted`), w (`bond.whole-as-part`), w + p (`bond.added`); two below, three above → three ranks reachable, a third each (METHODOLOGY §7) | K6 · practice, exit, check, placement |
 | `l4.sign_decides` | T8 mixed set: + or − by draw, balanced across the day | a + b ≤ 10 | per draw | `sub.added`, `add.subtracted` | K5, K6 · practice, return |
-| `l4.error_take_away` | T12 (Grade 1 form): "A child wrote w − p = X." The child's work is also **shown as a figure**, the child's bond (whole w, parts p and X), not only as a sentence (CURRICULUM-MAP §7.15). (1) `pad` the right answer (the fix); (2) `truth` rows, **drawn only after (1) is committed**: 3 true, 3 false, shuffled. On L6 the same item is told as a short take-away story | w 5–10, **p 2..w−1** (at p = 1, `count.start-counted` and `bond.whole-as-part` both give X = w and the rule could not be named), X made by one named rule of {`sub.added`, `count.start-counted`, `bond.whole-as-part`} | (1) w − p; (2) rows by rule. True: "w is the whole" · "taking away leaves less than w" · and one row that engages X: when X > w, "X is more than w, so it cannot be what is left"; when X ≤ w, "p and X together make more than w" (true for X = k + 1 and X = w). False: "w is a part" · "the − sign means put together" · "p is the whole" | `verifyFor` recomputes X from its rule and every row's truth from w, p, X | K10 · step (L4, L6), practice, check |
+| `l4.error_take_away` | T12 (Grade 1 form): "A child wrote w − p = X." The child's work is also **shown as a figure**, the child's bond (whole w, parts p and X), not only as a sentence (CURRICULUM-MAP §7.15). (1) `pad` the right answer (the fix); (2) `truth` rows, **drawn only after (1) is committed**: 3 true, 3 false, shuffled. On L6 the same item is told as a short take-away story | w 5–10, **p 2..w−1** (at p = 1, `count.start-counted` and `bond.whole-as-part` both give X = w and the rule could not be named), X made by one named rule of {`sub.added`, `count.start-counted`, `bond.whole-as-part`} | (1) w − p; (2) rows by rule. True: "w is the whole" · "taking away leaves less than w" · and one row that engages X: when X > w, "X is more than w, so it cannot be what is left"; when X ≤ w, "p and X together make more than w" (true for X = k + 1 and X = w). False: "w is a part" (when X = w: **"Taking away p leaves w"** instead, because the child's bond then draws w in a part circle and "w is a part" would be two-faced, S6; gate SM-TWOFACE, 2026-11-21) · "the − sign means put together" · "p is the whole" | `verifyFor` recomputes X from its rule and every row's truth from w, p, X | K10 · step (L4, L6), practice, check |
 
 ### L5 — four facts; "=" is "is the same as"
 
 | Template | Parts · surface · figure | Draw | Key / grading | Pool or claim rules | Skill · use |
 |---|---|---|---|---|---|
-| `l5.four_facts` | `bond` w (a, b), a ≠ b; four N-I8 sentences, one blank each: a + b = □ · b + a = □ · w − a = □ · w − b = □; one part per sentence, advanced by the main button | w 3–10 | w, w, b, a | `fact.order-swapped` (review line when he writes a − w) | K7 · step, practice, return |
+| `l5.four_facts` | `bond` w (a, b), a ≠ b; four N-I8 sentences, one blank each: a + b = □ · b + a = □ · w − a = □ · w − b = □; one part per sentence, advanced by the main button | w 3–10 | w, w, b, a | `sub.added` on the two take-away sentences (w + a, w + b); `fact.order-swapped` is not used here: the sentence is printed and he types one number, so "a − w" cannot be entered (SM-ENTER, 2026-11-21); it stays on `l5.equals_truth` | K7 · step, practice, return |
 | `l5.equals_truth` | `truth`, 4 rows from a pool of 6: "w = a + b" · "a + b = b + a" · "w − a = b" (true); "a − w = b" · "w = a − b" · "a + b = w + 1" (false); 2 + 2, shuffled | w 4–10, a ≠ b | rows by rule | L51 balance; `fact.order-swapped` | K8 · step, practice, exit |
 | `l5.box_any_place` | N-I8 with the blank in one of four places: a + □ = w · □ + b = w · w − □ = b · □ − a = b; the shape hint uses numbers unrelated to the item (e.g. "2 + 1 = 3" never beside an item with 1, 2 or 3) | w 3–10, place balanced | the blank | `box.copy-seen` (a number already in the sentence), `bond.added` (w + a); on the unknown-start form □ − p = k, `sub.subtracted-seen` (k − p, takes away the two numbers seen; GRADE-1's "6 − 3 = 3") | K6, K8 · step, practice, check |
 | `l5.missing_addend_choice` | T1 (CK A3 shape): "Which number makes a + □ = w true?" | **w 6–10; 2 ≤ a, 2a ≤ w − 2** | k = w − a | pool: a (`box.copy-seen`), k − 1 (`count.stop-short`), k + 1 (`count.start-counted`), w (`bond.whole-as-part`), w + a (`bond.added`) | K8 · practice, check |
@@ -173,9 +179,9 @@ Two story sentences and one question; ≤ 10 words a sentence; no key-word teach
 
 | Template | Parts · surface · figure | Draw | Key / grading | Pool or claim rules | Skill · use |
 |---|---|---|---|---|---|
-| `l6.join_story` | `groups` a, b in the scene; (1) N-I2 bond with "?" placed by him (the whole); (2) N-I8 sentence; (3) `pad` the answer | a + b ≤ 10, setting from §8 | (1) "?" in the whole, a, b as parts; (2) a + b = □ (either order); (3) a + b | `story.wrong-operation` (|a − b|) | K9 (1), K5 (3) · step, practice, check |
-| `l6.takeaway_story` | `groups` w (one shape, carrying w) and the taken-away count in words; (1) N-I2 bond: w the whole, p a part, "?" the other; (2) N-I8; (3) `pad` | w 4–10 | w − p | `story.wrong-operation` (w + p) | K9 (1), K6 (3) · step, practice, check |
-| `l6.which_bond_story` | T1: "Which bond fits the story?" four bonds | either story kind | the bond with "?" in the right circle | `story.unknown-in-wrong-circle`, `bond.whole-as-part`, `bond.sum-off-by-one` | K9 · practice, exit |
+| `l6.join_story` | `groups` a, b in the scene; (1) N-I2 bond with "?" placed by him (the whole); (2) N-I8 sentence; (3) `pad` the answer; (4) not graded: "Check it in the story. Does your answer fit?" — Yes, it fits / Let me look again (re-opens (3); never a new try) (2026-11-21, Fable gate); three story frames, rotating by draw (two sentences + one question; result unknown; no "left" in the question) | a + b ≤ 10, setting from §8 | (1) "?" in the whole, a, b as parts; (2) a + b = □ (either order); (3) a + b | `story.wrong-operation` (|a − b|) | K9 (1), K5 (3) · step, practice, check |
+| `l6.takeaway_story` | `groups` w (one shape, carrying w) and the taken-away count in words; (1) N-I2 bond: w the whole, p a part, "?" the other; (2) N-I8; (3) `pad`; (4) the same not-graded story check (2026-11-21, Fable gate); three frames | w 4–10 | w − p | `story.wrong-operation` (w + p) | K9 (1), K6 (3) · step, practice, check |
+| `l6.which_bond_story` | T1: "Which bond fits the story?" four bonds; ladder family `story-choice` (§6): no number or "?" placed below rung 4 on a choice item (2026-11-21, Fable gate) | either story kind | the bond with "?" in the right circle | `story.unknown-in-wrong-circle`, `bond.whole-as-part`, `bond.sum-off-by-one` | K9 · practice, exit |
 | `l6.paper_bond` | N-I11: "Draw a bond for this story on paper." Tap "I drew it", then the sentence by chips | as `l6.join_story` | the sentence only; the record says "paper practice done" (DD8) | — | K9 (sentence) · once in the unit, practice |
 
 ### Outside the unit (built with it, BUILD-PLAN stage 1b)
@@ -204,14 +210,18 @@ Two story sentences and one question; ≤ 10 words a sentence; no key-word teach
 | `add.subtracted` | takes away on a + item | \|a − b\| | below |
 | `add.part-from-sum` | a sentence with a part equal to whole + part (claim row / choice) | — | — |
 | `sub.added` | adds whenever two numbers appear | w + p | above |
+| `take.added` | on the counters step, adds the ones taken away (the same act as `sub.added`, worded for a screen with no sign; `SAME_ACT`) | w + p | above |
 | `sub.bigger-than-whole` | a take-away whose answer is bigger than its start (claim row / choice) | — | — |
 | `box.copy-seen` | copies a number already in the sentence into the box | a | below |
-| `sub.subtracted-seen` | on □ − p = k, takes away the two numbers he sees | k − p | below |
+| `sub.subtracted-seen` | on □ − p = k, takes away the two numbers he sees (line: "The box is the whole. The whole is the biggest.") | k − p | below |
 | `fact.order-swapped` | "w − a = b, so a − w = b" | claim | — |
 | `split.same-pair` | gives the shown split again (or its turnaround) as "another way" | {a, b} | — |
 | `story.wrong-operation` | takes away in a join story, adds in a take-away story | \|a − b\| or w + p | either |
 | `story.unknown-in-wrong-circle` | puts "?" in a part when the whole is asked, or the reverse | bond | — |
-| `count.double-touch` · `count.skip` · `order.before-after-swap` · `teen.count-slip` · `teen.ones-only` | U01 / U04 rules for the outside templates | as named | — |
+| `bond.whole-off-by-one` | on a take-away story bond with "?" in a part, the whole is one more or one fewer than the story's start (line: "How many were there at the start?"; 2026-11-21) | w ± 1 | — (bonds) |
+| `count.stop-short-split` | L1's wording of `count.stop-short`, before "whole" is taught (line: "Count on again. Stop at the number we split."); the same act (`SAME_ACT`) | k − 1 | below |
+| `match.more-fewer-swap` · `match.spread-looks-more` (U01 outside template) | picks the row with fewer (line: "More means the row with some left over.") · picks the spread-out row because it looks longer (line: "Match them one to one. Do not look at length.") | a row | — |
+| `count.double-touch` · `count.skip` · `order.before-after-swap` (line: "Before is on the left. After is on the right.", fits both prompts) · `teen.count-slip` · `teen.ones-only` | U01 / U04 rules for the outside templates | as named | — |
 
 A pool value with no rule is not allowed (L34); authors look for the identity before reframing (L36).
 Values that collide with the key or each other on a draw are dropped by the generator and redrawn.
@@ -228,9 +238,19 @@ against it.
 | split | "How many in all? Move some to the other circle." | the two circles light up | "Both circles together must still have all of them." | one split shown, the bond filled |
 | bond build | "Which circle holds everything?" | the whole circle is lit | the whole is placed for him | the bond filled |
 | missing part / take-away | "What is the whole? Which part is hidden?" | the empty bond appears (or lights up) with the known numbers | "Start at the part you know. Count on to the whole." | the bond filled, the sentence read |
+| take-away (`l4.take_away`, the counters step; 2026-11-21) | "How many at the start? How many go away?" | "Tap the ones that go away." (the counters to take light up) | "Count the ones still here." | the taken ones dimmed, the sentence read |
+| box (`l5.box_any_place`; 2026-11-21: no bond on screen, and with the box first the box is the whole) | "Is the box a part, or the whole?" | the empty bond appears with the known numbers | "To find a part, take away. To find the whole, add." | the sentence filled |
 | add | "Are we putting together or taking away?" | the empty bond appears with both parts | "Start at the bigger part. Count on the other part." | the whole filled, the sentence read |
 | four facts / "=" | "Read the bond: the whole, then the parts." | the bond is lit beside the sentence | "Two parts make the whole. Take a part from the whole." | the sentence filled |
+| list (L1) | "What number are we splitting? Read the list in order." | the done rows lit | "Each row makes the number we split. Count on from the first." | the full list read |
+| sign (`l4.sign_decides`) | "Look at the sign. Are we putting together or taking away?" | the empty bond with the known numbers | "Putting together makes more. Taking away leaves less." | the sentence filled |
+| count (U01) | "How do we know how many there are?" | each one dims on touch | "The last number we say tells how many." | the count said together |
+| match (U01) | "Which row has some with no partner?" | the matching lines lit | "The row with some left over has more." | the row with more ringed |
+| order (U01) | "Where is the number on the track?" | the track window lit | "Before is on the left. After is on the right." | the cell filled |
+| teen (U04 preview) | "Which picture has a full ten?" | the full ten frames lit | "Count the extra ones after the ten." | the picture ringed |
 | truth rows | "Read one row. Look at the bond." | the bond is lit | "The whole is the biggest number in the bond." | each row marked |
+| story-choice (`l6.which_bond_story`) | the story read again; "What do we want to find?" | an empty bond (nothing placed) | "Find the bonds with both story numbers. Then check where the question mark is." | the bond and the sentence filled |
+| bond-choice (`l2.which_bond`) | "Which number is the whole? Do the parts make it?" | each bond's whole circle lit | "Both parts together must make the whole. Check each one." | the key bond ringed and read |
 | story | the story read again; "What do we want to find?" | an empty bond with "?" to place | the known numbers placed in the bond | the bond and the sentence filled |
 | error | "What was the whole? What was taken away?" | the empty bond with the whole and the part taken | "What is left must be less than the whole." | the right answer and its bond |
 
@@ -270,6 +290,15 @@ seed (fresh form for any re-sit; never a demo fact, §1):
 | B5b · 1 | `l5.box_any_place` with the blank first in a take-away (□ − p = k) | T8, N-I8 | K6, K8 | unknown start |
 | B6 · 2 | `l4.error_take_away` | T12, `truth` | K10 | 1 the fix, 1 the rows (all 6 rows right = 1 point; rows appear only after the fix) |
 | C7 · 3 | `l6.join_story` | T17 | K9, K5 | 1 the bond, 1 the sentence, 1 the answer |
+
+**How a form is drawn (2026-11-21, after the gates, DECISIONS M24–M27):** C7 and B6 first, then the 2-point rows in
+a seed-shuffled order, then B5b and B5a; one fact family per form; B5a and B5b never a double and prefer parts
+of 2 or more. **A row never repeats an exact item (template and numbers) served to the child in the last 7
+local days**; sharing a fact family with practice is allowed (within 10 that is the unit's goal). Measured over
+200 forms: no row puts one family on more than 25 % of forms (A1 21 %, A2 17 %, A3 21 %, B4 21 %, B5a 23 %,
+B5b 19 %, B6 18 %, C7 14 %); shown part at most 40 % per value except A1 / A3 at 50 % (their pool has p = 2
+on four of seven facts; accepted); each error rule at least 15 %. Entry pairs never share numbers; the
+matching pair flips the "more" row between its two items. Placement items are never a double.
 
 15 points. "Concepts and procedures" = A1–B5b, C7; "reasoning" = B6 (DD11; the module's categories,
 not the school's). The end screen shows counts ("12 of 15 points", "7 of 8 questions") to the child

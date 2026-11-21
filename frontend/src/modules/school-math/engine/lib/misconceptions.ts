@@ -105,17 +105,33 @@ export const RULES: Record<string, MisRule> = {
           return (sameMultiset([x, y], [a.a, a.b + 1]) || sameMultiset([x, y], [a.a, a.b - 1])
             || sameMultiset([x, y], [a.a + 1, a.b]) || sameMultiset([x, y], [a.a - 1, a.b])) && x >= 1 && y >= 1
         }
-        need(a, 'w', 'p')
-        return isNum(bond.whole) && Math.abs(bond.whole - a.w) === 1 && bond.whole > a.p && sameMultiset(bond.parts, [a.p, '?'])
+        // a take-away bond whose WHOLE is off by one is bond.whole-off-by-one (Opus re-check)
+        return false
       }
       need(a, 'w')
       const [x, y] = bond.parts
       return bond.whole === a.w && isNum(x) && isNum(y) && x >= 1 && y >= 1 && Math.abs(x + y - a.w) === 1
     },
   },
+  'bond.whole-off-by-one': {
+    id: 'bond.whole-off-by-one', what: 'a take-away story bond with the whole one more or one fewer than the story start (a counting slip on the start)', side: 'none',
+    line: 'How many were there at the start?',
+    check: (c, a) => {
+      const bond = bondOf(c)
+      if (!bond || !has(a, 'story') || a.story !== 1) return false
+      need(a, 'w', 'p')
+      return isNum(bond.whole) && Math.abs(bond.whole - a.w) === 1 && bond.whole > a.p && sameMultiset(bond.parts, [a.p, '?'])
+    },
+  },
   'count.stop-short': {
     id: 'count.stop-short', what: 'counts on from the part and stops one word before the whole', side: 'below',
     line: 'Count on again. Stop when you say the whole.',
+    values: (a) => { need(a, 'k'); return a.k - 1 >= 1 ? [a.k - 1] : [] },
+  },
+  // L1 (splitting) comes before L2 teaches "the whole" (Opus re-check): the same act, L1's words
+  'count.stop-short-split': {
+    id: 'count.stop-short-split', what: 'counts on from the first number and stops one word early', side: 'below',
+    line: 'Count on again. Stop at the number we split.',
     values: (a) => { need(a, 'k'); return a.k - 1 >= 1 ? [a.k - 1] : [] },
   },
   'count.start-counted': {
@@ -148,6 +164,14 @@ export const RULES: Record<string, MisRule> = {
     line: 'Look at the sign. Taking away leaves less.',
     values: (a) => { need(a, 'w', 'p'); return [a.w + a.p] },
   },
+  // The concrete take-away step (l4.take_away) shows counters and an empty pad, no sign, so
+  // "look at the sign" points at nothing (main-session teacher read, 2026-11-21). Same value
+  // as sub.added; the line speaks about the counters instead.
+  'take.added': {
+    id: 'take.added', what: 'adds the counters taken away instead of taking them', side: 'above',
+    line: 'We take some away. Fewer are left.',
+    values: (a) => { need(a, 'w', 'p'); return [a.w + a.p] },
+  },
   'sub.bigger-than-whole': {
     id: 'sub.bigger-than-whole', what: 'a take-away whose answer is bigger than its start', side: 'none',
     line: 'Taking away leaves less than the start.',
@@ -163,8 +187,9 @@ export const RULES: Record<string, MisRule> = {
   },
   'sub.subtracted-seen': {
     id: 'sub.subtracted-seen', what: 'on □ − p = k, takes away the two numbers he sees', side: 'below',
-    line: 'The box is the start. It is the biggest.',
-    values: (a) => { need(a, 'p', 'k'); return a.k > a.p ? [a.k - a.p] : [] },
+    line: 'The box is the whole. The whole is the biggest.',
+    // he takes away the two numbers he sees, the larger minus the smaller (Opus re-check); never 0
+    values: (a) => { need(a, 'p', 'k', 'seen'); const v = Math.abs(a.k - a.p); return v > 0 ? [v] : [] },
   },
   'fact.order-swapped': {
     id: 'fact.order-swapped', what: 'reads w − a = b, so writes a − w = b', side: 'none',
@@ -187,7 +212,7 @@ export const RULES: Record<string, MisRule> = {
   },
   'story.wrong-operation': {
     id: 'story.wrong-operation', what: 'takes away in a join story, adds in a take-away story', side: 'either',
-    line: 'Read the story again. What do we want to find?',
+    line: 'Look at the bond. Is the whole missing, or a part?',
     values: (a) => {
       need(a, 'story')
       if (a.story === 0) { need(a, 'a', 'b'); return a.a !== a.b ? [Math.abs(a.a - a.b)] : [] }
@@ -224,7 +249,7 @@ export const RULES: Record<string, MisRule> = {
   },
   'order.before-after-swap': {
     id: 'order.before-after-swap', what: 'says the number after when asked for before, or the reverse', side: 'either',
-    line: 'Before is on the left of the track.',
+    line: 'Before is on the left. After is on the right.',
     values: (a) => { need(a, 'n', 'before'); return [a.before === 1 ? a.n + 1 : a.n - 1] },
   },
   'teen.count-slip': {
@@ -271,7 +296,14 @@ export const RULES: Record<string, MisRule> = {
  * `bond.added`; in a sentence, `sub.added`). They always give the same value, so one
  * never makes the other ambiguous.
  */
-export const SAME_ACT: ReadonlyArray<readonly [string, string]> = [['bond.added', 'sub.added']]
+export const SAME_ACT: ReadonlyArray<readonly [string, string]> = [
+  ['bond.added', 'sub.added'],
+  // take.added: the same act on the counters step (no sign shown), so the same value
+  ['sub.added', 'take.added'],
+  ['bond.added', 'take.added'],
+  // count.stop-short-split: L1's words for count.stop-short (the same act, the same value)
+  ['count.stop-short', 'count.stop-short-split'],
+]
 
 export function sameAct(x: string, y: string): boolean {
   return SAME_ACT.some(([a, b]) => (a === x && b === y) || (a === y && b === x))

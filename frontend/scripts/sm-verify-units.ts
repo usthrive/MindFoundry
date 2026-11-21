@@ -24,7 +24,8 @@
  * that reuses a demo fact; and (f) a spoken line with the asked value, (g) a re-sit equal
  * to form A, (h) a validation kind missing from the enablement list, (i) "1 ducks",
  * (j) an 11-word sentence and the word "wrong", (k) an error item whose shown answer two
- * rules make (so the rule could not be named).
+ * rules make (so the rule could not be named), and (l)–(n) the stage-1 review's controls and
+ * (o) a shape hint holding the key (run 2: the shape-hint check, every hinted item at 200 seeds).
  * Prints PASS/FAIL lines; exits non-zero on any failure.
  */
 import { allSMTemplates, buildItem } from '../src/modules/school-math/engine/registry'
@@ -34,6 +35,9 @@ import {
 import { chapterCheck, entryCheck, placementPair, fixItTwin } from '../src/modules/school-math/engine/assemble'
 import { G1_U02, demoFacts } from '../src/modules/school-math/curriculum/grade1'
 import { contentCanon, numericRank } from '../src/modules/school-math/engine/lib/choices'
+import { ladderFor } from '../src/modules/school-math/engine/lib/ladders'
+import { reviewRules } from '../src/modules/school-math/engine/lib/item'
+import { sentencesOf } from '../src/modules/school-math/engine/lib/text'
 import type { SMItem, SMPart } from '../src/modules/school-math/types'
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => i * 13 + 3)
@@ -63,6 +67,13 @@ const extra: Variant[] = [
   { templateId: 'sm.g1u02.l4.empty_part_bond', label: 'empty_part_bond placement part 1', partsOnly: ['p1'], role: 'placement' },
   { templateId: 'sm.g1u02.l4.empty_part_bond', label: 'empty_part_bond asked smaller', options: { asked: 'smaller' } },
   { templateId: 'sm.g1u02.l4.empty_part_bond', label: 'empty_part_bond asked larger', options: { asked: 'larger' } },
+  // run 2: the day assembler's blind-habit balance forces the asked part on these too
+  ...(['smaller', 'larger'] as const).flatMap((a) => [
+    { templateId: 'sm.g1u02.l4.sub_pad', label: `sub_pad asked ${a}`, options: { asked: a } },
+    { templateId: 'sm.g1u02.l4.sign_decides', label: `sign_decides − asked ${a}`, options: { op: '-', asked: a } },
+    { templateId: 'sm.g1u02.l6.takeaway_story', label: `takeaway_story asked ${a}`, options: { asked: a } },
+    ...['1', '2', '3'].map((pl) => ({ templateId: 'sm.g1u02.l5.box_any_place', label: `box_any_place place ${pl} asked ${a}`, options: { place: pl, asked: a } })),
+  ]),
   { templateId: 'sm.g1u01.l4.one_more_less', label: 'one_more_less before', options: { dir: 'before' } },
   { templateId: 'sm.g1u01.l4.one_more_less', label: 'one_more_less after', options: { dir: 'after' } },
 ]
@@ -276,6 +287,206 @@ function entropyBits(values: string[]): number {
 }
 
 // ---------------------------------------------------------------------------
+console.log('\nshape hints — no hint holds the key, the blank\'s value, or any of the item\'s numbers')
+/** Independent of the validator's SM-HINT: every number the item shows or asks. */
+function hintProblems(it: SMItem): string[] {
+  const out: string[] = []
+  for (const p of it.parts) {
+    if (p.surface.kind !== 'sentence' || !p.surface.shapeHint) continue
+    const own = new Set<number>([...it.givens, ...(it.fact ? [it.fact.whole, ...it.fact.parts] : [])])
+    for (const q of it.parts) if (q.answer.kind === 'number') own.add(q.answer.value)
+    for (const n of (p.surface.text.match(/\d+/g) ?? []).map(Number)) own.add(n)
+    for (const v of Object.values(it.generator.params)) if (typeof v === 'number') own.add(v)
+    const shared = (p.surface.shapeHint.match(/\d+/g) ?? []).map(Number).filter((n) => own.has(n))
+    if (shared.length) out.push(`${it.id}: hint "${p.surface.shapeHint}" shares ${shared.join(', ')}`)
+  }
+  return out
+}
+{
+  const hinted: SMItem[] = []
+  for (const place of ['1', '2', '3', '4']) for (const seed of SEEDS) hinted.push(buildItem('sm.g1u02.l5.box_any_place', { seed, options: { place } }))
+  for (const [, items] of population) for (const it of items) if (it.parts.some((p) => p.surface.kind === 'sentence' && p.surface.shapeHint)) hinted.push(it)
+  const probs = hinted.flatMap(hintProblems)
+  say(hinted.length > 0 && probs.length === 0, `${hinted.length} items with a shape hint — problems ${probs.length}${probs.length ? ': ' + probs.slice(0, 2).join('; ') : ''}`)
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nreachable review answers and one-faced truth rows (main session read, 2026-11-21)')
+{
+  let reviews = 0, rows = 0, enter = 0, twoFace = 0
+  for (const [, items] of population) for (const it of items) {
+    reviews += it.parts.reduce((t, p) => t + p.reviewRules.length, 0)
+    rows += it.parts.reduce((t, p) => t + (p.surface.kind === 'truth' ? p.surface.rows.length : 0), 0)
+    const vs = validateItem(it)
+    enter += vs.filter((v) => v.gate === 'SM-ENTER').length
+    twoFace += vs.filter((v) => v.gate === 'SM-TWOFACE').length
+  }
+  say(enter === 0, `SM-ENTER: ${reviews} review answers, each enterable on its part (a number on a pad or bond, a split on the counters, a sentence on chips) — off ${enter}`)
+  say(twoFace === 0, `SM-TWOFACE: ${rows} truth rows; none claims a role (whole / part) the drawn bond contradicts — off ${twoFace}`)
+  const xw = SEEDS.map((seed) => buildItem('sm.g1u02.l4.error_take_away', { seed, options: { rule: 'bond.whole-as-part' } }))
+  const balanced = xw.every((it) => { const r = it.parts[1].surface.kind === 'truth' ? it.parts[1].surface.rows : []; return r.length === 6 && r.filter((x) => x.truth).length === 3 && r.some((x) => /^Taking away \d+ leaves \d+\.$/.test(x.text)) })
+  say(balanced && xw.every((it) => validateItem(it).length === 0), `error items with X = w (200 seeds): 3 true / 3 false, "Taking away p leaves w." in place of "w is a part", valid`)
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nchoice items — no rung below 4 places numbers or the "?" for him (Fable gate SM-H10)')
+// ring-answer-* (incl. ring-answer-bond) is allowed at rung 4 only; place-whole joined the list in
+// the ACCEPT follow-up (l2.which_bond wore bond-build's "the whole goes here")
+const PLACING = /^(place-known-numbers|place-whole|fill-.*|show-one-split-.*|ring-answer-.*)$/
+/** Rung 2–3 words that ask him to put something on a screen (wrong on a screen of choices). */
+const PLACING_WORDS = /\b(fill|place|put|move|drag)\b|goes here/i
+/** On an item with a choice part, rungs 1–3 never show a placing action, and rungs 2–3 never tell him to place or fill. */
+function placingRungs(it: SMItem): string[] {
+  if (!it.parts.some((p) => p.surface.kind === 'choices')) return []
+  return it.ladder.slice(0, 3).flatMap((r, i) => [
+    ...(PLACING.test(r.show) ? [`${it.templateId} rung ${i + 1} shows ${r.show}`] : []),
+    ...(i >= 1 && PLACING_WORDS.test(r.say) ? [`${it.templateId} rung ${i + 1} says "${r.say}"`] : []),
+  ])
+}
+{
+  let n = 0
+  const bad: string[] = []
+  for (const [, items] of population) for (const it of items) { if (it.parts.some((p) => p.surface.kind === 'choices')) n++; bad.push(...placingRungs(it)) }
+  for (const kind of ['join', 'takeaway']) for (const seed of SEEDS) bad.push(...placingRungs(buildItem('sm.g1u02.l6.which_bond_story', { seed, options: { kind } })))
+  say(bad.length === 0, `${n} choice items (and which_bond_story, both story kinds, 200 seeds each): no placing screen below rung 4, no "place / fill" words at rungs 2–3 — off ${bad.length}${bad.length ? ': ' + [...new Set(bad)].slice(0, 3).join('; ') : ''}`)
+  console.log(`    choice templates and their ladders: ${[...population].filter(([, its]) => its[0]?.parts.some((p) => p.surface.kind === 'choices')).map(([id, its]) => `${id.replace(/^sm\.(g1u0\d|preview)\./, '')} (${its[0].ladderFamily})`).join(', ')}`)
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nstory frames — each story kind uses all three frames (Fable ACCEPT follow-up)')
+/** Frame shares of a story template over the seeds; problems when any frame is unused or under 15 %. */
+function frameProblems(frames: number[], id: string): string[] {
+  const c = [0, 1, 2].map((f) => frames.filter((x) => x === f).length)
+  return c.some((x) => x < 0.15 * frames.length) ? [`${id} frames ${c.join('/')}`] : []
+}
+const storyFrames = (id: string) => SEEDS.map((seed) => Number(buildItem(id, { seed }).generator.params.frame))
+{
+  for (const id of ['sm.g1u02.l6.join_story', 'sm.g1u02.l6.takeaway_story', 'sm.g1u02.l6.which_bond_story', 'sm.g1u02.l6.paper_bond']) {
+    const f = storyFrames(id)
+    say(frameProblems(f, id).length === 0, `${id}: frames 0 / 1 / 2 on ${[0, 1, 2].map((x) => f.filter((y) => y === x).length).join(' / ')} of 200 (each ≥ 15 %)`)
+  }
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nchapter-check slots — key and part entropy; the error item\'s rule (Fable ACCEPT follow-up)')
+/** The part he is shown or takes away, per check row (rows whose two parts are both given have none). */
+const SHOWN_PART: Record<string, string> = { A1: 'p', A3: 'a', B5a: 'p', B5b: 'a', B6: 'p' }
+function slotKey(it: SMItem): string {
+  const p = [...it.parts].reverse().find((q) => q.answer.kind !== 'ack')!
+  const a = p.answer
+  if (a.kind === 'number') return String(a.value)
+  if (a.kind === 'choice-key' && p.surface.kind === 'choices') { const k = a.key; return contentCanon(p.surface.choices.find((c) => c.key === k)!.content) }
+  return canonAnswer(a)
+}
+type SlotRow = { keys: string[]; parts: number[]; fams: string[] }
+/**
+ * The shown-part line: 40 % of forms; 50 % for A1 / A3, whose honest pool has three shown parts
+ * (2, 3, 4) over seven facts (4 / 2 / 1): holding p = 2 under 40 % pushes the one p = 4 fact
+ * (10 and 4) over the 25 % family line, which the Opus re-check made the primary measure.
+ */
+const PART_LINE: Record<string, number> = { A1: 0.5, A3: 0.5 }
+const topShare = (xs: Array<string | number>) => (xs.length ? Math.max(...[...new Set(xs)].map((v) => xs.filter((x) => x === v).length)) / xs.length : 0)
+/** Problems: one fact family on > 25 % of forms (rows whose pool has ≥ 5 families), or a shown part over its line. */
+function slotProblems(rows: Map<string, SlotRow>): string[] {
+  const out: string[] = []
+  for (const [sec, r] of rows) {
+    if (new Set(r.fams).size >= 5 && topShare(r.fams) > 0.25) out.push(`${sec}: one fact family on ${(100 * topShare(r.fams)).toFixed(0)} % of forms`)
+    if (new Set(r.fams).size < 5 && new Set(r.keys).size < 2) out.push(`${sec}: the key never changes`)
+    const line = PART_LINE[sec] ?? 0.4
+    if (r.parts.length && topShare(r.parts) > line) out.push(`${sec}: one shown part on ${(100 * topShare(r.parts)).toFixed(0)} % of forms (line ${100 * line} %)`)
+  }
+  return out
+}
+/** Problems: an error rule on < 15 % of servings. */
+function ruleProblems(rules: string[]): string[] {
+  return ['sub.added', 'count.start-counted', 'bond.whole-as-part'].filter((r) => rules.filter((x) => x === r).length < 0.15 * rules.length).map((r) => `${r} on ${(100 * rules.filter((x) => x === r).length / rules.length).toFixed(0)} %`)
+}
+const ckRows = new Map<string, SlotRow>()
+const errRules: string[] = []
+{
+  for (const seed of SEEDS) {
+    for (const r of chapterCheck(G1_U02, seed).rows) {
+      const e = ckRows.get(r.section) ?? { keys: [], parts: [], fams: [] }
+      e.keys.push(slotKey(r.item))
+      e.fams.push(r.item.fact ? `${r.item.fact.whole}:${[...r.item.fact.parts].sort((x, y) => x - y).join(',')}` : 'none')
+      if (SHOWN_PART[r.section]) e.parts.push(Number(r.item.generator.params[SHOWN_PART[r.section]]))
+      ckRows.set(r.section, e)
+      if (r.section === 'B6') errRules.push(String(r.item.generator.params.rule))
+    }
+    errRules.push(String(buildItem('sm.g1u02.l4.error_take_away', { seed }).generator.params.rule))
+    errRules.push(String(buildItem('sm.g1u02.l4.error_take_away', { seed, options: { story: true } }).generator.params.rule))
+  }
+  const pct = (xs: Array<string | number>) => { const m = new Map<string, number>(); xs.forEach((x) => m.set(String(x), (m.get(String(x)) ?? 0) + 1)); return [...m].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => `${k.replace(/^n:/, '')}:${(100 * v / xs.length).toFixed(0)}%`).join(' ') }
+  for (const [sec, r] of ckRows) console.log(`    ${sec.padEnd(4)} families ${new Set(r.fams).size}, top family ${pct(r.fams).split(' ')[0]}${r.parts.length ? `  · shown part ${pct(r.parts)}` : ''}`)
+  const sp = slotProblems(ckRows)
+  say(sp.length === 0, `200 forms: no fact family on > 25 % of a row's forms (pools of ≥ 5 families); no shown part over its line${sp.length ? ' — ' + sp.join('; ') : ''}`)
+  const rp = ruleProblems(errRules)
+  say(rp.length === 0, `error items (${errRules.length}: template, story form, CK B6): rule shares ${pct(errRules)} (each ≥ 15 %)${rp.length ? ' — ' + rp.join('; ') : ''}`)
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nOpus re-check — entry pairs, placement, review-line collisions, story nouns')
+/** Entry pairs: the two items differ in numbers; match_more's key row is top on one, bottom on the other. */
+function entryPairProblems(pairs: Array<{ items: [SMItem, SMItem] }>): string[] {
+  const nums = (it: SMItem) => Object.entries(it.generator.params).filter(([k, v]) => typeof v === 'number' && k !== 'spreadTop').map(([, v]) => v as number).sort((a, b) => a - b).join(',')
+  const out: string[] = []
+  for (const p of pairs) {
+    const [x, y] = p.items
+    if (nums(x) === nums(y)) out.push(`${x.templateId}: both items use ${nums(x)}`)
+    if (x.templateId === 'sm.g1u01.l3.match_more') {
+      const row = (it: SMItem) => (Number(it.generator.params.top) > Number(it.generator.params.bottom) ? 'top' : 'bottom')
+      if (row(x) === row(y)) out.push(`match_more: the row with more is ${row(x)} on both`)
+    }
+  }
+  return out
+}
+/** Placement items: never a double. */
+const placementDoubles = (items: SMItem[]) => items.filter((it) => it.fact && it.fact.parts[0] === it.fact.parts[1]).map((it) => it.id)
+/** empty_part_bond: an answer equal to the shown part (when it is not the key) and one equal to the whole each get a line. */
+function reviewGaps(it: SMItem): string[] {
+  const w = Number(it.generator.params.w), p = Number(it.generator.params.p), k = w - p
+  const out: string[] = []
+  for (const part of it.parts) {
+    const vals = part.reviewRules.map((r) => r.value)
+    if (p !== k && !vals.includes(p)) out.push(`${it.id} ${part.id}: no line for ${p} (the shown part)`)
+    if (!vals.includes(w)) out.push(`${it.id} ${part.id}: no line for ${w} (the whole)`)
+  }
+  return out
+}
+/** A story sentence that drops its thing ("2 more are tied on."): every story sentence names the noun. */
+const NOUNS = ['duck', 'bird', 'apple', 'boat', 'shell', 'fish', 'sticker', 'balloon']
+function storyNounGaps(it: SMItem): string[] {
+  return sentencesOf(it.prompt).slice(0, 2).filter((x) => !NOUNS.some((n) => new RegExp(`\\b${n}s?\\b`).test(x))).map((x) => `${it.templateId}: "${x}" names no thing`)
+}
+{
+  let eBad = 0, eFirst = '', pBad = 0, rBad = 0, rFirst = '', nBad = 0, nFirst = ''
+  for (const seed of SEEDS) {
+    const e = entryPairProblems(entryCheck(G1_U02, seed).pairs); if (e.length) { eBad++; if (!eFirst) eFirst = `seed ${seed}: ${e[0]}` }
+    pBad += placementDoubles(placementPair(G1_U02, seed).items).length
+    for (const asked of [undefined, 'smaller', 'larger']) { const g = reviewGaps(buildItem('sm.g1u02.l4.empty_part_bond', { seed, options: asked ? { asked } : undefined })); if (g.length) { rBad++; if (!rFirst) rFirst = g[0] } }
+    for (const t of ['l6.join_story', 'l6.takeaway_story', 'l6.which_bond_story', 'l6.paper_bond']) for (const it of [buildItem(`sm.g1u02.${t}`, { seed })]) { const g = storyNounGaps(it); if (g.length) { nBad++; if (!nFirst) nFirst = g[0] } }
+  }
+  say(eBad === 0, `entry check, 200 seeds: each pair's items differ in numbers; match_more's row with more is top on one, bottom on the other — off ${eBad}${eFirst ? ' — ' + eFirst : ''}`)
+  say(pBad === 0, `placement pair, 200 seeds: no double (the shown part is never the answer) — doubles ${pBad}`)
+  say(rBad === 0, `empty_part_bond, 600 draws: an answer of the shown part or of the whole always gets a review line (one kept by priority on a tie) — off ${rBad}${rFirst ? ' — ' + rFirst : ''}`)
+  say(nBad === 0, `stories, 800 draws: both story sentences name their thing — off ${nBad}${nFirst ? ' — ' + nFirst : ''}`)
+  // controls
+  const cl = <X>(x: X): X => JSON.parse(JSON.stringify(x))
+  const ec = entryCheck(G1_U02, 29).pairs.map((p) => ({ items: [p.items[0], p.items[0]] as [SMItem, SMItem] }))
+  say(entryPairProblems(ec).length >= 3, '(w) entry pairs whose two items are the same draw fail (numbers, and the match_more row)')
+  const dbl = buildItem('sm.g1u02.l4.empty_part_bond', { seed: 3, role: 'placement', partsOnly: ['p1'], force: { w: 4, p: 2 } })
+  say(placementDoubles([dbl]).length === 1, '(x) a placement item with whole 4, shown 2 (a double) fails')
+  // the old drop-both rule on a draw where two rules tie (p = 1: start-counted gives k + 1 = w)
+  const tie = cl(buildItem('sm.g1u02.l4.empty_part_bond', { seed: 3, force: { w: 6, p: 1 } }))
+  const old = reviewRules({ w: 6, p: 1, k: 5 }, 5, ['bond.repeat-shown', 'bond.whole-as-part', 'bond.added', 'count.stop-short', 'count.start-counted'], 'drop-both')
+  tie.parts[0].reviewRules = old
+  say(reviewGaps(tie).length > 0, `(y) the old drop-both review lines on whole 6, shown 1 lose the line for 6: ${reviewGaps(tie)[0] ?? ''}`)
+  const st = cl(buildItem('sm.g1u02.l6.join_story', { seed: 3 }))
+  st.prompt = 'The party has 5 balloons. 2 more are tied on. How many balloons are there now?'
+  say(storyNounGaps(st).length > 0, '(z) a story sentence without its thing ("2 more are tied on.") fails')
+}
+
+// ---------------------------------------------------------------------------
 console.log('\nbroken controls — each must fire')
 const fires = (vs: SMViolation[], gate: string) => vs.some((v) => v.gate === gate)
 const clone = (it: SMItem): SMItem => JSON.parse(JSON.stringify(it))
@@ -381,6 +592,46 @@ const clone = (it: SMItem): SMItem => JSON.parse(JSON.stringify(it))
   const n2 = chapterCheck(G1_U02, 3).rows.map((r) => clone(r.item))
   n2[3].fact = { whole: 5, parts: [1, 4] }
   say(fires(validateForm(n2, 'check', [], 'CK-n'), 'SM-MINPART'), '(n) a check item with a part of 1 fires SM-MINPART')
+
+  // (o) a shape hint equal to the key (the shape-hint check, and the validator's SM-HINT)
+  const o = clone(buildItem('sm.g1u02.l5.box_any_place', { seed: 3, options: { place: '1' } }))
+  const ok0 = o.parts[0].answer.kind === 'number' ? o.parts[0].answer.value : 0
+  if (o.parts[0].surface.kind === 'sentence') o.parts[0].surface.shapeHint = `${ok0} + 1 = ${ok0 + 1}`
+  say(hintProblems(o).length > 0 && fires(validateItem(o), 'SM-HINT'), `(o) a shape hint holding the key (${ok0}) fails the shape-hint check and fires SM-HINT`)
+
+  // (p) the old four_facts p3: "if he answers a − w = b" on a pad that takes one number
+  const pf = clone(buildItem('sm.g1u02.l5.four_facts', { seed: 3 }))
+  const pw = Number(pf.generator.params.w), pa = Number(pf.generator.params.a)
+  pf.parts[2].reviewRules = [{ rule: 'fact.order-swapped', value: `${pa} − ${pw} = ${pw - pa}`, line: 'In a take-away, the whole comes first.' }]
+  say(fires(validateItem(pf), 'SM-ENTER'), '(p) the old four_facts p3 review ("a − w = b" on a pad) fires SM-ENTER')
+
+  // (q) the old error rows on an X = w draw: "w is a part" keyed false beside a bond with w in a part circle
+  const q = clone(buildItem('sm.g1u02.l4.error_take_away', { seed: 3, options: { rule: 'bond.whole-as-part' } }))
+  const qw = Number(q.generator.params.w)
+  if (q.parts[1].surface.kind === 'truth') {
+    const r = q.parts[1].surface.rows.find((x) => x.id === 'leaves-w')!
+    Object.assign(r, { id: 'part-w', text: `${qw} is a part.`, truth: false })
+  }
+  // (r) the old which_bond_story ladder (the story family: rung 3 places the known numbers)
+  const r0 = clone(buildItem('sm.g1u02.l6.which_bond_story', { seed: 3 }))
+  r0.ladder = ladderFor('story')
+  say(placingRungs(r0).length > 0, `(r) which_bond_story with the old story ladder fails: ${placingRungs(r0).join('; ')}`)
+  // (s) l2.which_bond with its old bond-build ladder (rung 3 places the whole, "fill the parts")
+  const s0 = clone(buildItem('sm.g1u02.l2.which_bond', { seed: 3 }))
+  s0.ladder = ladderFor('bond-build')
+  say(placingRungs(s0).length >= 2, `(s) l2.which_bond with the old bond-build ladder fails: ${placingRungs(s0).join('; ')}`)
+  // (t) every story served in one frame
+  say(frameProblems(SEEDS.map(() => 0), 'one-frame builder').length > 0, '(t) a story builder that always uses frame 0 fails the frame check')
+  // (u) the old B5b (□ − 1 = k on most forms) and a key that never changes
+  const u = new Map(ckRows)
+  const b5b = ckRows.get('B5b')!, a2 = ckRows.get('A2')!
+  u.set('B5b', { ...b5b, parts: b5b.parts.map((x, i) => (i % 5 < 4 ? 1 : x)) })
+  u.set('A2', { ...a2, fams: a2.fams.map((f, i) => (i % 10 < 3 ? '8:2,6' : f)) })
+  const up = slotProblems(u)
+  say(up.some((x) => /^B5b/.test(x)) && up.some((x) => /^A2: one fact family/.test(x)), `(u) a B5b taking 1 on 80 % of forms and an A2 on one family 30 % of the time both fail: ${up.join('; ')}`)
+  // (v) an error-rule choice that never shows sub.added
+  say(ruleProblems(errRules.map((r) => (r === 'sub.added' ? 'count.start-counted' : r))).length > 0, '(v) an error-rule choice without sub.added fails (each rule ≥ 15 %)')
+  say(fires(validateItem(q), 'SM-TWOFACE'), `(q) the old row "${qw} is a part." keyed false beside the child's bond (whole ${qw}, a part ${qw}) fires SM-TWOFACE`)
 }
 
 // ---------------------------------------------------------------------------

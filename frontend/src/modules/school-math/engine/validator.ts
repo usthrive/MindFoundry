@@ -18,13 +18,17 @@
  *   SM-SPOKEN no spoken line contains an asked value that is not printed for the child.
  *   SM-FIG   every number a figure prints is a given (the asked circle stays empty, L33);
  *            a bond the child fills starts with the asked circle empty.
+ *   SM-FIGSHAPE every figure passes the shared library's `checkFigureShape`.
+ *   SM-ENTER every review answer can be entered on its part's surface (a number on a pad or bond;
+ *            a split on the counters; a sentence only on chips).
+ *   SM-TWOFACE a truth row about a number's role (whole / part) agrees with the bond drawn.
  *   SM-HINT  a shape hint shares no number with the item.
  *   SM-DEMO  a check, entry or placement item never uses a demo fact (EXEMPLAR §1).
  */
 
 import { personNames } from '../../best-brains/generator/surface'
 import type {
-  ChoiceContent, SMAnswer, SMExpected, SMFact, SMItem, SMPart, SMTruthRow, SMVerify,
+  ChoiceContent, SMAnswer, SMExpected, SMFact, SMItem, SMPart, SMRole, SMTruthRow, SMVerify,
 } from '../types'
 import { getSMTemplate } from './registry'
 import { contentCanon } from './lib/choices'
@@ -32,6 +36,21 @@ import { RULES, ruleMakes, sameAct, sideHolds } from './lib/misconceptions'
 import { evalSentence, normSentence, numbersIn, sentencesOf, wordCount } from './lib/text'
 import { sameFact } from './lib/item'
 import { GRADE1_UNITS } from '../curriculum/grade1'
+import { printedNumbers } from './lib/figures'
+import { checkFigureShape } from '../../best-brains/figures/assert'
+
+/**
+ * Roles a template may be served in. Beyond its own `uses`: a lesson's exit template is
+ * the next lesson's starter (EXEMPLAR §3), and a comeback is a fresh draw of an item
+ * family missed on a check or a practice day (W3), so any template served on a check,
+ * a practice day or as a return may come back. Lesson-only templates never do.
+ */
+export function roleAllowed(uses: readonly SMRole[], role: SMRole): boolean {
+  if (uses.includes(role)) return true
+  if (role === 'starter') return uses.includes('exit')
+  if (role === 'comeback') return uses.some((u) => u === 'check' || u === 'practice' || u === 'return')
+  return false
+}
 
 export interface SMViolation {
   gate: string
@@ -191,12 +210,12 @@ export function validateItem(item: SMItem, base = item.id): SMViolation[] {
   if (!def) { add('S-REG', 'templateId', `template "${item.templateId}" does not resolve`); return out }
   if (item.generator.templateId !== item.templateId) add('S-REG', 'generator', 'generator.templateId differs from templateId')
   if (item.unitId !== def.unitId || item.lessonId !== def.lessonId) add('S-REG', 'lessonId', `item says ${item.unitId}/${item.lessonId}, template ${def.unitId}/${def.lessonId}`)
-  if (item.role !== 'review' && !def.uses.includes(item.role)) add('S-ROLE', 'role', `role "${item.role}" is not one this template is served in (${def.uses.join(', ')})`)
+  if (item.role !== 'review' && !roleAllowed(def.uses, item.role)) add('S-ROLE', 'role', `role "${item.role}" is not one this template is served in (${def.uses.join(', ')})`)
   if (item.lessonOnly && !['step', 'review'].includes(item.role)) add('S-ROLE', 'role', `lesson-only template served as "${item.role}"`)
   if (item.ladderFamily !== def.ladderFamily) add('S-REG', 'ladderFamily', `ladder family ${item.ladderFamily} ≠ template's ${def.ladderFamily}`)
   // SM-SCREEN: a help line names only things the screen has (stage-1 review: a "make a list"
   // item said "move some to the other circle" with no circles on the screen).
-  const hasCircles = item.figures.some((f) => f.kind === 'number-bond' || (f.kind === 'counters' && f.layout === 'two-circles'))
+  const hasCircles = item.figures.some((f) => f.type === 'number-bond' || (f.type === 'counters' && f.interaction === 'drag-into-two-circles'))
     || item.parts.some((pt) => pt.surface.kind === 'bond' || pt.surface.kind === 'counter-split'
       || (pt.surface.kind === 'choices' && pt.surface.choices.some((c) => (c as { content?: { kind?: string } }).content?.kind === 'bond')))
   item.ladder.forEach((r, i) => {
@@ -217,6 +236,10 @@ export function validateItem(item: SMItem, base = item.id): SMViolation[] {
       const ref = p.reveal.slice('after-part:'.length)
       if (!seenIds.includes(ref)) add('S-PART', `parts[${i}].reveal`, `reveals after "${ref}", which is not an earlier part`)
     }
+    if (p.surface.kind === 'ack' && p.surface.lookAgain && !seenIds.includes(p.surface.lookAgain.reopens)) {
+      add('S-PART', `parts[${i}].surface`, `"${p.surface.lookAgain.label}" re-opens "${p.surface.lookAgain.reopens}", which is not an earlier part`)
+    }
+    if (p.surface.kind === 'ack' && (p.points ?? 0) > 0) add('S-PART', `parts[${i}].points`, 'an ack part is never scored')
     seenIds.push(p.id)
   })
 
@@ -360,18 +383,44 @@ export function validateItem(item: SMItem, base = item.id): SMViolation[] {
   // --- SM-FIG: printed numbers are givens; the asked circle is empty ---------
   const givens = new Set(item.givens)
   item.figures.forEach((f, i) => {
-    let printed: number[] = []
-    if (f.kind === 'number-bond') printed = [f.bond.whole, ...f.bond.parts].filter((x): x is number => typeof x === 'number')
-    if (f.kind === 'groups' || f.kind === 'scene') printed = f.groups
-    if (f.kind === 'split-list') printed = [f.whole, ...f.rows.flatMap((r) => [r.first, r.second].filter((x): x is number => x !== null))]
-    if (f.kind === 'number-track') printed = f.cells.filter((x): x is number => x !== null)
-    for (const n of printed) if (!givens.has(n)) add('SM-FIG', `figures[${i}]`, `figure prints ${n}, which is not a given (an asked value?)`)
+    for (const n of printedNumbers(f)) if (!givens.has(n)) add('SM-FIG', `figures[${i}]`, `figure prints ${n}, which is not a given (an asked value?)`)
+    // the shared library's own well-formedness check (one definition of each figure)
+    for (const m of checkFigureShape(f)) add('SM-FIGSHAPE', `figures[${i}]`, m)
+    if (!f.spoken || f.spoken !== f.alt) add('SM-FIGSHAPE', `figures[${i}]`, 'a figure says its spoken line and uses it as its accessible name')
   })
   item.parts.forEach((p, i) => {
     if (p.surface.kind !== 'bond' || p.surface.mode !== 'fill' || p.answer.kind !== 'bond-parts') return
     const st = p.surface.start
     if (p.answer.asked.includes('whole') && st.whole !== 'empty') add('SM-FIG', `parts[${i}].surface`, 'the whole is asked but its circle is not empty')
     if (p.answer.asked.includes('part') && !st.parts.includes('empty')) add('SM-FIG', `parts[${i}].surface`, 'a part is asked but no part circle is empty')
+  })
+
+  // --- SM-ENTER: every misconception answer is one he can enter on that part ---
+  // (main session's read of the run-2 dump: four_facts' pad carried "if he answers a − w = b")
+  item.parts.forEach((p, i) => {
+    for (const [j, r] of p.reviewRules.entries()) {
+      const why = enterableProblem(p, r.value)
+      if (why) add('SM-ENTER', `parts[${i}].review[${j}]`, `review value "${r.value}" (${r.rule}) cannot be entered: ${why}`)
+    }
+  })
+
+  // --- SM-TWOFACE: a truth row's claim about a number's role agrees with the bond drawn -------
+  // (LEARNINGS S6; an error item drew the child's bond with w in a part circle and keyed
+  // "w is a part" false)
+  const bonds = item.figures.filter((f) => f.type === 'number-bond')
+  item.parts.forEach((p, i) => {
+    if (p.surface.kind !== 'truth') return
+    p.surface.rows.forEach((r, j) => {
+      const m = /^(\d+) is (a part|the whole)\.$/.exec(r.text)
+      if (!m) return
+      const n = Number(m[1])
+      for (const f of bonds) {
+        if (f.type !== 'number-bond') continue
+        const b = f.params.bond
+        const pictured = m[2] === 'a part' ? b.parts.includes(n) : b.whole === n
+        if (pictured !== r.truth) add('SM-TWOFACE', `parts[${i}].rows[${j}]`, `row "${r.text}" is keyed ${r.truth}, but the bond drawn says ${pictured}`)
+      }
+    })
   })
 
   // --- SM-HINT ----------------------------------------------------------------
@@ -383,6 +432,18 @@ export function validateItem(item: SMItem, base = item.id): SMViolation[] {
   })
 
   return out
+}
+
+/** Why a review value cannot be entered on this part's surface (null = it can). */
+export function enterableProblem(p: SMPart, value: number | string): string | null {
+  const s = p.surface
+  if (typeof value === 'number') {
+    if (s.kind === 'pad' || s.kind === 'bond' || (s.kind === 'sentence' && s.input === 'pad')) return null
+    return `a number is typed on a pad or a bond, not on ${s.kind}${s.kind === 'sentence' ? ` (${s.input})` : ''}`
+  }
+  if (/^\d+,\d+$/.test(value)) return s.kind === 'counter-split' ? null : `a split is made on the counters, not on ${s.kind}`
+  if ((s.kind === 'sentence' && s.input === 'chips') || s.kind === 'paper') return null
+  return `a sentence is built from chips, not on ${s.kind}${s.kind === 'sentence' ? ` (${s.input})` : ''}`
 }
 
 function selfCheck(item: SMItem, p: SMPart, path: string, add: (g: string, p: string, m: string) => void): void {

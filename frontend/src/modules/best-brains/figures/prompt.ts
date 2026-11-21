@@ -21,6 +21,8 @@
  * leaves the prompt free to stay exactly what it already was.
  */
 
+import type { PartWholeFigure } from './types';
+
 const IMAGE_RE = /\[image:\s*([^\]]*)\]/gi;
 
 /** True when the prompt carries at least one `[image: …]` direction. */
@@ -158,4 +160,25 @@ export function speakablePrompt(
   if (!scene) return text;
   const stop = /[.!?]$/.test(scene) ? '' : '.';
   return `${scene}${stop} ${text}`.trim();
+}
+
+/**
+ * The read-aloud line for a part-whole figure (school-math, 2026-11-21), used as
+ * its `spoken`. Each names the KIND of picture and never a value: a bond's asked
+ * circle, a list's open row and a track's empty square are what the child finds,
+ * and the given numbers are read where the prompt gives them (ENGINE-SPEC §6.4).
+ */
+export function partWholeSpoken(fig: Pick<PartWholeFigure, 'type'> & { params: unknown }): string {
+  switch (fig.type) {
+    case 'number-bond': return 'a number bond: a whole and two parts';
+    case 'groups':
+    case 'scene': {
+      const n = (fig.params as { groups: number[] }).groups.length;
+      return n === 1 ? 'one group' : n === 2 ? 'two groups' : 'three groups';
+    }
+    // the number being split is printed (a given), so the list says it (Opus re-check)
+    case 'split-list': return `a list of the ways to split ${(fig.params as { whole: number }).whole}`;
+    case 'match-rows': return 'two rows of counters';
+    case 'track-window': return 'a number track';
+  }
 }
