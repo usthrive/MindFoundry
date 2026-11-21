@@ -161,11 +161,14 @@ const schoolMathModule: MindFoundryModule = {
     unitCount: [13, 14, 12, 10, 10][ordinal],
   })),
   placement: {
-    kind: 'parent-selected',
+    // Its own kind (never Kumon's 'parent-selected'). Not built yet: version 1 has no
+    // placement; the Grade 1 ladder is BUILD-PLAN v2 stage 4.
+    kind: 'placement-ladder',
     recheckSupported: true,
     description:
-      'Version 1: the parent opens the test prep. The placement test (DD25) arrives with ' +
-      'version 2.',
+      'Version 1: no placement (the parent opens the test prep). Version 2: a short ladder ' +
+      'test through the grade\'s units, read aloud, feedback held, early stop; placed-out ' +
+      'units come back as returns to confirm (DD25).',
   },
   conceptCatalog(): ConceptRef[] {
     return [];

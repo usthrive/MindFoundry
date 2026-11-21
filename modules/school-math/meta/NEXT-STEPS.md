@@ -1,4 +1,4 @@
-# NEXT STEPS — `school-math` (state 2026-11-18)
+# NEXT STEPS — `school-math` (state 2026-11-20)
 
 Start here (any model). No child's name anywhere; the exam photos are never in the repo.
 **The full build (Grade 1 first) starts from `docs/HANDOFF-2026-11-20-SINGAPORE-METHOD-FULL-BUILD.md`.**
@@ -23,21 +23,21 @@ One customizable module: My path (placement → all Grade 1–5 units) · Test p
 (chapter + test date) · My scorecard · parent Settings (grade, school chapter, questions/day,
 days/week, test date).
 
-## Next (in order)
-1. **Fast track (owner wants it in the app):** BUILD-PLAN stage 0 (register `school-math`, card
-   "School Math" behind a dev/allow-list flag, `sm_` tables as a migration file — applied only on
-   the owner's word) + the 12 test-prep sessions as app screens + a standalone scorecard for the
-   child (counts, never percentages; parent detail below). Port the generators from
-   TEST-PREP-SUBTRACTION.html to TypeScript; turn `test_prep_check.js` into a battery gate with
-   broken controls.
-2. Add the **placement test** (DD25) as a stage before the child's day flow.
-3. Then BUILD-PLAN stages 1–8 (engine + G2-U04 exemplar through both gates first).
-4. Owed: Fable sign-off on the review's N1 fix and on the proposed G2-U04 chapter check.
+## Next (in order) — BUILD-PLAN v2 (2026-11-20, owner delegation M21)
+Follow `design/engine/BUILD-PLAN.md` (v2; Fable design review REFINE, its 7 fixes applied) and
+`design/engine/EXEMPLAR-G1-U02.md`. Grade 1 first, complete and live, then Grades 2–5.
+1. Stage 0: `sm_` tables + RLS, contract kinds (migration applied only on the owner's word).
+2. Stage 1: engine + G1-U02 (and its four outside templates) through both gates.
+3. Stage 2a: G1-U02's figures and inputs; then Settings + move path (3), Placement (4), My path +
+   chapter check + review (5), My scorecard + parent view (6), Grade 1 fan-out (7), personas (8),
+   Grade 1 GO-LIVE.
+4. Owed (with Grade 2): Fable sign-off on the review's N1 fix and on the proposed G2-U04 chapter check.
 
 ## Owner decisions still open
-Questions per day (rec. 5–6 lesson day, ~10 practice day) · teacher character + voice (rec. a new
-character, free voice) · card name (working: "School Math") · days per week (rec. 5) and the
-school calendar · go-live.
+Teaching decisions T-1..T-8 were made under the delegation (BUILD-PLAN §2). Still the owner's:
+the no-name list file (BUILD-PLAN §8.1; he creates it, the build gets the path only) · the school
+calendar · importing the v1 device records (dry-run list first) · T-8 (offer Grade 1 units to the
+first learner as a repair path) · every commit, push, merge, migration apply and GO-LIVE.
 
 ## House rules (binding)
 `docs/HANDOFF-2026-11-10-KUMON-TEACHING-PLAN.md` "House rules": explain before commit; commit,
